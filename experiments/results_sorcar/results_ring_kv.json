@@ -1,0 +1,32 @@
+[
+  {
+    "template": "sorcar_flat_allgather",
+    "cost_score": 1.29,
+    "sim_time_us": 129.0,
+    "local_ops": 1,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "sorcar:ring_kv"
+  },
+  {
+    "template": "flat_allgather",
+    "cost_score": 1.87,
+    "sim_time_us": 187.0,
+    "local_ops": 3,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "baseline:flat_allgather"
+  },
+  {
+    "template": "naive_ring_permute",
+    "cost_score": 39.989999999999974,
+    "sim_time_us": 3998.9999999999973,
+    "local_ops": 31,
+    "num_collective_permute": 31,
+    "num_all_gather": 0,
+    "num_all_reduce": 0,
+    "name": "baseline:naive_ring_permute"
+  }
+]

@@ -1,0 +1,52 @@
+[
+  {
+    "template": "evolved_per_tensor_rs",
+    "cost_score": 2.2929999999999997,
+    "sim_time_us": 229.29999999999998,
+    "local_ops": 3,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "evo:per_tensor_rs_0"
+  },
+  {
+    "template": "cat_ag_sum_split",
+    "cost_score": 2.294,
+    "sim_time_us": 229.4,
+    "local_ops": 4,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "baseline:cat_ag_sum_split"
+  },
+  {
+    "template": "evolved_cat_ag_sum_split",
+    "cost_score": 2.294,
+    "sim_time_us": 229.4,
+    "local_ops": 4,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "evo:cat_ag_sum_split_1"
+  },
+  {
+    "template": "evolved_per_tensor_rs",
+    "cost_score": 2.3,
+    "sim_time_us": 229.99999999999997,
+    "local_ops": 10,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 1,
+    "name": "evo:per_tensor_rs_2"
+  },
+  {
+    "template": "per_tensor_rs",
+    "cost_score": 15.999999999999998,
+    "sim_time_us": 1599.9999999999998,
+    "local_ops": 8,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 0,
+    "name": "baseline:per_tensor_rs"
+  }
+]

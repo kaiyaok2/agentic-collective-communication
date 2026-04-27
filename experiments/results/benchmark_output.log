@@ -1,0 +1,68 @@
+======================================================================
+REAL AllToAllV BENCHMARK — trn1.32xlarge (MoE traffic)
+======================================================================
+  Hardware:    trn1.32xlarge (16 NeuronDevices, 32 NeuronCores)
+  Topology:    4x4 2D torus, 2 cores/device, 4 NeuronLinks/device @ 192 GB/s
+  Traffic:     MoE (Zipf s=1.2, shuffled expert assignment)
+  Iterations:  20 (warmup: 5)
+  Schedule:    [4, 3, 13, 12, 2, 15, 1, 7, 5, 11, 9, 14, 8, 6, 10]
+
+--- evolved_ag (agent-generated, 1 collective, 3 XLA ops) ---
+  CORRECTNESS evolved_ag: PASS
+  BENCH evolved_ag shard=256 latency=0.1350ms
+  BENCH evolved_ag shard=1024 latency=0.1273ms
+  BENCH evolved_ag shard=4096 latency=0.1265ms
+  BENCH evolved_ag shard=16384 latency=0.1200ms
+  BENCH evolved_ag shard=65536 latency=0.1257ms
+  BENCH evolved_ag shard=262144 latency=0.1185ms
+  BENCH evolved_ag shard=1048576 latency=0.1407ms
+
+--- hierarchical_optimized (topology-aware, 15 inter-device steps) ---
+  CORRECTNESS hierarchical: PASS (execution verified, data correctness verified by simulator)
+  BENCH hierarchical shard=256 latency=2.3302ms
+  BENCH hierarchical shard=1024 latency=2.3192ms
+  BENCH hierarchical shard=4096 latency=2.2207ms
+  BENCH hierarchical shard=16384 latency=2.2200ms
+  BENCH hierarchical shard=65536 latency=2.2854ms
+  BENCH hierarchical shard=262144 latency=2.2226ms
+  BENCH hierarchical shard=1048576 latency=2.3376ms
+
+--- default_ring (topology-unaware, 31 steps) ---
+  CORRECTNESS ring: PASS (execution verified, data correctness verified by simulator)
+  BENCH ring shard=256 latency=2.7682ms
+  BENCH ring shard=1024 latency=2.7132ms
+  BENCH ring shard=4096 latency=2.8085ms
+  BENCH ring shard=16384 latency=2.7229ms
+  BENCH ring shard=65536 latency=3.1078ms
+  BENCH ring shard=262144 latency=2.8340ms
+  BENCH ring shard=1048576 latency=5.0341ms
+
+--- allgather_slice (topology-unaware, 1 collective, 33 XLA ops) ---
+  CORRECTNESS allgather: PASS
+  BENCH allgather shard=256 latency=1.0390ms
+  BENCH allgather shard=1024 latency=1.0300ms
+  BENCH allgather shard=4096 latency=1.0513ms
+  BENCH allgather shard=16384 latency=1.0755ms
+  BENCH allgather shard=65536 latency=1.0783ms
+  BENCH allgather shard=262144 latency=1.0595ms
+  BENCH allgather shard=1048576 latency=1.0630ms
+
+======================================================================
+COMPARISON: All Algorithms
+======================================================================
+     Shard       Total      Evolved-AG       AllGather    Hierarchical    Default Ring      Evo/AG    Evo/Ring
+   (elems)     (bytes)            (ms)            (ms)            (ms)            (ms)     speedup     speedup
+  ----------------------------------------------------------------------------------------------------------
+       256       32768          0.1350          1.0390          2.3302          2.7682       7.70x      20.51x
+      1024      131072          0.1273          1.0300          2.3192          2.7132       8.09x      21.31x
+      4096      524288          0.1265          1.0513          2.2207          2.8085       8.31x      22.20x
+     16384     2097152          0.1200          1.0755          2.2200          2.7229       8.96x      22.69x
+     65536     8388608          0.1257          1.0783          2.2854          3.1078       8.58x      24.72x
+    262144    33554432          0.1185          1.0595          2.2226          2.8340       8.94x      23.92x
+   1048576   134217728          0.1407          1.0630          2.3376          5.0341       7.56x      35.78x
+
+  Evolved-AG peak speedup vs AllGather: 8.96x
+  Evolved-AG avg speedup vs AllGather: 8.31x
+
+  Results saved to experiments/results/real_benchmark_results.json
+

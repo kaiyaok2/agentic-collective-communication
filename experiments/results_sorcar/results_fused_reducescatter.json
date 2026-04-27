@@ -1,0 +1,32 @@
+[
+  {
+    "template": "sorcar_cat_ag_sum_split",
+    "cost_score": 1.58,
+    "sim_time_us": 158.0,
+    "local_ops": 2,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 1,
+    "name": "sorcar:fused_reducescatter"
+  },
+  {
+    "template": "cat_ag_sum_split",
+    "cost_score": 2.16,
+    "sim_time_us": 216.0,
+    "local_ops": 4,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "baseline:cat_ag_sum_split"
+  },
+  {
+    "template": "per_tensor_rs",
+    "cost_score": 10.320000000000002,
+    "sim_time_us": 1032.0000000000002,
+    "local_ops": 8,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 0,
+    "name": "baseline:per_tensor_rs"
+  }
+]

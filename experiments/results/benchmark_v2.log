@@ -1,0 +1,87 @@
+======================================================================
+REAL AllToAllV BENCHMARK — trn1.32xlarge (MoE traffic)
+======================================================================
+  Hardware:    trn1.32xlarge x 1 (16 NeuronDevices, 32 NeuronCores)
+  Topology:    4x4 2D torus/node, 2 cores/device, 4 NeuronLinks/device @ 192 GB/s
+  Traffic:     MoE (Zipf s=1.2, shuffled expert assignment)
+  Iterations:  20 (warmup: 5)
+  Schedule:    [4, 3, 13, 12, 2, 15, 1, 7, 5, 11, 9, 14, 8, 6, 10]
+  Scope:       intra
+
+
+======================================================================
+  INTRA-NODE ONLY (32 ranks, NeuronLink) (32 ranks, 1 node(s))
+======================================================================
+--- nki_ag [NKI AGENT] (NKI @nki.jit AllGather, 1 collective, 0 XLA ops) ---
+  BENCH nki_ag shard=256 latency=0.8445ms
+  BENCH nki_ag shard=1024 latency=0.8662ms
+  BENCH nki_ag shard=4096 latency=0.8433ms
+  BENCH nki_ag shard=16384 latency=0.8618ms
+  BENCH nki_ag shard=65536 latency=0.8500ms
+
+--- evolved_ag [XLA BASELINE] (AllGather + index_select, 1 collective, 3 XLA ops) ---
+  BENCH evolved_ag shard=256 latency=0.1332ms
+  BENCH evolved_ag shard=1024 latency=0.1331ms
+  BENCH evolved_ag shard=4096 latency=0.1268ms
+  BENCH evolved_ag shard=16384 latency=0.1225ms
+  BENCH evolved_ag shard=65536 latency=0.1233ms
+
+--- torus_ring_ag [BASELINE] (1-hop Hamiltonian ring, 1 collective, 3 XLA ops) ---
+  BENCH torus_ring_ag shard=256 latency=0.1356ms
+  BENCH torus_ring_ag shard=1024 latency=0.1269ms
+  BENCH torus_ring_ag shard=4096 latency=0.1357ms
+  BENCH torus_ring_ag shard=16384 latency=0.1161ms
+  BENCH torus_ring_ag shard=65536 latency=0.1192ms
+
+--- twophase_ag [BASELINE] (row+col AllGather, 2 collectives, ~7 XLA ops) ---
+  BENCH twophase_ag shard=256 latency=0.2685ms
+  BENCH twophase_ag shard=1024 latency=0.2561ms
+  BENCH twophase_ag shard=4096 latency=0.2412ms
+  BENCH twophase_ag shard=16384 latency=0.2307ms
+  BENCH twophase_ag shard=65536 latency=0.2426ms
+
+--- allgather_slice [BASELINE] (naive AllGather + slice, 1 collective, 33 XLA ops) ---
+  BENCH allgather shard=256 latency=1.0287ms
+  BENCH allgather shard=1024 latency=1.0245ms
+  BENCH allgather shard=4096 latency=1.0469ms
+  BENCH allgather shard=16384 latency=1.0315ms
+  BENCH allgather shard=65536 latency=1.0691ms
+
+--- fused_alltoall [BASELINE] (single xm.all_to_all, 1 dispatch) ---
+  BENCH fused_alltoall shard=256 latency=1.1854ms
+  BENCH fused_alltoall shard=1024 latency=1.2060ms
+  BENCH fused_alltoall shard=4096 latency=1.1949ms
+  BENCH fused_alltoall shard=16384 latency=1.1997ms
+  BENCH fused_alltoall shard=65536 latency=1.2090ms
+
+--- hierarchical [BASELINE] (topology-aware, 15 inter-device steps) ---
+  BENCH hierarchical shard=256 latency=2.2039ms
+  BENCH hierarchical shard=1024 latency=2.2751ms
+  BENCH hierarchical shard=4096 latency=2.3301ms
+  BENCH hierarchical shard=16384 latency=2.2327ms
+  BENCH hierarchical shard=65536 latency=4.0582ms
+
+--- default_ring [BASELINE] (topology-unaware, 31 steps) ---
+  BENCH ring shard=256 latency=2.7005ms
+  BENCH ring shard=1024 latency=2.7124ms
+  BENCH ring shard=4096 latency=2.7117ms
+  BENCH ring shard=16384 latency=2.7975ms
+  BENCH ring shard=65536 latency=2.7901ms
+
+======================================================================
+COMPARISON: Intra-Node Only (32 ranks)
+  (32 ranks, 1 node(s))
+======================================================================
+     Shard       Total       NKI Agent     XLA idx_sel      Torus Ring       AllGather    Hierarchical    Default Ring     NKI/XLA
+   (elems)     (bytes)            (ms)            (ms)            (ms)            (ms)            (ms)            (ms)       ratio
+  ------------------------------------------------------------------------------------------------------------------------
+       256       32768          0.8445          0.1332          0.1356          1.0287          2.2039          2.7005       6.34x
+      1024      131072          0.8662          0.1331          0.1269          1.0245          2.2751          2.7124       6.51x
+      4096      524288          0.8433          0.1268          0.1357          1.0469          2.3301          2.7117       6.65x
+     16384     2097152          0.8618          0.1225          0.1161          1.0315          2.2327          2.7975       7.04x
+     65536     8388608          0.8500          0.1233          0.1192          1.0691          4.0582          2.7901       6.89x
+
+  NKI vs XLA index_select: best ratio 6.34x, avg 6.69x (< 1.0 = NKI wins)
+
+  Results saved to experiments/results/nki_benchmark_v2.json
+

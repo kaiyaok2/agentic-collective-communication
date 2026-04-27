@@ -1,0 +1,52 @@
+[
+  {
+    "template": "evolved_naive_ring_permute",
+    "cost_score": 1.9999999999999998,
+    "sim_time_us": 199.99999999999997,
+    "local_ops": 1,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "evo:naive_ring_permute_0"
+  },
+  {
+    "template": "evolved_flat_allgather",
+    "cost_score": 1.9999999999999998,
+    "sim_time_us": 199.99999999999997,
+    "local_ops": 1,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "evo:flat_allgather_1"
+  },
+  {
+    "template": "evolved_naive_ring_permute",
+    "cost_score": 1.9999999999999998,
+    "sim_time_us": 199.99999999999997,
+    "local_ops": 1,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "evo:naive_ring_permute_2"
+  },
+  {
+    "template": "flat_allgather",
+    "cost_score": 2.002,
+    "sim_time_us": 200.2,
+    "local_ops": 3,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "baseline:flat_allgather"
+  },
+  {
+    "template": "naive_ring_permute",
+    "cost_score": 125.99999999999999,
+    "sim_time_us": 12599.999999999998,
+    "local_ops": 63,
+    "num_collective_permute": 63,
+    "num_all_gather": 0,
+    "num_all_reduce": 0,
+    "name": "baseline:naive_ring_permute"
+  }
+]

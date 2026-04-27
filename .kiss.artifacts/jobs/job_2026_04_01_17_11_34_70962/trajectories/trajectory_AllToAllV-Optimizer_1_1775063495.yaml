@@ -1,0 +1,137 @@
+"arguments":
+  "constraints": |
+    - MUST NOT change function signatures or external API
+    - MUST maintain correctness (same input -> same output)
+    - ALLOWED: Internal optimizations, algorithm improvements, data structure changes
+  "feedback": "Previous performance: 0.1455. "
+  "original_code": |
+    def generate_schedule():
+        """Generate an AllToAllV permute_ring schedule for 32 ranks on a 4x4 torus
+        of 16 NeuronDevices (2 cores each).
+
+        Returns a list of 31 unique distances [1..31] representing the order
+        in which collective_permute steps are executed. At step i, every rank r
+        sends to (r + schedule[i]) % 32 and receives from (r - schedule[i]) % 32.
+
+        The goal is to minimize simulated latency by:
+          - Scheduling low-hop distances first (adjacent devices share links)
+          - Separating distances that contend for the same torus links
+          - Balancing link utilization across steps
+        """
+        # Default: sequential 1..31
+        return list(range(1, 32))
+"budget_used": 0.0
+"command": |-
+  kiss_baseline/run_baseline.py --pattern uniform --population 8 --generations 10 --islands 2
+"config":
+  "FAST_MODEL": |-
+    claude-haiku-4-5
+"function_map":
+- |-
+  finish
+"global_budget_used": 0.0
+"global_max_budget": 200.0
+"id": 1
+"is_agentic": true
+"max_steps": 5
+"max_tokens": 200000
+"messages":
+- "content": "You are an expert code optimizer. Your task is to improve the given\
+    \ code by optimizing it for better performance while maintaining correctness.\n\
+    \n## Instructions ##\n- Analyze the given code and identify optimization opportunities\n\
+    - Focus on performance improvements (speed, memory efficiency, algorithmic\n \
+    \ improvements)\n- Maintain correctness - the optimized code must produce the\
+    \ same results\n- You can optimize: algorithms, data structures, memory access\
+    \ patterns,\n  computation order\n- You MUST return ONLY the optimized code by\
+    \ calling the 'finish' tool with\n  the code as the 'result' argument.\n- The\
+    \ code should be a complete, runnable function or module\n\n## Original Code ##\n\
+    def generate_schedule():\n    \"\"\"Generate an AllToAllV permute_ring schedule\
+    \ for 32 ranks on a 4x4 torus\n    of 16 NeuronDevices (2 cores each).\n\n   \
+    \ Returns a list of 31 unique distances [1..31] representing the order\n    in\
+    \ which collective_permute steps are executed. At step i, every rank r\n    sends\
+    \ to (r + schedule[i]) % 32 and receives from (r - schedule[i]) % 32.\n\n    The\
+    \ goal is to minimize simulated latency by:\n      - Scheduling low-hop distances\
+    \ first (adjacent devices share links)\n      - Separating distances that contend\
+    \ for the same torus links\n      - Balancing link utilization across steps\n\
+    \    \"\"\"\n    # Default: sequential 1..31\n    return list(range(1, 32))\n\n\
+    \n## Evaluation Feedback ##\nPrevious performance: 0.1455. \n\n## Optimization\
+    \ Constraints ##\n- MUST NOT change function signatures or external API\n- MUST\
+    \ maintain correctness (same input -> same output)\n- ALLOWED: Internal optimizations,\
+    \ algorithm improvements, data structure changes\n\n\n\n## Domain Context: AllToAllV\
+    \ on Trainium trn1.32xlarge ##\n\nHardware:\n- 16 NeuronDevices in a 4x4 2D torus,\
+    \ 2 NeuronCores each (32 ranks total)\n- Each device has 4 bidirectional NeuronLinks\
+    \ (~192 GB/s each)\n- Intra-device communication (same device, different core)\
+    \ is free (shared HBM)\n\nThe schedule is a permutation of [1, 2, ..., 31] (distances).\n\
+    At step i with distance d = schedule[i]:\n  - Every rank r sends data to rank\
+    \ (r + d) % 32\n  - All transfers within a step run concurrently\n  - Steps execute\
+    \ sequentially\n\nKey optimization insights:\n- Distances that map to nearby devices\
+    \ (fewer hops) are cheaper\n- Two distances that route through the same torus\
+    \ links cause contention when\n  placed in adjacent steps\n- The 4x4 torus has\
+    \ wrap-around: device (row, col) connects to neighbors\n  at (row +/- 1) % 4 and\
+    \ (col +/- 1) % 4\n- Distances 16 (opposite on torus) always need 2 hops and share\
+    \ many links\n\nYour code MUST:\n1. Define a function `generate_schedule()` that\
+    \ returns a list of 31 integers\n2. The list must be a permutation of [1, 2, ...,\
+    \ 31]\n3. Return ONLY the function definition, no other code\n\n"
+  "role": |-
+    user
+  "timestamp": 1775063495
+  "unique_id": 0
+"model": |-
+  claude-sonnet-4-5
+"name": |-
+  AllToAllV-Optimizer
+"prompt_template": |+
+  You are an expert code optimizer. Your task is to improve the given code by optimizing it for better performance while maintaining correctness.
+
+  ## Instructions ##
+  - Analyze the given code and identify optimization opportunities
+  - Focus on performance improvements (speed, memory efficiency, algorithmic
+    improvements)
+  - Maintain correctness - the optimized code must produce the same results
+  - You can optimize: algorithms, data structures, memory access patterns,
+    computation order
+  - You MUST return ONLY the optimized code by calling the 'finish' tool with
+    the code as the 'result' argument.
+  - The code should be a complete, runnable function or module
+
+  ## Original Code ##
+  {original_code}
+
+  ## Evaluation Feedback ##
+  {feedback}
+
+  ## Optimization Constraints ##
+  {constraints}
+
+
+  ## Domain Context: AllToAllV on Trainium trn1.32xlarge ##
+
+  Hardware:
+  - 16 NeuronDevices in a 4x4 2D torus, 2 NeuronCores each (32 ranks total)
+  - Each device has 4 bidirectional NeuronLinks (~192 GB/s each)
+  - Intra-device communication (same device, different core) is free (shared HBM)
+
+  The schedule is a permutation of [1, 2, ..., 31] (distances).
+  At step i with distance d = schedule[i]:
+    - Every rank r sends data to rank (r + d) % 32
+    - All transfers within a step run concurrently
+    - Steps execute sequentially
+
+  Key optimization insights:
+  - Distances that map to nearby devices (fewer hops) are cheaper
+  - Two distances that route through the same torus links cause contention when
+    placed in adjacent steps
+  - The 4x4 torus has wrap-around: device (row, col) connects to neighbors
+    at (row +/- 1) % 4 and (col +/- 1) % 4
+  - Distances 16 (opposite on torus) always need 2 hops and share many links
+
+  Your code MUST:
+  1. Define a function `generate_schedule()` that returns a list of 31 integers
+  2. The list must be a permutation of [1, 2, ..., 31]
+  3. Return ONLY the function definition, no other code
+
+"run_end_timestamp": 1775063495
+"run_start_timestamp": 1775063495
+"step_count": 1
+"tokens_used": 0
+"total_budget": 1.0

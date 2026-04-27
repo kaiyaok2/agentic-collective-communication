@@ -1,0 +1,32 @@
+[
+  {
+    "template": "sorcar_index_select",
+    "cost_score": 1.29,
+    "sim_time_us": 129.0,
+    "local_ops": 1,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 0,
+    "name": "sorcar:uniform_a2a"
+  },
+  {
+    "template": "index_select",
+    "cost_score": 2.16,
+    "sim_time_us": 216.0,
+    "local_ops": 4,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "baseline:index_select"
+  },
+  {
+    "template": "slice_loop",
+    "cost_score": 11.44,
+    "sim_time_us": 1144.0,
+    "local_ops": 36,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "baseline:slice_loop"
+  }
+]

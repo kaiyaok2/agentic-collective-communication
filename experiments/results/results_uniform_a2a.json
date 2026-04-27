@@ -1,0 +1,82 @@
+[
+  {
+    "template": "evolved_slice_loop",
+    "cost_score": 2.004,
+    "sim_time_us": 200.4,
+    "local_ops": 5,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "evo:slice_loop_0"
+  },
+  {
+    "template": "evolved_ag_flat_extract",
+    "cost_score": 2.004,
+    "sim_time_us": 200.4,
+    "local_ops": 5,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "evo:ag_flat_extract_1"
+  },
+  {
+    "template": "evolved_allgather_reduce_scatter",
+    "cost_score": 2.004,
+    "sim_time_us": 200.4,
+    "local_ops": 5,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "evo:allgather_reduce_scatter_2"
+  },
+  {
+    "template": "evolved_permute_ring",
+    "cost_score": 2.004,
+    "sim_time_us": 200.4,
+    "local_ops": 5,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "evo:permute_ring_3"
+  },
+  {
+    "template": "ag_flat_extract",
+    "cost_score": 2.292,
+    "sim_time_us": 229.2,
+    "local_ops": 4,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "baseline:ag_flat_extract"
+  },
+  {
+    "template": "allgather_reduce_scatter",
+    "cost_score": 4.004,
+    "sim_time_us": 400.4,
+    "local_ops": 6,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "baseline:allgather_reduce_scatter"
+  },
+  {
+    "template": "slice_loop",
+    "cost_score": 20.534000000000002,
+    "sim_time_us": 2053.4,
+    "local_ops": 68,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "baseline:slice_loop"
+  },
+  {
+    "template": "permute_ring",
+    "cost_score": 144.23999999999998,
+    "sim_time_us": 14423.999999999998,
+    "local_ops": 127,
+    "num_collective_permute": 63,
+    "num_all_gather": 0,
+    "num_all_reduce": 0,
+    "name": "baseline:permute_ring"
+  }
+]

@@ -1,0 +1,76 @@
+/home/ubuntu/.local/lib/python3.12/site-packages/torch/_subclasses/functional_tensor.py:307: UserWarning: Failed to initialize NumPy: No module named 'numpy' (Triggered internally at /pytorch/torch/csrc/utils/tensor_numpy.cpp:84.)
+  cpu = _conversion_method_template(device=torch.device("cpu"))
+  Starting template: allgather
+  Baseline: 493.1 us, 0 permutes, 1 gathers
+
+  --- Evolution round 1 ---
+  Correctness: PASS
+  Benchmark: 493.1 us (0 permutes, 1 gathers)
+
+  --- Evolution round 2 ---
+  Correctness: PASS
+  Benchmark: 493.1 us (0 permutes, 1 gathers)
+
+  --- Evolution round 3 ---
+  Correctness: PASS
+  Benchmark: 493.1 us (0 permutes, 1 gathers)
+
+  --- Evolution round 4 ---
+  Correctness: PASS
+  Benchmark: 493.1 us (0 permutes, 1 gathers)
+
+  --- Evolution round 5 ---
+  INCORRECT: CRASH in collect phase: world=4 pattern=moe rank=0: RuntimeError: storage_module && PyModule_Check(storage_module) INTERNAL ASSERT FAILED at "/pytorch/torch/csrc/DynamicTypes.cpp":62, please report a bug to PyTorch. 
+
+=== FINAL RESULT ===
+sim_time_us: 493.1
+num_collective_permute: 0
+num_all_gather: 1
+total_steps: 1
+
+Best code:
+def evolved_alltoallv(x, send_counts, recv_counts, max_chunk,
+                      rank, world_size, num_devices, cores_per_device,
+                      collective_permute, all_gather):
+    """AllGather with canonical packing: single collective dispatch.
+
+    Re-packs data into a canonical layout (dest i at offset i*max_chunk),
+    gathers all ranks' packed buffers with one all_gather call, then
+    extracts slices using known offsets. Uses only 1 collective dispatch.
+    """
+    device = x.device
+    dtype = x.dtype
+
+    # Compute send offsets into the original input buffer
+    send_offsets = [0]
+    for c in send_counts[:-1]:
+        send_offsets.append(send_offsets[-1] + c)
+
+    recv_offsets = [0]
+    for c in recv_counts[:-1]:
+        recv_offsets.append(recv_offsets[-1] + c)
+
+    # Re-pack into canonical layout: slot i = data for rank i, padded to max_chunk
+    # This gives every rank the same buffer size and known extraction offsets.
+    pack_size = world_size * max_chunk
+    packed = torch.zeros(pack_size, device=device, dtype=dtype)
+    for i in range(world_size):
+        sc = send_counts[i]
+        if sc > 0:
+            packed[i * max_chunk:i * max_chunk + sc] =                 x[send_offsets[i]:send_offsets[i] + sc]
+
+    # Single all_gather: collect all ranks' canonical packed buffers
+    gathered = all_gather(packed.unsqueeze(0), dim=0)
+    gathered = gathered.view(world_size, pack_size)
+
+    # Extract: from source rank src, data for me is at offset rank*max_chunk
+    total_recv = sum(recv_counts)
+    output = torch.empty(total_recv, device=device, dtype=dtype)
+
+    for src in range(world_size):
+        count = recv_counts[src]
+        if count > 0:
+            output[recv_offsets[src]:recv_offsets[src] + count] =                 gathered[src, rank * max_chunk:rank * max_chunk + count]
+
+    return output
+
