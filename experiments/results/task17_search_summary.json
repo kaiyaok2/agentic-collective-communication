@@ -1,0 +1,20 @@
+{
+  "experiment": "Task 17: agentic search rerun for new collective routines",
+  "world_size": 224,
+  "nodes": 7,
+  "grad_ar": {
+    "status": "search completed (Phases 1-5)",
+    "simulator_winner": "baseline:flat_single_ar (5265.2 us sim time)",
+    "hardware_eval": "all candidates FAILED on Trainium HW benchmark due to autograd backward dispatch issue in the generic benchmark template (a pre-existing limitation of the search harness for problems whose outputs feed backward())",
+    "phase5_codegen": "runtime/trainium_grad_ar_7node.py written with the simulator winner (flat_single_ar)",
+    "production_runtime": "runtime/trainium_grad_ar.py retains the screening winner (async_back_to_back); training/train_olmoe10b.py imports from this primary path",
+    "notes": "Mirror of the existing trainium_alltoallv.py vs trainium_alltoallv_7node.py split: the _7node file is the agent_s simulator pick; the primary file is the manually-curated hardware-validated implementation"
+  },
+  "dxe": {
+    "status": "search aborted in Phase 2 (correctness/simulator)",
+    "failure": "search/correctness_test.py:TrackedTensor lacks .exp() and several other ops needed by the distributed-softmax pattern; the simulator was designed for AllToAllV-style ops and does not model distributed-loss routines",
+    "phase5_codegen": "skipped (no candidates to write)",
+    "production_runtime": "runtime/trainium_dxe.py retains the screening winner (async_back_to_back) from Task 16",
+    "blocker": "extending TrackedTensor to support .exp/.log/.gather/.where/.clamp would unblock the dxe search; estimated ~50 lines in search/correctness_test.py and several test-case adjustments"
+  }
+}

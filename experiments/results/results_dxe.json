@@ -1,0 +1,82 @@
+[
+  {
+    "template": "two_ar_nomax",
+    "cost_score": 55.095000000000006,
+    "sim_time_us": 5509.500000000001,
+    "local_ops": 11,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 2,
+    "name": "baseline:two_ar_nomax"
+  },
+  {
+    "template": "evolved_two_ar_nomax",
+    "cost_score": 55.095000000000006,
+    "sim_time_us": 5509.500000000001,
+    "local_ops": 11,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 2,
+    "name": "evo:two_ar_nomax_3"
+  },
+  {
+    "template": "async_back_to_back",
+    "cost_score": 55.325,
+    "sim_time_us": 5532.5,
+    "local_ops": 15,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 3,
+    "name": "baseline:async_back_to_back"
+  },
+  {
+    "template": "evolved_async_back_to_back",
+    "cost_score": 55.325,
+    "sim_time_us": 5532.5,
+    "local_ops": 15,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 3,
+    "name": "evo:async_back_to_back_1"
+  },
+  {
+    "template": "fused_sum_stack",
+    "cost_score": 55.435,
+    "sim_time_us": 5543.5,
+    "local_ops": 17,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 2,
+    "name": "baseline:fused_sum_stack"
+  },
+  {
+    "template": "evolved_fused_sum_stack",
+    "cost_score": 55.435,
+    "sim_time_us": 5543.5,
+    "local_ops": 17,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 2,
+    "name": "evo:fused_sum_stack_2"
+  },
+  {
+    "template": "three_ar",
+    "cost_score": 57.125,
+    "sim_time_us": 5712.5,
+    "local_ops": 15,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 3,
+    "name": "baseline:three_ar"
+  },
+  {
+    "template": "evolved_three_ar",
+    "cost_score": 57.125,
+    "sim_time_us": 5712.5,
+    "local_ops": 15,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 3,
+    "name": "evo:three_ar_0"
+  }
+]

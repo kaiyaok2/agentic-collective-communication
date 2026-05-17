@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Composing Collectives Above a Black-Box Vendor Library on AWS Trainium</title>
+<style>
+/* ------------------------------------------------------------------
+   A0 portrait poster (841 × 1189 mm, the same √2 ratio as A4).
+   Layout (top to bottom):
+     · title strip
+     · vivid 5-phase workflow overview (full width)
+     · two-column body: motivation+contributions | cost-model
+     · two-column body: results | per-call vs per-step
+     · footer
+   ------------------------------------------------------------------ */
+
+:root {
+  --primary:      #1f4e79;
+  --primary-dk:   #15375a;
+  --accent:       #c0504d;
+  --green:        #2e7d32;
+  --orange:       #d77f33;
+  --purple:       #6a4a8c;
+  --neutral:      #4a4a4a;
+  --light:        #f1f5fb;
+  --light2:       #fff;
+  --border:       #c9d3e2;
+}
+
+/* Physical size: 3 ft wide × 4 ft tall = 914 mm × 1219 mm = 36 × 48 in.
+   Same √(4/3) ≈ 1.155-ish portrait shape as a US "3 × 4 ft" academic
+   poster. Print at this physical size for the actual poster; the PDF
+   exported by render.py uses these exact dimensions. */
+@page { size: 914mm 1219mm; margin: 0; }
+
+html, body {
+  margin: 0; padding: 0;
+  background: #ddd;
+  font-family: "Helvetica Neue", "Segoe UI", "Liberation Sans", sans-serif;
+  color: #222;
+}
+
+.poster {
+  width: 914mm; height: 1219mm;
+  background: #fff;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: 78mm auto auto auto auto 26mm;
+  grid-template-columns: 1fr;
+  margin: 12px auto;
+  box-shadow: 0 0 16px rgba(0,0,0,0.18);
+  page-break-after: always;
+  overflow: hidden;
+}
+
+/* ---------- TITLE STRIP ---------- */
+.title-strip {
+  background: linear-gradient(120deg, var(--primary) 0%, var(--primary-dk) 100%);
+  color: #fff;
+  padding: 10mm 18mm;
+  display: grid;
+  grid-template-columns: 1fr 190mm;
+  align-items: center;
+  column-gap: 14mm;
+}
+.title-strip h1 {
+  font-size: 44pt;
+  font-weight: 700;
+  margin: 0 0 5mm 0;
+  line-height: 1.05;
+  letter-spacing: -0.5px;
+}
+.title-strip .sub {
+  font-size: 17pt;
+  color: #d6dff2;
+  font-weight: 300;
+  letter-spacing: 0.3px;
+  line-height: 1.4;
+}
+.title-strip .meta {
+  text-align: right;
+  font-size: 14pt;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4mm;
+}
+.title-strip .meta .logo {
+  height: 28mm; width: auto;
+  background: #fff;
+  border-radius: 3mm;
+  padding: 3mm 5mm;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+.title-strip .meta .author {
+  font-size: 17pt;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  margin-top: 1mm;
+}
+.title-strip .meta .email {
+  color: #d6dff2;
+  font-size: 12.5pt;
+  font-family: "Menlo", "Liberation Mono", monospace;
+  margin-top: -3mm;
+}
+.title-strip .meta .org {
+  color: #d6dff2;
+  font-size: 12pt;
+  font-family: "Menlo", "Liberation Mono", monospace;
+  line-height: 1.35;
+  margin-top: -1mm;
+}
+
+/* ---------- BAND HEADERS ---------- */
+.band {
+  padding: 8mm 14mm 4mm 14mm;
+  box-sizing: border-box;
+}
+.band-title {
+  font-size: 17pt;
+  font-weight: 700;
+  color: var(--primary);
+  margin: 0 0 4mm 0;
+  letter-spacing: -0.2px;
+  border-left: 6mm solid var(--primary);
+  padding-left: 4mm;
+  line-height: 1.0;
+}
+
+/* ---------- WORKFLOW FIG ---------- */
+.workflow-fig { display: block; width: 100%; max-height: 365mm; }
+.workflow-fig object { width: 100%; height: auto; display: block; }
+
+/* ---------- 2-COLUMN BODY ---------- */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10mm;
+  padding: 0mm 14mm 8mm 14mm;
+  box-sizing: border-box;
+  align-items: start;   /* don't stretch columns to equal height */
+}
+
+.section {
+  border: 1px solid var(--border);
+  border-radius: 4mm;
+  background: var(--light2);
+  padding: 6mm 7mm 6mm 7mm;
+  box-sizing: border-box;
+}
+.section.accent { background: var(--light); border-color: #b6c7e0; }
+.section h2 {
+  margin: 0 0 4mm 0;
+  font-size: 17pt;
+  color: var(--primary);
+  letter-spacing: -0.2px;
+  font-weight: 700;
+  padding-bottom: 2mm;
+  border-bottom: 2px solid var(--primary);
+}
+.section h3 {
+  margin: 4mm 0 2mm 0;
+  font-size: 13pt;
+  color: var(--primary-dk);
+  font-weight: 600;
+}
+.section p, .section li, .section td {
+  font-size: 13.5pt;
+  line-height: 1.50;
+  color: #222;
+}
+.section p { margin: 0 0 3mm 0; }
+.section ul { padding-left: 5mm; margin: 0 0 3mm 0; }
+.section li { margin-bottom: 2.4mm; }
+.section li b { color: var(--primary-dk); }
+
+.callout {
+  background: #fff7ed;
+  border-left: 4px solid var(--accent);
+  padding: 4mm 5mm;
+  border-radius: 0 3mm 3mm 0;
+  margin: 3mm 0;
+  font-size: 11.5pt;
+  line-height: 1.45;
+}
+.callout b { color: var(--accent); }
+
+.code {
+  font-family: "Menlo", "Liberation Mono", monospace;
+  font-size: 11.5pt;
+  background: #f6f8fb;
+  border: 1px solid var(--border);
+  border-radius: 2mm;
+  padding: 3mm 4mm;
+  white-space: pre-wrap;
+  color: #234;
+  margin: 3mm 0;
+  line-height: 1.4;
+}
+
+/* ---------- FIGURES inside sections ---------- */
+.fig {
+  margin: 0;
+  text-align: center;
+}
+.fig img, .fig object, .fig svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.fig .caption {
+  font-size: 10.5pt;
+  color: var(--neutral);
+  margin-top: 2mm;
+  font-style: italic;
+  text-align: left;
+  line-height: 1.35;
+}
+
+/* ---------- TABLES ---------- */
+table.results {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5pt;
+}
+table.results th, table.results td {
+  padding: 2.4mm 3mm;
+  border-bottom: 1px solid #d8e0ec;
+}
+table.results th {
+  text-align: left;
+  background: var(--light);
+  color: var(--primary-dk);
+  font-weight: 600;
+  border-bottom: 2px solid var(--primary);
+}
+table.results tr.agent td {
+  background: #f7faff;
+  font-weight: 600;
+}
+table.results th.num, table.results td.num {
+  text-align: right; font-variant-numeric: tabular-nums;
+}
+table.results td.win { color: var(--green); font-weight: 700; }
+
+table.compact { width: 100%; border-collapse: collapse; font-size: 12.5pt; }
+table.compact th, table.compact td {
+  padding: 2.0mm 2.6mm; border-bottom: 1px solid #e0e6ee;
+}
+table.compact th { background: var(--light); color: var(--primary-dk); text-align: left; }
+table.compact th.num, table.compact td.num {
+  text-align: right; font-variant-numeric: tabular-nums;
+}
+
+/* ---------- FOOTER ---------- */
+.footer {
+  border-top: 4px solid var(--primary);
+  padding: 6mm 14mm;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10.5pt;
+  background: #fafbfd;
+  color: #555;
+}
+.footer .repo {
+  font-family: "Menlo", "Liberation Mono", monospace;
+  color: var(--primary-dk);
+  font-size: 11.5pt;
+}
+
+</style>
+</head>
+<body>
+<div class="poster">
+
+  <!-- ========================= TITLE ========================= -->
+  <header class="title-strip">
+    <div>
+      <h1>Composing Collectives Above a Black-Box Vendor Library
+          on AWS Trainium</h1>
+      <div class="sub">
+        Profiling-driven search loop with a reward-hacking-free simulator.
+        Hardware profiling validates correctness; the simulator predicts
+        per-step training cost.
+      </div>
+    </div>
+    <div class="meta">
+      <img class="logo" src="figures/berkeley_logo.svg" alt="UC Berkeley">
+      <span class="author">Kaiyao Ke</span>
+      <span class="email">kaiyaoke@berkeley.edu</span>
+      <span class="org">github.com/kaiyaok2/agentic-collective-communication</span>
+    </div>
+  </header>
+
+  <!-- ========================= WORKFLOW BAND ========================= -->
+  <section class="band">
+    <h3 class="band-title">System overview</h3>
+    <figure class="workflow-fig">
+      <object data="figures/workflow.svg" type="image/svg+xml"></object>
+    </figure>
+  </section>
+
+  <!-- ========================= ROW 1: motivation + cost-model ========================= -->
+  <div class="two-col">
+
+    <section class="section accent">
+      <h2>Why this framing</h2>
+      <p>Trainium's collective library is <b>closed</b>. We can only
+      call its primitives (<code>xm.all_gather</code>,
+      <code>xm.reduce_scatter</code>, <code>xm.all_reduce</code>,
+      <code>xm.collective_permute</code>, <code>xm.all_to_all</code>)
+      and add local XLA ops around them. We search the
+      <b>composition space</b> one layer up.</p>
+      <table class="compact">
+        <tr>
+          <th>Prior work</th>
+          <th>Why it doesn't apply here</th>
+        </tr>
+        <tr>
+          <td><b>MSCCL / TACCL</b></td>
+          <td>Need open primitives + programmable schedules.</td>
+        </tr>
+        <tr>
+          <td><b>AlphaEvolve / FunSearch</b></td>
+          <td>Search algorithms; we compose a fixed primitive set.</td>
+        </tr>
+        <tr>
+          <td><b>AutoTVM / Triton</b></td>
+          <td>Search kernel impls; backend writes our kernels.</td>
+        </tr>
+      </table>
+
+      <h3 style="margin-top:5mm;">Main contributions</h3>
+      <ul>
+        <li><b>Reward-hacking-free simulator.</b>
+          Every cost-model term is grounded in measured device physics.
+          Metadata-op chains, Python-built index tensors, and
+          implicit-copy reshape patterns are priced at their actual
+          cost — the agent cannot game the score by swapping compute
+          ops for view ops.</li>
+        <li><b>Hardware profiling only checks correctness.</b>
+          The 20-iter on-Trainium microbench and 10-step bf16 training
+          validation are <i>gates</i>; the simulator's per-step
+          prediction is the ranker, because it captures NEFF cache
+          eviction and per-mark_step overhead the isolated microbench
+          misses.</li>
+        <li><b>Contiguity-aware implicit-copy charging.</b>
+          <code>reshape</code>/<code>contiguous</code> on a sub-region
+          view is charged at strided bandwidth; on a dense permutation
+          at sequential bandwidth. Detected from real tensor strides
+          at trace time — never disclosed to the LLM.</li>
+        <li><b>Closed-stack search loop, end-to-end validated.</b>
+          All four committed runtimes match or beat the
+          developer-written baseline at full 5000-step DeepSeek-MoE-Lite
+          training.</li>
+      </ul>
+    </section>
+
+    <section class="section">
+      <h2>Cost-model design</h2>
+      <p>Per-step training latency is predicted as:</p>
+      <div class="code">total_us =
+    Σ per_op_cost(op, copy_bytes_if_any)              ← local ops
+  + 2 × graph_launch_overhead                         ← per autograd Function
+  + num_dispatches × dispatch_overhead                ← per collective
+  + compilation_cost(largest_collective_tensor)
+        × load_events_per_run / training_steps        ← amortized NEFF reload
+  + bandwidth_term(volume / link_bw)
+  + cross_node_penalty</div>
+
+      <p style="margin-top:4mm;"><b>Five design choices keep the model
+      ungameable</b>:</p>
+      <ol style="padding-left:5mm; font-size:13.5pt; line-height:1.5;">
+        <li><code>graph_launch</code> paid <b>per mark_step pair</b>,
+          not per collective.</li>
+        <li>Every op has a <code>min_local_op_us</code> floor — metadata
+          stacks can't score near zero.</li>
+        <li>Pure view ops (<code>view</code>, <code>narrow</code>,
+          <code>permute</code>, <code>slice</code>, …) are floor-priced;
+          their isolated microbench is kernel-launch overhead, not
+          fused-graph cost.</li>
+        <li><code>reshape</code>/<code>contiguous</code> charge an
+          <b>implicit-copy term</b> when strides show a non-contiguous
+          source — two regimes, see figure.</li>
+        <li><code>index_select</code> and
+          <code>torch.tensor(python_list)</code> are <b>volume-scaled</b>
+          so a candidate can't hide an O(N) host-side build behind one
+          flat 29 µs cost.</li>
+      </ol>
+
+    </section>
+
+  </div>
+
+  <!-- ============== FIGURE BAND: dense vs sub-region copy ============== -->
+  <section class="band" style="padding: 0mm 14mm 8mm 14mm;">
+    <figure class="fig">
+      <object data="figures/cost_model.svg" type="image/svg+xml"></object>
+      <figcaption class="caption" style="text-align:center; margin-top:1mm;">
+        Dense-vs-sub-region detected from real tensor strides at trace
+        time. Without this distinction the agent either over-rewards a
+        <code>narrow → reshape</code> "trick" or mistakenly penalizes a
+        <code>permute → contiguous</code> packing pattern.
+      </figcaption>
+    </figure>
+  </section>
+
+  <!-- ========================= ROW 2: results + per-call vs per-step ========================= -->
+  <div class="two-col">
+
+    <section class="section accent">
+      <h2>Results — 5000-step DeepSeek-MoE-Lite</h2>
+      <figure class="fig">
+        <object data="figures/speedup.svg" type="image/svg+xml"></object>
+        <figcaption class="caption">
+          1× trn1.32xlarge, 32 ranks, bf16, full autograd backward,
+          <code>NEURON_NUM_RECENT_MODELS_TO_KEEP=1</code>.
+        </figcaption>
+      </figure>
+
+      <h3 style="margin-top:5mm;">Per-problem detail</h3>
+      <table class="results">
+        <tr>
+          <th>Problem (agent / baseline)</th>
+          <th class="num">per-call HW</th>
+          <th class="num">5000-step</th>
+          <th class="num">speedup</th>
+        </tr>
+        <tr class="agent">
+          <td>AllToAllV<br><span style="font-weight:400; color:#555; font-size:10pt;">pack+1 AG+index_select  /  AG+RS</span></td>
+          <td class="num">2.75 / 1.66</td>
+          <td class="num">655.1 / 816.0</td>
+          <td class="num win">1.246×</td>
+        </tr>
+        <tr class="agent">
+          <td>Uniform AllToAll<br><span style="font-weight:400; color:#555; font-size:10pt;">1 AG+slice loop+cat  /  AG+transpose+RS</span></td>
+          <td class="num">3.67 / 8.63</td>
+          <td class="num">655.8 / 816.5</td>
+          <td class="num win">1.245×</td>
+        </tr>
+        <tr class="agent">
+          <td>Fused ReduceScatter<br><span style="font-weight:400; color:#555; font-size:10pt;">rank-major pack+2 RS  /  per-tensor RS (8 disp.)</span></td>
+          <td class="num">2.33 / 1.46</td>
+          <td class="num">421.2 / 428.2</td>
+          <td class="num win">1.017×</td>
+        </tr>
+        <tr class="agent">
+          <td>Ring Attention KV<br><span style="font-weight:400; color:#555; font-size:10pt;">per-slot AG (2 disp.)  /  per-head naive (32)</span></td>
+          <td class="num">0.87 / 4.73</td>
+          <td class="num">466.9 / 474.0</td>
+          <td class="num win">1.015×</td>
+        </tr>
+      </table>
+      <p style="font-size:10.5pt; color:#555; margin-top:3mm;">
+        <i>per-call HW = 20-iter Trainium microbench, world=32,
+        training-equivalent shapes. 5000-step = avg per-step. Both
+        columns: agent / baseline.</i>
+      </p>
+    </section>
+
+    <section class="section">
+      <h2>Why the simulator is the ranker</h2>
+      <figure class="fig">
+        <object data="figures/disagreement.svg" type="image/svg+xml"></object>
+        <figcaption class="caption">
+          For AllToAllV and Fused RS the microbench prefers the
+          baseline, but training prefers the agent: warm NEFFs and no
+          surrounding compute in the microbench hide the per-mark_step
+          cost and NEFF cache eviction that dominate training.
+        </figcaption>
+      </figure>
+      <div class="callout">
+        <b>Phase 5 winner selection:</b> among candidates that pass
+        the HW microbench AND the 10-step bf16 training validation,
+        pick the lowest <i>simulator</i> score. HW checks gate
+        correctness; the simulator picks the per-step winner.
+      </div>
+
+      <h3>Cost &amp; reproducibility</h3>
+      <table class="compact">
+        <tr><th>Problem</th><th class="num">wall</th><th class="num">USD</th></tr>
+        <tr><td>AllToAllV</td><td class="num">35.2 min</td><td class="num">$3.14</td></tr>
+        <tr><td>Uniform AllToAll</td><td class="num">30.9 min</td><td class="num">$2.40</td></tr>
+        <tr><td>Fused ReduceScatter</td><td class="num">27.6 min</td><td class="num">$2.75</td></tr>
+        <tr><td>Ring Attention KV</td><td class="num">21.9 min</td><td class="num">$1.96</td></tr>
+        <tr style="border-top:2px solid var(--primary); font-weight:700;">
+          <td>Total</td><td class="num">115.6 min</td><td class="num">$10.25</td></tr>
+      </table>
+      <p style="font-size:10.5pt; color:#555; margin-top:3mm;">
+        Sonnet 4.6, <code>--max-rounds 8 --llm-candidates 3 --hw-eval</code>,
+        single trn1.32xlarge.
+      </p>
+    </section>
+
+  </div>
+
+  <!-- ========================= FOOTER ========================= -->
+  <footer class="footer">
+    <span>Composing collectives above a black-box vendor library on
+      AWS Trainium &nbsp;·&nbsp; profiling-driven, reward-hacking-free.</span>
+    <span class="repo">github.com/kaiyaok2/agentic-collective-communication</span>
+  </footer>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,36 @@
+{
+  "experiment": "Task 18: simulator cost-model fixes for grad_ar/dxe convergence",
+  "phase": "Phase 2 simulator scoring with improved cost model",
+  "world_size": 224,
+  "problem": "grad_ar",
+  "simulator_ranking_us": {
+    "baseline:flat_single_ar": 5286.2,
+    "baseline:bucket_32mb": 5286.2,
+    "evo:flat_single_ar_2": 5286.2,
+    "evo:bucket_32mb_3": 5286.2,
+    "baseline:async_back_to_back": 5812.0,
+    "evo:async_back_to_back_1": 5812.0,
+    "baseline:per_tensor_loop": 11392.0,
+    "evo:per_tensor_loop_0": 11392.0,
+    "baseline:hierarchical_intra_inter": 12032.0,
+    "evo:hierarchical_intra_inter_4": 12032.0
+  },
+  "hardware_reference_ms_from_task16_screening": {
+    "baseline:bucket_32mb": 1.18,
+    "baseline:async_back_to_back": 1.203,
+    "evo:bucket_32mb_3": 1.201,
+    "baseline:flat_single_ar": 1.237,
+    "evo:flat_single_ar_2": 1.262,
+    "baseline:per_tensor_loop": 1.353
+  },
+  "simulator_changes": [
+    "MockTorch.cat / MockTorch.stack now record output bytes (was 0).",
+    "CollectiveSimulator.estimate_latency and benchmark_xla_candidate_generic walk events in chronological order; back-to-back collectives amortize dispatch overhead (subsequent issues in a run pay ~10% of full setup).",
+    "cat / stack now get bytes-aware cost (floor + bytes / sequential memcpy bw).",
+    "TrackedTensor arithmetic dunders (__mul__/__add__/__sub__/__truediv__/__neg__/__mod__) now record into the op counter (was silent), so per-tensor-then-consume patterns differ from back-to-back-then-consume in the event stream.",
+    "Added _FUSED_ELEMENTWISE_OPS category whose ops get the per-op floor cost (reflects XLA HLO elementwise fusion) but still break the back-to-back collective run."
+  ],
+  "effect_on_ranking": "Before the cost-model fixes per_tensor_loop and async_back_to_back both scored 11360 us \u2014 the simulator could not distinguish them. After: per_tensor_loop 11392 us, async_back_to_back 5812 us \u2014 a 2x sim-time differentiation that captures EFA pipelining. flat_single_ar still wins by ~10% over async because the test-case tensors are small (4 KB cat cost is negligible at this scale).",
+  "why_not_answer_leaking": "Each cost-model change is physics-grounded: torch.cat literally copies bytes through HBM; EFA literally pipelines back-to-back NIC issues; XLA literally fuses adjacent elementwise ops into one kernel. The simulator never inspects which algorithm it is scoring \u2014 it only walks the recorded event stream. The agent still has to discover which algorithm best exploits these facts, and the simulator still picks a different winner from the HW winner (sim winner flat_single_ar at 5286 us; HW winner bucket_32mb at 1.180 ms) \u2014 proof that we did not bias the score toward async_back_to_back.",
+  "residual_gap": "HW shows bucket (1.180 ms), async (1.203 ms), and flat (1.237 ms) all within 5% of each other, while the simulator has them at 5286 / 5812 / 5286 us \u2014 a 10% gap between async and the 1-AR variants. Bounded by: (a) the dispatch-overhead constant (set by the LLM Phase-1 profiler) potentially under-pricing single ARs at large bytes; (b) the simulator not yet modeling that XLA fuses N elementwise muls into a single kernel (mul cost is the per-op floor, but per-op recording still overestimates fused-elementwise total). These are out of scope for this iteration."
+}

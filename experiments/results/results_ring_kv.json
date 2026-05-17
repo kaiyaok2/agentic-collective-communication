@@ -1,0 +1,72 @@
+[
+  {
+    "template": "evolved_joint_cat_allgather",
+    "cost_score": 53.51599999999999,
+    "sim_time_us": 5351.599999999999,
+    "local_ops": 68,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "evo:joint_cat_allgather_2"
+  },
+  {
+    "template": "evolved_naive_ring_permute",
+    "cost_score": 53.536,
+    "sim_time_us": 5353.6,
+    "local_ops": 70,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "evo:naive_ring_permute_3"
+  },
+  {
+    "template": "per_slot_allgather",
+    "cost_score": 53.81142857142857,
+    "sim_time_us": 5381.142857142857,
+    "local_ops": 6,
+    "num_collective_permute": 0,
+    "num_all_gather": 2,
+    "num_all_reduce": 0,
+    "name": "baseline:per_slot_allgather"
+  },
+  {
+    "template": "evolved_per_slot_allgather",
+    "cost_score": 53.81142857142857,
+    "sim_time_us": 5381.142857142857,
+    "local_ops": 6,
+    "num_collective_permute": 0,
+    "num_all_gather": 2,
+    "num_all_reduce": 0,
+    "name": "evo:per_slot_allgather_0"
+  },
+  {
+    "template": "joint_cat_allgather",
+    "cost_score": 60.710608,
+    "sim_time_us": 6071.0608,
+    "local_ops": 7,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "baseline:joint_cat_allgather"
+  },
+  {
+    "template": "per_chunk_per_part_allgather",
+    "cost_score": 115.14399999999999,
+    "sim_time_us": 11514.4,
+    "local_ops": 130,
+    "num_collective_permute": 0,
+    "num_all_gather": 32,
+    "num_all_reduce": 0,
+    "name": "baseline:per_chunk_per_part_allgather"
+  },
+  {
+    "template": "naive_ring_permute",
+    "cost_score": 173.7714285714286,
+    "sim_time_us": 17377.14285714286,
+    "local_ops": 62,
+    "num_collective_permute": 62,
+    "num_all_gather": 0,
+    "num_all_reduce": 0,
+    "name": "baseline:naive_ring_permute"
+  }
+]

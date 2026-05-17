@@ -1,0 +1,82 @@
+[
+  {
+    "template": "ag_flat_extract",
+    "cost_score": 59.91,
+    "sim_time_us": 5991.0,
+    "local_ops": 4,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "baseline:ag_flat_extract"
+  },
+  {
+    "template": "evolved_slice_loop",
+    "cost_score": 59.91,
+    "sim_time_us": 5991.0,
+    "local_ops": 4,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "evo:slice_loop_0"
+  },
+  {
+    "template": "evolved_ag_flat_extract",
+    "cost_score": 59.91,
+    "sim_time_us": 5991.0,
+    "local_ops": 4,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "evo:ag_flat_extract_1"
+  },
+  {
+    "template": "evolved_allgather_reduce_scatter",
+    "cost_score": 59.91,
+    "sim_time_us": 5991.0,
+    "local_ops": 4,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "evo:allgather_reduce_scatter_2"
+  },
+  {
+    "template": "evolved_permute_ring",
+    "cost_score": 59.91,
+    "sim_time_us": 5991.0,
+    "local_ops": 4,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "evo:permute_ring_3"
+  },
+  {
+    "template": "slice_loop",
+    "cost_score": 60.232,
+    "sim_time_us": 6023.2,
+    "local_ops": 36,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "baseline:slice_loop"
+  },
+  {
+    "template": "permute_ring",
+    "cost_score": 111.97714285714287,
+    "sim_time_us": 11197.714285714286,
+    "local_ops": 63,
+    "num_collective_permute": 31,
+    "num_all_gather": 0,
+    "num_all_reduce": 0,
+    "name": "baseline:permute_ring"
+  },
+  {
+    "template": "allgather_reduce_scatter",
+    "cost_score": 924.6988689173605,
+    "sim_time_us": 92469.88689173605,
+    "local_ops": 7,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "baseline:allgather_reduce_scatter"
+  }
+]

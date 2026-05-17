@@ -1,0 +1,32 @@
+/home/ubuntu/.local/lib/python3.12/site-packages/torch/_subclasses/functional_tensor.py:307: UserWarning: Failed to initialize NumPy: No module named 'numpy' (Triggered internally at /pytorch/torch/csrc/utils/tensor_numpy.cpp:84.)
+  cpu = _conversion_method_template(device=torch.device("cpu"))
+Traceback (most recent call last):
+  File "<string>", line 44, in <module>
+  File "/home/ubuntu/trainium-llm-search/search/template_evolution.py", line 339, in evolve
+    passed, details = test_candidate(candidate_fn)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/trainium-llm-search/search/correctness_test.py", line 366, in test_candidate
+    sim.resolve()
+  File "/home/ubuntu/trainium-llm-search/search/correctness_test.py", line 113, in resolve
+    gathered = torch.cat(ordered, dim=0)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: Sizes of tensors must match except in dimension 0. Expected size 64 but got size 96 for tensor number 1 in the list.
+  Starting template: allgather
+  Baseline: 493.1 us, 0 permutes, 1 gathers
+
+  --- Evolution round 1 ---
+  Correctness: PASS
+  Benchmark: 493.1 us (0 permutes, 1 gathers)
+
+  --- Evolution round 2 ---
+  INCORRECT: CRASH in collect phase: world=4 pattern=moe rank=0: IndexError: too many indices for tensor of dimension 2
+
+  --- Evolution round 3 ---
+  Correctness: PASS
+  Benchmark: 493.1 us (0 permutes, 1 gathers)
+
+  --- Evolution round 4 ---
+  Correctness: PASS
+  Benchmark: 493.1 us (0 permutes, 1 gathers)
+
+  --- Evolution round 5 ---

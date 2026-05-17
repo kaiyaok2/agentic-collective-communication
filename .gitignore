@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+*.pyo
+.env
+*.key
+*.pem
+# Neuron compiler / runtime profiling artifacts dropped in CWD by torchrun
+PostSPMDPassesExecutionDuration.txt
+log-neuron-cc.txt
+global_metric_store.json
+training/results/
+**/__pycache__/
+experiments/results/agent_rerun_*/
