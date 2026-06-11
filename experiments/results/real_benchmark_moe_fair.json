@@ -1,0 +1,107 @@
+{
+  "hardware": "trn1.32xlarge",
+  "world_size": 32,
+  "num_devices": 16,
+  "traffic_pattern": "moe",
+  "optimized_schedule": [
+    4,
+    3,
+    13,
+    12,
+    2,
+    15,
+    1,
+    7,
+    5,
+    11,
+    9,
+    14,
+    8,
+    6,
+    10
+  ],
+  "iters": 20,
+  "warmup": 5,
+  "comparison": [
+    {
+      "shard_size": 256,
+      "total_bytes": 32768,
+      "hierarchical_optimized_ms": 2.2345,
+      "default_ring_ms": 2.706,
+      "allgather_slice_ms": 1.0361,
+      "fused_alltoall_ms": null,
+      "speedup_vs_ring": 1.21,
+      "speedup_vs_allgather": 0.46
+    },
+    {
+      "shard_size": 1024,
+      "total_bytes": 131072,
+      "hierarchical_optimized_ms": 2.3494,
+      "default_ring_ms": 2.8017,
+      "allgather_slice_ms": 1.0525,
+      "fused_alltoall_ms": null,
+      "speedup_vs_ring": 1.19,
+      "speedup_vs_allgather": 0.45
+    },
+    {
+      "shard_size": 4096,
+      "total_bytes": 524288,
+      "hierarchical_optimized_ms": 2.3528,
+      "default_ring_ms": 2.7881,
+      "allgather_slice_ms": 1.0515,
+      "fused_alltoall_ms": null,
+      "speedup_vs_ring": 1.19,
+      "speedup_vs_allgather": 0.45
+    },
+    {
+      "shard_size": 16384,
+      "total_bytes": 2097152,
+      "hierarchical_optimized_ms": 2.2981,
+      "default_ring_ms": 2.7589,
+      "allgather_slice_ms": 1.052,
+      "fused_alltoall_ms": null,
+      "speedup_vs_ring": 1.2,
+      "speedup_vs_allgather": 0.46
+    },
+    {
+      "shard_size": 65536,
+      "total_bytes": 8388608,
+      "hierarchical_optimized_ms": 2.3503,
+      "default_ring_ms": 2.7135,
+      "allgather_slice_ms": 1.0639,
+      "fused_alltoall_ms": null,
+      "speedup_vs_ring": 1.15,
+      "speedup_vs_allgather": 0.45
+    },
+    {
+      "shard_size": 262144,
+      "total_bytes": 33554432,
+      "hierarchical_optimized_ms": 2.2902,
+      "default_ring_ms": 2.7317,
+      "allgather_slice_ms": 1.7914,
+      "fused_alltoall_ms": null,
+      "speedup_vs_ring": 1.19,
+      "speedup_vs_allgather": 0.78
+    },
+    {
+      "shard_size": 1048576,
+      "total_bytes": 134217728,
+      "hierarchical_optimized_ms": 2.3211,
+      "default_ring_ms": 2.7936,
+      "allgather_slice_ms": 1.0506,
+      "fused_alltoall_ms": null,
+      "speedup_vs_ring": 1.2,
+      "speedup_vs_allgather": 0.45
+    },
+    {
+      "shard_size": 4194304,
+      "total_bytes": 536870912,
+      "hierarchical_optimized_ms": 2.2259,
+      "default_ring_ms": 2.8069,
+      "allgather_slice_ms": 1.0469,
+      "fused_alltoall_ms": null,
+      "speedup_vs_ring": 1.26,
+      "speedup_vs_allgather": 0.47
+    }
+  ]
+}

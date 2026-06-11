@@ -1,0 +1,141 @@
+{
+  "hardware": "trn1.32xlarge x 2",
+  "world_size": 64,
+  "num_nodes": 2,
+  "num_devices": 32,
+  "traffic_pattern": "moe",
+  "optimized_schedule": [
+    4,
+    3,
+    13,
+    12,
+    2,
+    15,
+    1,
+    7,
+    5,
+    11,
+    9,
+    14,
+    8,
+    6,
+    10
+  ],
+  "iters": 20,
+  "warmup": 5,
+  "scope": "both",
+  "intra_comparison": [
+    {
+      "shard_size": 256,
+      "total_bytes": 32768,
+      "nki_ag_ms": 0.8528,
+      "evolved_ag_ms": 0.1345,
+      "allgather_slice_ms": 1.0401,
+      "hierarchical_optimized_ms": 2.319,
+      "default_ring_ms": 2.7769,
+      "fused_alltoall_ms": 2.1596,
+      "nki_vs_xla_ratio": 6.34
+    },
+    {
+      "shard_size": 1024,
+      "total_bytes": 131072,
+      "nki_ag_ms": 0.8616,
+      "evolved_ag_ms": 0.1434,
+      "allgather_slice_ms": 1.0419,
+      "hierarchical_optimized_ms": 2.2274,
+      "default_ring_ms": 2.7741,
+      "fused_alltoall_ms": 1.2038,
+      "nki_vs_xla_ratio": 6.01
+    },
+    {
+      "shard_size": 4096,
+      "total_bytes": 524288,
+      "nki_ag_ms": 0.8469,
+      "evolved_ag_ms": 0.2177,
+      "allgather_slice_ms": 1.9114,
+      "hierarchical_optimized_ms": 2.3326,
+      "default_ring_ms": 2.7627,
+      "fused_alltoall_ms": 1.208,
+      "nki_vs_xla_ratio": 3.89
+    },
+    {
+      "shard_size": 16384,
+      "total_bytes": 2097152,
+      "nki_ag_ms": 0.8821,
+      "evolved_ag_ms": 0.1253,
+      "allgather_slice_ms": 1.0583,
+      "hierarchical_optimized_ms": 2.2339,
+      "default_ring_ms": 2.7878,
+      "fused_alltoall_ms": 1.1891,
+      "nki_vs_xla_ratio": 7.04
+    },
+    {
+      "shard_size": 65536,
+      "total_bytes": 8388608,
+      "nki_ag_ms": 0.8849,
+      "evolved_ag_ms": 0.1269,
+      "allgather_slice_ms": 1.0558,
+      "hierarchical_optimized_ms": 2.2947,
+      "default_ring_ms": 2.7844,
+      "fused_alltoall_ms": 1.1974,
+      "nki_vs_xla_ratio": 6.97
+    }
+  ],
+  "full_comparison": [
+    {
+      "shard_size": 256,
+      "total_bytes": 65536,
+      "nki_ag_ms": 1.1012,
+      "evolved_ag_ms": 0.1345,
+      "allgather_slice_ms": 2.0419,
+      "hierarchical_optimized_ms": 4.5939,
+      "default_ring_ms": 5.8571,
+      "fused_alltoall_ms": 2.2497,
+      "nki_vs_xla_ratio": 8.19
+    },
+    {
+      "shard_size": 1024,
+      "total_bytes": 262144,
+      "nki_ag_ms": 1.1186,
+      "evolved_ag_ms": 0.2242,
+      "allgather_slice_ms": 3.7329,
+      "hierarchical_optimized_ms": 2.4714,
+      "default_ring_ms": 10.1649,
+      "fused_alltoall_ms": 2.3483,
+      "nki_vs_xla_ratio": 4.99
+    },
+    {
+      "shard_size": 4096,
+      "total_bytes": 1048576,
+      "nki_ag_ms": 1.2256,
+      "evolved_ag_ms": 0.1247,
+      "allgather_slice_ms": 3.6608,
+      "hierarchical_optimized_ms": 2.4417,
+      "default_ring_ms": 5.9339,
+      "fused_alltoall_ms": 4.1615,
+      "nki_vs_xla_ratio": 9.83
+    },
+    {
+      "shard_size": 16384,
+      "total_bytes": 4194304,
+      "nki_ag_ms": 1.1339,
+      "evolved_ag_ms": 0.1233,
+      "allgather_slice_ms": 2.018,
+      "hierarchical_optimized_ms": 2.4754,
+      "default_ring_ms": 5.907,
+      "fused_alltoall_ms": 2.2416,
+      "nki_vs_xla_ratio": 9.2
+    },
+    {
+      "shard_size": 65536,
+      "total_bytes": 16777216,
+      "nki_ag_ms": 1.0946,
+      "evolved_ag_ms": 0.1209,
+      "allgather_slice_ms": 2.0751,
+      "hierarchical_optimized_ms": 2.3144,
+      "default_ring_ms": 5.8035,
+      "fused_alltoall_ms": 2.2549,
+      "nki_vs_xla_ratio": 9.05
+    }
+  ]
+}

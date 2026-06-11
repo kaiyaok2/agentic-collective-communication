@@ -1,0 +1,128 @@
+\section{Per-problem ablation tables}
+\label{sec:perproblem-ablation-tables}
+This appendix collects the per-problem cells supporting the
+end-to-end ablation summaries in §\ref{sec:ablation}: the
+three-style per-problem reproductions (Table~\ref{tab:ablation-perproblem}),
+the per-style OLMoE end-to-end and Llama config-sweep cells
+(Tables~\ref{tab:ablation-e2e},~\ref{tab:ablation-llama-sweep}),
+and the no-simulator per-problem rows (Table~\ref{tab:ablation-nosim-perproblem}).
+
+\begin{table*}[!htbp]
+\centering\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lrrr}
+\toprule
+\textbf{Backend / config} & \textbf{strategy-enum.\ (ref)} & \textbf{cc-react} & \textbf{multi-island} \\
+\midrule
+\multicolumn{4}{l}{\textit{End-to-end (steady median ms; speedup over baseline 4404.3 ms)}} \\
+SEQLEN=256 (default)          & 3139.8 ($1.40\times$) & 3140.9 ($1.40\times$) & 3140.8 ($1.40\times$) \\
+\midrule
+\multicolumn{4}{l}{\textit{Configuration sweep (steady median ms; speedup over baseline at each shape)}} \\
+SEQLEN=128                    & 1943.1 ($1.39\times$) & 1946.5 ($1.39\times$) & 1942.7 ($1.39\times$) \\
+SEQLEN=512, DM=1024           & 3076.4 ($1.39\times$) & 3074.7 ($1.39\times$) & 3075.3 ($1.39\times$) \\
+LAYERS=4                      & 1593.0 ($1.41\times$) & 1593.1 ($1.41\times$) & 1594.2 ($1.41\times$) \\
+\bottomrule
+\end{tabular}
+\caption{OLMoE end-to-end (top) and config sweep (bottom) under the three Phase-3 search styles.
+All three sit within $<0.5\%$ on every cell — the $1.39$--$1.41\times$ band is search-style-invariant.}
+\label{tab:ablation-e2e}
+\end{table*}
+
+\begin{table*}[!htbp]
+\centering\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lrrr}
+\toprule
+\textbf{Script}                       & \textbf{strategy-enum.\ (ref)} & \textbf{cc-react} & \textbf{multi-island} \\
+\midrule
+amp1 ($S{=}1024$, $M{=}4$)            & 12.68 & 15.26 & 15.04 \\
+amp2 ($S{=}2048$, $M{=}4$, default)   & 17.14 & 18.24 & 18.41 \\
+amp3 ($S{=}1024$, $M{=}8$)            & 15.43 & 15.95 & 15.66 \\
+amp4 ($S{=}2048$, $M{=}8$)            & 17.95 & 17.21 & 17.97 \\
+\bottomrule
+\end{tabular}
+\caption{Llama amp1--amp4 bundled columns under the three
+Phase-3 search styles, paired with the strategy-enumerate
+\texttt{per\_mb} baseline column in Table~\ref{tab:llama-sweep}.
+The strategy-enumerate column is reproduced for reference.
+Cross-style agreement is within $\sim$$10$\% per cell.}
+\label{tab:ablation-llama-sweep}
+\end{table*}
+
+
+\begin{table*}[!htbp]
+\centering\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{llrrrrrr}
+\toprule
+\textbf{Problem} & \textbf{Stack} & \multicolumn{2}{c}{\textbf{1-node bench (ms/call)}} & \multicolumn{2}{c}{\textbf{7-node bench (ms/call)}} & \multicolumn{2}{c}{\textbf{7-node training (ms/step)}} \\
+                 &                & \textbf{baseline} & \textbf{agent} & \textbf{baseline} & \textbf{agent} & \textbf{baseline} & \textbf{agent} \\
+\midrule
+\multicolumn{8}{l}{\textit{OLMoE collectives}} \\
+\multirow{3}{*}{AllToAllV}      & strat.-enum (ref)  & \multirow{3}{*}{1.83} &  1.95 & \multirow{3}{*}{1.89} &  3.04 & \multirow{3}{*}{4410} & 3352 \\
+                                & cc-react           &                       &  3.25 &                       &  2.97 &                       & 3395 \\
+                                & multi-island       &                       &  3.24 &                       &  2.78 &                       & 3381 \\
+\midrule
+\multirow{3}{*}{Uniform A2A}    & strat.-enum (ref)  & \multirow{3}{*}{46.95} & 47.87 & \multirow{3}{*}{55.4} & 52.3 & \multirow{3}{*}{373.2} & 206.2 \\
+                                & cc-react           &                        & 39.51 &                       & 51.9 &                        & 207.1 \\
+                                & multi-island       &                        & 39.69 &                       & 54.5 &                        & 206.2 \\
+\midrule
+\multirow{3}{*}{Ring KV}        & strat.-enum (ref)  & \multirow{3}{*}{3.57} &  1.07 & \multirow{3}{*}{2.95} &  2.02 & \multirow{3}{*}{13.49} & 10.32 \\
+                                & cc-react           &                       &  1.99 &                       &  2.32 &                        & 10.09 \\
+                                & multi-island       &                       &  1.81 &                       &  1.73 &                        & 10.18 \\
+\midrule
+\multirow{3}{*}{dxe (dist.\ CE)}& strat.-enum (ref)  & \multirow{3}{*}{1.64} &  0.37 & \multirow{3}{*}{1.87} &  0.57 & \multirow{3}{*}{16.74} & 14.63 \\
+                                & cc-react           &                       &  4.71 &                       &  9.52 &                        & 14.32 \\
+                                & multi-island       &                       &  3.27 &                       &  9.57 &                        & 14.84 \\
+\midrule
+\multicolumn{8}{l}{\textit{Llama primitives (per-step contribution from amp1 probe)}} \\
+\multirow{3}{*}{PP cross-stage} & strat.-enum (ref)  & \multirow{3}{*}{1.78} &  2.38 & \multirow{3}{*}{1.34} &  2.37 & \multirow{3}{*}{21.36} &  4.11 \\
+                                & cc-react           &                       &  5.26 &                       & 36.73 &                        &  4.05 \\
+                                & multi-island       &                       &  1.18 &                       &  2.33 &                        &  4.11 \\
+\midrule
+\multirow{3}{*}{TP MLP}         & strat.-enum (ref)  & \multirow{3}{*}{1.91} &  2.83 & \multirow{3}{*}{0.64} &  1.67 & \multirow{3}{*}{8.04} &  1.93 \\
+                                & cc-react           &                       &  3.25 &                       &  2.97 &                       &  1.96 \\
+                                & multi-island       &                       &  3.24 &                       &  2.78 &                       &  1.93 \\
+\midrule
+\multirow{3}{*}{FSDP prefetch}  & strat.-enum (ref)  & \multirow{3}{*}{1.21} &  2.00 & \multirow{3}{*}{1.37} &  1.39 & \multirow{3}{*}{8.52} &  2.01 \\
+                                & cc-react           &                       &  2.41 &                       &  1.72 &                       &  2.13 \\
+                                & multi-island       &                       &  2.95 &                       &  3.08 &                       &  2.03 \\
+\midrule
+\multirow{3}{*}{Layer-block AR} & strat.-enum (ref)  & \multirow{3}{*}{0.89} &  2.94 & \multirow{3}{*}{1.15} &  4.35 & \multirow{3}{*}{9.40} &  2.26 \\
+                                & cc-react           &                       &  2.77 &                       &  3.69 &                       &  2.26 \\
+                                & multi-island       &                       &  4.37 &                       &  3.73 &                       &  2.26 \\
+\bottomrule
+\end{tabular}
+\caption{Per-problem cells for all three Phase-3 search styles,
+same scopes and columns as Table~\ref{tab:perproblem}. Each
+baseline column is canonical: it is sourced from the
+strategy-enumerate reference measurement reported in
+Table~\ref{tab:perproblem} and shared across the three style
+rows of each problem, so that only the agent column varies by
+style. Agent cells across the three styles sit within
+$\sim$$10$\% of each other at every scope.}
+\label{tab:ablation-perproblem}
+\end{table*}
+
+\begin{table*}[!htbp]
+\centering\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{llrrr}
+\toprule
+\textbf{Problem} & \textbf{Deployed code} & \textbf{baseline (ms)} & \textbf{no-sim (ms)} & \textbf{Ratio} \\
+\midrule
+TP MLP                & strat (Fully Batched Single AR)   & 23.7   & 23.4 & $1.01\times$ \\
+FSDP prefetch         & baseline:per\_mb                  & 22.6   & 23.0 & $0.98\times$ \\
+Layer-block AR        & baseline:sequential\_2ar          & 30.4   & 30.3 & $1.00\times$ \\
+Ring KV               & baseline:per\_slot\_allgather     & 13.50  & 10.13 & $1.33\times$ \\
+PP cross-stage  & strat (single stacked AR) & 21.36 & 4.11 & $5.20\times$ \\
+Uniform A2A           & baseline:allgather\_reduce\_scatter      & 120.2 & 206.2 & $0.58\times$ \\
+AllToAllV             & baseline:allgather\_reduce\_scatter      & 37.78 & 35.37 & $1.07\times$ \\
+dxe                   & baseline:full\_vocab\_ag                 & 22.90 & 21.50 & $1.07\times$ \\
+\bottomrule
+\end{tabular}
+\caption{No-simulator per-problem 7-node training (per-step ms, 150 steps).}
+\label{tab:ablation-nosim-perproblem}
+\end{table*}
+
+

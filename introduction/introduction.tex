@@ -1,0 +1,206 @@
+\section{Introduction}
+\label{sec:intro}
+
+Choosing the fastest collective-communication strategy for a
+distributed-training workload is challenging, and
+two prevailing methods have substantial limitations. Running each
+candidate strategy end-to-end on the actual workload is direct
+but costly: realistic GPU-cluster experiments are expensive,
+and the cost grows with the number of strategies tried.
+Ranking strategies by a cheap microbenchmark on small
+isolated calls is much cheaper, but on a Trainium cluster we
+show that multiple strategies that win microbenchmarks are
+materially \emph{slower} at actual training runs than a
+different strategy that loses in microbenchmarks
+(Figure~\ref{fig:disagree}). We call this \emph{cross-scope
+inversion}: moving an operation from an isolated microbenchmark
+into a real multi-rank training step changes the per-call cost,
+because the surrounding training graph changes how the runtime
+launches, fuses, and lays out tensors for the call.
+
+A third approach, scoring strategies against a cost-model
+simulator, has been explored in prior work
+(SimAI~\cite{wang2025simai},
+ASTRA-sim~\cite{rashidi2020astrasim,won2023astrasim2}). But
+existing simulators are written and tuned against a fixed
+reference configuration: the numbers they use internally ---
+per-collective bandwidth, the overhead each time the runtime
+launches a graph, when adjacent calls fuse, etc. --- drift
+across machines, model shapes, and library versions,
+and re-tuning them by hand for each new environment
+or training task is again costly. The
+simulator-based approach gets even harder on the closed-source
+vendor stacks production training increasingly runs on (AWS
+Trainium, Google TPU, Meta MTIA), because of two specific
+properties of these stacks.
+\textbf{(C1) No visibility into the runtime:} when an operation
+(e.g., \texttt{xm.all\_to\_all} from Trainium) is unexpectedly slow, developers
+cannot inspect the vendor library to see why --- its internals are
+not source-available, and there are limited per-primitive 
+configuration parameters to calibrate a simulator against.
+\textbf{(C2) No low-level control:} the vendor's collective
+primitives (\texttt{xm.all\_gather}, \texttt{xm.all\_to\_all},
+\dots) are called through a fixed API; there is no exposed
+schedule-level intermediate representation
+--- which, in the open-stack systems
+MSCCL~\cite{cowan2022msccl} and
+TACCL~\cite{shah2023taccl} target, is the surface that lets a
+user choose how chunks are split, routed through the network,
+or fused inside a collective.
+
+This paper introduces a new design that addresses each of
+these challenges.
+\textbf{For (C1)}, we approximate visibility into the closed
+runtime by having an LLM agent build a cost-model simulator
+on the target deployment itself: the LLM writes probing code
+that measures the simulator's internal numbers against the
+actual device, model shapes, and library version the workload
+will use. This does not require internal visibility into the
+runtime, but it gives a usable proxy for ``is this strategy
+fast for this specific task?'' whose estimates re-adapt to the
+deployment when any of the device, model, or library changes
+--- so the simulator stays workload-faithful where a
+hand-coded one would drift.
+\textbf{For (C2)}, we do not try to recover low-level control.
+We accept the vendor API as fixed and search one layer above
+it --- over which primitives to call, in what order, and how
+to reshape, pad, or slice the input/output tensors around each
+call. The LLM proposes strategies at this layer; the
+workload-calibrated simulator scores them; top-scoring
+strategies are validated on real hardware before deployment.
+
+One might ask: if the simulator's own internal numbers come
+from on-device probes, isn't this just the microbenchmark
+option in a different wrapper? Our ablation
+(\S\ref{sec:ablation-nosim}) is set up to answer exactly that.
+The difference is in \emph{what} we probe and \emph{how} we
+probe it. Our simulator encodes hardware-specific performance
+models, and the LLM is guided to calibrate them using probe
+workloads that resemble real model-training settings (real
+tensor shapes, full step boundaries, multi-rank dispatch
+patterns), rather than the small isolated calls a standalone
+microbenchmark would measure. The probes therefore capture
+behavior that small microbenchmarks miss, while remaining far
+cheaper than running a full training harness end-to-end on
+each candidate strategy. When we ablate the simulator and let
+the LLM rank strategies by its own small microbenchmarks
+instead, the $1.40\times$ OLMoE-10B speedup collapses to
+$1.00\times$: the LLM converges to structurally the same
+strategy practitioners already deploy, because microbench
+rankings are exactly what selected that strategy in the first
+place. In other words, the work-load-faithful simulator, not
+the LLM, is what picks the strategy that wins at actual
+training runs.
+
+
+\paragraph{Closed-stack collective communication library} A growing class of
+production training accelerators operates on proprietary collective communication libraries. AWS Trainium~\cite{aws_trainium_neuron,
+aws_trainium2_2024} --- 30--40\% better
+price-performance than NVIDIA H100 on transformer workloads and
+adopted at scale for Mixture-of-Expert (MoE) and Llama training --- ships a Neuron
+Runtime that exposes collectives only through the PyTorch/XLA
+integration (XLA = Accelerated Linear Algebra, PyTorch's
+compiler bridge to non-NVIDIA accelerators) --- i.e.\ as
+\texttt{xm.*} entry points such as
+\texttt{xm.\allowbreak{}all\_gather} --- behind which the Neuron
+compiler emits NEFF binaries (Neuron Executable File Format;
+the compiled artifact loaded onto each NeuronCore) from
+unpublished sources. There is no
+user-configurable schedule layer: per-collective chunking and
+network-interface-card (NIC) routing cannot be reached from
+above the runtime. Google TPU and Meta MTIA exhibit the same
+constraint: the programmable schedule surface that MSCCL- and
+TACCL-style synthesis depend on is not exposed. The schedule-synthesis paradigm
+of the open-stack era cannot be ported here in any straightforward
+way. Above the \texttt{xm.*} (or equivalent vendor) boundary, the
+design choice that remains is which primitive to call, in what
+order, and against what tensor layout. We refer to this as the \emph{strategy} layer,
+in contrast to the \emph{schedule} layer that MSCCL/TACCL
+operate on, which decides how each collective message is split
+into chunks, which network paths each chunk takes, and how the
+chunks are pipelined across devices. The strategy layer is less expressive
+but, as we show, contains strategies $1.4$--$3.2\times$ faster
+than the developer baseline.
+
+\paragraph{Related schedule-synthesis work and why it does not
+apply here.} Automated synthesis of collective-communication
+algorithms has been studied at the \emph{schedule} layer ---
+which message chunks move along which paths, in what order, against
+which network adapters. MSCCL and MSCCLang~\cite{cowan2022msccl}
+emit XML or DSL schedules for the NCCL/RCCL runtime~\cite{nvidia_nccl} to consume;
+TACCL~\cite{shah2023taccl} uses a sketch language and an SMT
+solver; AutoCCL~\cite{xu2025autoccl} adds tuning;
+SCCL~\cite{cai2021sccl} synthesizes Pareto-optimal algorithms
+from first principles. All share an infrastructural prerequisite:
+the underlying runtime exposes a programmable intermediate
+representation (IR) for the schedule.
+
+
+\paragraph{Validation and contributions.}
+We validate our design on the eight collective problems listed
+in Table~\ref{tab:problems} --- four that arise in
+Mixture-of-Expert (MoE) training~\cite{shazeer2017outrageously}
+and four that arise in dense-transformer (Llama-style) training
+--- on a 7-node \texttt{trn1.32xlarge} cluster (224 ranks).
+
+\begin{table}[h]
+\centering\scriptsize
+\setlength{\tabcolsep}{3pt}
+\setlength{\abovecaptionskip}{2pt}
+\setlength{\belowcaptionskip}{-2pt}
+\begin{tabular}{@{}p{0.28\columnwidth}p{0.67\columnwidth}@{}}
+\toprule
+\textbf{Problem} & \textbf{Role in the training step} \\
+\midrule
+\multicolumn{2}{@{}l}{\textit{MoE-side}} \\
+AllToAllV~\cite{lepikhin2021gshard}      & MoE token dispatch/combine; counts vary \\
+Uniform AllToAll~\cite{zhou2022expertchoice} & MoE dispatch/combine; counts equal \\
+Ring KV~\cite{liu2024ringattention}      & rotate KV shards around the rank ring \\
+Distributed CE~\cite{shoeybi2019megatron} & loss over rank-sharded vocabulary \\
+\midrule
+\multicolumn{2}{@{}l}{\textit{Llama-side}} \\
+PP cross-stage~\cite{huang2019gpipe}     & activations/grads between PP stages \\
+TP MLP~\cite{shoeybi2019megatron}        & all-reduce after MLP in tensor parallel \\
+FSDP weight prefetch~\cite{zhao2023pytorchfsdp} & gather sharded weights per layer \\
+Layer-block AR~\cite{korthikanti2023reducing} & all-reduce grads at layer blocks \\
+\bottomrule
+\end{tabular}
+\caption{The eight collective problems we evaluate.}
+\label{tab:problems}
+\end{table} The baseline we measure against is the
+\emph{internal-AWS-optimized strategy} AWS uses in production
+today to train large-scale MoE and dense transformer models on
+Trainium, built and maintained by five experienced AWS
+developers. On OLMoE-10B the deployed agent strategy delivers
+\textbf{1.40$\times$} steady-state step-time speedup with
+matched descent on a 2500-step
+real-OpenWebText~\cite{Gokaslan2019OpenWeb} AdamW run
+(Figure~\ref{fig:loss-curve}); on Llama-7B it delivers
+\textbf{3.24$\times$}. Per-primitive per-step speedups range
+$4$--$12\times$, above the end-to-end ratio because constant
+non-collective compute dilutes the headline.
+
+The contributions are
+(i)~to our knowledge the first system that finds faster
+collective-communication strategies on top of a closed-source
+vendor library, delivering \textbf{1.40$\times$} end-to-end on
+OLMoE-10B and \textbf{3.24$\times$} on Llama-7B over the
+production baseline;
+(ii)~a cost-model simulator whose per-term constants are
+re-fit per-environment by LLM-written on-device probes,
+keeping the simulator workload-faithful without
+hand-coding new probe scripts for each cluster; and
+(iii)~the closed-stack search loop combining the above with
+LLM-driven mutation and hardware validation, with code
+emitted as drop-in runtime modules and algorithm-equivalent
+descent verified on real tokens.
+
+\paragraph{Scope and generalization.} We instantiate our design
+on AWS Trainium. The six cost-model terms are Trainium-specific,
+but the categories they fall into (per-graph-launch overhead,
+per-collective bandwidth ceiling, device-vs.-host copy cost,
+runtime cache-reload cost) are general to closed-source vendor
+runtimes that compile their own collective binaries. Google TPU
+and Meta MTIA each expose closed equivalents; we expect the
+strategy-search design to port with the cost-model term set
+re-calibrated, and leave that to follow-up work.

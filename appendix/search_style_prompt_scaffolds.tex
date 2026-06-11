@@ -1,0 +1,69 @@
+\section{Search-style prompt scaffolds}
+\label{sec:search-prompts}
+
+The three Phase-3 search styles share the Phase-1 simulator and
+the Phase-4/5 gates but differ in how the LLM-time budget
+$B = 1 + K + 2R$ calls is spent. The three figures below show the
+system-prompt shape each style uses (paraphrased to one-page form;
+the full templates live in \texttt{experiments/run\_search.py}).
+
+\begin{figure}[!htbp]
+\centering
+\begin{BVerbatim}[fontsize=\footnotesize]
+[SYSTEM]
+You are designing a Trainium collective strategy.
+Stage 1 (1 call): emit K=5 structurally distinct
+  strategy sketches as (name, description) pairs.
+Stage 2 (K=5 calls): implement each sketch as
+  runnable Python; sandbox-validated at ws in {4,8}.
+Stage 3 (2*R=4 calls): refine top-2 by Sim score.
+  Each refine round: identify dominant cost term tau*
+  in {T_local, T_coll, T_launch, T_NEFF, T_net};
+  emit mutation s' that reduces tau*(s).
+[USER]
+Problem sig: <signature>
+Seed templates: <S_P with Sim scores>
+Theta (cost-model params): <flattened Phase-1 table>
+\end{BVerbatim}
+\caption{Strategy-enumerate prompt scaffold (default).}
+\label{fig:prompt-strat}
+\end{figure}
+
+\begin{figure}[!htbp]
+\centering
+\begin{BVerbatim}[fontsize=\footnotesize]
+[SYSTEM]
+You are a Trainium collective-strategy refiner.
+Run for 2*R*K = 20 ReAct turns. Each turn:
+  Thought: analyze current strategy's bottleneck.
+  Action: emit mutation s'.
+  Observation: simulator returns Sim(s') and a
+    per-term breakdown.
+Keep the lowest-Sim strategy.
+[USER]
+Problem sig: <signature>; seed: <s_0>
+Theta: <flattened>
+\end{BVerbatim}
+\caption{CC-ReAct prompt scaffold (single-trajectory).}
+\label{fig:prompt-ccreact}
+\end{figure}
+
+\begin{figure}[!htbp]
+\centering
+\begin{BVerbatim}[fontsize=\footnotesize]
+[SYSTEM]
+You are a parallel mutation operator. K=5 islands
+each hold one strategy. For r in 1..R rounds:
+  for each island i:
+    propose s'_i = M(s_i)  # LLM call
+    if Sim(s'_i) < Sim(s_i): s_i <- s'_i
+  every R/2 rounds, swap best of two random islands.
+Total: K*R = 20 calls.
+[USER]
+Seeds: <K samples drawn from S_P>
+Theta: <flattened>
+\end{BVerbatim}
+\caption{Multi-island GA prompt scaffold.}
+\label{fig:prompt-mi}
+\end{figure}
+

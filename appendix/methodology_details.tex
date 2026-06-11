@@ -1,0 +1,112 @@
+\section{Methodology details}
+\label{sec:methodology-details}
+
+\paragraph{Cluster-size generalization harness deltas.}
+\label{sec:3node-detail}
+At 3-node ($\text{ws}{=}96$): the OLMoE harness shrinks
+$\text{VOCAB} \to 96 \cdot 144 = 13{,}824$ and $\text{NEXP} \to 96$
+(one expert per rank) so the model fits cleanly without changing
+per-rank shape; cluster total parameter count drops from 11.3\,B
+at 7 nodes to 5.0\,B at 3 nodes. The Llama harness shrinks
+$\text{VOCAB}$ analogously and rounds $\text{HID}$ to 14400 (the
+nearest multiple of 96 above 14336).
+At 5-node ($\text{ws}{=}160$): the OLMoE harness sets
+$\text{VOCAB} = 160 \cdot 144 = 23{,}040$ and $\text{NEXP} = 160$;
+cluster total parameter count is $\approx$8.3\,B. The Llama harness
+keeps $\text{HID}{=}14400$ (already divisible by 160) and adjusts
+$\text{VOCAB}$ similarly. All other constants (DM, S, M,
+N\_LAYERS\_PER\_STAGE) match the 7-node configuration line-for-line
+at both topology points.
+
+\paragraph{Cost calculus that drives microbench-based evaluation.}
+A \texttt{trn1.32xlarge} node is \$21.50/hour on-demand; the 7-node
+setup our paper uses to expose Trainium-scale collective fabric
+behavior costs \textbf{\$150.50/hour} just in compute. Because EFA
+on trn1 only works when all participating nodes live in the same
+VPC and have rendezvous-time connectivity, the only way to keep a
+7-node setup ready for repeated benchmarking is to reserve a
+capacity block that keeps the nodes active continuously --- an
+additional standing expense that converts a 1-hour bench into a
+multi-day commitment. Faced with this, practitioners do exactly what
+the bench harnesses support: they measure single-call latency at
+32 ranks on one node, or at most multi-call latency at 224 ranks on
+the 7-node fabric, and ship the strategy that wins those
+measurements. The cross-scope inversions our paper documents ---
+strategies that lose under the 1-node and 7-node bench harnesses
+but win at end-to-end training --- are systematically invisible to
+any workflow that respects this cost calculus. The search loop we
+describe pays the bench-and-training cost once, in a few hours, and
+returns a deployable strategy that beats the bench-winning
+baseline by \textbf{1.40$\times$} at training scale on OLMoE-10B for
+a one-time strategy-enumerate search cost of $\sim$\$19 across the
+eight collective problems.
+
+
+\paragraph{Late-phase probe and steady-state median.}
+Per-call training-scope latency is measured with a steady-state-only \texttt{.item()} probe
+inside the autograd \texttt{Function}'s
+\texttt{forward}/\texttt{backward}, gated by two envvars
+(\texttt{PROBE\_START\_STEP} and \texttt{PROBE\_END\_STEP}) so the
+probe only runs in a late window of the training step range. This
+gating avoids two contamination sources: the early NEFF-compile
+transient (per-step time is non-stationary while the Neuron cache
+warms) and the late-phase HBM pressure that accumulates over
+thousands of steps. For the small per-problem training scripts
+(one primitive under test, small model) the gated \texttt{.item()}
+probes succeed and give accurate per-call latency; this is the
+source of the TP MLP, FSDP prefetch, Layer-block AR, and
+PP cross-stage cells in Table~\ref{tab:perproblem}. For the full
+OLMoE-10B 7-node end-to-end script
+(\texttt{training/train\_olmoe10b.py}) the \texttt{.item()} host
+syncs still drive the Neuron HBM allocator past its working-set
+budget even with late-phase gating; we revert to
+\texttt{xm.add\_step\_closure(...)} for the AllToAllV / dxe
+per-call timing (silent / less precise but consistent). End-to-end step time is measured uniformly across both
+harnesses as the warmup-dropped median of
+\texttt{step\_times\_ms[$k$:]} with $k$ chosen to skip the
+NEFF-compile transient.
+
+
+\paragraph{Why bench-losing strategies still win at training scope.}
+Figure~\ref{fig:disagree} makes the cross-scope inversion
+concrete on the majority of problems where it appears: at the
+1-node bench scope the baseline beats the agent on AllToAllV
+($1.83/1.95{=}0.94\times$), PP cross-stage
+($1.78/2.38{=}0.75\times$), TP MLP ($1.91/2.83{=}0.67\times$),
+FSDP ($1.21/2.00{=}0.61\times$), and Layer-block AR
+($0.89/2.94{=}0.30\times$), yet the agent wins once the same
+strategy is exercised at 7-node training scale. Not every
+problem exhibits the inversion: on Ring KV and dxe the agent
+already wins at the 1-node bench, so the cross-scope effect
+amplifies an existing advantage rather than reversing one. The developer baselines are
+established SOTA precisely \emph{because} that is what 1-node
+microbenchmarks reward. The agent search loop changes the calculus
+directly: each search style completes the eight collective problems
+in \textbf{56 wall-minutes} (strategy-enumerate),
+\textbf{75 wall-minutes} (cc-react), or \textbf{78 wall-minutes}
+(multi-island) on the 7-node cluster at $\sim$\$19 of Sonnet~4.5
+tokens per style (per-search average \$2.40). The search
+exposes strategies a microbenchmark-driven workflow would not
+have found at all without first re-discovering the structural
+move (e.g.\ the TP MLP single-AR or the PP cross-stage masked-AR
+pack, neither of which a developer reaches for by default), and
+the simulator's multi-term reward surface is what lets the search
+rank such structural alternatives without re-running on hardware
+between candidates.
+
+
+\paragraph{Search cost and reproducibility.}
+eight collective problems in $\sim$$1$--$1.3$ wall-hours on the
+7-node cluster with Claude Sonnet~4.5 as the mutation oracle:
+\textbf{56 min} (strategy-enumerate), \textbf{75 min} (cc-react),
+\textbf{78 min} (multi-island), at $\sim$\$19 of Sonnet~4.5
+list-price tokens per style (per-search average \$2.40).
+Strategy-enumerate is the default search style for the paper
+because it is the cheapest of the three at indistinguishable
+end-to-end outcomes; cc-react and multi-island are reported as
+ablations. The 7-node end-to-end runs (OLMoE and Llama, in the
+two subsections below) are one-shot validations outside the search
+budget; reproducing each is one \texttt{torchrun} per backend stack.
+
+
+

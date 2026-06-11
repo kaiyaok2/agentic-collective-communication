@@ -1,0 +1,151 @@
+{
+  "hardware": "trn1.32xlarge x 2",
+  "world_size": 64,
+  "num_nodes": 2,
+  "num_devices": 32,
+  "traffic_pattern": "moe",
+  "optimized_schedule": [
+    4,
+    3,
+    13,
+    12,
+    2,
+    15,
+    1,
+    7,
+    5,
+    11,
+    9,
+    14,
+    8,
+    6,
+    10
+  ],
+  "iters": 20,
+  "warmup": 5,
+  "scope": "both",
+  "intra_comparison": [
+    {
+      "shard_size": 256,
+      "total_bytes": 32768,
+      "nki_ag_ms": 0.8648,
+      "evolved_ag_ms": 0.1269,
+      "ag_reduce_scatter_ms": 0.7186,
+      "allgather_slice_ms": 1.035,
+      "hierarchical_optimized_ms": 2.8694,
+      "default_ring_ms": 3.0073,
+      "fused_alltoall_ms": 2.2566,
+      "nki_vs_xla_ratio": 6.81
+    },
+    {
+      "shard_size": 1024,
+      "total_bytes": 131072,
+      "nki_ag_ms": 0.8938,
+      "evolved_ag_ms": 0.1357,
+      "ag_reduce_scatter_ms": 0.7267,
+      "allgather_slice_ms": 1.8903,
+      "hierarchical_optimized_ms": 2.2052,
+      "default_ring_ms": 2.8236,
+      "fused_alltoall_ms": 1.1945,
+      "nki_vs_xla_ratio": 6.59
+    },
+    {
+      "shard_size": 4096,
+      "total_bytes": 524288,
+      "nki_ag_ms": 0.9089,
+      "evolved_ag_ms": 0.1321,
+      "ag_reduce_scatter_ms": 0.7292,
+      "allgather_slice_ms": 1.0608,
+      "hierarchical_optimized_ms": 2.2345,
+      "default_ring_ms": 2.7822,
+      "fused_alltoall_ms": 1.1953,
+      "nki_vs_xla_ratio": 6.88
+    },
+    {
+      "shard_size": 16384,
+      "total_bytes": 2097152,
+      "nki_ag_ms": 0.8692,
+      "evolved_ag_ms": 0.1227,
+      "ag_reduce_scatter_ms": 0.7394,
+      "allgather_slice_ms": 1.0461,
+      "hierarchical_optimized_ms": 2.2368,
+      "default_ring_ms": 2.8062,
+      "fused_alltoall_ms": 1.1958,
+      "nki_vs_xla_ratio": 7.08
+    },
+    {
+      "shard_size": 65536,
+      "total_bytes": 8388608,
+      "nki_ag_ms": 0.8769,
+      "evolved_ag_ms": 0.1274,
+      "ag_reduce_scatter_ms": 0.7288,
+      "allgather_slice_ms": 1.06,
+      "hierarchical_optimized_ms": 2.4996,
+      "default_ring_ms": 2.7159,
+      "fused_alltoall_ms": 1.2016,
+      "nki_vs_xla_ratio": 6.88
+    }
+  ],
+  "full_comparison": [
+    {
+      "shard_size": 256,
+      "total_bytes": 65536,
+      "nki_ag_ms": 1.0712,
+      "evolved_ag_ms": 0.135,
+      "ag_reduce_scatter_ms": 1.097,
+      "allgather_slice_ms": 2.0514,
+      "hierarchical_optimized_ms": 2.5473,
+      "default_ring_ms": 5.8893,
+      "fused_alltoall_ms": 4.1305,
+      "nki_vs_xla_ratio": 7.93
+    },
+    {
+      "shard_size": 1024,
+      "total_bytes": 262144,
+      "nki_ag_ms": 1.1204,
+      "evolved_ag_ms": 0.132,
+      "ag_reduce_scatter_ms": 1.183,
+      "allgather_slice_ms": 2.103,
+      "hierarchical_optimized_ms": 4.2009,
+      "default_ring_ms": 5.9579,
+      "fused_alltoall_ms": 2.2495,
+      "nki_vs_xla_ratio": 8.49
+    },
+    {
+      "shard_size": 4096,
+      "total_bytes": 1048576,
+      "nki_ag_ms": 1.1488,
+      "evolved_ag_ms": 0.1187,
+      "ag_reduce_scatter_ms": 2.0615,
+      "allgather_slice_ms": 2.032,
+      "hierarchical_optimized_ms": 2.4727,
+      "default_ring_ms": 5.8749,
+      "fused_alltoall_ms": 2.2203,
+      "nki_vs_xla_ratio": 9.68
+    },
+    {
+      "shard_size": 16384,
+      "total_bytes": 4194304,
+      "nki_ag_ms": 1.1344,
+      "evolved_ag_ms": 0.1942,
+      "ag_reduce_scatter_ms": 1.1674,
+      "allgather_slice_ms": 3.5569,
+      "hierarchical_optimized_ms": 4.1831,
+      "default_ring_ms": 5.8355,
+      "fused_alltoall_ms": 2.2562,
+      "nki_vs_xla_ratio": 5.84
+    },
+    {
+      "shard_size": 65536,
+      "total_bytes": 16777216,
+      "nki_ag_ms": 1.1684,
+      "evolved_ag_ms": 0.1284,
+      "ag_reduce_scatter_ms": 1.196,
+      "allgather_slice_ms": 3.6175,
+      "hierarchical_optimized_ms": 2.3543,
+      "default_ring_ms": 6.1164,
+      "fused_alltoall_ms": 4.2927,
+      "nki_vs_xla_ratio": 9.1
+    }
+  ]
+}

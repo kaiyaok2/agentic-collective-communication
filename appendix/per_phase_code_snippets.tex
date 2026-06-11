@@ -1,0 +1,76 @@
+\section{Per-phase code snippets}
+\label{sec:phase-code}
+
+Each of the five phases corresponds to a compact entry point in
+the codebase. The five figures below show the call shapes; the
+full implementations live in \texttt{search/run\_search.py}.
+
+\begin{figure}[!htbp]
+\centering
+\begin{BVerbatim}[fontsize=\footnotesize]
+toolbox = build_calibration_tools(
+    hw=trainium_7node)
+Theta = M.calibrate(toolbox, max_calls=12)
+# Theta = (Theta_net, Theta_launch, Theta_NEFF,
+#         Theta_copy, Theta_neff_cache)
+Sim = BuildCost(Theta)
+\end{BVerbatim}
+\caption{Phase 1 --- calibration.}
+\label{fig:phase1}
+\end{figure}
+
+\begin{figure}[!htbp]
+\centering
+\begin{BVerbatim}[fontsize=\footnotesize]
+pool = []
+for s in S_P:
+    if Verify(s, ref, ws={4,8}):
+        pool.append((s, Sim(s)))
+pool.sort(key=lambda x: x[1])  # by Sim
+\end{BVerbatim}
+\caption{Phase 2 --- baseline evaluation.}
+\label{fig:phase2}
+\end{figure}
+
+\begin{figure}[!htbp]
+\centering
+\begin{BVerbatim}[fontsize=\footnotesize]
+C = InitPool(S_P, sigma)
+# sigma in {strat-enum, cc-react, multi-island}
+for r in range(R):
+    s_prime = M.propose(C, Theta)
+    if not Verify(s_prime, ref): continue
+    score = Sim(s_prime)
+    C.add(s_prime, score,
+          sigma_specific=True)
+\end{BVerbatim}
+\caption{Phase 3 --- LLM-driven search.}
+\label{fig:phase3}
+\end{figure}
+
+\begin{figure}[!htbp]
+\centering
+\begin{BVerbatim}[fontsize=\footnotesize]
+for s in C.survivors():
+    t_hw = Microbench(s, hw, iters=20)
+    shape_ok = ShapeGate(s, hw)
+    tv_ok = TVGate(s, hw)
+    if not (shape_ok and tv_ok):
+        s = M.recover(s)  # up to 2 attempts
+\end{BVerbatim}
+\caption{Phase 4 --- hardware validation.}
+\label{fig:phase4}
+\end{figure}
+
+\begin{figure}[!htbp]
+\centering
+\begin{BVerbatim}[fontsize=\footnotesize]
+s_star = min(survived, key=Sim)
+emit(f"runtime/trainium_{P.name}.py",
+     s_star)
+deploy_to(hw)
+\end{BVerbatim}
+\caption{Phase 5 --- code generation.}
+\label{fig:phase5}
+\end{figure}
+

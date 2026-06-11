@@ -1,0 +1,117 @@
+\section{Cost-model implementation details}
+\label{sec:cost-impl}
+
+This appendix collects the implementation-level details factored
+out of §\ref{sec:cost} so the main text can stay at the
+formula-and-idea level.
+
+\subsection{Per-op floors and TrackedTensor recording}
+\label{sec:cost-impl-local}
+
+Pure-metadata view ops --- \texttt{view}, \texttt{narrow},
+\texttt{transpose}, \texttt{permute}, \texttt{expand},
+\texttt{squeeze}, \texttt{unsqueeze}, \texttt{flatten},
+\texttt{slice} --- pay exactly the per-op floor; charging their
+isolated-microbench cost (dominated by \texttt{mark\_step}
+overhead) would penalize slice-loop chains that XLA actually fuses
+inside one graph. The
+\texttt{\_FUSED\_ELEMENTWISE\_OPS} category
+floor-prices \texttt{mul}/\texttt{add}/\texttt{sub}/\texttt{div}/\texttt{mod}/\texttt{neg}
+because adjacent elementwise ops fuse into one HLO kernel.
+\texttt{TrackedTensor} overrides Python arithmetic dunders to
+record into the same op counter the named-function calls use;
+without this an algorithm that interleaves \texttt{*\,inv} between
+\texttt{xm.all\_reduce} calls becomes event-stream-indistinguishable
+from one that does not, and the back-to-back amortization in
+§\ref{sec:cost-impl-coll} cannot disambiguate the two. The bytes
+$b$ in every bytes-aware rule come from the actual PyTorch tensor
+at trace time, not from declared shape.
+
+\subsection{Four-tier amortization fitting}
+\label{sec:cost-impl-coll}
+
+The $\alpha_i$ coefficients are fit at Phase~1.
+\texttt{measure\_back\_to\_back\_amortization}
+returns total wall-clock time for $N$ back-to-back
+\texttt{xm.all\_reduce} calls in one \texttt{mark\_step} graph at
+configurable depth. When the LLM has probed at least depths
+$\{1, 2, 4, 8\}$, the framework auto-fits each $\alpha_i$ as the
+marginal per-issue cost in tier $i$ divided by the depth-1 (full)
+cost. On a 7-node trn1.32xlarge cluster co-located in a single VPC
+(AWS's per-account network isolation boundary, which the EFA
+fabric requires because EFA peers must share an L2 broadcast
+domain), the fit reliably converges to
+$(\alpha_1, \alpha_2, \alpha_3) \approx (0.30, 0.10, 0.02)$ and
+would re-fit if the EFA pipeline depth changes. The back-to-back
+run resets on any non-free-XLA-op (which is why the
+arithmetic-dunder recording from §\ref{sec:cost-impl-local} is
+load-bearing).
+
+\subsection{Launch and NEFF-reload constants}
+\label{sec:cost-impl-launch}
+
+The factor 2 in $T_{\text{launch}} = 2\,\ell\,m$ covers the
+forward \texttt{mark\_step} and the implicit backward
+\texttt{mark\_step} PyTorch/XLA inserts before
+\texttt{loss.backward()} returns. The simulator AST-derives an
+outer-loop graph-launch tax that contributes to $m$: each outer
+\texttt{for m in range(M)} / \texttt{range(N\_MB)} /
+\texttt{range(num\_microbatches)} loop (or any outer loop
+containing an explicit \texttt{xm.mark\_step()}) charges
+$2 \times \texttt{per\_graph\_neff\_load\_us}$ (default
+$200\,\mu$s, doubled for fwd$+$bwd). Inner per-tensor / per-bucket
+loops (\texttt{for g in rep\_grads}, \texttt{for bk in buckets})
+do not pay this tax: at training scale the candidate function is
+called once per step and those inner ops fuse into a single
+back-to-back NEFF chain.
+
+\subsection{Structural terms: fusion-credit, HBM safety,
+primitive-viability}
+\label{sec:cost-impl-struct}
+
+Fusion-credit discount factor is set per cluster by the same
+Phase-1 calibration that fits $\alpha_i$; on our cluster the
+constant is $0.30$, fit against bundled-vs-per-microbatch HW
+measurements across the three Llama-side model-extension
+primitives in §\ref{sec:eval-llama}.
+
+HBM safety uses default budget $2$\,GB/core, scale $10{,}000\,\mu$s.
+The AST recognizes hardcoded byte-budget assignments
+(\texttt{bucket\_bytes = 32 << 20}, \texttt{chunk\_bytes},
+\texttt{partition\_bytes}, and their uppercase /
+\texttt{max\_*\_bytes} / \texttt{*\_byte\_limit} /
+\texttt{*\_cap\_bytes} variants) and clamps the simulated peak by
+this cap before evaluating the quadratic penalty. The same cap
+propagates to the \texttt{scaled\_bytes} of
+\texttt{cat}/\texttt{stack}/\texttt{reshape}/\texttt{contiguous}
+ops and to the \texttt{scaled\_max\_bytes} input of
+$C(b_{\max})$; this prevents a bucketed algorithm from being
+charged for a $\sim$30\,GB scaled tensor it never actually
+materializes. The compilation-cost extrapolation $\hat C(b)$ also
+uses the clamped value to avoid log-linear blowup past the largest
+calibration sample.
+
+Primitive-viability terms encode two real HW failure modes:
+\texttt{xm.collective\_permute} ring patterns at world size $>64$
+trigger a documented Trainium compiler SIGABRT; an
+\texttt{xm.all\_reduce} payload past the Neuron Runtime's
+per-collective tensor-size limit fails at
+\texttt{LoadCollectives}. Both receive $+\infty$ cost.
+
+\subsection{Phase-5 gate fallback and rationale}
+\label{sec:cost-impl-phase5}
+
+The HW microbench runs 20 iterations of the isolated candidate
+call under \texttt{xla.step()} (this boundary forces a fresh
+\texttt{mark\_step} graph per iteration, reporting steady-state
+cost rather than a once-amortized compile). The training-validation
+harness runs a 10-step bf16 training pass on an 8-layer DIM=1024
+synthetic LM, bf16-only because that is Trainium's native
+execution precision. When no Phase-3 candidate clears both gates
+(e.g., every mutation tried to use a cluster-broken primitive at
+training scale), Phase~5 falls back to the lowest-simulator-score
+\emph{baseline} template --- a human-written seed known to compile
+and run on this hardware --- rather than deploying a sim-only
+winner that cannot load. This fallback was never triggered on the
+eight problems evaluated; it is a robustness safety rail.
+

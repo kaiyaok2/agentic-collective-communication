@@ -1,0 +1,102 @@
+[
+  {
+    "template": "packed_split2_rs",
+    "cost_score": 68.7147,
+    "sim_time_us": 6871.469999999999,
+    "local_ops": 21,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 0,
+    "name": "baseline:packed_split2_rs"
+  },
+  {
+    "template": "evolved_packed_split2_rs",
+    "cost_score": 68.7147,
+    "sim_time_us": 6871.469999999999,
+    "local_ops": 21,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 0,
+    "name": "evo:packed_split2_rs_2"
+  },
+  {
+    "template": "evolved_packed_split4_rs",
+    "cost_score": 70.62708333333333,
+    "sim_time_us": 7062.708333333333,
+    "local_ops": 273,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 0,
+    "name": "evo:packed_split4_rs_3"
+  },
+  {
+    "template": "packed_split4_rs",
+    "cost_score": 73.09428333333334,
+    "sim_time_us": 7309.428333333333,
+    "local_ops": 33,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 0,
+    "name": "baseline:packed_split4_rs"
+  },
+  {
+    "template": "per_tensor_rs",
+    "cost_score": 74.37187499999999,
+    "sim_time_us": 7437.187499999999,
+    "local_ops": 8,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 0,
+    "name": "baseline:per_tensor_rs"
+  },
+  {
+    "template": "evolved_per_tensor_rs",
+    "cost_score": 74.37187499999999,
+    "sim_time_us": 7437.187499999999,
+    "local_ops": 8,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 0,
+    "name": "evo:per_tensor_rs_0"
+  },
+  {
+    "template": "cat_ag_sum_split",
+    "cost_score": 327.22450000000003,
+    "sim_time_us": 32722.45,
+    "local_ops": 4,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "baseline:cat_ag_sum_split"
+  },
+  {
+    "template": "evolved_cat_ag_sum_split",
+    "cost_score": 327.22450000000003,
+    "sim_time_us": 32722.45,
+    "local_ops": 4,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "evo:cat_ag_sum_split_1"
+  },
+  {
+    "template": "evolved_packed_one_rs",
+    "cost_score": 329.8445,
+    "sim_time_us": 32984.45,
+    "local_ops": 266,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 0,
+    "name": "evo:packed_one_rs_4"
+  },
+  {
+    "template": "packed_one_rs",
+    "cost_score": 332.22769999999997,
+    "sim_time_us": 33222.77,
+    "local_ops": 14,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 0,
+    "name": "baseline:packed_one_rs"
+  }
+]

@@ -1,0 +1,53 @@
+{
+  "hardware": "trn1.32xlarge",
+  "world_size": 32,
+  "num_devices": 16,
+  "optimized_schedule": [
+    4,
+    3,
+    13,
+    12,
+    2,
+    15,
+    1,
+    7,
+    5,
+    11,
+    9,
+    14,
+    8,
+    6,
+    10
+  ],
+  "iters": 10,
+  "warmup": 3,
+  "comparison": [
+    {
+      "shard_size": 262144,
+      "total_bytes": 33554432,
+      "hierarchical_optimized_ms": 2.7893,
+      "default_ring_ms": 2.0757,
+      "allgather_slice_ms": 0.8849,
+      "speedup_vs_ring": 0.74,
+      "speedup_vs_allgather": 0.32
+    },
+    {
+      "shard_size": 1048576,
+      "total_bytes": 134217728,
+      "hierarchical_optimized_ms": 2.7807,
+      "default_ring_ms": 2.1373,
+      "allgather_slice_ms": 0.8719,
+      "speedup_vs_ring": 0.77,
+      "speedup_vs_allgather": 0.31
+    },
+    {
+      "shard_size": 4194304,
+      "total_bytes": 536870912,
+      "hierarchical_optimized_ms": 1.4786,
+      "default_ring_ms": 3.7196,
+      "allgather_slice_ms": 0.8865,
+      "speedup_vs_ring": 2.52,
+      "speedup_vs_allgather": 0.6
+    }
+  ]
+}

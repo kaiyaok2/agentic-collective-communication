@@ -1,0 +1,8 @@
+\section{Conclusion}
+\label{sec:conclusion}
+
+We presented a search loop that finds faster collective-communication strategies on top of a closed-source vendor library, where two structural properties make optimization hard: (C1) no visibility 
+into the runtime's behavior, and (C2) no low-level control over how primitives are scheduled. For (C1), we have an LLM agent build a cost-model simulator on the target deployment itself, calibrating its internal numbers against the actual device, model, and library version — so the simulator stays workload-faithful. For (C2), we accept the vendor API as fixed and search one layer above it, over which primitives to call, in what order, and with what tensor pre- and post-processing. On AWS Trainium the deployed strategies deliver 1.40× end-to-end on OLMoE-10B (with algorithm-equivalent descent on real OpenWebText) and 3.24× on Llama-7B over an internal-AWS-optimized production baseline. An ablation that hides the simulator from the LLM collapses the OLMoE speedup back to 1.00×, confirming that the on-device-calibrated simulator — not the LLM — is what picks the strategy that actually wins at real training runs.
+
+\newpage
+
