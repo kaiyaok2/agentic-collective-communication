@@ -1,0 +1,198 @@
+======================================================================
+Collective Search Pipeline: Problem P_92 (5-Phase)
+Pattern: moe | LLM: True | HW eval: False
+======================================================================
+
+======================================================================
+[Phase 1] Agent Hardware Profiling — LLM Builds Simulator
+======================================================================
+  Model: opus | max_turns: 15
+  [Turn 1] Bedrock error: An error occurred (ValidationException) when calling the InvokeModel operation: `temperature` is deprecated for this model.
+
+  Simulator config:
+    collective_dispatch_overhead_us = 0.0
+    local_op_overhead_us = 0.0
+    link_bandwidth_gbps = 0.0
+    link_latency_us = 0.0
+    unsupported_primitives = ['all_to_all']
+    Simulator built: False
+    Simulator validated: False
+    Config complete: False
+  Agent config incomplete, using defaults
+Trainium cluster topology (2 node(s)):
+  Nodes: 2, Devices: 32, Cores: 64
+  NeuronLink BW: 192.0 GB/s, Latency: 0.5 us
+  EFA BW: 12.5 GB/s x 8 adapters/node, Latency: 5.0 us
+  Max hops: 4, Avg hops: 1.50
+  Hardware constraints: unsupported primitives = ['all_to_all']
+  [Phase 1 done] pipeline_amort_alphas = (1.000, 1.000, 1.000)
+
+======================================================================
+[Phase 2] Baseline Evaluation: Problem P_92
+======================================================================
+  baseline_ar_bcast: 5160.0 us, 1 local ops, 0 ag, 1 ar, 0 cp
+
+  Best baseline: baseline:baseline_ar_bcast (5160.0 us)
+
+======================================================================
+[Phase 3 / Strategy-Enumerate] Problem P_92
+======================================================================
+  K=5 strategies, R=4 refinement rounds per top-2 (budget ~14 LLM calls)
+  Enumerated 5 strategies:
+    1. All-reduce sum broadcast: Single xm.all_reduce(SUM) on the full (N,) tensor where rank 0 holds the data an...
+    2. Local recomputation, zero collectives: Every rank independently computes x[i] = (i - N//2)**2 via torch.arange since th...
+    3. Broadcast from source rank: Use a single collective_broadcast (or all_reduce emulation) rooted at rank 0 to ...
+    4. Sharded all-gather assembly: Rank 0 packs its N values into a world_size-sharded layout (N/world_size per ran...
+    5. Reduce-scatter + all-gather chain: Perform reduce_scatter on the (N,) buffer to produce N/world_size shards (each r...
+  Strategy 1 (All-reduce sum broadcast) test/bench exception: NameError: name '_strat_run_hw_gate' is not defined
+  Strategy 2 (Local recomputation, zero collectives) INCORRECT: CRASH in collect pass 0: world=4 pattern=uniform rank=0: TypeError: unsupported operand type(s) for 
+  Strategy 3 (Broadcast from source rank) test/bench exception: NameError: name '_strat_run_hw_gate' is not defined
+  Strategy 4 (Sharded all-gather assembly) test/bench exception: NameError: name '_strat_run_hw_gate' is not defined
+  Strategy 5 (Reduce-scatter + all-gather chain) test/bench exception: NameError: name '_strat_run_hw_gate' is not defined
+  No correct candidates from strategy enumeration; falling back to multi-island.
+
+======================================================================
+[Phase 3] Multi-island Template Evolution: Problem P_92
+======================================================================
+  Islands (3): ['baseline_ar_bcast', 'baseline_ar_bcast', 'baseline_ar_bcast']
+
+  --- Island 1/3: baseline_ar_bcast ---
+  Starting template: baseline_ar_bcast (XLA)
+  Baseline: 5160.0 us, 0 permutes, 0 gathers, 1 local ops
+
+  --- Evolution round 1 ---
+  INCORRECT: CRASH in collect pass 0: world=4 pattern=uniform rank=0: TypeError: unsupported operand type(s) for ** or pow(): 'TrackedTensor' and 'int'
+
+  --- Evolution round 2 ---
+  INCORRECT: CRASH in collect pass 0: world=4 pattern=uniform rank=0: TypeError: unsupported operand type(s) for ** or pow(): 'TrackedTensor' and 'int'
+
+  --- Evolution round 3 ---
+  INCORRECT: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no attribute 'int32'
+
+  --- Evolution round 4 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 2.0 us (0 permutes, 0 gathers, 2 local ops)
+  NEW BEST: 2.0 us (100.0% improvement)
+
+  --- Evolution round 5 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 1.0 us (0 permutes, 0 gathers, 1 local ops)
+  NEW BEST: 1.0 us (50.0% improvement)
+
+  --- Evolution round 6 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 1.0 us (0 permutes, 0 gathers, 1 local ops)
+
+  --- Evolution round 7 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 1.0 us (0 permutes, 0 gathers, 1 local ops)
+
+  --- Evolution round 8 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 1.0 us (0 permutes, 0 gathers, 1 local ops)
+
+  --- Island 2/3: baseline_ar_bcast ---
+  Starting template: baseline_ar_bcast (XLA)
+  Baseline: 5160.0 us, 0 permutes, 0 gathers, 1 local ops
+
+  --- Evolution round 1 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 2.0 us (0 permutes, 0 gathers, 2 local ops)
+  NEW BEST: 2.0 us (100.0% improvement)
+
+  --- Evolution round 2 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 2.0 us (0 permutes, 0 gathers, 2 local ops)
+
+  --- Evolution round 3 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 2.0 us (0 permutes, 0 gathers, 2 local ops)
+
+  --- Evolution round 4 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 2.0 us (0 permutes, 0 gathers, 2 local ops)
+
+  --- Evolution round 5 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 2.0 us (0 permutes, 0 gathers, 2 local ops)
+
+  --- Evolution round 6 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 2.0 us (0 permutes, 0 gathers, 2 local ops)
+
+  --- Evolution round 7 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 2.0 us (0 permutes, 0 gathers, 2 local ops)
+
+  --- Evolution round 8 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 1.0 us (0 permutes, 0 gathers, 1 local ops)
+  NEW BEST: 1.0 us (50.0% improvement)
+
+  --- Island 3/3: baseline_ar_bcast ---
+  Starting template: baseline_ar_bcast (XLA)
+  Baseline: 5160.0 us, 0 permutes, 0 gathers, 1 local ops
+
+  --- Evolution round 1 ---
+  INCORRECT: CRASH in collect pass 0: world=4 pattern=uniform rank=0: TypeError: unsupported operand type(s) for ** or pow(): 'TrackedTensor' and 'int'
+
+  --- Evolution round 2 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 2.0 us (0 permutes, 0 gathers, 2 local ops)
+  NEW BEST: 2.0 us (100.0% improvement)
+
+  --- Evolution round 3 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 2.0 us (0 permutes, 0 gathers, 2 local ops)
+
+  --- Evolution round 4 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 2.0 us (0 permutes, 0 gathers, 2 local ops)
+
+  --- Evolution round 5 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 2.0 us (0 permutes, 0 gathers, 2 local ops)
+
+  --- Evolution round 6 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 1.0 us (0 permutes, 0 gathers, 1 local ops)
+  NEW BEST: 1.0 us (50.0% improvement)
+
+  --- Evolution round 7 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 1.0 us (0 permutes, 0 gathers, 1 local ops)
+
+  --- Evolution round 8 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 1.0 us (0 permutes, 0 gathers, 1 local ops)
+
+  Evolution complete. 4 total candidates.
+  Best: evo:baseline_ar_bcast_0 (1.0 us, 1 local ops)
+
+======================================================================
+RANKING (post-evolution, pre-hardware)
+======================================================================
+  1. evo:baseline_ar_bcast_0: 1.0 us, 1 ops
+  2. evo:baseline_ar_bcast_1: 1.0 us, 1 ops
+  3. evo:baseline_ar_bcast_2: 1.0 us, 1 ops
+  4. baseline:baseline_ar_bcast: 5160.0 us, 1 ops
+
+Simulator winner: evo:baseline_ar_bcast_0 (sim=1.0 us)
+
+======================================================================
+[Phase 4b] Training-shape gate (all candidates): Problem P_92
+======================================================================
+  PASS evo:baseline_ar_bcast_0
+  PASS evo:baseline_ar_bcast_1
+  PASS evo:baseline_ar_bcast_2
+  PASS baseline:baseline_ar_bcast
+  Summary: 4 pass / 0 fail / 0 skip (total 4)
+
+======================================================================
+[Phase 5] Code Generation → runtime/trainium_bimodal_dist_bcast.py
+======================================================================
+  Winner: evo:baseline_ar_bcast_0
+  Score: 0.010, SimTime: 1.0 us, Local ops: 1
+  Results: /tmp/novel_strat_bimodal_dist_bcast/results_bimodal_dist_bcast.json
+  Generated: runtime/trainium_bimodal_dist_bcast_2node.py
+

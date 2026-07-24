@@ -1,0 +1,80 @@
+==== 2026-07-24T00:33:02+00:00 kiss mod_sq_bcast ====
+{
+  "problem": "mod_sq_bcast",
+  "wall_seconds": 221.3709499835968,
+  "baseline_sim_time_us": 5160.0,
+  "best_sim_time_us": 7.0,
+  "best_name": "kiss_4",
+  "n_score_calls": 5,
+  "target_score": null,
+  "hit_target": false
+}==== 2026-07-24T00:38:37+00:00 kiss xor_grid_bcast ====
+{
+  "problem": "xor_grid_bcast",
+  "wall_seconds": 70.4555778503418,
+  "baseline_sim_time_us": 5160.0,
+  "best_sim_time_us": 72.0,
+  "best_name": "kiss_3",
+  "n_score_calls": 3,
+  "target_score": null,
+  "hit_target": false
+}==== 2026-07-24T00:41:26+00:00 kiss popcount_bcast ====
+{
+  "problem": "popcount_bcast",
+  "wall_seconds": 186.41441226005554,
+  "baseline_sim_time_us": 5160.0,
+  "best_sim_time_us": 29.0,
+  "best_name": "kiss_5",
+  "n_score_calls": 5,
+  "target_score": null,
+  "hit_target": false
+}==== 2026-07-24T00:46:19+00:00 kiss triangle_num_bcast ====
+{
+  "problem": "triangle_num_bcast",
+  "wall_seconds": 63.40562987327576,
+  "baseline_sim_time_us": 5160.0,
+  "best_sim_time_us": 3.0,
+  "best_name": "kiss_1",
+  "n_score_calls": 1,
+  "target_score": null,
+  "hit_target": false
+}==== 2026-07-24T00:49:14+00:00 kiss sign_alt_bcast ====
+{
+  "problem": "sign_alt_bcast",
+  "wall_seconds": 69.48695778846741,
+  "baseline_sim_time_us": 5160.0,
+  "best_sim_time_us": 7.0,
+  "best_name": "kiss_1",
+  "n_score_calls": 2,
+  "target_score": null,
+  "hit_target": false
+}==== 2026-07-24T00:51:57+00:00 kiss bimodal_dist_bcast ====
+{
+  "problem": "bimodal_dist_bcast",
+  "wall_seconds": 90.77367162704468,
+  "baseline_sim_time_us": 5160.0,
+  "best_sim_time_us": 3.0,
+  "best_name": "kiss_3",
+  "n_score_calls": 3,
+  "target_score": null,
+  "hit_target": false
+}==== 2026-07-24T00:55:03+00:00 strat mod_sq_bcast ====
+  Winner: evo:baseline_ar_bcast_0
+  Score: 0.020, SimTime: 2.0 us, Local ops: 2
+==== 2026-07-24T00:58:26+00:00 strat xor_grid_bcast ====
+  Winner: baseline:baseline_ar_bcast
+  Score: 51.600, SimTime: 5160.0 us, Local ops: 1
+==== 2026-07-24T01:01:33+00:00 strat popcount_bcast ====
+  Winner: evo:baseline_ar_bcast_1
+  Score: 0.190, SimTime: 19.0 us, Local ops: 19
+==== 2026-07-24T01:05:33+00:00 strat triangle_num_bcast ====
+  Winner: evo:baseline_ar_bcast_0
+  Score: 0.030, SimTime: 3.0 us, Local ops: 3
+==== 2026-07-24T01:09:05+00:00 strat sign_alt_bcast ====
+  Winner: evo:baseline_ar_bcast_1
+  Score: 0.060, SimTime: 6.0 us, Local ops: 6
+==== 2026-07-24T01:13:02+00:00 strat bimodal_dist_bcast ====
+  Winner: evo:baseline_ar_bcast_0
+  Score: 0.010, SimTime: 1.0 us, Local ops: 1
+NOVEL_TEST DONE 2026-07-24T01:15:51+00:00
+Completed 8.7 KiB/8.7 KiB (27.9 KiB/s) with 1 file(s) remainingupload: ./novel_snapshot.tar.gz to s3://overlayccl-kaiyao-artifacts/2026-07-24-cb-v4/novel_snapshot.tar.gz

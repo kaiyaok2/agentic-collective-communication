@@ -1,0 +1,191 @@
+======================================================================
+Collective Search Pipeline: Problem P_87 (5-Phase)
+Pattern: moe | LLM: True | HW eval: False
+======================================================================
+
+======================================================================
+[Phase 1] Agent Hardware Profiling — LLM Builds Simulator
+======================================================================
+  Model: opus | max_turns: 15
+  [Turn 1] Bedrock error: An error occurred (ValidationException) when calling the InvokeModel operation: `temperature` is deprecated for this model.
+
+  Simulator config:
+    collective_dispatch_overhead_us = 0.0
+    local_op_overhead_us = 0.0
+    link_bandwidth_gbps = 0.0
+    link_latency_us = 0.0
+    unsupported_primitives = ['all_to_all']
+    Simulator built: False
+    Simulator validated: False
+    Config complete: False
+  Agent config incomplete, using defaults
+Trainium cluster topology (2 node(s)):
+  Nodes: 2, Devices: 32, Cores: 64
+  NeuronLink BW: 192.0 GB/s, Latency: 0.5 us
+  EFA BW: 12.5 GB/s x 8 adapters/node, Latency: 5.0 us
+  Max hops: 4, Avg hops: 1.50
+  Hardware constraints: unsupported primitives = ['all_to_all']
+  [Phase 1 done] pipeline_amort_alphas = (1.000, 1.000, 1.000)
+
+======================================================================
+[Phase 2] Baseline Evaluation: Problem P_87
+======================================================================
+  baseline_ar_bcast: 5160.0 us, 1 local ops, 0 ag, 1 ar, 0 cp
+
+  Best baseline: baseline:baseline_ar_bcast (5160.0 us)
+
+======================================================================
+[Phase 3 / Strategy-Enumerate] Problem P_87
+======================================================================
+  K=5 strategies, R=4 refinement rounds per top-2 (budget ~14 LLM calls)
+  Enumerated 5 strategies:
+    1. All-reduce sum on full vector: Uses a single xm.all_reduce(SUM) on the (N,) tensor since non-root ranks hold ze...
+    2. Broadcast from rank 0: Uses a single collective_broadcast (or all_reduce over a one-hot mask emulating ...
+    3. Local recomputation, zero collectives: Every rank locally computes x[i] = (i*i) % K via torch.arange on-device, skippin...
+    4. Compressed K-bucket broadcast: Since values lie in {0,...,K-1}, rank 0 sends only the K-entry lookup table (squ...
+    5. Sharded all-gather reconstruction: Rank 0 scatters (or logically partitions) x into world_size shards of size N/64,...
+  Strategy 1 (All-reduce sum on full vector) test/bench exception: NameError: name '_strat_run_hw_gate' is not defined
+  Strategy 2 (Broadcast from rank 0) test/bench exception: NameError: name '_strat_run_hw_gate' is not defined
+  Strategy 3 (Local recomputation, zero collectives) INCORRECT: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no a
+  Strategy 4 (Compressed K-bucket broadcast) INCORRECT: CRASH in collect pass 0: world=4 pattern=uniform rank=0: TypeError: len() of a 0-d tensor
+  Strategy 5 (Sharded all-gather reconstruction) INCORRECT: world=4 pattern=uniform rank=0: value_mismatch
+  No correct candidates from strategy enumeration; falling back to multi-island.
+
+======================================================================
+[Phase 3] Multi-island Template Evolution: Problem P_87
+======================================================================
+  Islands (3): ['baseline_ar_bcast', 'baseline_ar_bcast', 'baseline_ar_bcast']
+
+  --- Island 1/3: baseline_ar_bcast ---
+  Starting template: baseline_ar_bcast (XLA)
+  Baseline: 5160.0 us, 0 permutes, 0 gathers, 1 local ops
+
+  --- Evolution round 1 ---
+  INCORRECT: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no attribute 'int32'
+
+  --- Evolution round 2 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 2.0 us (0 permutes, 0 gathers, 2 local ops)
+  NEW BEST: 2.0 us (100.0% improvement)
+
+  --- Evolution round 3 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 2.0 us (0 permutes, 0 gathers, 2 local ops)
+
+  --- Evolution round 4 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 2.0 us (0 permutes, 0 gathers, 2 local ops)
+
+  --- Evolution round 5 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 3.0 us (0 permutes, 0 gathers, 3 local ops)
+
+  --- Evolution round 6 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 2.0 us (0 permutes, 0 gathers, 2 local ops)
+
+  --- Evolution round 7 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: values differ
+
+  --- Evolution round 8 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 3.0 us (0 permutes, 0 gathers, 3 local ops)
+
+  --- Island 2/3: baseline_ar_bcast ---
+  Starting template: baseline_ar_bcast (XLA)
+  Baseline: 5160.0 us, 0 permutes, 0 gathers, 1 local ops
+
+  --- Evolution round 1 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 2.0 us (0 permutes, 0 gathers, 2 local ops)
+  NEW BEST: 2.0 us (100.0% improvement)
+
+  --- Evolution round 2 ---
+  INCORRECT: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no attribute 'int32'
+
+  --- Evolution round 3 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 2.0 us (0 permutes, 0 gathers, 2 local ops)
+
+  --- Evolution round 4 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 2.0 us (0 permutes, 0 gathers, 2 local ops)
+
+  --- Evolution round 5 ---
+  INCORRECT: CRASH in collect pass 0: world=4 pattern=uniform rank=0: TypeError: len() of a 0-d tensor
+
+  --- Evolution round 6 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 3.0 us (0 permutes, 0 gathers, 3 local ops)
+
+  --- Evolution round 7 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 4.0 us (0 permutes, 0 gathers, 4 local ops)
+
+  --- Evolution round 8 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 2.0 us (0 permutes, 0 gathers, 2 local ops)
+
+  --- Island 3/3: baseline_ar_bcast ---
+  Starting template: baseline_ar_bcast (XLA)
+  Baseline: 5160.0 us, 0 permutes, 0 gathers, 1 local ops
+
+  --- Evolution round 1 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 2.0 us (0 permutes, 0 gathers, 2 local ops)
+  NEW BEST: 2.0 us (100.0% improvement)
+
+  --- Evolution round 2 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 2.0 us (0 permutes, 0 gathers, 2 local ops)
+
+  --- Evolution round 3 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: values differ
+
+  --- Evolution round 4 ---
+  INCORRECT: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no attribute 'int32'
+
+  --- Evolution round 5 ---
+  INCORRECT: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no attribute 'int32'
+
+  --- Evolution round 6 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 3.0 us (0 permutes, 0 gathers, 3 local ops)
+
+  --- Evolution round 7 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 3.0 us (0 permutes, 0 gathers, 3 local ops)
+
+  --- Evolution round 8 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: values differ
+
+  Evolution complete. 4 total candidates.
+  Best: evo:baseline_ar_bcast_0 (2.0 us, 2 local ops)
+
+======================================================================
+RANKING (post-evolution, pre-hardware)
+======================================================================
+  1. evo:baseline_ar_bcast_0: 2.0 us, 2 ops
+  2. evo:baseline_ar_bcast_1: 2.0 us, 2 ops
+  3. evo:baseline_ar_bcast_2: 2.0 us, 2 ops
+  4. baseline:baseline_ar_bcast: 5160.0 us, 1 ops
+
+Simulator winner: evo:baseline_ar_bcast_0 (sim=2.0 us)
+
+======================================================================
+[Phase 4b] Training-shape gate (all candidates): Problem P_87
+======================================================================
+  PASS evo:baseline_ar_bcast_0
+  PASS evo:baseline_ar_bcast_1
+  PASS evo:baseline_ar_bcast_2
+  PASS baseline:baseline_ar_bcast
+  Summary: 4 pass / 0 fail / 0 skip (total 4)
+
+======================================================================
+[Phase 5] Code Generation → runtime/trainium_mod_sq_bcast.py
+======================================================================
+  Winner: evo:baseline_ar_bcast_0
+  Score: 0.020, SimTime: 2.0 us, Local ops: 2
+  Results: /tmp/novel_strat_mod_sq_bcast/results_mod_sq_bcast.json
+  Generated: runtime/trainium_mod_sq_bcast_2node.py
+

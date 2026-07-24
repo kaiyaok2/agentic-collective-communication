@@ -1,0 +1,42 @@
+[
+  {
+    "template": "evolved_baseline_ar_bcast",
+    "cost_score": 0.18999999999999997,
+    "sim_time_us": 18.999999999999996,
+    "local_ops": 19,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 0,
+    "name": "evo:baseline_ar_bcast_1"
+  },
+  {
+    "template": "evolved_baseline_ar_bcast",
+    "cost_score": 0.29,
+    "sim_time_us": 29.0,
+    "local_ops": 1,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 0,
+    "name": "evo:baseline_ar_bcast_2"
+  },
+  {
+    "template": "evolved_baseline_ar_bcast",
+    "cost_score": 0.3299999999999999,
+    "sim_time_us": 32.99999999999999,
+    "local_ops": 5,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 0,
+    "name": "evo:baseline_ar_bcast_0"
+  },
+  {
+    "template": "baseline_ar_bcast",
+    "cost_score": 51.6,
+    "sim_time_us": 5160.0,
+    "local_ops": 1,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 1,
+    "name": "baseline:baseline_ar_bcast"
+  }
+]

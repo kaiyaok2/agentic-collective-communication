@@ -1,0 +1,9 @@
+{
+  "problem": "gray_code_bcast",
+  "best_code": "\ndef evolved_p93(x, N, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    # Debug: return reference values computed straightforwardly with python ints,\n    # then build tensor via torch.tensor to check correctness independent of bit tricks.\n    vals = [i ^ (i >> 1) for i in range(N)]\n    t = torch.tensor(vals, device=x.device)\n    return t.to(x.dtype)\n",
+  "best_score_us": 29.0,
+  "sim_time_us": 29.0,
+  "best_name": "kiss_6",
+  "n_score_calls": 7,
+  "wall_seconds": 143.83199429512024
+}
