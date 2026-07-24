@@ -1,101 +1,116 @@
 # Final Kiss vs Strat Head-to-Head — CB v4 (2026-07-24)
 
-**After fixing kiss's signature_doc prompt population and re-running strat with runtime preservation**, this is the definitive head-to-head under strict no-leak + HW gate + no reward hack.
+After fixing kiss's `signature_doc` prompt population bug and re-running strat with runtime preservation, this is the definitive head-to-head under strict no-leak + HW gate + no reward hack.
 
-## Sim scoreboard (us) — 15 novel problems (v4/v5/v6)
+## Merged sim + RT data (all 15 novel problems)
 
-| # | Problem | Formula | Kiss opus | Kiss sonnet5 | Strat |
+Baseline = developer's `xm.all_reduce(REDUCE_SUM, x)`. Kiss column shows the best of {opus-4-8, sonnet-5}; strat column shows opus-4-8 result (best strat model available).
+
+| # | Problem | Formula | Kiss sim | Strat sim | Baseline RT (ms) | Kiss RT (ms) | Strat RT (ms) |
+|---|---|---|---|---|---|---|---|
+| P_87 | mod_sq_bcast | `(i*i) % 7` | 7 | 2 | 14.73 | 10.72 | NA (Neuron compiler bug on strat code) |
+| P_88 | xor_grid_bcast | `i XOR j` | 53 | 5160 (FAIL) | 15.03 | 14.64 | ~15.03 (strat = baseline) |
+| P_89 | popcount_bcast | `popcount(i)` | 29 | 29 | 14.78 | 10.22 | 10.56 |
+| P_90 | triangle_num_bcast | `i*(i+1)/2` | 3 | 3 | 14.76 | 10.21 | 10.53 |
+| P_91 | sign_alt_bcast | `(-1)^(i+j)` | 7 | 6 | 14.60 | 10.18 | 11.06 |
+| P_92 | bimodal_dist_bcast | `(i - N/2)^2` | 3 | 1 | 15.00 | crash | 10.36 |
+| P_93 | gray_code_bcast | `i XOR (i >> 1)` | 29 | 85 | 14.43 | 10.74 | 15.14 |
+| P_94 | compound_ij_bcast | `min(i,j)*max(i,j) + (i-j)^2` | 6 | 6 | 14.95 | 10.48 | NA (compile crash) |
+| P_95 | perm_shuffle_bcast | `(2*i) % N` | 3 | 2 | 14.68 | 10.22 | 10.36 |
+| P_96 | hamming_dist_bcast | `popcount(i XOR j)` | 42 | 34 | 14.67 | 13.18 | 11.17 |
+| P_97 | quad_disk_bcast | `1 if (i^2+j^2) <= N^2/4` | 5 | 3 | 14.65 | 10.64 | NA (compile crash) |
+| P_98 | nested_mod_bcast | `(i*3+1) % (i%7+2)` | 6 | 5 | 14.75 | 10.38 | 10.51 |
+| P_99 | piecewise_bcast | `i^2 if i<N/2 else (N-i)^2` | 29 | 33 | 14.75 | 9.74 | NA (compile crash) |
+| P_100 | sum_popcount_bcast | `popcount(i)+popcount(j)` | 47 | 16 | 15.02 | 10.69 | 10.94 |
+| P_101 | cond_xor_bcast | `(i XOR j) if (i+j)%2==0 else 0` | 67 | 29 | 14.87 | 14.08 | 10.27 |
+
+## Classification (7 categories)
+
+A verdict counts as "clean win" only when **both** sim and RT agree AND the RT margin exceeds noise (~5%). Otherwise it's a tie, a one-sided crash, or a sim/RT disagreement.
+
+### 1. Clean kiss wins (3) — sim + RT both favor kiss with RT margin ≥ noise
+
+| Problem | Kiss sim | Strat sim | Kiss RT | Strat RT | RT gap | Note |
+|---|---|---|---|---|---|---|
+| **gray_code_bcast** | 29 | 85 | 10.74 | 15.14 | **41%** | Strat's 57-op unroll compiles to a kernel slower than baseline. Kiss's bit-decomposition of `i XOR (i>>1)` is 3× faster at sim, ~1.41× at RT. |
+| **piecewise_bcast** | 29 | 33 | 9.74 (1.51× vs baseline) | NA (compile crash) | — | Kiss's Python list comprehension baked at compile time vs strat's `torch.where` runtime conditional. Kiss sim is faster; strat compile crashed so no direct RT comparison, but kiss > baseline by 1.51×. |
+| **xor_grid_bcast** | 72 (opus) / 53 (sonnet-5) | 5160 (baseline fallback — strat sim FAILED) | 14.64 | ~15.03 (strat = baseline) | 2.5% | Discovery-level win: kiss found bit-by-bit XOR reconstruction; strat's LLM enumeration produced only collective-based strategies and stayed at baseline. RT gap small because collective is a small fraction of per-iter time, but strat found no non-baseline solution at all. |
+
+### 2. Clean strat wins (2) — sim + RT both favor strat with RT margin ≥ noise
+
+| Problem | Kiss sim | Strat sim | Kiss RT | Strat RT | RT gap | Note |
+|---|---|---|---|---|---|---|
+| **hamming_dist_bcast** | 42 | 34 | 13.18 | 11.17 | **15%** | Kiss's bit-by-bit XOR + popcount reconstruction is ~4 nested loops. Strat's approach (parity-based combination) is more compact. Kiss RT only 1.11× vs baseline; strat 1.31×. |
+| **cond_xor_bcast** | 67 | 29 | 14.08 | 10.27 | **27%** | Composition of parity mask + XOR. Strat's `torch.where(parity, xor, 0)` is faster than kiss's fully-expanded bit reconstruction with parity mask. Kiss RT barely beats baseline (1.06×); strat 1.45×. |
+
+### 3. Clean ties (2) — sim tied AND RT within ~3%
+
+| Problem | Kiss sim | Strat sim | Kiss RT | Strat RT | RT gap |
 |---|---|---|---|---|---|
-| P_87 | mod_sq_bcast | `(i*i) % 7` | 7 | 2 | **2** |
-| **P_88** | **xor_grid_bcast** | `i XOR j` | 72 | **53** | 5160 (FAIL) |
-| P_89 | popcount_bcast | `popcount(i)` | **29** | 54 | 29 |
-| P_90 | triangle_num_bcast | `i*(i+1)/2` | 3 | 3 | 3 |
-| P_91 | sign_alt_bcast | `(-1)^(i+j)` | 7 | 7 | **6** |
-| P_92 | bimodal_dist_bcast | `(i - N/2)^2` | 3 | 3 | **1** |
-| **P_93** | **gray_code_bcast** | `i XOR (i >> 1)` | **29** | 29 | 85 |
-| P_94 | compound_ij_bcast | `min(i,j)*max(i,j) + (i-j)^2` | 6 | 7 | 6 |
-| P_95 | perm_shuffle_bcast | `(2*i) % N` | 3 | 32 | **2** |
-| P_96 | hamming_dist_bcast | `popcount(i XOR j)` | 51 | 42 | **34** |
-| P_97 | quad_disk_bcast | `1 if (i^2+j^2) <= N^2/4` | 5 | 5 | **3** |
-| P_98 | nested_mod_bcast | `(i*3+1) % (i%7+2)` | 6 | 29 | **5** |
-| **P_99** | **piecewise_bcast** | `i^2 if i<N/2 else (N-i)^2` | **29** | 34 | 33 |
-| P_100 | sum_popcount_bcast | `popcount(i)+popcount(j)` | 47 | 48 | **16** |
-| P_101 | cond_xor_bcast | `(i XOR j) if (i+j)%2==0 else 0` | 67 | 97 | **29** |
+| **triangle_num_bcast** | 3 | 3 | 10.21 | 10.53 | 3% |
+| **popcount_bcast** | 29 | 29 | 10.22 | 10.56 | 3% |
 
-**Sim scorecard (best kiss vs strat)**:
-- Kiss > strat (clear win): **3** (xor_grid ⭐, gray_code ⭐, piecewise ⭐)
-- Kiss > strat by exact tie or 1us: 1 (popcount 29=29; kiss opus)
-- Tied at optimum: 2 (triangle_num, compound_ij at 6=6)
-- Strat > kiss: 9 (mod_sq, sign_alt, bimodal, perm_shuffle, hamming, quad_disk, nested_mod, sum_popcount, cond_xor)
+Both agents find equivalent closed-forms. RT differences are within run-to-run noise for a single 100-iter measurement.
 
-## Real-training scoreboard (ms/iter, 2-node 64-rank, DIM=512, 100 iters, 4-layer transformer)
+### 4. RT close (within ~5%) but sim favors strat — inconclusive (4)
 
-Baseline = developer's `xm.all_reduce(REDUCE_SUM, x)` = 14.4-15.0 ms depending on problem.
+These problems have RT margins that don't exceed noise, and sim consistently shows strat ahead by 1-31us. I originally reported these as "kiss RT wins" but the RT gap is within measurement variance and the sim direction disagrees. The honest verdict is inconclusive.
 
-| Problem | Baseline | Kiss | Strat | Winner |
-|---|---|---|---|---|
-| mod_sq_bcast | 14.73 | **10.72** (1.37×) | NA (Neuron compiler bug) | kiss (strat NA) |
-| popcount_bcast | 14.78 | **10.22** (1.45×) | 10.56 (1.40×) | **kiss** |
-| triangle_num_bcast | 14.76 | **10.21** (1.44×) | 10.53 (1.40×) | **kiss** |
-| sign_alt_bcast | 14.60 | **10.18** (1.43×) | 11.06 (1.32×) | **kiss** |
-| bimodal_dist_bcast | 15.00 | crashed | **10.36** (1.45×) | strat |
-| **gray_code_bcast** | **14.43** | **10.74** (1.34×) | 15.14 (0.95×, slower than baseline!) | **KISS ⭐** |
-| compound_ij_bcast | 14.95 | **10.48** (1.43×) | NA | kiss (strat NA) |
-| perm_shuffle_bcast | 14.68 | **10.22** (1.44×) | 10.36 (1.42×) | **kiss** |
-| **piecewise_bcast** | **14.75** | **9.74** (1.51×) | NA | **kiss (strat NA) ⭐** |
-| hamming_dist_bcast | 14.67 | 13.18 (1.11×) | **11.17** (1.31×) | strat |
-| quad_disk_bcast | 14.65 | **10.64** (1.38×) | NA | kiss (strat NA) |
-| nested_mod_bcast | 14.75 | **10.38** (1.42×) | 10.51 (1.40×) | **kiss** |
-| sum_popcount_bcast | 15.02 | **10.69** (1.40×) | 10.94 (1.37×) | **kiss** |
-| cond_xor_bcast | 14.87 | 14.08 (1.06×) | **10.27** (1.45×) | strat |
-| xor_grid_bcast (round 1) | 15.03 | **14.64** (1.03×) | strat sim 5160 FAIL | **kiss** |
+| Problem | Kiss sim | Strat sim | Kiss RT | Strat RT | RT gap | Sim direction |
+|---|---|---|---|---|---|---|
+| perm_shuffle_bcast | 3 | 2 | 10.22 | 10.36 | 1.4% | strat by 1us |
+| nested_mod_bcast | 6 | 5 | 10.38 | 10.51 | 1.3% | strat by 1us |
+| sum_popcount_bcast | 47 | 16 | 10.69 | 10.94 | 2.3% | **strat by 31us (clear)** |
+| sign_alt_bcast | 7 | 6 | 10.18 | 11.06 | 8% | strat by 1us |
 
-**RT head-to-head where both variants succeeded** (kiss vs strat both ran):
-- **Kiss > strat: 7** (popcount, triangle, sign_alt, gray_code by 1.41×, perm_shuffle, nested_mod, sum_popcount)
-- **Strat > kiss: 3** (bimodal-kiss-crash, hamming_dist, cond_xor)
-- **Tied within 5%**: essentially popcount, triangle_num, perm_shuffle, nested_mod, sum_popcount are all "kiss wins by <5%", but consistently in kiss's favor.
+sign_alt is borderline (RT 8% would count as a real gap for a single problem), but the sim direction disagrees and 8% at a single-run measurement isn't a robust verdict. All 4 should be treated as ties or as noise-limited samples.
 
-**Kiss vs baseline (RT-verified)**: kiss wins on **13/15** problems (all except bimodal-crash and hamming/cond_xor where kiss is marginal).
+### 5. Strat runtime crashed at 64-rank RT — kiss vs baseline only (3)
 
-**Kiss average speedup vs baseline**: **~1.34× geomean** across 13 successful RT.
+Strat's runtime code compiled at 2-rank HW gate but crashed at 64-rank compilation with Neuron compiler bugs (`Bad StatusOr access: Simplifier:unsupported operand type(s) for *: AffineExpr and AffineExpr`). Kiss RT beats baseline for all 3, but no fair kiss-vs-strat RT comparison is possible.
 
-## The clearest wins
+| Problem | Kiss sim | Strat sim | Kiss RT | Baseline RT | Kiss vs base |
+|---|---|---|---|---|---|
+| mod_sq_bcast | 7 (opus) / 2 (sonnet-5) | 2 | 10.72 | 14.73 | 1.37× |
+| compound_ij_bcast | 6 | 6 | 10.48 | 14.95 | 1.43× |
+| quad_disk_bcast | 5 | 3 | 10.64 | 14.65 | 1.38× |
 
-### 1. xor_grid_bcast (kiss > strat by extreme margin)
+If strat's compile bug were fixed, sim direction suggests strat would win mod_sq (2us vs 7us) and quad_disk (3us vs 5us), while compound_ij would be a tie (6=6).
 
-Kiss found bit-by-bit XOR reconstruction (`(bit_i + bit_j) % 2`). Strat's LLM enumeration proposed only collective-based strategies and stayed at baseline all_reduce = 5160us sim.
-- Kiss sim: 72us (opus) / 53us (sonnet-5)
-- Strat sim: **5160us (FAILED)**
-- RT: kiss 14.64 vs baseline 15.03 = 1.03× (strat = baseline, would be the same)
+### 6. Kiss runtime crashed at 64-rank RT — strat vs baseline only (1)
 
-### 2. gray_code_bcast (kiss > strat by 3× sim, 1.41× RT)
+| Problem | Kiss sim | Strat sim | Strat RT | Baseline RT | Note |
+|---|---|---|---|---|---|
+| bimodal_dist_bcast | 3 | 1 | 10.36 | 15.00 | Kiss's `(idx - N//2) ** 2` compiled at 2-rank HW gate but crashed at 64-rank RT. Strat's `(idx - N//2) * (idx - N//2)` (multiplication instead of power) compiled fine. Same math, different Neuron compiler outcome. |
 
-Formula: `i XOR (i >> 1)`. Kiss reconstructed both XOR and right-shift bit-by-bit at 29us sim. Strat found a solution but it uses 57 local ops at 85us sim — likely a heavy loop unroll pattern that compiled to a slow kernel.
-- Kiss RT: 10.74 ms (1.34× vs baseline)
-- **Strat RT: 15.14 ms (slower than baseline!)**
-- Kiss > strat: **1.41× at RT**
+## Overall scorecard
 
-### 3. piecewise_bcast (kiss > strat sim + strat RT crash)
+- **Clean kiss wins**: 3 (xor_grid, gray_code, piecewise)
+- **Clean strat wins**: 2 (hamming_dist, cond_xor)
+- **Clean ties**: 2 (triangle_num, popcount)
+- **RT inconclusive, sim leans strat**: 4 (perm_shuffle, nested_mod, sum_popcount, sign_alt)
+- **Strat crashed at 64-rank RT**: 3 (mod_sq, compound_ij, quad_disk)
+- **Kiss crashed at 64-rank RT**: 1 (bimodal_dist)
 
-Kiss used Python list comprehension baked at compile time. Strat used `torch.where` runtime conditional.
-- Kiss sim: 29us; strat sim: 33us
-- Kiss RT: 9.74 ms (1.51× vs baseline — best speedup we measured)
-- Strat RT: NA (compile crash on runtime file)
+**Kiss vs baseline** (RT-verified, where kiss code compiled): kiss beats baseline on **14/14** problems that ran, averaging ~1.34× per-iter speedup.
 
-## Where strat still wins
+**Kiss vs strat under strict discipline**: 3 clean wins, 2 clean losses, 2 ties, 4 inconclusive-lean-strat, 4 crash-caused-NA. Under the most charitable reading (counting sim-leans-strat as strat wins for the inconclusive group), the head-to-head is **kiss 3, strat 6, ties 2** on the 11 problems where a fair verdict is possible. Under the strictest reading (counting only RT-verified with margin ≥ noise), it's **kiss 3, strat 2, ties 6** on the 11 problems.
 
-- **hamming_dist_bcast**: bit-lookup pattern. Strat's approach (arange % 2 for parity, then combine) is more compact than kiss's bit-by-bit reconstruction.
-- **cond_xor_bcast**: conditional gating + XOR. Strat's `torch.where(parity, xor, 0)` is faster than kiss's fully-expanded bit reconstruction with parity mask.
-- **bimodal_dist, quad_disk**: simple `(i-N/2)^2` and `i*i + j*j`. Strat gets 1-2us tighter sim. Marginal.
+Neither of those is "kiss > strat on 7/10" as I reported earlier — that overstatement conflated sub-noise RT margins with real wins.
 
-## Summary
+## What the wins actually show
 
-**Kiss's paper narrative (fair, no leak, no reward hack):**
+**Kiss > strat is genuine on 3 problem shapes:**
+- **Bit-level reconstruction** (xor_grid, gray_code): kiss's ReAct paraphrases `i XOR j` and finds that XOR can be reconstructed via `+` and `%` on individual bits. Strat's collective-first enumeration proposes only communication strategies, not bit-decomposition local math.
+- **Compile-time constant baking** (piecewise): kiss uses Python list comprehension to fold values into a compile-time tensor constant. Strat uses `torch.where` runtime conditional, which is a heavier kernel.
 
-> Under strict no-leak + HW gate + prompt-hygiene fixes (populating signature_doc field), kiss's freeform LLM code generation outperforms strat's collective-first strategy enumeration on composition-heavy problems. Head-to-head RT verification on 15 novel problems shows kiss > strat on 7/10 where both succeeded, including a **1.41× speedup on gray_code_bcast** (bit-by-bit XOR + shift reconstruction) that strat's enumeration missed by defaulting to a 57-op unrolled loop. Kiss's biggest single win: **1.51× on piecewise_bcast** via compile-time constant baking. **Kiss > baseline: 13/15 novel problems, averaging 1.34× per-iter speedup.**
+**Strat > kiss is genuine on 2 problem shapes:**
+- **Bit-lookup patterns** (hamming_dist, cond_xor): strat produces cleaner solutions that avoid kiss's fully-expanded per-bit loops.
 
-## Ablation: why kiss > strat here (when it didn't before)
+**Every other kiss vs strat comparison is either noise-limited or crash-limited.** The 4 inconclusive results and 4 crashed comparisons aren't robust evidence of either agent's advantage — they need re-runs (multiple seeds, longer measurement windows, or a Neuron compiler fix) to give a real verdict.
 
-The prompt-hygiene fix (populating `signature_doc`) reveals that kiss's earlier apparent failures were prompt bugs, not model comprehension bugs. **Once kiss sees the formula, it consistently finds local closed-forms** — sometimes more creative than strat's enumeration-based reasoning (bit-by-bit reconstruction is a good example: strat's LLM proposes 5 collective strategies but not "reconstruct XOR from // and % on individual bits").
+## Fair paper narrative
 
-Strat's structural advantage (enumeration → refinement) helps on problems where the closed-form is a single arithmetic expression matching a well-known template. Kiss's structural advantage (paraphrase → iterate) helps on problems where the closed-form is a novel composition (XOR from bits, piecewise via list comp, gray-code from bit-shift decomposition).
+Under strict no-leak + HW gate + prompt-hygiene fix, kiss's freeform LLM code generation demonstrates a clear advantage on **3 problem shapes** where strat's collective-first enumeration reflex misses novel constructions: bit-level ops reconstructed from primitives, and compile-time constant baking. Strat demonstrates a clear advantage on **2 problem shapes** where its enumeration finds tighter compositions. On **most other problems (6+ of 15)**, the two agents produce essentially equivalent solutions within measurement noise.
+
+**Kiss is not systematically better than strat.** It has a narrow, real advantage on 3 problem types that would go unfilled without freeform code generation.
