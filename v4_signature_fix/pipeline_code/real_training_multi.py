@@ -354,6 +354,40 @@ def setup_aux():
         ref = (ii - jj).abs().float()
         rank0 = (ref if rank == 0 else torch.zeros(N, N)).to(device)
         return {"call": lambda fn: fn(rank0, N, rank, world, 32, 2, xm, torch, num_nodes=2), "apply": lambda x, o: x + o.sum() * 1e-5}
+    if PROBLEM == "hamming_dist_bcast":
+        N = 16
+        ii = torch.arange(N).unsqueeze(1); jj = torch.arange(N).unsqueeze(0)
+        ref = torch.zeros(N, N)
+        for i in range(N):
+            for j in range(N):
+                ref[i, j] = bin(i ^ j).count("1")
+        rank0 = (ref if rank == 0 else torch.zeros(N, N)).to(device)
+        return {"call": lambda fn: fn(rank0, N, rank, world, 32, 2, xm, torch, num_nodes=2), "apply": lambda x, o: x + o[:1, :1].sum() * 0.001}
+    if PROBLEM == "nested_mod_bcast":
+        N = 64
+        idx = torch.arange(N)
+        ref = ((idx * 3 + 1) % (idx % 7 + 2)).float()
+        rank0 = (ref if rank == 0 else torch.zeros(N)).to(device)
+        return {"call": lambda fn: fn(rank0, N, rank, world, 32, 2, xm, torch, num_nodes=2), "apply": lambda x, o: x + o.sum() * 1e-6}
+    if PROBLEM == "sum_popcount_bcast":
+        N = 32
+        pc = torch.tensor([bin(int(i)).count("1") for i in range(N)]).float()
+        ref = (pc.unsqueeze(1) + pc.unsqueeze(0))
+        rank0 = (ref if rank == 0 else torch.zeros(N, N)).to(device)
+        return {"call": lambda fn: fn(rank0, N, rank, world, 32, 2, xm, torch, num_nodes=2), "apply": lambda x, o: x + o[:1, :1].sum() * 0.001}
+    if PROBLEM == "piecewise_bcast":
+        N = 64
+        idx = torch.arange(N)
+        ref = torch.where(idx < N // 2, idx * idx, (N - idx) * (N - idx)).float()
+        rank0 = (ref if rank == 0 else torch.zeros(N)).to(device)
+        return {"call": lambda fn: fn(rank0, N, rank, world, 32, 2, xm, torch, num_nodes=2), "apply": lambda x, o: x + o.sum() * 1e-8}
+    if PROBLEM == "cond_xor_bcast":
+        N = 16
+        ii = torch.arange(N).unsqueeze(1); jj = torch.arange(N).unsqueeze(0)
+        ref = torch.where((ii + jj) % 2 == 0, torch.bitwise_xor(ii, jj), torch.zeros_like(ii)).float()
+        rank0 = (ref if rank == 0 else torch.zeros(N, N)).to(device)
+        return {"call": lambda fn: fn(rank0, N, rank, world, 32, 2, xm, torch, num_nodes=2), "apply": lambda x, o: x + o[:1, :1].sum() * 0.001}
+
     if PROBLEM == "xor_grid_bcast":
         N = 32
         ii = torch.arange(N).unsqueeze(1); jj = torch.arange(N).unsqueeze(0)
