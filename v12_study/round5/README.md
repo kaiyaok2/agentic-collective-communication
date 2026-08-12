@@ -99,3 +99,44 @@ measure_standalone_graph_cost. Under the improved sim, kiss v13 prompt
 matches OR beats v11 on 8/10 novel RT-verified problems (v13 wins 2,
 ties 6, loses 2) and never regresses on any of the 8 original
 OverlayCCL problems.
+
+
+## Kiss vs strat-enum on 8 OverlayCCL problems (round-5)
+
+Strat with 25-min per-problem budget under round-4 sim (single-population,
+single-generation, 3 max-rounds).
+
+| Problem       | kiss v11 sim | strat sim | verdict          |
+|---------------|--------------|-----------|------------------|
+| alltoallv     | 5376         | 5384      | kiss wins 0.15%  |
+| uniform_a2a   | 6108         | 6306      | kiss wins 3.2%   |
+| ring_kv       | 5200         | 5264      | kiss wins 1.2%   |
+| grad_ar       | 53902        | (timeout) | kiss wins (strat could not converge in phase 1) |
+| dxe           | 5272         | (timeout) | kiss wins        |
+| pp_send_recv  | 6014         | 6015      | tied             |
+| tp_mlp        | 18680        | (timeout) | kiss wins        |
+| fsdp_prefetch | 18680        | 18680     | tied             |
+| llama_block_ar| 5984         | (timeout) | kiss wins        |
+
+Kiss v11 matches or beats strat on ALL 8 OverlayCCL problems.
+Strat times out on 4/8 during phase-1 tool exploration (LLM burns
+25-min budget on tool calls, never reaches phase-3 code generation).
+
+Strat comparison on the 12 novel _bcast problems is not shown because
+strat systematically times out during phase-1 on _bcast problems too
+(tested earlier this session on sum_popcount and xor_grid, both hit
+30-min timeout without emitting a candidate). This is a strat pipeline
+limitation for problems that do not need collectives — the phase-1
+prompt is oriented around collective algorithms and the LLM gets stuck
+enumerating measure_collective_latency variations. Not a fair
+comparison target for _bcast problems.
+
+## Task tracking (this session)
+
+- #180 completed: de-hardcoded round-3 constants; now auto-fit
+- #181 completed: extended shape sweep (2D N=192, 256, mixed, broadcast)
+- #182 completed: extended broadcast-only measurements
+- #183 completed: 12-novel + 8-original sweep with round-3 sim
+- #184 completed: strat comparison (kiss wins/ties on all 8 originals)
+- #185 completed: v13 prompt designed and evaluated
+- #186 pending: push before CB expiry (2026-08-12 11:30 UTC)

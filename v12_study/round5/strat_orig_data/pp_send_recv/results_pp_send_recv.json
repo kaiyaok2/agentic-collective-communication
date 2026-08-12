@@ -1,0 +1,22 @@
+[
+  {
+    "template": "strategy_enumerate_final",
+    "cost_score": 60.147499999999994,
+    "sim_time_us": 6014.749999999999,
+    "local_ops": 3,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "strat:All-gather plus local select"
+  },
+  {
+    "template": "per_mb",
+    "cost_score": 459.58874999999995,
+    "sim_time_us": 45958.87499999999,
+    "local_ops": 128,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 64,
+    "name": "baseline:per_mb"
+  }
+]
