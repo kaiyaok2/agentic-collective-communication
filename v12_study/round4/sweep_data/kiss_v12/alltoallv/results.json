@@ -1,0 +1,9 @@
+{
+  "problem": "alltoallv",
+  "best_code": "def evolved_alltoallv(input_tensor, send_counts, recv_counts, max_chunk,\n                      rank, world_size, num_devices, cores_per_device,\n                      xm, torch, num_nodes=1):\n    \"\"\"All-gather then per-source slice + cat.\"\"\"\n    pack_size = world_size * max_chunk\n    packed = torch.zeros(pack_size, device=input_tensor.device, dtype=input_tensor.dtype)\n    send_off = 0\n    for i in range(world_size):\n        sc = send_counts[i]\n        if sc > 0:\n            packed[i * max_chunk:i * max_chunk + sc] = input_tensor[send_off:send_off + sc]\n        send_off += sc\n    gathered = xm.all_gather(packed.unsqueeze(0), dim=0).view(-1)\n    chunks = []\n    for src in range(world_size):\n        count = recv_counts[src]\n        base = src * pack_size + rank * max_chunk\n        chunks.append(gathered[base:base + count])\n    return torch.cat(chunks)\n",
+  "best_score_us": 5388.0,
+  "sim_time_us": 5388.0,
+  "best_name": "ag_slice_cat",
+  "n_score_calls": 6,
+  "wall_seconds": 278.73734283447266
+}

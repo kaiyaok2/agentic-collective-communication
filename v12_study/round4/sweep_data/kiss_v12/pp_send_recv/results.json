@@ -1,0 +1,9 @@
+{
+  "problem": "pp_send_recv",
+  "best_code": "def evolved_pp_send_recv(activations, src_stage, half, M, rank, world_size,\n                         num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"collective_permute: direct send/recv from src_stage ranks to paired dst ranks.\"\"\"\n    stage = 0 if rank < half else 1\n    buf = torch.stack(activations, dim=0)\n    if src_stage == 0:\n        pairs = [[i, i + half] for i in range(half)]\n    else:\n        pairs = [[i + half, i] for i in range(half)]\n    recv = xm.collective_permute(buf, pairs)\n    out = buf if stage == src_stage else recv\n    return [out[m] for m in range(M)]\n",
+  "best_score_us": 6013.75,
+  "sim_time_us": 6013.75,
+  "best_name": "kiss_2",
+  "n_score_calls": 2,
+  "wall_seconds": 51.46730852127075
+}

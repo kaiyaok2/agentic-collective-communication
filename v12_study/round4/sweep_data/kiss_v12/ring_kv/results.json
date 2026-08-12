@@ -1,0 +1,9 @@
+{
+  "problem": "ring_kv",
+  "best_code": "def evolved_ring_kv(kv_chunks, rank, world_size, num_devices,\n                    cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"Single fused all_gather along chunk dim -> per-slot rows directly.\"\"\"\n    num_slots = len(kv_chunks)\n    combined = torch.stack(kv_chunks, dim=0)          # (num_slots, chunk)\n    gathered = xm.all_gather(combined, dim=1)         # (num_slots, ws*chunk), rank-ordered\n    return [gathered[s] for s in range(num_slots)]\n",
+  "best_score_us": 5200.0,
+  "sim_time_us": 5200.0,
+  "best_name": "kiss_4",
+  "n_score_calls": 4,
+  "wall_seconds": 88.72215914726257
+}

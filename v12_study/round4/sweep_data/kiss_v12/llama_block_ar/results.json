@@ -1,0 +1,9 @@
+{
+  "problem": "llama_block_ar",
+  "best_code": "def evolved_llama_block(attn_partial, mlp_partial, rank, world_size,\n                        num_devices, cores_per_device, xm, torch, num_nodes=1):\n    # Formula: return AR-summed attn and mlp. Fuse into ONE all_reduce.\n    combined = torch.cat([attn_partial, mlp_partial], dim=-1)\n    reduced = xm.all_reduce(xm.REDUCE_SUM, combined)\n    dm = attn_partial.shape[-1]\n    return [reduced[..., :dm], reduced[..., dm:]]\n",
+  "best_score_us": 5984.5,
+  "sim_time_us": 5984.5,
+  "best_name": "kiss_1",
+  "n_score_calls": 2,
+  "wall_seconds": 20.487305164337158
+}

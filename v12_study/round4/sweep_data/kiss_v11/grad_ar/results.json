@@ -1,0 +1,9 @@
+{
+  "problem": "grad_ar",
+  "best_code": "def evolved_grad_ar(rep_grads, rank, world_size, num_devices,\n                    cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"Per-tensor xm.all_reduce in a Python loop (developer baseline).\"\"\"\n    inv = 1.0 / world_size\n    out = []\n    for g in rep_grads:\n        out.append(xm.all_reduce(xm.REDUCE_SUM, g) * inv)\n    return out\n",
+  "best_score_us": 53902.4,
+  "sim_time_us": 53902.4,
+  "best_name": "per_tensor_loop",
+  "n_score_calls": 5,
+  "wall_seconds": 79.23100996017456
+}

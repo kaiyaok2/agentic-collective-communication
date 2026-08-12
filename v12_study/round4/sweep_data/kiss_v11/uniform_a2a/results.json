@@ -1,0 +1,9 @@
+{
+  "problem": "uniform_a2a",
+  "best_code": "def evolved_uniform_a2a(input_tensor, chunk_size, rank, world_size,\n                        num_devices, cores_per_device, xm, torch,\n                        num_nodes=1):\n    \"\"\"AllGather + per-source slice loop.\"\"\"\n    gathered = xm.all_gather(input_tensor.unsqueeze(0), dim=0)\n    flat = gathered.view(world_size, -1)\n    chunks = []\n    for src in range(world_size):\n        chunks.append(flat[src, rank * chunk_size:(rank + 1) * chunk_size])\n    return torch.cat(chunks, dim=0)\n",
+  "best_score_us": 6107.94304,
+  "sim_time_us": 6107.94304,
+  "best_name": "slice_loop",
+  "n_score_calls": 6,
+  "wall_seconds": 260.99791622161865
+}

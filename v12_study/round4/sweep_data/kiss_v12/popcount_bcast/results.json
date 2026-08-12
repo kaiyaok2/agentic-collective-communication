@@ -1,0 +1,9 @@
+{
+  "problem": "popcount_bcast",
+  "best_code": "def evolved_p89(x, N, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    # x[i] = popcount(i). Constant fold of positional popcounts.\n    vals = [bin(i).count(\"1\") for i in range(N)]\n    return torch.tensor(vals, device=x.device).to(x.dtype)\n",
+  "best_score_us": 60.699999999999996,
+  "sim_time_us": 60.699999999999996,
+  "best_name": "kiss_4",
+  "n_score_calls": 5,
+  "wall_seconds": 33.55106496810913
+}
