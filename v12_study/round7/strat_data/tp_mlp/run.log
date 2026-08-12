@@ -1,0 +1,71 @@
+[_sso_creds] no live SSO at import; AWS calls will fail if attempted (Command '['aws', 'configure', 'export-credentials', '--profile', 'default', '--format', 'process']' returned non-zero exit status 2.)
+======================================================================
+Collective Search Pipeline: TP MLP with microbatching (5-Phase)
+Pattern: moe | LLM: True | HW eval: False
+======================================================================
+
+======================================================================
+[Phase 1] Agent Hardware Profiling — LLM Builds Simulator
+======================================================================
+  Deterministic phase-1 auto-probe (LLM-driven path deprecated)
+Trainium cluster topology (2 node(s)):
+  Nodes: 2, Devices: 32, Cores: 64
+  NeuronLink BW: 192.0 GB/s, Latency: 0.5 us
+  EFA BW: 12.5 GB/s x 8 adapters/node, Latency: 5.0 us
+  Max hops: 4, Avg hops: 1.50
+  Hardware constraints: unsupported primitives = ['all_to_all']
+  [Phase 1 done] pipeline_amort_alphas = (0.300, 0.100, 0.020)
+
+======================================================================
+[Phase 2] Baseline Evaluation: TP MLP with microbatching
+======================================================================
+  per_mb: 69868.8 us, 128 local ops, 0 ag, 128 ar, 0 cp
+
+  Best baseline: baseline:per_mb (69868.8 us)
+
+======================================================================
+[Phase 3 / Strategy-Enumerate] TP MLP with microbatching
+======================================================================
+  K=5 strategies, R=1 refinement rounds per top-2 (budget ~8 LLM calls)
+  Enumerated 5 strategies:
+    1. Per-microbatch batched all-reduce: For each microbatch m, stack or concatenate all N_LAYERS partials into one tenso...
+    2. Fully-fused single all-reduce: Stack all M*N_LAYERS partials into one large tensor, issue a single all-reduce o...
+    3. Per-layer column-fused all-reduce across microbatches: For each layer L, concatenate the M microbatch partials along a new batch dimens...
+    4. Reduce-scatter plus all-gather decomposition with overlap: Replace each all-reduce with an explicit reduce-scatter followed by all-gather; ...
+    5. Hierarchical two-level all-reduce (intra-device then inter-device): Exploit the topology by first performing intra-device (cores_per_device) reduce ...
+  Strategy 1 (Per-microbatch batched all-reduce): sim=46201.7 us
+  Strategy 2 (Fully-fused single all-reduce): sim=18837.0 us
+  Strategy 3 (Per-layer column-fused all-reduce across microbatches): sim=18680.0 us
+  Strategy 4 (Reduce-scatter plus all-gather decomposition with overlap): sim=841720.0 us
+  Strategy 5 (Hierarchical two-level all-reduce (intra-device then inter-device)): sim=99868.8 us
+
+  Top after enumeration:
+    Per-layer column-fused all-reduce across microbatches: 18680.0 us
+    Fully-fused single all-reduce: 18837.0 us
+
+  Strategy-Enumerate complete. 7 total candidates.
+  Best: Per-layer column-fused all-reduce across microbatches (sim=18680.0 us)
+
+======================================================================
+RANKING (post-evolution, pre-hardware)
+======================================================================
+  1. strat:Per-layer column-fused all-red: 18680.0 us, 4 ops
+  2. baseline:per_mb: 69868.8 us, 128 ops
+
+Simulator winner: strat:Per-layer column-fused all-red (sim=18680.0 us)
+
+======================================================================
+[Phase 4b] Training-shape gate (all candidates): TP MLP with microbatching
+======================================================================
+  PASS strat:Per-layer column-fused all-red
+  PASS baseline:per_mb
+  Summary: 2 pass / 0 fail / 0 skip (total 2)
+
+======================================================================
+[Phase 5] Code Generation → runtime/trainium_tp_mlp.py
+======================================================================
+  Winner: strat:Per-layer column-fused all-red
+  Score: 186.800, SimTime: 18680.0 us, Local ops: 4
+  Results: /tmp/strat_full/tp_mlp/results_tp_mlp.json
+  Generated: runtime/trainium_tp_mlp_2node.py
+

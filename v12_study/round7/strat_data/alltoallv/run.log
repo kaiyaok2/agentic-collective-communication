@@ -1,0 +1,85 @@
+[_sso_creds] no live SSO at import; AWS calls will fail if attempted (Command '['aws', 'configure', 'export-credentials', '--profile', 'default', '--format', 'process']' returned non-zero exit status 2.)
+======================================================================
+Collective Search Pipeline: AllToAllV (5-Phase)
+Pattern: moe | LLM: True | HW eval: False
+======================================================================
+
+======================================================================
+[Phase 1] Agent Hardware Profiling — LLM Builds Simulator
+======================================================================
+  Deterministic phase-1 auto-probe (LLM-driven path deprecated)
+Trainium cluster topology (2 node(s)):
+  Nodes: 2, Devices: 32, Cores: 64
+  NeuronLink BW: 192.0 GB/s, Latency: 0.5 us
+  EFA BW: 12.5 GB/s x 8 adapters/node, Latency: 5.0 us
+  Max hops: 4, Avg hops: 1.50
+  Hardware constraints: unsupported primitives = ['all_to_all']
+  [Phase 1 done] pipeline_amort_alphas = (0.300, 0.100, 0.020)
+
+======================================================================
+[Phase 2] Baseline Evaluation: AllToAllV
+======================================================================
+  ag_slice_cat: 5388.0 us, 133 local ops, 1 ag, 0 ar, 0 cp
+  allgather_reduce_scatter: 7064.3 us, 74 local ops, 1 ag, 0 ar, 0 cp
+  ag_t_rs_inline_match: 6889.9 us, 7 local ops, 1 ag, 0 ar, 0 cp
+  permute_ring: 5756.3 us, 192 local ops, 0 ag, 0 ar, 63 cp
+  hierarchical_intra_inter: ERROR: index out of range in self
+  pairwise_per_distance: 5756.3 us, 192 local ops, 0 ag, 0 ar, 63 cp
+
+  Best baseline: baseline:ag_slice_cat (5388.0 us)
+
+======================================================================
+[Phase 3 / Strategy-Enumerate] AllToAllV
+======================================================================
+  K=5 strategies, R=1 refinement rounds per top-2 (budget ~8 LLM calls)
+  Enumerated 5 strategies:
+    1. Single AllGather + Slice + Cat: Pack all send data into a world_size*max_chunk buffer, perform one all_gather to...
+    2. AllGather + Transpose + ReduceScatter: Pack into world_size*max_chunk, all_gather to get full matrix, transpose the (sr...
+    3. Ring Collective-Permute (W-1 rounds): Pre-slice input into per-destination shards padded to max_chunk, then iterate W-...
+    4. Log-Butterfly Collective-Permute (log2(W) rounds): Organize ranks into a hypercube; in each of log2(64)=6 rounds, exchange a packed...
+    5. Hierarchical Two-Phase (Intra-node AG + Inter-node Permute): Partition ranks into node-local groups; first do a grouped all_gather within eac...
+  Strategy 1 (Single AllGather + Slice + Cat): sim=5388.0 us
+  Strategy 2 (AllGather + Transpose + ReduceScatter): sim=7064.3 us
+  Strategy 3 (Ring Collective-Permute (W-1 rounds)): sim=5756.3 us
+  Strategy 4 (Log-Butterfly Collective-Permute (log2(W) rounds)): sim=11622.7 us
+  Strategy 5 (Hierarchical Two-Phase (Intra-node AG + Inter-node Permute)): sim=7446.0 us
+
+  Top after enumeration:
+    Single AllGather + Slice + Cat: 5388.0 us
+    Ring Collective-Permute (W-1 rounds): 5756.3 us
+    top 2 round 1: NEW BEST 5386.0 us (6.4% improvement)
+
+  Strategy-Enumerate complete. 7 total candidates.
+  Best: refined-from-Ring Collective-Permute (W-1 rounds) (sim=5386.0 us)
+
+======================================================================
+RANKING (post-evolution, pre-hardware)
+======================================================================
+  1. strat:refined-from-Ring Collective-P: 5386.0 us, 131 ops
+  2. baseline:ag_slice_cat: 5388.0 us, 133 ops
+  3. baseline:permute_ring: 5756.3 us, 192 ops
+  4. baseline:pairwise_per_distance: 5756.3 us, 192 ops
+  5. baseline:ag_t_rs_inline_match: 6889.9 us, 7 ops
+  6. baseline:allgather_reduce_scatter: 7064.3 us, 74 ops
+
+Simulator winner: strat:refined-from-Ring Collective-P (sim=5386.0 us)
+
+======================================================================
+[Phase 4b] Training-shape gate (all candidates): AllToAllV
+======================================================================
+  PASS strat:refined-from-Ring Collective-P
+  PASS baseline:ag_slice_cat
+  FAIL baseline:permute_ring: AttributeError: type object '_StubXM' has no attribute 'collective_permute'
+  FAIL baseline:pairwise_per_distance: AttributeError: type object '_StubXM' has no attribute 'collective_permute'
+  PASS baseline:ag_t_rs_inline_match
+  PASS baseline:allgather_reduce_scatter
+  Summary: 4 pass / 2 fail / 0 skip (total 6)
+
+======================================================================
+[Phase 5] Code Generation → runtime/trainium_alltoallv.py
+======================================================================
+  Winner: strat:refined-from-Ring Collective-P
+  Score: 53.860, SimTime: 5386.0 us, Local ops: 131
+  Results: /tmp/strat_full/alltoallv/results_alltoallv.json
+  Generated: runtime/trainium_alltoallv_2node.py
+

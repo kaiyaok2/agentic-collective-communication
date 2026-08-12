@@ -1,0 +1,72 @@
+[_sso_creds] no live SSO at import; AWS calls will fail if attempted (Command '['aws', 'configure', 'export-credentials', '--profile', 'default', '--format', 'process']' returned non-zero exit status 2.)
+======================================================================
+Collective Search Pipeline: Problem P_100 (5-Phase)
+Pattern: moe | LLM: True | HW eval: False
+======================================================================
+
+======================================================================
+[Phase 1] Agent Hardware Profiling — LLM Builds Simulator
+======================================================================
+  Deterministic phase-1 auto-probe (LLM-driven path deprecated)
+Trainium cluster topology (2 node(s)):
+  Nodes: 2, Devices: 32, Cores: 64
+  NeuronLink BW: 192.0 GB/s, Latency: 0.5 us
+  EFA BW: 12.5 GB/s x 8 adapters/node, Latency: 5.0 us
+  Max hops: 4, Avg hops: 1.50
+  Hardware constraints: unsupported primitives = ['all_to_all']
+  [Phase 1 done] pipeline_amort_alphas = (0.300, 0.100, 0.020)
+
+======================================================================
+[Phase 2] Baseline Evaluation: Problem P_100
+======================================================================
+  baseline_ar_bcast: 5160.0 us, 1 local ops, 0 ag, 1 ar, 0 cp
+
+  Best baseline: baseline:baseline_ar_bcast (5160.0 us)
+
+======================================================================
+[Phase 3 / Strategy-Enumerate] Problem P_100
+======================================================================
+  K=5 strategies, R=1 refinement rounds per top-2 (budget ~8 LLM calls)
+  Enumerated 5 strategies:
+    1. All-reduce sum single dispatch: Since rank 0 has the correct matrix and all others have zeros, a single all_redu...
+    2. Broadcast from rank 0: Use a single broadcast (or all_reduce with mesh marking rank 0 as source) to dis...
+    3. Local recomputation no communication: Every rank independently computes x[i,j] = popcount(i) + popcount(j) using local...
+    4. Scatter rows then all-gather: Rank 0 scatter-distributes N/world_size rows to each rank (or each rank selects ...
+    5. Factored broadcast of row and column vectors: Rank 0 broadcasts two vectors of length N (popcount row-vector and popcount colu...
+  Strategy 1 (All-reduce sum single dispatch): sim=5160.0 us
+  Strategy 2 (Broadcast from rank 0): sim=5160.0 us
+  Strategy 3 (Local recomputation no communication): sim=102.4 us
+  Strategy 4 (Scatter rows then all-gather) INCORRECT: world=4 pattern=uniform rank=0: max_diff=2.000000
+  Strategy 5 (Factored broadcast of row and column vectors): sim=342.0 us
+
+  Top after enumeration:
+    Local recomputation no communication: 102.4 us
+    Factored broadcast of row and column vectors: 342.0 us
+    top 2 round 1: NEW BEST 103.4 us (69.8% improvement)
+
+  Strategy-Enumerate complete. 6 total candidates.
+  Best: Local recomputation no communication (sim=102.4 us)
+
+======================================================================
+RANKING (post-evolution, pre-hardware)
+======================================================================
+  1. strat:Local recomputation no communi: 102.4 us, 1 ops
+  2. baseline:baseline_ar_bcast: 5160.0 us, 1 ops
+
+Simulator winner: strat:Local recomputation no communi (sim=102.4 us)
+
+======================================================================
+[Phase 4b] Training-shape gate (all candidates): Problem P_100
+======================================================================
+  PASS strat:Local recomputation no communi
+  PASS baseline:baseline_ar_bcast
+  Summary: 2 pass / 0 fail / 0 skip (total 2)
+
+======================================================================
+[Phase 5] Code Generation → runtime/trainium_sum_popcount_bcast.py
+======================================================================
+  Winner: strat:Local recomputation no communi
+  Score: 1.024, SimTime: 102.4 us, Local ops: 1
+  Results: /tmp/strat_full/sum_popcount_bcast/results_sum_popcount_bcast.json
+  Generated: runtime/trainium_sum_popcount_bcast_2node.py
+

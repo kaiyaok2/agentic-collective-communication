@@ -1,0 +1,52 @@
+[
+  {
+    "template": "slice_loop",
+    "cost_score": 61.0794304,
+    "sim_time_us": 6107.94304,
+    "local_ops": 68,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "baseline:slice_loop"
+  },
+  {
+    "template": "strategy_enumerate_final",
+    "cost_score": 64.214304,
+    "sim_time_us": 6421.4304,
+    "local_ops": 4,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "strat:refined-from-Log-depth recursi"
+  },
+  {
+    "template": "permute_ring",
+    "cost_score": 64.9175,
+    "sim_time_us": 6491.75,
+    "local_ops": 128,
+    "num_collective_permute": 63,
+    "num_all_gather": 0,
+    "num_all_reduce": 0,
+    "name": "baseline:permute_ring"
+  },
+  {
+    "template": "ag_flat_extract",
+    "cost_score": 72.602912,
+    "sim_time_us": 7260.2912,
+    "local_ops": 5,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "baseline:ag_flat_extract"
+  },
+  {
+    "template": "allgather_reduce_scatter",
+    "cost_score": 192.54114560000002,
+    "sim_time_us": 19254.11456,
+    "local_ops": 7,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "baseline:allgather_reduce_scatter"
+  }
+]

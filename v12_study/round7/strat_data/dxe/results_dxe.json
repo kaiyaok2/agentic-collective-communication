@@ -1,0 +1,42 @@
+[
+  {
+    "template": "full_vocab_ag",
+    "cost_score": 52.07,
+    "sim_time_us": 5207.0,
+    "local_ops": 10,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "baseline:full_vocab_ag"
+  },
+  {
+    "template": "strategy_enumerate_final",
+    "cost_score": 52.07,
+    "sim_time_us": 5207.0,
+    "local_ops": 10,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "strat:Full-vocab all-gather then loc"
+  },
+  {
+    "template": "async_back_to_back",
+    "cost_score": 55.273,
+    "sim_time_us": 5527.3,
+    "local_ops": 15,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 3,
+    "name": "baseline:async_back_to_back"
+  },
+  {
+    "template": "three_ar",
+    "cost_score": 56.673,
+    "sim_time_us": 5667.3,
+    "local_ops": 15,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 3,
+    "name": "baseline:three_ar"
+  }
+]
