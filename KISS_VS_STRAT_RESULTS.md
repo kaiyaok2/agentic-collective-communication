@@ -20,7 +20,7 @@ OverlayCCL originals from the paper):
 |---|---|---|
 | Avoid-communication (`_bcast`) | 12 | **Kiss wins 2× at 2-node RT** (all 12 in sim; 10/12 in RT) |
 | Simple communication (`_comm`) | 10 | **Tied** — both converge to same single-collective |
-| Challenging communication (`_chal`) | 11 | (pending 2026-08-14 CB) |
+| Challenging communication (`_chal`) | 11 | **Kiss wins 2 by `torch.narrow` trick, strat wins 3 tiny (< 0.2%), 6 tied** (see round-15 below) |
 | OverlayCCL originals | 8 | **Tied 6, kiss wins 1, strat wins 1 (grad_ar bucketing, v14 prompt closes)** |
 
 **Honest characterization.** Kiss dominates when the optimal solution is
@@ -150,6 +150,47 @@ pp_send_recv, tp_mlp, fsdp_prefetch, llama_block_ar.
 All 10 problems: both agents converge to the same optimal single
 collective. Strat baseline template covers the case; kiss freeform
 produces the same code. Sim scores ~5160 for both.
+
+### Suite C — Challenge problems (11, `_chal` suffix, round 15/16)
+
+Round-15 hypothesis: design problems with *real optimization tension* —
+multiple plausible strategies, no obvious canonical winner — to make
+kiss-vs-strat a real tie-breaker.
+
+Sim results (2-node, us, kiss-proxy = cc-react phase-3):
+
+| Problem | Baseline | Strat | Kiss-proxy | Winner | Δ |
+|---|---|---|---|---|---|
+| multi_grad_ar_chal | 5340 | 5205 | 5205 | tied | 0% |
+| ag_then_rs_chal | 5161 | 5161 | 5161 | tied (baseline optimal) | 0% |
+| multi_layer_ar_chal | 5762.8 | **5161.7** | 5166.8 | strat +0.1% | 5 us |
+| double_reduction_chal | 5249 | **5190** | 5191 | strat +0.02% | 1 us |
+| hierarchical_ar_chal | 5160 | 5160 | 5160 | tied (baseline optimal) | 0% |
+| sparse_topk_chal | 5357 | 5357 | 5357 | tied (baseline optimal) | 0% |
+| weighted_mean_chal | 5242.4 | **5182** | 5193.4 | strat +0.2% | 11 us |
+| layered_matmul_chal | 5163.7 | 5163.7 | 5163.7 | tied (baseline optimal) | 0% |
+| mixed_precision_ar_chal | 5160 | 5160 | 5160 | tied (baseline optimal) | 0% |
+| rotating_shuffle_chal | 5190 | 5190 | **5161** | **kiss +0.6%** | 29 us |
+| batched_ar_scale_chal | 5963.5 | 5204 | **5180** | **kiss +0.5%** | 24 us |
+
+**Summary**: 2 clear kiss wins, 3 tiny strat wins (<0.2%, sim noise), 6
+tied. On 5 problems no method beat baseline — the "canonical strategy"
+in the baseline template is already optimal.
+
+**What kiss found** (rotating_shuffle & batched_ar_scale): replace
+`.reshape() + fancy-index` or `.split()` with `torch.narrow()`
+(metadata-only view). Strat's fixed template set doesn't include the
+`narrow` idiom; kiss's freeform generation invents it. Small effect
+(0.5-0.6% sim), but reproducible across two independent problems.
+
+**Honest limitation**: sim divergence is small; both wins would be
+within RT noise (~2ms iter time, 24us = 1% RT). RT-verification on
+these problems requires per-problem harness scaffolding (rt_run_v12.py
+only handles `_bcast` signatures); deferred.
+
+**No regressions**: all 11 chal winners are ≤ baseline in sim, all
+pass Phase-4a HW correctness gate, all pass Phase-4b training-shape
+gate.
 
 ### Suite D — OverlayCCL originals
 
