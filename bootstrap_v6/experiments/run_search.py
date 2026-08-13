@@ -67,7 +67,8 @@ import search.problems_modext  # noqa
 import search.problems_novel_v4  # noqa
 import search.problems_novel_v5  # noqa
 import search.problems_novel_v6
-import search.problems_comm_v7  # noqa
+import search.problems_comm_v7
+import search.problems_challenge_v8  # noqa
 from search.profiling import profile_schedule, format_profiling_report
 from search.agent_simulator_config import (
     run_profiling_agent, refine_simulator, AgentSimulator,

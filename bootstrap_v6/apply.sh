@@ -17,6 +17,8 @@ cp $BOOTSTRAP/search/problems_novel_v4.py $TARGET/search/problems_novel_v4.py
 cp $BOOTSTRAP/search/problems_novel_v5.py $TARGET/search/problems_novel_v5.py
 cp $BOOTSTRAP/search/problems_novel_v6.py $TARGET/search/problems_novel_v6.py
 cp $BOOTSTRAP/search/problems_kiss_verify.py $TARGET/search/problems_kiss_verify.py
+cp $BOOTSTRAP/search/problems_comm_v7.py $TARGET/search/problems_comm_v7.py
+cp $BOOTSTRAP/search/problems_challenge_v8.py $TARGET/search/problems_challenge_v8.py
 
 # Add kiss integration
 mkdir -p $TARGET/experiments/ablation_kiss_vs_cc
@@ -27,6 +29,7 @@ cp $BOOTSTRAP/experiments/ablation_kiss_vs_cc/kiss_phase3.py $TARGET/experiments
 cp $BOOTSTRAP/prompts/generic_evolution.md $TARGET/prompts/generic_evolution.md
 cp $BOOTSTRAP/prompts/generic_evolution_v11.md $TARGET/prompts/generic_evolution_v11.md
 cp $BOOTSTRAP/prompts/generic_evolution_v13.md $TARGET/prompts/generic_evolution_v13.md
+cp $BOOTSTRAP/prompts/generic_evolution_v14.md $TARGET/prompts/generic_evolution_v14.md
 
 # RT / HW gate scripts (place in ubuntu home for direct invocation)
 cp $BOOTSTRAP/rt_run_v12.py /home/ubuntu/rt_run_v12.py
