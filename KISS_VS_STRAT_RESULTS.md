@@ -185,12 +185,14 @@ in the baseline template is already optimal.
 
 **RT verification (2-node 64-rank, 100 iters, ms/iter, warm compile cache):**
 
-| Problem | Baseline RT | Winner RT | RT Win | Sim Δ | Sim vs RT |
+| Problem | Baseline RT | Winner RT | RT Win | Sim Δ | Winner |
 |---|---|---|---|---|---|
-| rotating_shuffle_chal | 5.77 | 5.60 (kiss narrow) | 1.03× | 0.6% | consistent |
-| batched_ar_scale_chal | 6.72 | 5.63 (kiss narrow+cat) | 1.19× | 0.5% | consistent (sim slightly under) |
-| multi_grad_ar_chal | 7.47 | 5.67 (strat=kiss cat-AR-split) | 1.32× | 2.5% | RT > sim (~10× gap) |
-| multi_layer_ar_chal | 6.36 | 5.63 (strat stacked-AR) | 1.13× | 10.4% | consistent |
+| rotating_shuffle_chal | 5.77 | 5.60 | 1.03× | 0.6% | kiss (narrow) |
+| batched_ar_scale_chal | 6.72 | 5.63 | 1.19× | 0.5% | kiss (narrow+cat) |
+| multi_grad_ar_chal | 7.47 | 5.67 | 1.32× | 2.5% | strat=kiss (single-cat-AR) |
+| multi_layer_ar_chal | 6.36 | 5.63 | 1.13× | 10.4% | strat (stacked-AR) |
+| double_reduction_chal | 5.71 | 5.44 | 1.05× | 1.1% | strat (packed-AR) |
+| weighted_mean_chal | 5.86 | 5.83 | 1.01× | 1.1% | strat (single-AR-then-split) |
 
 **COLD-vs-WARM COMPILE PITFALL**. Initial RT measurements showed huge kiss
 wins (2.83×, 16.45×), but re-measurement with a warm Neuron compile cache
