@@ -289,9 +289,20 @@ NON-OBVIOUS: (a) all_gather full x then local top-K, or (b) local top-K then all
 _P125_BUILTINS = {
     'naive_ag_topk': '''def evolved_p125(x, N, rank, world_size, num_devices,
                  cores_per_device, xm, torch, num_nodes=1):
-    # Use all_reduce MAX K times as a workaround if topk unsupported
+    # Simple: all_gather full x then extract top 8 via sort surrogate.
+    # Neuron may not support sort/topk; the tie-breaker is: kiss vs strat
+    # for the STRATEGY choice, not the topk primitive. Use ALL_GATHER + local
+    # max K-times as robust fallback.
     g = xm.all_gather(x, dim=0)
-    return torch.topk(g, k=8).values
+    K = 8
+    top_vals = []
+    remaining = g
+    for i in range(K):
+        m = remaining.max()
+        top_vals.append(m.unsqueeze(0))
+        # mask out selected by subtracting a large value at max index (approximate)
+        remaining = torch.where(remaining >= m, remaining - 1e9, remaining)
+    return torch.cat(top_vals, dim=0)
 ''',
 }
 register_problem(CollectiveProblem(
@@ -385,8 +396,10 @@ NON-OBVIOUS: (a) all_gather k_row then matmul, (b) reduce_scatter matmul chunks,
 _P127_BUILTINS = {
     'naive_ag_matmul': '''def evolved_p127(Q, k_row, N, D, rank, world_size, num_devices,
                  cores_per_device, xm, torch, num_nodes=1):
+    # Q (N, D), k_row (D,); gather K into (W, D); then Q @ K^T computed as
+    # (Q[:, None, :] * K[None, :, :]).sum(-1). Uses only elementwise + sum.
     K = xm.all_gather(k_row.unsqueeze(0), dim=0)
-    return Q @ K.t()
+    return (Q.unsqueeze(1) * K.unsqueeze(0)).sum(-1)
 ''',
 }
 register_problem(CollectiveProblem(
