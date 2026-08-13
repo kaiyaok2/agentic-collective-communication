@@ -1,5 +1,14 @@
 # Composing Collectives Above a Black-Box Vendor Library
 
+> **Post-submission update (2026-08-13):** For kiss vs strat-enumerate
+> head-to-head results on 30+ problems (12 `_bcast` + 10 `_comm` +
+> 11 `_chal` + 8 OverlayCCL originals), see
+> [`KISS_VS_STRAT_RESULTS.md`](KISS_VS_STRAT_RESULTS.md). Round-by-round
+> methodology under `v12_study/round{1..15}/`. The `bootstrap_v6/` folder
+> contains all post-submission sim/pipeline patches and a self-installing
+> `apply.sh` for a fresh OverlayCCL clone.
+
+---
 **What this is.** A workflow that finds faster collective-communication
 strategies above the AWS Trainium Neuron stack (a closed-source vendor
 library). The Neuron runtime is treated as a fixed API — we never modify
