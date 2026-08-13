@@ -258,12 +258,28 @@ this candidate autonomously.
 Placement group `Kaiyao` required for 2-node EFA CCOM bootstrap (round
 12 discovery — non-PG cluster hangs at 120s CCOM RX timeout).
 
-### Suite A (2 representative _bcast)
+### Suite A (2 representative _bcast, warm-cache)
 
-| Problem | Kiss v13 RT | Strat RT | Kiss/Strat |
-|---|---|---|---|
-| xor_grid_bcast | 2.51 ms | 5.25 ms | **kiss 2.1×** |
-| gray_code_bcast | 2.20 ms | 5.15 ms | **kiss 2.3×** |
+| Problem | Kiss v13 RT | Strat RT | Kiss/Strat | Method |
+|---|---|---|---|---|
+| xor_grid_bcast | 2.51 ms | 5.25 ms | 2.1× | cold-cache (round 13) |
+| gray_code_bcast | 2.20 ms | 5.15 ms | 2.3× | cold-cache (round 13) |
+| xor_grid_bcast | 3.77 ms | 5.16 ms | **kiss 1.37×** | warm-cache (round 16) |
+| hamming_dist_bcast | 2.33 ms | 5.05 ms | **kiss 2.16×** | warm-cache (round 16) |
+| piecewise_bcast | 2.31 ms | 2.10 ms | strat 1.10× | warm-cache (round 16) |
+
+**Update**: warm-cache RT shows kiss's _bcast advantage is real but
+smaller than round-13 cold-cache numbers suggested. **hamming_dist**
+still 2.16× kiss (structural: strat's AR baseline pays full latency
+regardless of cache). **xor_grid** is 1.37× kiss (some cold-cache
+inflation in round 13's 2.1× number). **piecewise** flipped: strat's
+solution here (also uses no-comm closed-form; both templates
+independently found it) is 10% faster than kiss's version — same
+algorithm, minor implementation difference.
+
+Bottom line: kiss > strat by 1.4-2.2× RT on hard-to-template no-comm
+problems where strat's baseline is AR; when strat's own no-comm
+template covers the same problem (like piecewise), the two tie.
 
 ### Suite B (10 comm)
 
