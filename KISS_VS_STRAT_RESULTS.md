@@ -305,18 +305,32 @@ See `paper_reproductions/tables/table2_per_problem.md`.
 
 ## Fair claim for the paper
 
-Kiss > strat when local computation can replace communication (Suite A: 2× at
-real HW).
+**Kiss > strat when the true optimum is local computation that strat's
+template set doesn't cover** (Suite A hamming_dist: 2.16× warm-cache RT).
+When strat also has a no-comm template for a specific problem class
+(Suite A piecewise), both find it and tie.
 
-Kiss ≈ strat when a single collective is genuinely required (Suite B: within
-noise).
+**Kiss ≈ strat when a single collective is genuinely required** (Suite B:
+within noise, 10/10 problems).
 
-Strat can beat kiss on multi-collective bucketing (Suite D: grad_ar 7.4×,
-closable with v14 prompt hint).
+**Kiss ≈ strat on structurally-ambiguous multi-collective problems**
+(Suite C challenge: 6/11 tied, 3/11 tiny strat wins < 0.2%, 2/11 tiny
+kiss wins via `torch.narrow`). The problems as designed had a canonical
+best strategy (fuse-all-into-one-collective) both methods discover.
 
-Kiss's advantage is scoped, not universal. Its unique strength — freeform
-code generation — pays off in Suite A, where the "code" is not a collective
-at all.
+**Strat can beat kiss on multi-collective bucketing** (Suite D grad_ar
+7.4× sim; closable with v14 prompt hint — manually-authored bucketed
+candidate scores 4407 us, beats strat's 7287 us by 1.65×).
+
+**Kiss's advantage is scoped, not universal.** Its unique strength —
+freeform code generation — pays off when the optimum lies outside strat's
+template set. Whenever strat's template set covers the optimum, they tie
+or strat has a small implementation-detail edge.
+
+**Cold-vs-warm-cache pitfall**: the earlier round-13 "2×" numbers on
+_bcast overstated kiss's RT edge; warm-cache re-verification (round 16)
+shows the real edge is 1.4-2.2× on the problems where strat's baseline is
+AR. Any future RT measurement must use warm compile cache.
 
 ## Pipeline hardening
 
