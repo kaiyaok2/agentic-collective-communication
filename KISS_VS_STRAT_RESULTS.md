@@ -227,6 +227,26 @@ OverlayCCL) under round-15/16 sim confirms no regressions:
 Standalone-graph auto-fit + primitive-viability probe + deterministic
 phase-1 preserved. Kiss-vs-strat comparison surface is stable.
 
+### v14 prompt regression on chal problems (round-16 test)
+
+Tested v14 prompt (adds bucketing hint) via cc-react on 4 chal problems:
+
+| Problem | Strat | v11 (default) | v14 (bucketing hint) |
+|---|---|---|---|
+| multi_layer_ar_chal | 5161.7 | 5166.8 | 5193.0 |
+| double_reduction_chal | 5190.0 | 5191.0 | 5190.0 |
+| weighted_mean_chal | 5182.0 | 5193.4 | 5193.4 |
+| rotating_shuffle_chal | 5190.0 | **5161.0** | 5190.0 |
+
+**v14 REGRESSED on rotating_shuffle**: lost the 0.6% kiss win. v14's
+bucketing hint pushed cc-react away from the `torch.narrow` trick. Same
+prompt-regression lesson as v12 negative result: adding specialized
+hints can hurt other problems.
+
+**v11 remains canonical** for the multi-problem sweep. v14 should be
+reserved for grad_ar-specific runs where its bucketing hint is
+load-bearing.
+
 **No regressions**: all 11 chal winners are ≤ baseline in sim, all
 pass Phase-4a HW correctness gate, all pass Phase-4b training-shape
 gate.
