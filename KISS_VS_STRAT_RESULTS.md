@@ -208,6 +208,23 @@ vs `.split()` (view + metadata copy).
 should be discarded (or `n_warmup` iters should include full mark_step
 sequences).
 
+### No regression on prior suites (round-16 check)
+
+Rerunning strat sim on 6 representative problems (3 `_bcast` + 3
+OverlayCCL) under round-15/16 sim confirms no regressions:
+
+| Problem | Round-6 sim | Round-16 sim | Delta |
+|---|---|---|---|
+| xor_grid_bcast | 5160 | 5160 | 0% |
+| hamming_dist_bcast | 5160 | 5160 | 0% |
+| gray_code_bcast | 60.7 | 60.0 | 1% (noise) |
+| grad_ar | 7287 | 7287.4 | 0.01% |
+| ring_kv | 5264 | 5260 | 0.08% |
+| alltoallv | 5384 | (timeout 400s) | strat throughput issue, not sim |
+
+Standalone-graph auto-fit + primitive-viability probe + deterministic
+phase-1 preserved. Kiss-vs-strat comparison surface is stable.
+
 **No regressions**: all 11 chal winners are ≤ baseline in sim, all
 pass Phase-4a HW correctness gate, all pass Phase-4b training-shape
 gate.
