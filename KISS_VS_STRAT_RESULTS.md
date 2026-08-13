@@ -183,10 +183,31 @@ in the baseline template is already optimal.
 `narrow` idiom; kiss's freeform generation invents it. Small effect
 (0.5-0.6% sim), but reproducible across two independent problems.
 
-**Honest limitation**: sim divergence is small; both wins would be
-within RT noise (~2ms iter time, 24us = 1% RT). RT-verification on
-these problems requires per-problem harness scaffolding (rt_run_v12.py
-only handles `_bcast` signatures); deferred.
+**RT verification (2-node 64-rank, 100 iters, ms/iter):**
+
+| Problem | Baseline RT | Winner RT | RT Win | Sim Δ | Sim vs RT |
+|---|---|---|---|---|---|
+| rotating_shuffle_chal | 27.30 | 9.64 (kiss narrow) | **2.83×** | 0.6% | RT ≫ sim |
+| batched_ar_scale_chal | 92.56 | 5.63 (kiss narrow+cat) | **16.45×** | 0.5% | RT ≫ sim |
+| multi_grad_ar_chal | 7.46 | 5.77 (strat=kiss single-cat-AR) | 1.29× | 2.5% | RT ≫ sim |
+| multi_layer_ar_chal | 42.60 | 41.47 (strat stacked-AR) | 1.03× | 10.4% | RT < sim |
+
+**Big finding**: sim severely underestimates the RT benefit of collective
+batching / fusion. When kiss/strat replaces N per-tensor collectives with 1
+concatenated collective, real HW saves 2–16× while sim predicts 0.5–2.5%.
+Sim's `T_local` model treats reshape+fancy-index and `.split()` as roughly
+equivalent to `torch.narrow()` (metadata-only view), but at 64-rank the
+per-collective launch overhead dominates.
+
+**Per user's condition (1) — sim mismatch → improve sim.** Root cause:
+sim's collective cost is bytes/BW-driven; missing the per-call dispatch
+overhead. On small tensors (<10KB), overhead > payload — 5× per-tensor AR
+launches cost ~90ms while sim thinks it's ~6us.
+
+**Sim fix candidate**: add auto-probed per-collective launch overhead —
+measure `xm.all_reduce(1-element)` vs `xm.all_reduce(100k-element)` at
+Phase-1; the intercept is fixed launch cost. This is exactly the
+auto-probe pattern (no hardcoded numbers).
 
 **No regressions**: all 11 chal winners are ≤ baseline in sim, all
 pass Phase-4a HW correctness gate, all pass Phase-4b training-shape
