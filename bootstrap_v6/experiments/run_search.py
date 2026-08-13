@@ -66,7 +66,8 @@ import search.problems_kiss_verify  # noqa
 import search.problems_modext  # noqa
 import search.problems_novel_v4  # noqa
 import search.problems_novel_v5  # noqa
-import search.problems_novel_v6  # noqa
+import search.problems_novel_v6
+import search.problems_comm_v7  # noqa
 from search.profiling import profile_schedule, format_profiling_report
 from search.agent_simulator_config import (
     run_profiling_agent, refine_simulator, AgentSimulator,
@@ -2325,7 +2326,9 @@ def run_search(pattern="moe", use_llm=True, llm_model="opus",
             pipeline_amort_alpha3=getattr(agent_sim.config, "pipeline_amort_alpha3", 0.02),
             training_scale_bytes_multiplier=_train_scale_mult,
             memcpy_bytes_per_us=_memcpy_bps,
-            memcpy_seq_bytes_per_us=_memcpy_seq_bps)
+            memcpy_seq_bytes_per_us=_memcpy_seq_bps,
+            standalone_graph_cost_cfg=agent_sim.knowledgebase.get("standalone_graph_cost_us", {}),
+            unsupported_local_ops=[p for p in (agent_sim.config.unsupported_primitives or []) if p in {"cumsum", "cumprod", "sort", "argsort"}])
         cost_model = CostModel(topology, send_counts,
                                dispatch_overhead_us=dispatch_overhead,
                                graph_launch_overhead_us=_glo_us,
@@ -2434,7 +2437,9 @@ def phase2_generic_baseline(problem, topology, dispatch_overhead, num_nodes,
                             pipeline_amort_alpha3=0.02,
                             training_scale_bytes_multiplier=1.0,
                             memcpy_bytes_per_us=0.0,
-                            memcpy_seq_bytes_per_us=0.0):
+                            memcpy_seq_bytes_per_us=0.0,
+                            standalone_graph_cost_cfg=None,
+                            unsupported_local_ops=None):
     """
     Evaluate all builtin templates on the simulator to establish baselines.
 
@@ -2475,8 +2480,8 @@ def phase2_generic_baseline(problem, topology, dispatch_overhead, num_nodes,
             training_scale_bytes_multiplier=training_scale_bytes_multiplier,
             memcpy_bytes_per_us=memcpy_bytes_per_us,
             memcpy_seq_bytes_per_us=memcpy_seq_bytes_per_us,
-            standalone_graph_cost_cfg=agent_sim.knowledgebase.get("standalone_graph_cost_us", {}),
-            unsupported_local_ops=[p for p in (agent_sim.config.unsupported_primitives or []) if p in {"cumsum", "cumprod", "sort", "argsort"}])
+            standalone_graph_cost_cfg=standalone_graph_cost_cfg,
+            unsupported_local_ops=unsupported_local_ops)
         if "error" not in bench:
             sim_us = bench["sim_time_us"]
             baseline_results.append((f"baseline:{tname}", {

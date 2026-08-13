@@ -82,7 +82,7 @@ def get_baseline_code(problem_name):
         [NEURON_PY, "-c",
          "import sys, json; sys.path.insert(0, "
          f"{ACC!r});"
-         "from search.problems import get_problem; import search.problems_kiss_verify; import search.problems_modext; import search.problems_novel_v4; import search.problems_novel_v5; import search.problems_novel_v6;"
+         "from search.problems import get_problem; import search.problems_kiss_verify; import search.problems_modext; import search.problems_novel_v4; import search.problems_novel_v5; import search.problems_novel_v6; import search.problems_comm_v7;"
          f"p = get_problem('{problem_name}');"
          "tmpls = p.builtin_templates;"
          "k = next(iter(tmpls.keys()));"

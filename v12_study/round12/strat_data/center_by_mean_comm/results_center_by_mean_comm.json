@@ -1,0 +1,22 @@
+[
+  {
+    "template": "baseline_center",
+    "cost_score": 51.614,
+    "sim_time_us": 5161.4,
+    "local_ops": 3,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 1,
+    "name": "baseline:baseline_center"
+  },
+  {
+    "template": "strategy_enumerate_final",
+    "cost_score": 51.614,
+    "sim_time_us": 5161.4,
+    "local_ops": 3,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 1,
+    "name": "strat:Single all-reduce then subtrac"
+  }
+]

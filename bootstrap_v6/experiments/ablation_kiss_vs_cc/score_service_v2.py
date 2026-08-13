@@ -41,6 +41,7 @@ with contextlib.redirect_stdout(sys.stderr):
     import search.problems_novel_v4
     import search.problems_novel_v5
     import search.problems_novel_v6
+    import search.problems_comm_v7
     import search.problems_modext
     from search.template_evolution import TemplateEvolution
     from search.contention_analysis import ContentionAnalyzer

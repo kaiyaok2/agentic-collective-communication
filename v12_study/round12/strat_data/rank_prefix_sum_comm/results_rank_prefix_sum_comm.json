@@ -1,0 +1,22 @@
+[
+  {
+    "template": "baseline_ag_prefix",
+    "cost_score": 51.62,
+    "sim_time_us": 5162.0,
+    "local_ops": 3,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "baseline:baseline_ag_prefix"
+  },
+  {
+    "template": "strategy_enumerate_final",
+    "cost_score": 51.62,
+    "sim_time_us": 5162.0,
+    "local_ops": 3,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "strat:AllGather then local prefix su"
+  }
+]

@@ -1,0 +1,71 @@
+[_sso_creds] no live SSO at import; AWS calls will fail if attempted (Command '['aws', 'configure', 'export-credentials', '--profile', 'default', '--format', 'process']' returned non-zero exit status 2.)
+======================================================================
+Collective Search Pipeline: Problem P_111 (5-Phase)
+Pattern: moe | LLM: True | HW eval: False
+======================================================================
+
+======================================================================
+[Phase 1] Agent Hardware Profiling — LLM Builds Simulator
+======================================================================
+  Deterministic phase-1 auto-probe (LLM-driven path deprecated)
+Trainium cluster topology (2 node(s)):
+  Nodes: 2, Devices: 32, Cores: 64
+  NeuronLink BW: 192.0 GB/s, Latency: 0.5 us
+  EFA BW: 12.5 GB/s x 8 adapters/node, Latency: 5.0 us
+  Max hops: 4, Avg hops: 1.50
+  Hardware constraints: unsupported primitives = ['all_to_all', 'cumsum']
+  [Phase 1 done] pipeline_amort_alphas = (0.300, 0.100, 0.020)
+
+======================================================================
+[Phase 2] Baseline Evaluation: Problem P_111
+======================================================================
+  baseline_ar_max: 5161.0 us, 2 local ops, 1 ag, 0 ar, 0 cp
+
+  Best baseline: baseline:baseline_ar_max (5161.0 us)
+
+======================================================================
+[Phase 3 / Strategy-Enumerate] Problem P_111
+======================================================================
+  K=5 strategies, R=1 refinement rounds per top-2 (budget ~8 LLM calls)
+  Enumerated 5 strategies:
+    1. All-gather then local max reduction: Uses a single all_gather to collect all ranks' vectors into a (world_size, N) te...
+    2. All-reduce with max operator: Uses a single all_reduce with op=MAX directly on the local vector x, producing t...
+    3. Recursive halving pairwise max exchange: Performs log2(world_size)=6 rounds of point-to-point send/recv with doubling-dis...
+    4. Tree-reduce then broadcast: Uses a reduce operation with MAX to a designated root rank (log2(world_size) ste...
+    5. Chunked reduce-scatter then all-gather: Splits x into world_size chunks, performs reduce_scatter with MAX so each rank h...
+  Strategy 1 (All-gather then local max reduction): sim=5161.0 us
+  Strategy 2 (All-reduce with max operator): sim=5160.0 us
+  Strategy 3 (Recursive halving pairwise max exchange) INCORRECT: CRASH in collect pass 0: world=4 pattern=uniform rank=0: TypeError: max() received an invalid combin
+  Strategy 4 (Tree-reduce then broadcast): sim=5160.0 us
+  Strategy 5 (Chunked reduce-scatter then all-gather) INCORRECT: world=4 pattern=uniform rank=0: max_diff=5.389356
+
+  Top after enumeration:
+    All-reduce with max operator: 5160.0 us
+    Tree-reduce then broadcast: 5160.0 us
+
+  Strategy-Enumerate complete. 5 total candidates.
+  Best: All-reduce with max operator (sim=5160.0 us)
+
+======================================================================
+RANKING (post-evolution, pre-hardware)
+======================================================================
+  1. strat:All-reduce with max operator: 5160.0 us, 1 ops
+  2. baseline:baseline_ar_max: 5161.0 us, 2 ops
+
+Simulator winner: strat:All-reduce with max operator (sim=5160.0 us)
+
+======================================================================
+[Phase 4b] Training-shape gate (all candidates): Problem P_111
+======================================================================
+  PASS strat:All-reduce with max operator
+  PASS baseline:baseline_ar_max
+  Summary: 2 pass / 0 fail / 0 skip (total 2)
+
+======================================================================
+[Phase 5] Code Generation → runtime/trainium_max_across_ranks_comm.py
+======================================================================
+  Winner: strat:All-reduce with max operator
+  Score: 51.600, SimTime: 5160.0 us, Local ops: 1
+  Results: /tmp/strat_v12/max_across_ranks_comm/results_max_across_ranks_comm.json
+  Generated: runtime/trainium_max_across_ranks_comm_2node.py
+

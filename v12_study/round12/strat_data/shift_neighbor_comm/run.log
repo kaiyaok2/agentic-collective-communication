@@ -1,0 +1,72 @@
+[_sso_creds] no live SSO at import; AWS calls will fail if attempted (Command '['aws', 'configure', 'export-credentials', '--profile', 'default', '--format', 'process']' returned non-zero exit status 2.)
+======================================================================
+Collective Search Pipeline: Problem P_114 (5-Phase)
+Pattern: moe | LLM: True | HW eval: False
+======================================================================
+
+======================================================================
+[Phase 1] Agent Hardware Profiling — LLM Builds Simulator
+======================================================================
+  Deterministic phase-1 auto-probe (LLM-driven path deprecated)
+Trainium cluster topology (2 node(s)):
+  Nodes: 2, Devices: 32, Cores: 64
+  NeuronLink BW: 192.0 GB/s, Latency: 0.5 us
+  EFA BW: 12.5 GB/s x 8 adapters/node, Latency: 5.0 us
+  Max hops: 4, Avg hops: 1.50
+  Hardware constraints: unsupported primitives = ['all_to_all', 'cumsum']
+  [Phase 1 done] pipeline_amort_alphas = (0.300, 0.100, 0.020)
+
+======================================================================
+[Phase 2] Baseline Evaluation: Problem P_114
+======================================================================
+  baseline_cp: 5160.0 us, 1 local ops, 0 ag, 0 ar, 1 cp
+
+  Best baseline: baseline:baseline_cp (5160.0 us)
+
+======================================================================
+[Phase 3 / Strategy-Enumerate] Problem P_114
+======================================================================
+  K=5 strategies, R=1 refinement rounds per top-2 (budget ~8 LLM calls)
+  Enumerated 5 strategies:
+    1. Direct collective_permute right-neighbor: Uses a single collective_permute with pairs mapping each rank r to receive from ...
+    2. All-to-all with masked extraction: Each rank contributes its data to a full all_to_all (or all_gather), then locall...
+    3. All-gather then local select: Perform all_gather to collect all ranks' vectors into a (world_size, N) buffer, ...
+    4. Ring-shift via chained send/recv pairs: Decompose the permute into explicit pairwise send to (rank-1) and recv from (ran...
+    5. Reduce-scatter plus all-gather with data encoding: Encode x into a (world_size, N) tensor with zeros everywhere except row rank, pe...
+  Strategy 1 (Direct collective_permute right-neighbor): sim=5160.0 us
+  Strategy 2 (All-to-all with masked extraction): sim=5161.0 us
+  Strategy 3 (All-gather then local select): sim=5161.0 us
+  Strategy 4 (Ring-shift via chained send/recv pairs): sim=5293.0 us
+  Strategy 5 (Reduce-scatter plus all-gather with data encoding): sim=5190.0 us
+
+  Top after enumeration:
+    Direct collective_permute right-neighbor: 5160.0 us
+    All-to-all with masked extraction: 5161.0 us
+    top 2 round 1: NEW BEST 5160.0 us (0.0% improvement)
+
+  Strategy-Enumerate complete. 7 total candidates.
+  Best: Direct collective_permute right-neighbor (sim=5160.0 us)
+
+======================================================================
+RANKING (post-evolution, pre-hardware)
+======================================================================
+  1. baseline:baseline_cp: 5160.0 us, 1 ops
+  2. strat:Direct collective_permute righ: 5160.0 us, 1 ops
+
+Simulator winner: baseline:baseline_cp (sim=5160.0 us)
+
+======================================================================
+[Phase 4b] Training-shape gate (all candidates): Problem P_114
+======================================================================
+  PASS baseline:baseline_cp
+  PASS strat:Direct collective_permute righ
+  Summary: 2 pass / 0 fail / 0 skip (total 2)
+
+======================================================================
+[Phase 5] Code Generation → runtime/trainium_shift_neighbor_comm.py
+======================================================================
+  Winner: baseline:baseline_cp
+  Score: 51.600, SimTime: 5160.0 us, Local ops: 1
+  Results: /tmp/strat_v12/shift_neighbor_comm/results_shift_neighbor_comm.json
+  Generated: runtime/trainium_shift_neighbor_comm_2node.py
+

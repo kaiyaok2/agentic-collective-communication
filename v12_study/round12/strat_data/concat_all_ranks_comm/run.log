@@ -1,0 +1,72 @@
+[_sso_creds] no live SSO at import; AWS calls will fail if attempted (Command '['aws', 'configure', 'export-credentials', '--profile', 'default', '--format', 'process']' returned non-zero exit status 2.)
+======================================================================
+Collective Search Pipeline: Problem P_112 (5-Phase)
+Pattern: moe | LLM: True | HW eval: False
+======================================================================
+
+======================================================================
+[Phase 1] Agent Hardware Profiling — LLM Builds Simulator
+======================================================================
+  Deterministic phase-1 auto-probe (LLM-driven path deprecated)
+Trainium cluster topology (2 node(s)):
+  Nodes: 2, Devices: 32, Cores: 64
+  NeuronLink BW: 192.0 GB/s, Latency: 0.5 us
+  EFA BW: 12.5 GB/s x 8 adapters/node, Latency: 5.0 us
+  Max hops: 4, Avg hops: 1.50
+  Hardware constraints: unsupported primitives = ['all_to_all', 'cumsum']
+  [Phase 1 done] pipeline_amort_alphas = (0.300, 0.100, 0.020)
+
+======================================================================
+[Phase 2] Baseline Evaluation: Problem P_112
+======================================================================
+  baseline_ag: 5160.0 us, 1 local ops, 1 ag, 0 ar, 0 cp
+
+  Best baseline: baseline:baseline_ag (5160.0 us)
+
+======================================================================
+[Phase 3 / Strategy-Enumerate] Problem P_112
+======================================================================
+  K=5 strategies, R=1 refinement rounds per top-2 (budget ~8 LLM calls)
+  Enumerated 5 strategies:
+    1. Direct all_gather single dispatch: Uses a single xm.all_gather on the local shard along dim=0, producing the full c...
+    2. Ring-style send/recv with buffer rotation: Each rank iteratively sends its current buffer to the next rank and receives fro...
+    3. Reduce-scatter plus all-reduce reconstruction: First replicates the local shard into a world_size*N buffer with zeros, then per...
+    4. Hierarchical two-level all_gather: Performs an intra-node all_gather among cores_per_device (or devices within a no...
+    5. Recursive doubling (pairwise exchange): In log2(world_size)=6 steps, each rank exchanges and concatenates data with a pa...
+  Strategy 1 (Direct all_gather single dispatch): sim=5160.0 us
+  Strategy 2 (Ring-style send/recv with buffer rotation): sim=5589.0 us
+  Strategy 3 (Reduce-scatter plus all-reduce reconstruction): sim=5189.0 us
+  Strategy 4 (Hierarchical two-level all_gather): sim=5220.0 us
+  Strategy 5 (Recursive doubling (pairwise exchange)): sim=6189.0 us
+
+  Top after enumeration:
+    Direct all_gather single dispatch: 5160.0 us
+    Reduce-scatter plus all-reduce reconstruction: 5189.0 us
+    top 2 round 1: NEW BEST 5160.0 us (0.6% improvement)
+
+  Strategy-Enumerate complete. 7 total candidates.
+  Best: Direct all_gather single dispatch (sim=5160.0 us)
+
+======================================================================
+RANKING (post-evolution, pre-hardware)
+======================================================================
+  1. baseline:baseline_ag: 5160.0 us, 1 ops
+  2. strat:Direct all_gather single dispa: 5160.0 us, 1 ops
+
+Simulator winner: baseline:baseline_ag (sim=5160.0 us)
+
+======================================================================
+[Phase 4b] Training-shape gate (all candidates): Problem P_112
+======================================================================
+  PASS baseline:baseline_ag
+  PASS strat:Direct all_gather single dispa
+  Summary: 2 pass / 0 fail / 0 skip (total 2)
+
+======================================================================
+[Phase 5] Code Generation → runtime/trainium_concat_all_ranks_comm.py
+======================================================================
+  Winner: baseline:baseline_ag
+  Score: 51.600, SimTime: 5160.0 us, Local ops: 1
+  Results: /tmp/strat_v12/concat_all_ranks_comm/results_concat_all_ranks_comm.json
+  Generated: runtime/trainium_concat_all_ranks_comm_2node.py
+

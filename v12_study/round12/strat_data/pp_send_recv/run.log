@@ -1,0 +1,72 @@
+[_sso_creds] no live SSO at import; AWS calls will fail if attempted (Command '['aws', 'configure', 'export-credentials', '--profile', 'default', '--format', 'process']' returned non-zero exit status 2.)
+======================================================================
+Collective Search Pipeline: Pipeline-parallel cross-stage send/recv (5-Phase)
+Pattern: moe | LLM: True | HW eval: False
+======================================================================
+
+======================================================================
+[Phase 1] Agent Hardware Profiling — LLM Builds Simulator
+======================================================================
+  Deterministic phase-1 auto-probe (LLM-driven path deprecated)
+Trainium cluster topology (2 node(s)):
+  Nodes: 2, Devices: 32, Cores: 64
+  NeuronLink BW: 192.0 GB/s, Latency: 0.5 us
+  EFA BW: 12.5 GB/s x 8 adapters/node, Latency: 5.0 us
+  Max hops: 4, Avg hops: 1.50
+  Hardware constraints: unsupported primitives = ['all_to_all', 'cumsum']
+  [Phase 1 done] pipeline_amort_alphas = (0.300, 0.100, 0.020)
+
+======================================================================
+[Phase 2] Baseline Evaluation: Pipeline-parallel cross-stage send/recv
+======================================================================
+  per_mb: 46022.9 us, 128 local ops, 0 ag, 64 ar, 0 cp
+
+  Best baseline: baseline:per_mb (46022.9 us)
+
+======================================================================
+[Phase 3 / Strategy-Enumerate] Pipeline-parallel cross-stage send/recv
+======================================================================
+  K=5 strategies, R=1 refinement rounds per top-2 (budget ~8 LLM calls)
+  Enumerated 5 strategies:
+    1. Per-microbatch masked all-reduce: Issues one all-reduce per microbatch with a buffer of shape (half, *act_shape), ...
+    2. Batched all-reduce with stacked M dimension: Stacks all M microbatches into a single buffer of shape (half, M, *act_shape), p...
+    3. Point-to-point send/recv pairs: Each src_stage rank sends its microbatch activations directly to its paired dst_...
+    4. Chunked mini-batch all-reduce pipeline: Groups M microbatches into K chunks (e.g., K=4), issues K all-reduces each with ...
+    5. All-gather with source-only contribution: Source-stage ranks contribute their activations while destination-stage ranks co...
+  Strategy 1 (Per-microbatch masked all-reduce): sim=46022.9 us
+  Strategy 2 (Batched all-reduce with stacked M dimension): sim=12117.0 us
+  Strategy 3 (Point-to-point send/recv pairs) INCORRECT: world=4 pattern=uniform rank=2[0]: max_diff=0.034105
+  Strategy 4 (Chunked mini-batch all-reduce pipeline): sim=12204.0 us
+  Strategy 5 (All-gather with source-only contribution): sim=6014.7 us
+
+  Top after enumeration:
+    All-gather with source-only contribution: 6014.7 us
+    Batched all-reduce with stacked M dimension: 12117.0 us
+    top 1 round 1: NEW BEST 6013.8 us (0.0% improvement)
+
+  Strategy-Enumerate complete. 6 total candidates.
+  Best: refined-from-All-gather with source-only contribution (sim=6013.8 us)
+
+======================================================================
+RANKING (post-evolution, pre-hardware)
+======================================================================
+  1. strat:refined-from-All-gather with s: 6013.8 us, 2 ops
+  2. baseline:per_mb: 46022.9 us, 128 ops
+
+Simulator winner: strat:refined-from-All-gather with s (sim=6013.8 us)
+
+======================================================================
+[Phase 4b] Training-shape gate (all candidates): Pipeline-parallel cross-stage send/recv
+======================================================================
+  FAIL strat:refined-from-All-gather with s: AttributeError: type object '_StubXM' has no attribute 'collective_permute'
+  PASS baseline:per_mb
+  Summary: 1 pass / 1 fail / 0 skip (total 2)
+
+======================================================================
+[Phase 5] Code Generation → runtime/trainium_pp_send_recv.py
+======================================================================
+  Winner: baseline:per_mb
+  Score: 460.229, SimTime: 46022.9 us, Local ops: 128
+  Results: /tmp/strat_v12/pp_send_recv/results_pp_send_recv.json
+  Generated: runtime/trainium_pp_send_recv_2node.py
+

@@ -1,0 +1,72 @@
+[_sso_creds] no live SSO at import; AWS calls will fail if attempted (Command '['aws', 'configure', 'export-credentials', '--profile', 'default', '--format', 'process']' returned non-zero exit status 2.)
+======================================================================
+Collective Search Pipeline: Problem P_115 (5-Phase)
+Pattern: moe | LLM: True | HW eval: False
+======================================================================
+
+======================================================================
+[Phase 1] Agent Hardware Profiling — LLM Builds Simulator
+======================================================================
+  Deterministic phase-1 auto-probe (LLM-driven path deprecated)
+Trainium cluster topology (2 node(s)):
+  Nodes: 2, Devices: 32, Cores: 64
+  NeuronLink BW: 192.0 GB/s, Latency: 0.5 us
+  EFA BW: 12.5 GB/s x 8 adapters/node, Latency: 5.0 us
+  Max hops: 4, Avg hops: 1.50
+  Hardware constraints: unsupported primitives = ['all_to_all', 'cumsum']
+  [Phase 1 done] pipeline_amort_alphas = (0.300, 0.100, 0.020)
+
+======================================================================
+[Phase 2] Baseline Evaluation: Problem P_115
+======================================================================
+  baseline_rs: 5160.0 us, 1 local ops, 0 ag, 0 ar, 0 cp
+
+  Best baseline: baseline:baseline_rs (5160.0 us)
+
+======================================================================
+[Phase 3 / Strategy-Enumerate] Problem P_115
+======================================================================
+  K=5 strategies, R=1 refinement rounds per top-2 (budget ~8 LLM calls)
+  Enumerated 5 strategies:
+    1. Direct reduce_scatter primitive: Uses a single xm.reduce_scatter call with REDUCE_SUM on the full (N,) tensor, sc...
+    2. All-reduce then local slice: Performs xm.all_reduce(REDUCE_SUM) on the full (N,) vector (summing across all r...
+    3. Chunked pipelined reduce_scatter: Splits x into multiple chunks along dim 0 (e.g., 2-4 chunks of size N/num_chunks...
+    4. Manual reduce via permute-and-accumulate ring: Implements a ring-based reduce_scatter manually using world_size-1 rounds of xm....
+    5. Reshape to 2D then all-reduce plus scatter: Reshapes x from (N,) to (world_size, K), performs xm.all_reduce(REDUCE_SUM) on t...
+  Strategy 1 (Direct reduce_scatter primitive): sim=5160.0 us
+  Strategy 2 (All-reduce then local slice): sim=5161.0 us
+  Strategy 3 (Chunked pipelined reduce_scatter) INCORRECT: world=4 pattern=uniform rank=0: max_diff=5.782928
+  Strategy 4 (Manual reduce via permute-and-accumulate ring) INCORRECT: world=4 pattern=uniform rank=0: max_diff=4.646091
+  Strategy 5 (Reshape to 2D then all-reduce plus scatter): sim=5161.0 us
+
+  Top after enumeration:
+    Direct reduce_scatter primitive: 5160.0 us
+    All-reduce then local slice: 5161.0 us
+    top 2 round 1: NEW BEST 5160.0 us (0.0% improvement)
+
+  Strategy-Enumerate complete. 5 total candidates.
+  Best: Direct reduce_scatter primitive (sim=5160.0 us)
+
+======================================================================
+RANKING (post-evolution, pre-hardware)
+======================================================================
+  1. baseline:baseline_rs: 5160.0 us, 1 ops
+  2. strat:Direct reduce_scatter primitiv: 5160.0 us, 1 ops
+
+Simulator winner: baseline:baseline_rs (sim=5160.0 us)
+
+======================================================================
+[Phase 4b] Training-shape gate (all candidates): Problem P_115
+======================================================================
+  PASS baseline:baseline_rs
+  PASS strat:Direct reduce_scatter primitiv
+  Summary: 2 pass / 0 fail / 0 skip (total 2)
+
+======================================================================
+[Phase 5] Code Generation → runtime/trainium_reduce_scatter_sum_comm.py
+======================================================================
+  Winner: baseline:baseline_rs
+  Score: 51.600, SimTime: 5160.0 us, Local ops: 1
+  Results: /tmp/strat_v12/reduce_scatter_sum_comm/results_reduce_scatter_sum_comm.json
+  Generated: runtime/trainium_reduce_scatter_sum_comm_2node.py
+

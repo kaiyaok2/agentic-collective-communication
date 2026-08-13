@@ -1,0 +1,22 @@
+[
+  {
+    "template": "baseline_ag_topk",
+    "cost_score": 51.61,
+    "sim_time_us": 5161.0,
+    "local_ops": 2,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 1,
+    "name": "baseline:baseline_ag_topk"
+  },
+  {
+    "template": "strategy_enumerate_final",
+    "cost_score": 51.61,
+    "sim_time_us": 5161.0,
+    "local_ops": 2,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 1,
+    "name": "strat:Single all_reduce max"
+  }
+]
