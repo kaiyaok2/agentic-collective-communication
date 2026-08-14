@@ -20,6 +20,7 @@ cp $BOOTSTRAP/search/problems_kiss_verify.py $TARGET/search/problems_kiss_verify
 cp $BOOTSTRAP/search/problems_comm_v7.py $TARGET/search/problems_comm_v7.py
 cp $BOOTSTRAP/search/problems_challenge_v8.py $TARGET/search/problems_challenge_v8.py
 cp $BOOTSTRAP/search/problems_round17.py $TARGET/search/problems_round17.py
+cp $BOOTSTRAP/search/problems_round18.py $TARGET/search/problems_round18.py
 
 # Add kiss integration
 mkdir -p $TARGET/experiments/ablation_kiss_vs_cc

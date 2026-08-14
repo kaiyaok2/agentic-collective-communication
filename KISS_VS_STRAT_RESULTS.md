@@ -446,3 +446,48 @@ problems have real sim tension but the compiler collapses it at HW
 level. This is more evidence for the paper's honest characterization:
 kiss ≈ strat on comm-required problems; kiss's edge is scoped to
 no-comm regime where strat's default is AR.
+
+## Round 18: fusion-resistant multi-collective problems (2026-08-13)
+
+Per user's guidance: "look for new problems where Neuron compiler fusing
+does not work". Designed problems combining DIFFERENT collective types
+(AR + RS + AG) to prevent XLA fusion into identical NEFFs.
+
+### Sim results
+
+| Problem | Baseline | Strat | CC-react (kiss-proxy) | Winner |
+|---|---|---|---|---|
+| dual_reduce_shard (P_150) | 5269.5 | **5208.5** | 5266.5 | strat +1.1% |
+| topk_from_sum (P_151) | 5239.1 | 5239.1 | 5178.1 | cc-react +1.2% |
+| offset_shift_window (P_152) | 5161 | 5161 | 5161 | tied |
+
+### Warm-cache RT (2-node 64-rank)
+
+| Problem | Baseline | Strat | CC-react |
+|---|---|---|---|
+| dual_reduce_shard | 7.06 | **5.15** | 5.44 |
+| topk_from_sum | 6.01 | (n/a) | CRASH: unsupported torch.sort |
+| offset_shift_window | 5.30 | 5.30 | 5.30 |
+
+**dual_reduce_shard**: strat wins RT by 5.4% over kiss (5.15 vs 5.44)
+and 1.37× over baseline. **Same pattern as OverlayCCL grad_ar** —
+strat's cat+AR+narrow beats kiss's AR+RS. Adds a second problem where
+kiss v11 prompt lacks the concat-into-single-collective hint.
+
+**topk_from_sum**: cc-react picked `torch.sort` which Neuron compiles
+at Phase-1 probe scale (8 elems) but crashes at 64-rank training scale
+(N*world=65536 elems). **Sim did NOT reject this candidate** — the
+primitive-viability probe doesn't test at training-shape scale. This
+is a legitimate sim bug (independent of kiss vs strat).
+
+**offset_shift_window**: both find same simple `ag[idx]` template. No
+divergence at sim OR RT.
+
+### Findings summary
+
+Only **dual_reduce_shard** shows real RT-verified strat > kiss divergence
+(5.4%). Same v14-prompt fix applies: kiss should be taught to concat
+multiple different-collective inputs into ONE collective when possible.
+
+Neuron fusion IS defeated by mixed collective types — the sim can see the
+difference and RT confirms it. This is a productive problem-design axis.
