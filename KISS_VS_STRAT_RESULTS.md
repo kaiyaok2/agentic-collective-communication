@@ -491,3 +491,21 @@ multiple different-collective inputs into ONE collective when possible.
 
 Neuron fusion IS defeated by mixed collective types — the sim can see the
 difference and RT confirms it. This is a productive problem-design axis.
+
+### Round 18b: additional fusion-resistant problems
+
+**P_153 double_shard_reduce**: 2 tensors each need per-rank shard of AR-SUM.
+Sim tied at 5203 (both find "interleaved cat + 1 RS"). RT tied (~5.27ms).
+
+**P_154 triple_grad_ar**: 3 tensors need AR-SUM. Sim tied at 5163
+(both find cat+AR+narrow). RT: baseline 3-AR 5.61ms, winner
+cat+AR+narrow 5.43ms — **kiss=strat 1.03× RT win** over baseline.
+
+Both problems produce useful sim ranking (winner beats naive baseline)
+but kiss and strat converge to same solution. This is the "canonical
+best strategy exists and both methods find it" regime — no kiss vs
+strat divergence.
+
+**Round 18 net: 5 new problems total**, 1 with meaningful kiss vs strat
+divergence (dual_reduce_shard: strat RT 5.4% over kiss). 4 tied.
+
