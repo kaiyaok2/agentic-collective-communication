@@ -23,11 +23,23 @@ OverlayCCL originals from the paper):
 | Challenging communication (`_chal`) | 11 | **Kiss wins 2 by `torch.narrow` trick, strat wins 3 tiny (< 0.2%), 6 tied** (see round-15 below) |
 | OverlayCCL originals | 8 | **Tied 6, kiss wins 1, strat wins 1 (grad_ar bucketing, v14 prompt closes)** |
 
+### 4 confirmed kiss > strat problems (warm-cache 2-node RT)
+
+| Problem | Suite | Kiss RT | Strat RT | RT speedup | Kiss's trick |
+|---|---|---|---|---|---|
+| hamming_dist_bcast | A | 2.33 ms | 5.05 ms | **2.16×** | Local `bin(i^j).count('1')` closed-form; strat defaults to AR |
+| xor_grid_bcast | A | 3.77 ms | 5.16 ms | **1.37×** | Local `i^j` closed-form; strat defaults to AR |
+| rotating_shuffle_chal | C | 5.60 ms | 5.77 ms | **1.03×** | `torch.narrow` instead of `.reshape()` + fancy-index (small but reproducible) |
+| batched_ar_scale_chal | C | 5.63 ms | 6.72 ms | **1.19×** | `torch.narrow` split of concat-AR result instead of `torch.split` |
+
 **Honest characterization.** Kiss dominates when the optimal solution is
 zero-collective local computation (the `_bcast` regime, unique to this
-suite). Kiss ≈ strat when a single collective is genuinely required.
-Strat can beat kiss on multi-collective bucketing patterns until the
-kiss prompt is taught the pattern (v14).
+suite) OR when the optimum uses view-op idioms (`torch.narrow`) outside
+strat's fixed template set. Kiss ≈ strat when a single collective is
+genuinely required OR when the Neuron compiler auto-fuses Python
+variants to the same NEFF (as observed in round-17 designed-ambiguity
+problems). Strat can beat kiss on multi-collective bucketing patterns
+until the kiss prompt is taught the pattern (v14).
 
 ## Method
 
