@@ -39,6 +39,7 @@ cp $BOOTSTRAP/experiments/ablation_kiss_vs_cc/kiss_phase3.py $TARGET/experiments
 # Prompts
 cp $BOOTSTRAP/prompts/generic_evolution.md $TARGET/prompts/generic_evolution.md
 cp $BOOTSTRAP/prompts/generic_evolution_v11.md $TARGET/prompts/generic_evolution_v11.md
+cp $BOOTSTRAP/prompts/reference_trainium_details.md $TARGET/prompts/reference_trainium_details.md
 cp $BOOTSTRAP/prompts/generic_evolution_v13.md $TARGET/prompts/generic_evolution_v13.md
 cp $BOOTSTRAP/prompts/generic_evolution_v14.md $TARGET/prompts/generic_evolution_v14.md
 
