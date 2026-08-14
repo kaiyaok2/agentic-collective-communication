@@ -397,3 +397,40 @@ results.
 - `search/problems.py` — original OverlayCCL 8 (Suite D)
 - `search/problems_kiss_verify.py` — kiss-specific test infrastructure
 
+
+## Round 17: designed-with-ambiguity problems (2026-08-13)
+
+Per user's guidance: designed problems with multiple plausible solutions
+where a developer wouldn't know which is fastest. Smoke-tested each
+candidate on real HW; if RT differs, use worse as seed baseline.
+
+**Result**: 4 candidate problems (P140 bidi_grad_ar, P141 segmented_ar,
+P142 offset_dependent, P143 reduce_bcast_split). Neuron-supported: 2/4
+(P142 all_to_all and P143 reduce_scatter both hit NCC_IVRF100 compiler
+errors).
+
+**bidi_grad_ar sim**: strat 5160, cc-react 5160 — tied.
+**bidi_grad_ar RT** (warm-cache 2-node): baseline 2.01 ms, 2-AR-trick
+2.07 ms — no divergence.
+
+**segmented_ar sim**: strat 5392 (194 ops full-cat + view/reshape),
+cc-react 5229 (3 ops direct cat+split) — 3% cc-react win.
+**segmented_ar RT** (warm-cache): baseline 11.4 ms, cc-react winner 11.35
+ms — no divergence.
+
+**Key finding**: Neuron compiler is very effective at fusing collectives
+across Python-level implementation variants. Different-looking source
+code often compiles to identical NEFFs. The **sim can pick up on
+Python-level op-count differences**, but at RT those differences are
+compiler-eliminated.
+
+**Prompt-cache contamination in smoke-tests**: initial smoke-test showed
+"P140 2-AR trick 2.19× faster than 1-AR" but this was pollution from
+prior test's warm cache. Warm-cache-controlled re-measurement shows
+2.01 vs 2.07 — no real speedup.
+
+**Round-17 outcome**: no new kiss vs strat RT divergences found. The 2
+problems have real sim tension but the compiler collapses it at HW
+level. This is more evidence for the paper's honest characterization:
+kiss ≈ strat on comm-required problems; kiss's edge is scoped to
+no-comm regime where strat's default is AR.
