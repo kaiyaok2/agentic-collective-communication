@@ -23,6 +23,13 @@ cp $BOOTSTRAP/search/problems_round17.py $TARGET/search/problems_round17.py
 cp $BOOTSTRAP/search/problems_round18.py $TARGET/search/problems_round18.py
 cp $BOOTSTRAP/search/problems_round18b.py $TARGET/search/problems_round18b.py
 cp $BOOTSTRAP/search/problems_round18c.py $TARGET/search/problems_round18c.py
+cp $BOOTSTRAP/search/problems_round20.py $TARGET/search/problems_round20.py
+cp $BOOTSTRAP/search/problems_round21.py $TARGET/search/problems_round21.py
+cp $BOOTSTRAP/search/problems_round22.py $TARGET/search/problems_round22.py
+cp $BOOTSTRAP/search/problems_round23.py $TARGET/search/problems_round23.py
+cp $BOOTSTRAP/search/problems_round24.py $TARGET/search/problems_round24.py
+cp $BOOTSTRAP/search/problems_round25.py $TARGET/search/problems_round25.py
+cp $BOOTSTRAP/search/problems_round26.py $TARGET/search/problems_round26.py
 
 # Add kiss integration
 mkdir -p $TARGET/experiments/ablation_kiss_vs_cc
