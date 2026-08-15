@@ -831,3 +831,50 @@ rounds' methodology (`rt_run_v12.py` + rt_2node.sh):
   no-comm; rotating_shuffle_chal, batched_ar_scale_chal for narrow
   trick) already have RT numbers.
 
+
+## Round 28: Sorcar-style short prompt + read_reference tool (2026-08-15)
+
+Per kiss developer feedback: Sorcar favors short prompts with domain
+knowledge in separate reference docs. Trigger keywords ("AI discovery",
+"adversarial testing") can invoke internal workflows. Kiss also needs a
+tool to actually access the reference doc (`read_reference()`); otherwise
+the prompt's file-path pointer is dead.
+
+**Setup**:
+- `generic_evolution_v11.md`: rewritten as 37-line Sorcar prompt (1-sentence
+  intro + placeholders + rules + reference-doc pointer). Trigger keywords
+  "AI discovery" and "adversarial testing" retained.
+- `reference_trainium_details.md`: full 164-line prior v11 content
+  (Trainium quirks, XLA collectives, sim cost model, worked idioms).
+- `kiss_phase3.py`: added `read_reference()` tool that returns the
+  reference doc content when kiss requests it.
+- Model: `claude-sonnet-4-5-20250929` via Bedrock. Kiss max-budget 3.0,
+  max-steps 25. Same as Round 19-26.
+- Cluster: 2-node CB `cr-0af8b7ceec0cb3154` in us-east-1c (172.31.19.201 /
+  172.31.25.105), placement group Kaiyao.
+
+**Aggregate (92 problems)**:
+
+| Metric | Round 19-26 (long prompt) | Round 28 (Sorcar+ref) | Delta |
+|---|---|---|---|
+| Kiss wins | 45 | **54** | **+9** |
+| Strat wins | 37 | 29 | -8 |
+| Tied | 10 | 9 | -1 |
+| Kiss win rate | 48.9% | **58.7%** | **+9.8pp** |
+
+**Sorcar prompt outperforms long prompt by 9 more kiss wins.** Notable
+flips (strat → kiss): several _bcast problems where round-19 kiss
+settled for arith (~800us) now find const-fold (60-88us). Also:
+- **fsdp_prefetch**: kiss 18680 vs strat 44217 = 2.37× kiss (NEW OverlayCCL win)
+- **xor_grid_bcast**: 88.8us (was 896.9 in round-19)
+- **sign_alt_bcast**: 88.8us (was 826.2)
+- **checkerboard_bcast, mul_ij, min_ij_plus, mod_i_plus_j**: kiss wins now
+
+Big new wins by magnitude: max_ij_bcast (166×), range_shift (178×),
+gray_code / triangle_num / popcount / hamming_dist / nested_mod / chain_xor
+(85× each), several 58× wins (xor_grid, sum_popcount, or_ij, and_ij,
+mod_xor, diag_dist, abs_diff_ij, xor_shl, xor_or, rev_shift, xor_lookup,
+outer_add_pow, xor_add_mod, grid_step, xor_lookup_hi, outer_max_min,
+xor_bit_low, mod_grid).
+
+## Running total: 54 kiss > strat sim wins under Sorcar prompt
