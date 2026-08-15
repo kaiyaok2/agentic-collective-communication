@@ -1,9 +1,9 @@
 # Composing Collectives Above a Black-Box Vendor Library
 
-> **Post-submission update (2026-08-13):** For kiss vs strat-enumerate
+> **Post-submission update (2026-08-13):** For Sorcar vs strat-enumerate
 > head-to-head results on 30+ problems (12 `_bcast` + 10 `_comm` +
 > 11 `_chal` + 8 OverlayCCL originals), see
-> [`KISS_VS_STRAT_RESULTS.md`](KISS_VS_STRAT_RESULTS.md). Round-by-round
+> [`SORCAR_VS_STRAT_RESULTS.md`](SORCAR_VS_STRAT_RESULTS.md). Round-by-round
 > methodology under `v12_study/round{1..15}/`. The `bootstrap_v6/` folder
 > contains all post-submission sim/pipeline patches and a self-installing
 > `apply.sh` for a fresh OverlayCCL clone.
