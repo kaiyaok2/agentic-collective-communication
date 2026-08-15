@@ -162,3 +162,36 @@ Perf: {current_sim_time} us · {current_num_permutes} CP · {current_num_gathers
 
 Now: paraphrase the formula in a comment, decide position-vs-value,
 determine shape, implement the closed form, call `score_candidate`.
+
+## Pattern: many small collectives -> cat + single collective + narrow/split
+
+When the algorithm makes multiple collective calls of the same primitive
+on tensors of the same dtype (e.g., loop of `xm.all_reduce` over a list
+of gradient tensors), the Neuron dispatch overhead of each call dominates
+over the actual bandwidth cost. A better pattern:
+
+```python
+# Instead of:
+#   out = [xm.all_reduce(xm.REDUCE_SUM, g) for g in grads]
+# Do:
+sizes = [g.numel() for g in grads]
+flat = torch.cat([g.reshape(-1) for g in grads])
+reduced_flat = xm.all_reduce(xm.REDUCE_SUM, flat)
+# Split back with torch.narrow (metadata-only view, ~free)
+out = []
+offset = 0
+for g, n in zip(grads, sizes):
+    out.append(torch.narrow(reduced_flat, 0, offset, n).reshape(g.shape))
+    offset += n
+```
+
+- `torch.cat` costs bandwidth once. `torch.narrow` is a metadata-only view.
+- Net: one AR call amortizes N dispatch overheads, and the increased
+  payload adds negligible time until AR is bandwidth-bound (~1MB+).
+- Same idea applies to `all_gather`, `reduce_scatter`. If different
+  primitives are mixed (e.g., AR-SUM + AR-MAX), cat + AR-SUM + AR-MAX +
+  narrow can still amortize dispatch over the combined payload.
+- Sim's `back_to_back_amortization_us` model captures this: depth_1
+  pays ~100us dispatch, depth_2-8 pay ~10-30us amortized, so 5 per-tensor
+  ARs cost ~180us sim vs 1 cat-AR at ~100us. RT delta is even larger due
+  to per-call graph launch overhead.
