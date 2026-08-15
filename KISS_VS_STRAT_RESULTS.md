@@ -878,3 +878,26 @@ outer_add_pow, xor_add_mod, grid_step, xor_lookup_hi, outer_max_min,
 xor_bit_low, mod_grid).
 
 ## Running total: 54 kiss > strat sim wins under Sorcar prompt
+
+## Round 28 RT verification (warm-cache 2-node, N_ITERS=100, second run)
+
+12 _bcast anchor problems under Sorcar prompt — kiss vs baseline (AR-SUM) RT:
+
+| Problem | Baseline (ms) | Kiss (ms) | Kiss RT speedup |
+|---|---|---|---|
+| xor_grid_bcast | 5.26 | 2.48 | **2.12×** |
+| gray_code_bcast | 5.10 | 2.37 | **2.15×** |
+| piecewise_bcast | 5.23 | 2.40 | **2.18×** |
+| triangle_num_bcast | 5.20 | 2.26 | **2.30×** |
+| popcount_bcast | 5.25 | 2.39 | **2.20×** |
+| hamming_dist_bcast | 5.32 | 2.53 | **2.10×** |
+| cond_xor_bcast | 5.08 | 2.42 | **2.10×** |
+| sum_popcount_bcast | 5.28 | 3.04 | **1.74×** |
+| sign_alt_bcast | 5.14 | 2.57 | **2.00×** |
+| perm_shuffle_bcast | 4.96 | 2.31 | **2.15×** |
+| mod_sq_bcast | - | 2.20 | (baseline compile error) |
+| nested_mod_bcast | 5.21 | 2.27 | **2.29×** |
+
+**11/12 _bcast RT wins confirmed at warm-cache, 1.74-2.30× kiss.**
+Sorcar prompt preserves the anchor _bcast kiss wins on real hardware.
+
