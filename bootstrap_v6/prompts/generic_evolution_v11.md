@@ -32,6 +32,6 @@ Perf: {current_sim_time} us.
 - Strictly use the `run_parallel` tool for each independent subtask (candidate generation, diagnostics, verification).
 - Thoroughly check whether the model has missed any requirement or introduced a bug.
 
-Domain reference (Trainium quirks, XLA collectives, sim cost model, and worked idioms) is available in `prompts/reference_trainium_details.md` — read that file if you need details on primitives, unsupported ops, or the sim's `T_local` cost breakdown.
+Call the `read_reference()` tool for Trainium quirks (XLA collectives, unsupported primitives like cumsum/sort, `T_local` sim cost model, and worked idioms including `torch.tensor([list-comp])` const-fold vs `torch.arange` arithmetic trade-offs).
 
 Now: paraphrase the formula, implement a candidate, verify correctness adversarially, then call `score_candidate`.
