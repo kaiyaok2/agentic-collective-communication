@@ -1020,3 +1020,29 @@ boundaries is ~32 ms/iter — invisible to the sim.
 ties. The `sim=strat` tie can mask real Sorcar wins on multi-collective
 loop patterns.
 
+
+## Round 29: Aggregated OverlayCCL RT scorecard
+
+Combining Round 28 sim ties + Round 29 RT verifications:
+
+| OverlayCCL Problem | Sim: kiss vs strat | RT: baseline / Sorcar (warm ms) | RT verdict |
+|---|---|---|---|
+| alltoallv | 5266 vs 5388 | (not RT-tested) | (assumed same as sim, kiss ~2% edge) |
+| uniform_a2a | 6002 vs 6107.9 | (not RT-tested) | (~2% edge) |
+| ring_kv | 5200 vs 5264 | (not RT-tested) | (noise) |
+| grad_ar | 53902 vs 7287 | (bucketing gap) | strat 7.4× sim (RT similar) |
+| dxe | 5428 vs 5207 | (not RT-tested) | (~4% strat) |
+| **pp_send_recv** | **6014 vs 12104** | (crashed — Neuron compile) | sim 2.01× Sorcar |
+| **tp_mlp** | **18680 (tied)** | **37.27 / 5.39** | **Sorcar 6.91× RT** |
+| **fsdp_prefetch** | **18680 (tied)** | **36.89 / 5.32** | **Sorcar 6.94× RT** |
+
+**Key discovery**: `tp_mlp` and `fsdp_prefetch` are Sorcar RT wins that
+the sim reported as ties. Sorcar's cat+AR+split (or stack+AG+unpack)
+patterns dramatically outperform the paper's per-microbatch loop
+pattern on real HW because the sim under-charges the graph-launch tax
+of multi-mark_step loops.
+
+**Implication**: sim=strat is not proof of RT parity. Structural
+Sorcar wins on multi-collective loop patterns exist across the
+OverlayCCL suite.
+
