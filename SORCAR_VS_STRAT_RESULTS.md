@@ -999,3 +999,24 @@ version measures 1.75-2.17 ms, indistinguishable from strat's version
 at RT. **The 27 "strat const-fold sim wins over Sorcar" documented in
 Round 28 are sim artifacts that do not translate to RT.**
 
+
+## Round 29: tp_mlp RT verification — 6.91× Sorcar win
+
+Sim scored Sorcar tp_mlp = strat tp_mlp = 18680 us (tied). RT (warm-cache):
+
+| Candidate | RT cold (ms) | RT warm (ms) |
+|---|---|---|
+| Baseline (per-mb loop AR) | 37.27 | 37.27 |
+| Sorcar (cat + 1 AR + split) | 5.42 | 5.39 |
+| **Sorcar RT speedup** | **6.87×** | **6.91×** |
+
+Just like fsdp_prefetch, tp_mlp's per-microbatch loop structure fools
+the sim into scoring it identically to the fused cat+AR+split candidate.
+At RT the graph-launch tax of the loop over multiple mark_step
+boundaries is ~32 ms/iter — invisible to the sim.
+
+**This is a new discovery**: at least two OverlayCCL problems
+(`fsdp_prefetch`, `tp_mlp`) have Sorcar RT wins that sim shows as
+ties. The `sim=strat` tie can mask real Sorcar wins on multi-collective
+loop patterns.
+
