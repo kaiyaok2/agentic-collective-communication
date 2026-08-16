@@ -966,3 +966,36 @@ outperforms long prompt by +9 Sorcar wins and +9.8pp win rate.**
 - `bootstrap_v6/experiments/ablation_kiss_vs_cc/__SORCAR_PHASE3__.py` — with `read_reference` tool
 - `bootstrap_v6/search/problems_round17-26.py` — 82 new problems
 
+
+## Round 29: fsdp_prefetch RT verification — 6.94× Sorcar win
+
+fsdp_prefetch is a new OverlayCCL Sorcar win discovered in Round 28
+(sim: Sorcar 18680 vs strat 44217, 2.37× sim). RT verification with
+warm-cache 2-node 64-rank:
+
+| Candidate | RT cold (ms) | RT warm (ms) |
+|---|---|---|
+| Baseline (per-microbatch AG loop) | 37.92 | 36.89 |
+| Sorcar (stack + 1 AG + unpack) | 5.29 | 5.32 |
+| **Sorcar RT speedup** | **7.17×** | **6.94×** |
+
+Sorcar's `torch.stack + xm.all_gather + unpack` pattern beats the
+paper's per-microbatch loop by nearly **7×** on real hardware.
+RT delta (~32 ms saved per iter) is much larger than sim delta
+(~26 us saved) — the sim under-charges the graph-launch overhead
+of a per-microbatch loop over multiple mark_steps.
+
+## Round 29: cond_xor_bcast const-fold sim vs RT dissociation
+
+Sorcar picks `torch.tensor([list-comp]).reshape(N,N)` for
+cond_xor_bcast — sim scores 61.7 us (arith-marg1 pathway due to the
+`.reshape()` op).
+
+Strat's version omits `.reshape()` on the flat tensor and scores 29 us
+in sim.
+
+RT (warm-cache): both variants compile to a NEFF constant load. Sorcar
+version measures 1.75-2.17 ms, indistinguishable from strat's version
+at RT. **The 27 "strat const-fold sim wins over Sorcar" documented in
+Round 28 are sim artifacts that do not translate to RT.**
+
