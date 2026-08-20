@@ -95,6 +95,7 @@ Compiler-visible redundant AR/AG/RS or algebraic zero.
 | idempotent_reduce_max | 6.14 | 5.42 | 1.13× |
 | max_min_with_dead | 6.58 | 5.80 | 1.13× |
 | mixed_reduce_dead_sum | 6.61 | 5.82 | 1.14× |
+| three_group_dead_verify | 7.09 | 6.20 | 1.14× |
 | **ar_dead_gather_verify** | 7.69 | 5.60 | **1.37×** |
 | min_neg_max_dead_verify | 6.08 | 5.69 | 1.07× |
 | three_ars_two_zero | 6.28 | 5.62 | 1.12× |
@@ -114,6 +115,7 @@ Baseline dispatches M or C separate ARs; Sorcar issues one AR of the full 2D ten
 | **per_row_ar_M128** | (128, 512) | 39.02 | 5.50 | **7.09×** |
 | **per_row_ar_M256** | (256, 256) | 72.25 | 5.53 | **13.06×** |
 | **per_row_ar_M512** | (512, 128) | 133.03 | 5.53 | **24.06×** |
+| **per_row_ar_M1024** | (1024, 64) | 256.93 | 5.65 | **45.47×** |
 | **per_row_max_ar** | (16, 4096) MAX | 9.67 | 5.34 | **1.81×** |
 | **per_row_max_ar_M32** | (32, 2048) MAX | 13.59 | 5.51 | **2.47×** |
 | **per_row_min_ar** | (16, 4096) MIN | 9.62 | 5.61 | **1.71×** |
@@ -149,11 +151,11 @@ Recognize that only the local rank slice of an AR is used → use reduce-scatter
 
 ## Summary tally
 
-- **Total pool: 68 problems** (18 Cat-A + 2 Cat-B + 48 Cat-C).
-- **Sorcar wins ≥5%**: 59+
-- **Sorcar wins ≥1.20×**: 30
-- **Sorcar wins ≥2.0×**: 13
-- **Largest single win**: 24.06× (per_row_ar_M512 — 512 dispatches collapsed to 1)
+- **Total pool: 70 problems** (18 Cat-A + 2 Cat-B + 50 Cat-C).
+- **Sorcar wins ≥5%**: 61+
+- **Sorcar wins ≥1.20×**: 31
+- **Sorcar wins ≥2.0×**: 14
+- **Largest single win**: 45.47× (per_row_ar_M1024 — 1024 dispatches collapsed to 1)
 - **Median ratio (Cat-C)**: ~1.15×
 - **Strat wins**: 0 (strat's fixed enumeration does not cover any of these classes)
 
