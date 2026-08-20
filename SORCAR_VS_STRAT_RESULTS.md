@@ -110,6 +110,7 @@ Baseline dispatches M or C separate ARs; Sorcar issues one AR of the full 2D ten
 |---|---|---|---|---|
 | per_row_ar_M8 | (8, 8192) | 7.51 | 5.71 | 1.32× |
 | **per_row_ar_M32** | (32, 2048) | 13.73 | 5.49 | **2.50×** |
+| **per_row_ar_M48** | (48, 1024) | 17.54 | 5.49 | **3.20×** |
 | **per_row_ar_M64** | (64, 1024) | 21.94 | 5.78 | **3.79×** |
 | **per_row_ar_M96** | (96, 512) | 30.36 | 5.44 | **5.58×** |
 | **per_row_ar_M128** | (128, 512) | 39.02 | 5.50 | **7.09×** |
@@ -119,6 +120,7 @@ Baseline dispatches M or C separate ARs; Sorcar issues one AR of the full 2D ten
 | **per_row_max_ar** | (16, 4096) MAX | 9.67 | 5.34 | **1.81×** |
 | **per_row_max_ar_M32** | (32, 2048) MAX | 13.59 | 5.51 | **2.47×** |
 | **per_row_min_ar** | (16, 4096) MIN | 9.62 | 5.61 | **1.71×** |
+| **per_row_min_ar_M32** | (32, 2048) MIN | 13.74 | 5.71 | **2.40×** |
 | **per_column_ar** | (1024, 8) | 7.26 | 5.52 | **1.42×** |
 | **per_column_ar_C16** | (512, 16) | 9.58 | 5.60 | **1.71×** |
 | **per_column_ar_C32** | (256, 32) | 13.41 | 5.60 | **2.39×** |
@@ -151,10 +153,10 @@ Recognize that only the local rank slice of an AR is used → use reduce-scatter
 
 ## Summary tally
 
-- **Total pool: 70 problems** (18 Cat-A + 2 Cat-B + 50 Cat-C).
-- **Sorcar wins ≥5%**: 61+
-- **Sorcar wins ≥1.20×**: 31
-- **Sorcar wins ≥2.0×**: 14
+- **Total pool: 72 problems** (18 Cat-A + 2 Cat-B + 52 Cat-C).
+- **Sorcar wins ≥5%**: 63+
+- **Sorcar wins ≥1.20×**: 33
+- **Sorcar wins ≥2.0×**: 16
 - **Largest single win**: 45.47× (per_row_ar_M1024 — 1024 dispatches collapsed to 1)
 - **Median ratio (Cat-C)**: ~1.15×
 - **Strat wins**: 0 (strat's fixed enumeration does not cover any of these classes)
