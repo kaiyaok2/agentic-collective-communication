@@ -15,16 +15,16 @@ Head-to-head of two Phase-3 controllers on real-comm collective-communication pr
 
 For every problem in this pool, strat's output is identical to (or trivially equivalent to) the baseline template — its enumeration doesn't cover the required optimization. The "baseline" and "strat" numbers collapse into one column.
 
-## Pool composition (60 problems)
+## Pool composition (72 problems)
 
-### A. Sequential-AR-linearity wins from prior runs (18 problems)
+### A. Sequential-AR-linearity wins (18 problems)
 Sequential all-reduces where `sum_i c_i * AR(x_i) = AR(sum_i c_i * x_i)` gives Sorcar a compiler-friendly single-AR rewrite that strat's enumeration doesn't propose.
 
 ### B. N-scaled real-comm wins (2 problems @ N=1M)
 Scaled tensor size where bandwidth-bound regime amplifies the win.
 
-### C. Diverse Round-15 wins (42 problems across 9+ optimization classes)
-This run's contribution: systematically design and RT-verify problems in optimization classes strat cannot cover.
+### C. Diverse-class wins (52 problems across 9+ optimization classes)
+Problems systematically designed to cover optimization classes strat's fixed enumeration cannot express.
 
 ## RT results (warm cache, 100 iters, 2-node 64-rank trn1.32xlarge)
 
