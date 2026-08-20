@@ -121,6 +121,8 @@ Baseline dispatches M or C separate ARs; Sorcar issues one AR of the full 2D ten
 | **per_column_ar_C16** | (512, 16) | 9.58 | 5.60 | **1.71×** |
 | **per_column_ar_C32** | (256, 32) | 13.41 | 5.60 | **2.39×** |
 | **per_column_ar_C64** | (128, 64) | 20.50 | 5.61 | **3.65×** |
+| **per_column_max_ar** | (512, 16) MAX | 9.60 | 5.56 | **1.73×** |
+| **per_batch_ar_3d** | (8, 16, 512) | 7.67 | 5.78 | **1.33×** |
 
 #### C4. Local-reduce-before-AR / byte-optimal (4 wins)
 Reduce along a local dim before crossing the network to shrink the AR payload.
@@ -147,10 +149,10 @@ Recognize that only the local rank slice of an AR is used → use reduce-scatter
 
 ## Summary tally
 
-- **Total pool: 66 problems** (18 Cat-A + 2 Cat-B + 46 Cat-C).
-- **Sorcar wins ≥5%**: 57+
-- **Sorcar wins ≥1.20×**: 28
-- **Sorcar wins ≥2.0×**: 12
+- **Total pool: 68 problems** (18 Cat-A + 2 Cat-B + 48 Cat-C).
+- **Sorcar wins ≥5%**: 59+
+- **Sorcar wins ≥1.20×**: 30
+- **Sorcar wins ≥2.0×**: 13
 - **Largest single win**: 24.06× (per_row_ar_M512 — 512 dispatches collapsed to 1)
 - **Median ratio (Cat-C)**: ~1.15×
 - **Strat wins**: 0 (strat's fixed enumeration does not cover any of these classes)
