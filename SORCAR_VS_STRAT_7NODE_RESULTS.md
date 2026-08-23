@@ -128,7 +128,7 @@ Warm-cache RT on 224-rank cluster; `baseline warm` and `sorcar warm` are the sec
 | perbatchmax (8, 16, 512) MAX | 11.38 | 8.13 | **1.40×** |
 | percolC128 (64, 128) | 53.01 | 7.97 | **6.65×** |
 | perrowmaxM128 (128, 512) MAX | 62.28 | 8.03 | **7.76×** |
-| perrowM2048 (2048, 32) SUM | baseline TIMEOUT (>40min compile) | 7.92 | not-comparable |
+| **perrowM2048** (2048, 32) SUM | 1538.25 | 8.81 | **174.60×** |
 
 ## Summary
 
@@ -136,10 +136,10 @@ Warm-cache RT on 224-rank cluster; `baseline warm` and `sorcar warm` are the sec
 - **Wins ≥5%**: 72
 - **Ties (0.95–1.05×)**: 4 (all in Cat-C; borderline 2-node cases as expected)
 - **Losses**: **0**
-- **Largest single win**: **46.27×** on `per_row_ar_M1024`, matching the 2-node measurement of 45.47×
+- **Largest single win**: **174.60×** on `perrowM2048` (2048 rows AR-collapsed to 1); next largest 46.27× on `per_row_ar_M1024` (matches the 2-node measurement of 45.47×)
 - **Cat-A win rate**: 18/18 (100%), ratios 1.05–1.35× 
 - **Cat-C win rate**: 47/51 (92%), ratios 1.06–46.27×
-- **Extras**: 7/7 wins with baseline (1.40–7.76×); one problem (perrowM2048) has Sorcar timing but baseline exceeded the compile timeout at M=2048 rows × 224 ranks
+- **Extras**: 8/8 wins with baseline (1.40–174.60×); `perrowM2048` required 45+ min baseline compile at M=2048 rows × 224 ranks — resolved by extending timeout to 90 min and cleaning stale compile-cache lock files
 - **Median Cat-C C3 win ratio**: 2.66×
 
 **Conclusion: Sorcar's warm-cache RT wins generalize cleanly to 7-node scale.** No new failures introduced by scaling out.
