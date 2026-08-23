@@ -117,15 +117,25 @@ Warm-cache RT on 224-rank cluster; `baseline warm` and `sorcar warm` are the sec
 | three_group_dead_verify | 10.15 | 9.08 | **1.12×** |
 | compare_two_ars | 8.45 | 8.27 | 1.02× (tie) |
 
+### Extras (7-node-scale variants, new)
+
+| Problem | Base ms | Sorcar ms | Ratio |
+|---|---|---|---|
+| perrowmaxM64 (64, 1024) MAX | 34.23 | 7.87 | **4.35×** |
+| perrowminM64 (64, 1024) MIN | 34.66 | 8.23 | **4.21×** |
+| twelveinlin (12 inline ARs) | 13.03 | 8.21 | **1.59×** |
+| perbatchmax (8, 16, 512) MAX | 11.38 | 8.13 | **1.40×** |
+
 ## Summary
 
-- **Total problems verified on 7-node warm cache**: 69 (18 Cat-A + 51 Cat-C)
-- **Wins ≥5%**: 65
+- **Total problems verified on 7-node warm cache**: 73 (18 Cat-A + 51 Cat-C + 4 extras)
+- **Wins ≥5%**: 69
 - **Ties (0.95–1.05×)**: 4 (all in Cat-C; borderline 2-node cases as expected)
 - **Losses**: **0**
 - **Largest single win**: **46.27×** on `per_row_ar_M1024`, matching the 2-node measurement of 45.47×
 - **Cat-A win rate**: 18/18 (100%), ratios 1.05–1.35× 
 - **Cat-C win rate**: 47/51 (92%), ratios 1.06–46.27×
+- **Extras**: 4/4 wins (1.40–4.35×)
 - **Median Cat-C C3 win ratio**: 2.66×
 
 **Conclusion: Sorcar's warm-cache RT wins generalize cleanly to 7-node scale.** No new failures introduced by scaling out.
