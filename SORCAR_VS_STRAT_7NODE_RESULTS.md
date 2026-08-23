@@ -11,7 +11,9 @@ Verify whether the 52 Cat-C warm-cache RT wins from the 2-node run at CB5 genera
 
 ## Result
 
-**47 out of 51 wins survive at 7-node (92% preservation, 0 regressions).**
+**65 out of 69 wins survive at 7-node (94% preservation, 0 regressions):**
+- **Cat-A (sequential-AR linearity)**: 18/18 wins at 7-node (100%, 1.05–1.35×)
+- **Cat-C (diverse-class)**: 47/51 wins at 7-node (92%, 1.06–46.27×; 4 borderline ties, 0 losses)
 
 The 4 problems that dropped to tie (1.02-1.04×) are the same borderline cases from 2-node (compiler-fusable patterns where the win margin was ~5% at 2-node). All algorithm-level wins scale identically or better.
 
@@ -78,6 +80,29 @@ Warm-cache RT on 224-rank cluster; `baseline warm` and `sorcar warm` are the sec
 | four_ar_sum_zero (algebraic zero) | 9.28 | 2.13 | **4.36×** |
 | ten_ar_alt_sign_zero (algebraic zero) | 11.94 | 1.85 | **6.45×** |
 
+### Cat A: sequential-AR linearity (18 problems, all wins)
+
+| Problem | Base ms | Sorcar ms | Ratio |
+|---|---|---|---|
+| eight_ar_half_ints | 11.31 | 8.37 | **1.35×** |
+| seven_ar_seq | 10.75 | 8.20 | **1.31×** |
+| six_ar_altsign | 10.56 | 8.19 | **1.29×** |
+| six_ar_arith | 10.28 | 8.05 | **1.28×** |
+| six_ar_seq | 10.55 | 8.32 | **1.27×** |
+| five_ar_mixed_sign | 10.37 | 8.18 | **1.27×** |
+| four_ar_N224 | 10.00 | 8.15 | **1.23×** |
+| seq_dep_chain5 | 9.85 | 8.26 | **1.19×** |
+| seq_dep_chain4_scaled | 9.69 | 8.17 | **1.19×** |
+| five_ar_arith_prog | 9.84 | 8.29 | **1.19×** |
+| three_ar_frac_dep | 9.21 | 7.97 | **1.16×** |
+| four_ar_pow2 | 9.46 | 8.24 | **1.15×** |
+| four_ar_mixed_coef | 9.46 | 8.26 | **1.15×** |
+| four_ar_evens | 9.22 | 8.26 | **1.12×** |
+| chained_ar_nested | 8.98 | 8.15 | **1.10×** |
+| triple_ar_linear | 8.85 | 8.09 | **1.09×** |
+| sequential_ar_chain | 8.38 | 7.89 | **1.06×** |
+| ar_scalar_chain | 8.80 | 8.37 | **1.05×** |
+
 ### Cat C4-C6: local-reduce / AR→RS / broadcast
 
 | Problem | Base ms | Sorcar ms | Ratio |
@@ -94,12 +119,14 @@ Warm-cache RT on 224-rank cluster; `baseline warm` and `sorcar warm` are the sec
 
 ## Summary
 
-- **Total pool**: 51 Cat-C problems verified on 7-node warm cache (one problem was skipped due to missing candidate file).
-- **Wins ≥5%**: 47
-- **Ties (0.95-1.05×)**: 4 (all borderline 2-node cases as expected)
+- **Total problems verified on 7-node warm cache**: 69 (18 Cat-A + 51 Cat-C)
+- **Wins ≥5%**: 65
+- **Ties (0.95–1.05×)**: 4 (all in Cat-C; borderline 2-node cases as expected)
 - **Losses**: **0**
 - **Largest single win**: **46.27×** on `per_row_ar_M1024`, matching the 2-node measurement of 45.47×
-- **Median C3 win ratio**: 2.66×
+- **Cat-A win rate**: 18/18 (100%), ratios 1.05–1.35× 
+- **Cat-C win rate**: 47/51 (92%), ratios 1.06–46.27×
+- **Median Cat-C C3 win ratio**: 2.66×
 
 **Conclusion: Sorcar's warm-cache RT wins generalize cleanly to 7-node scale.** No new failures introduced by scaling out.
 
