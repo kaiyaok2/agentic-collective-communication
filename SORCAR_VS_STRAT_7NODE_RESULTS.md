@@ -164,14 +164,15 @@ Warm-cache RT on 224-rank cluster; `baseline warm` and `sorcar warm` are the sec
 | sixtyfourinline (64 inline ARs) | 34.15 | 7.95 | **4.30×** |
 | perrowmaxM48N2K (48, 2048) MAX | 28.44 | 8.05 | **3.53×** |
 | eightslab (8 slab AR chunks) | 11.32 | 8.04 | **1.41×** |
+| **perrowM3072** (3072, 24) SUM | 1019.56 | 8.03 | **126.97×** |
 
 ## Summary
 
-- **Total problems verified on 7-node warm cache**: 111 (18 Cat-A + 51 Cat-C + 43 extras)
-- **Wins ≥5%**: 106 (5 borderline ties)
+- **Total problems verified on 7-node warm cache**: 112 (18 Cat-A + 51 Cat-C + 44 extras)
+- **Wins ≥5%**: 107 (5 borderline ties)
 - **Ties (0.95–1.05×)**: 4 (all in Cat-C; borderline 2-node cases as expected)
 - **Losses**: **0**
-- **Largest single win**: **174.60×** on `perrowM2048` (2048 rows AR-collapsed to 1); next: **68.90×** on `perrowM1536`, **46.27×** on `per_row_ar_M1024` (matches the 2-node measurement of 45.47×)
+- **Largest single win**: **174.60×** on `perrowM2048`; next: **126.97×** on `perrowM3072` (nearly-linear extrapolation of the dispatch-collapse formula), **68.90×** on `perrowM1536`, **46.27×** on `per_row_ar_M1024` (matches the 2-node measurement of 45.47×)
 - **Cat-A win rate**: 18/18 (100%), ratios 1.05–1.35× 
 - **Cat-C win rate**: 47/51 (92%), ratios 1.06–46.27×
 - **Extras**: 25/25 wins with baseline (1.40–174.60×); `perrowM2048` and `perrowM1536` required 45+ min baseline compile at M=1536-2048 rows × 224 ranks — resolved by extending timeout to 90 min and cleaning stale compile-cache lock files
