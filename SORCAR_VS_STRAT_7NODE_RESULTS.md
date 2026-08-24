@@ -183,11 +183,17 @@ Warm-cache RT on 224-rank cluster; `baseline warm` and `sorcar warm` are the sec
 | perbatchmaxM16big (16, 32, 512) MAX | 14.71 | 8.16 | **1.80×** |
 | perslice3dM96 (96, 8, 512) SUM | 48.40 | 8.42 | **5.75×** |
 | algzero16 (16-AR algebraic zero) | 14.82 | 1.90 | **7.80×** |
+| perrowminM128 (128, 512) MIN | 62.10 | 8.14 | **7.63×** |
+| percolC192 (256, 192) SUM | 88.66 | 8.17 | **10.86×** |
+| eightyaltsum (80 alt-sign ARs) | 41.23 | 8.26 | **4.99×** |
+| seven_scaled_diff (7 scaled ARs w/ zeros) | 11.16 | 8.06 | **1.39×** |
+| perrowM144 (144, 384) SUM | 68.86 | 8.00 | **8.61×** |
+| perbatchM4big (4, 64, 512) SUM | 9.32 | 8.28 | 1.13× (tie) |
 
 ## Summary
 
-- **Total problems verified on 7-node warm cache**: 130 (18 Cat-A + 51 Cat-C + 62 extras)
-- **Wins ≥5%**: 125 (5 borderline ties)
+- **Total problems verified on 7-node warm cache**: 136 (18 Cat-A + 51 Cat-C + 68 extras)
+- **Wins ≥5%**: 131 (6 borderline ties)
 - **Ties (0.95–1.05×)**: 4 (all in Cat-C; borderline 2-node cases as expected)
 - **Losses**: **0**
 - **Largest single win**: **174.60×** on `perrowM2048`; next: **126.97×** on `perrowM3072` (nearly-linear extrapolation of the dispatch-collapse formula), **68.90×** on `perrowM1536`, **46.27×** on `per_row_ar_M1024` (matches the 2-node measurement of 45.47×)
