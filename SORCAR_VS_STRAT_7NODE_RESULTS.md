@@ -152,11 +152,17 @@ Warm-cache RT on 224-rank cluster; `baseline warm` and `sorcar warm` are the sec
 | thirtytwoalt (32 alt-sign ARs) | 21.39 | 7.89 | **2.71×** |
 | **percolC512** (256, 512) SUM | 231.90 | 8.06 | **28.76×** |
 | perrowminM256 (256, 256) MIN | 119.07 | 8.29 | **14.37×** |
+| perrowmaxM96N1K (96, 1024) MAX | 48.12 | 8.26 | **5.83×** |
+| percolC128Bigger (512, 128) SUM | 61.73 | 8.06 | **7.66×** |
+| thirtysixinline (36 inline ARs) | 23.00 | 7.97 | **2.89×** |
+| perslice3dM64 (64, 16, 512) SUM | 34.68 | 8.36 | **4.15×** |
+| perrowM192 (192, 256) SUM | 89.71 | 8.07 | **11.12×** |
+| batchedar8 (8 chunks) | 11.27 | 8.37 | **1.35×** |
 
 ## Summary
 
-- **Total problems verified on 7-node warm cache**: 99 (18 Cat-A + 51 Cat-C + 31 extras)
-- **Wins ≥5%**: 95
+- **Total problems verified on 7-node warm cache**: 105 (18 Cat-A + 51 Cat-C + 37 extras)
+- **Wins ≥5%**: 101
 - **Ties (0.95–1.05×)**: 4 (all in Cat-C; borderline 2-node cases as expected)
 - **Losses**: **0**
 - **Largest single win**: **174.60×** on `perrowM2048` (2048 rows AR-collapsed to 1); next: **68.90×** on `perrowM1536`, **46.27×** on `per_row_ar_M1024` (matches the 2-node measurement of 45.47×)
