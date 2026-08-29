@@ -58,6 +58,13 @@ backends.
 (**5.82×**) and 1228.3→211.1 ms (**5.82×**); final-loss deltas 0.011 and
 0.014. The headline speedup and loss parity replicate across 3 seeds.
 
+**MoE multi-seed caveat (seed 43)**: 362.4 vs 361.4 ms = **1.00×**
+(loss delta 0.008). The seed-42 baseline (389.8 ms) was ~7% slower than
+its seed-43 rerun, so the MoE 1.08× is **within run-to-run noise** — at
+this compute-dominated scale the collective-schedule saving is real in
+dispatch count but not resolvable in wall time. The honest MoE claim is
+loss parity + no regression, not a speedup.
+
 ### Loss parity (exactness check)
 
 | Arch | baseline first→final | sorcar first→final | max per-step divergence |
@@ -104,16 +111,19 @@ the AR; it never proposes "each rank only needs 1/ws of this result"),
 and on Neuron that costs not just wire bytes but a large replicated
 compute term.
 
-### Why the MoE speedup is smaller
+### Why the MoE speedup vanishes
 
 The moe instantiation is compute-dominated (4 experts evaluated densely
 per token) and its flat optimizer state is 2.6× smaller, so it sits
 below the replicated-Adam penalty threshold that dominates llama's F5
-delta. What remains is the pure collective-schedule saving (~30 ms/step
-= 1.08×), the same absolute magnitude as llama's non-F5 saving. This
-matches the microbenchmark observation that family wins are absolute
-dispatch savings, so their relative impact scales inversely with
-per-step compute.
+delta. What remains is the pure collective-schedule saving — the same
+~10-60 ms absolute magnitude as llama's schedule-only control — which
+the seed-43 rerun shows is within run-to-run noise of the ~360 ms
+compute-bound step. This matches the microbenchmark observation that
+family wins are absolute dispatch savings, so their relative impact
+scales inversely with per-step compute: on a compute-dominated
+architecture they deliver loss parity and no regression rather than a
+measurable wall-clock win.
 
 ## Neuron/trn1 engineering notes (for reproduction)
 
