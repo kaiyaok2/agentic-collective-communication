@@ -367,7 +367,17 @@ def main():
     ap.add_argument('--seed', type=int, default=SEED)
     ap.add_argument('--seqlen', type=int, default=None,
                     help='override SEQLEN (short-seq = grad-sync-dominated regime)')
+    ap.add_argument('--nmb', type=int, default=None,
+                    help='override N_MB microbatches')
+    ap.add_argument('--ddp-per-mb', action='store_true',
+                    help='baseline syncs the F4b replicated grads EVERY '
+                         'microbatch (textbook DDP without no_sync); '
+                         'sorcar applies F1 linearity globally and syncs '
+                         'once after accumulation')
     args = ap.parse_args()
+    global N_MB
+    if args.nmb:
+        N_MB = args.nmb
     global SEQLEN
     if args.seqlen:
         SEQLEN = args.seqlen
@@ -450,6 +460,7 @@ def main():
         #   the loop (linearity: sum AR(g_mb) == AR(sum g_mb)).
         f1_total = torch.zeros_like(emb_param) if backend == 'baseline' \
             else None
+        ddp_monitor = torch.zeros(1, device=device)
         prev = torch.zeros_like(emb_param) if backend == 'baseline' \
             else None
         step_loss = None
@@ -467,6 +478,21 @@ def main():
                 f1_total = f1_total + \
                     xm.all_reduce(xm.REDUCE_SUM, cur - prev) / ws
                 prev = cur.clone()
+                if args.ddp_per_mb:
+                    # naive-DDP schedule: replicated grads cross the wire
+                    # for every microbatch. Only the final sync's values
+                    # feed the optimizer, so the math matches the
+                    # accumulate-then-sync path exactly. The per-mb
+                    # results are folded into a LOGGED monitor scalar
+                    # (never into the model) so XLA cannot DCE the
+                    # collectives.
+                    xm.mark_step()
+                    outs = f4_flat_sync([p.grad for p in rest_rep], ws,
+                                        'baseline')
+                    q = f7_qkv_sync(qkv0.grad.reshape(-1), ws, 'baseline')
+                    ddp_monitor = ddp_monitor + \
+                        sum(o.sum().float() for o in outs) + q.sum().float()
+                    xm.mark_step()
             step_loss = loss.detach() if step_loss is None \
                 else step_loss + loss.detach()
         step_loss = step_loss / N_MB
@@ -536,7 +562,7 @@ def main():
         losses.append(loss_host)
         log(rank, f'[10b] step {step:3d} loss={loss_host:.4f} '
                   f'chk={chk_host:.2e} gmax={float(gmax.item()):.3e} '
-                  f'ms={dt:.1f}')
+                  f'mon={float(ddp_monitor.item()):.2e} ms={dt:.1f}')
 
     if rank == 0:
         med = sorted(step_times)[len(step_times) // 2] if step_times else -1

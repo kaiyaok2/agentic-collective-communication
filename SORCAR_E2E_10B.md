@@ -39,8 +39,16 @@ family sites, plus CE-gather and metric collectives.
 
 | Config | baseline | sorcar | Speedup | loss (both) |
 |---|---|---|---|---|
-| SEQLEN=192 (compute+a2av heavy) | 6051.4 | 5929.1 | **1.02×** | 9.97 → 4.36 / 4.31 |
-| SEQLEN=96 (shorter compute) | 4348.2 | 4194.4 | **1.04×** | 10.00 → 4.31 / 4.36 |
+| SEQLEN=192, N_MB=2 (compute+a2av heavy) | 6051.4 | 5929.1 | **1.02×** | 9.97 → 4.36 / 4.31 |
+| SEQLEN=96, N_MB=2 (shorter compute) | 4348.2 | 4194.4 | **1.04×** | 10.00 → 4.31 / 4.36 |
+| SEQLEN=96, N_MB=4, naive-DDP baseline (per-microbatch grad sync, no `no_sync()`) | 8352.9 | 8051.5 | **1.04×** | 9.97 → 4.27 / 4.29 |
+
+The third row makes the baseline strictly more communication-heavy —
+the textbook DDP schedule re-syncs the 91M replicated grads on every
+microbatch (4× per step) while sorcar's F1-linearity schedule syncs
+once. The absolute saving grows to ~300 ms/step, but the a2av volume
+grows with N_MB too (4 microbatches × 14 a2av dispatches × fwd+bwd), so
+the ratio stays at 1.04×.
 
 Loss parity: final-loss delta 0.051, max per-step divergence 0.16 —
 consistent with bf16 reduction-order noise on a 9.4B model (both curves
