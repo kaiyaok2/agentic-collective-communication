@@ -70,14 +70,14 @@ import torch_xla
 import torch_xla.core.xla_model as xm
 import torch_xla.runtime as xr
 
-VOCAB   = 32256      # divisible by 224 and by 32 (1-node smoke)
+VOCAB   = 16128      # divisible by 224 and by 32 (1-node smoke)
 DM      = 2048
 HEADS   = 16
 HDIM    = DM // HEADS
-LAYERS  = 8
+LAYERS  = 7
 TOPK    = 8
-EXDIM   = 1024
-SEQLEN  = 256
+EXDIM   = 960
+SEQLEN  = 192
 BSZ     = 1
 N_MB    = 2          # F1 microbatches
 SEED    = 42
@@ -251,19 +251,6 @@ class Model(nn.Module):
 
 
 # ------------------------------------------------- family-site helpers
-def f1_emb_sync(mb_grads, ws, backend):
-    if backend == 'baseline':
-        total = None
-        for g in mb_grads:
-            r = xm.all_reduce(xm.REDUCE_SUM, g) / ws
-            total = r if total is None else total + r
-        return total
-    local = None
-    for g in mb_grads:
-        local = g if local is None else local + g
-    return xm.all_reduce(xm.REDUCE_SUM, local) / ws
-
-
 def f2_loss_metrics(loss_vec, ws, backend):
     if backend == 'baseline':
         return (xm.all_reduce(xm.REDUCE_SUM, loss_vec) / ws,
@@ -291,17 +278,37 @@ def f4_norm_sync(norm_grads, ws, backend):
     return [red[i] for i in range(red.shape[0])]
 
 
+F4B_BUCKET = 16 * 1024 * 1024   # 16M elements ≈ 32MB bf16 (grad_ar v6)
+
+
 def f4_flat_sync(grads, ws, backend):
-    """grad_ar site: per-tensor AR loop vs concat + 1 AR + split."""
+    """grad_ar site: per-tensor AR loop (13 dispatches) vs 32MB-bucketed
+    concat + AR + split (5 dispatches at 78.7M elements). Unbucketed
+    concat (1 dispatch) OOMs device HBM at this scale — same finding as
+    the production grad_ar v6 runtime."""
     if backend == 'baseline':
         return [xm.all_reduce(xm.REDUCE_SUM, g) / ws for g in grads]
-    sizes = [g.numel() for g in grads]
-    flat = torch.cat([g.reshape(-1) for g in grads])
-    red = xm.all_reduce(xm.REDUCE_SUM, flat) / ws
-    outs, off = [], 0
-    for g, n in zip(grads, sizes):
-        outs.append(red[off:off + n].view_as(g))
-        off += n
+    outs = [None] * len(grads)
+    bucket, idxs, acc = [], [], 0
+    def flush():
+        nonlocal bucket, idxs, acc
+        if not bucket:
+            return
+        flat = torch.cat([g.reshape(-1) for g in bucket])
+        red = xm.all_reduce(xm.REDUCE_SUM, flat) / ws
+        off = 0
+        for i, g in zip(idxs, bucket):
+            n = g.numel()
+            outs[i] = red[off:off + n].view_as(g)
+            off += n
+        bucket, idxs, acc = [], [], 0
+    for i, g in enumerate(grads):
+        if acc + g.numel() > F4B_BUCKET and bucket:
+            flush()
+        bucket.append(g)
+        idxs.append(i)
+        acc += g.numel()
+    flush()
     return outs
 
 
@@ -358,7 +365,12 @@ def main():
     ap.add_argument('--warmup', type=int, default=6)
     ap.add_argument('--lr', type=float, default=3e-4)
     ap.add_argument('--seed', type=int, default=SEED)
+    ap.add_argument('--seqlen', type=int, default=None,
+                    help='override SEQLEN (short-seq = grad-sync-dominated regime)')
     args = ap.parse_args()
+    global SEQLEN
+    if args.seqlen:
+        SEQLEN = args.seqlen
     backend = args.backend
 
     dist.init_process_group('xla', init_method='xla://')
@@ -393,8 +405,9 @@ def main():
             norm_params.append(p)                      # F4a
         elif name == 'layers.0.attn.qkv.weight':
             qkv0 = p                                   # F7
-        elif '.attn.o.' in name:
-            oproj_params.append(p)                     # F5
+        elif '.attn.o.' in name and int(name.split('.')[1]) < 4:
+            oproj_params.append(p)                     # F5 (layers 0-3;
+            # full group's fp32 Adam chain exceeds HBM at 224 ranks)
         else:
             rest_rep.append(p)                         # F4b (grad_ar site)
 
@@ -430,9 +443,15 @@ def main():
     step_times, losses = [], []
     for step in range(args.steps):
         t0 = time.time()
-        # ---------- microbatched forward/backward (F1 capture) --------
-        mb_emb_grads = []
-        prev = torch.zeros_like(emb_param)
+        # ---------- microbatched forward/backward (F1 site inline) ----
+        # baseline (strat): AR each microbatch's grad increment as it
+        #   appears — N_MB dispatches on the 66M emb grad.
+        # sorcar: no per-mb work; AR once on the accumulated grad after
+        #   the loop (linearity: sum AR(g_mb) == AR(sum g_mb)).
+        f1_total = torch.zeros_like(emb_param) if backend == 'baseline' \
+            else None
+        prev = torch.zeros_like(emb_param) if backend == 'baseline' \
+            else None
         step_loss = None
         for mb in range(N_MB):
             x, y = get_batch(data, step, mb)
@@ -443,16 +462,23 @@ def main():
                 shard_mask, v_local)
             loss = F.cross_entropy(full.float(), y.reshape(-1))
             (loss / N_MB).backward()
-            cur = emb_param.grad.detach()
-            mb_emb_grads.append((cur - prev).clone())
-            prev = cur.clone()
+            if backend == 'baseline':
+                cur = emb_param.grad.detach()
+                f1_total = f1_total + \
+                    xm.all_reduce(xm.REDUCE_SUM, cur - prev) / ws
+                prev = cur.clone()
             step_loss = loss.detach() if step_loss is None \
                 else step_loss + loss.detach()
         step_loss = step_loss / N_MB
 
         # ---------------- family-site synchronization -----------------
         xm.mark_step()   # split sync graph from fwd/bwd graph (compile size)
-        emb_synced = f1_emb_sync(mb_emb_grads, ws, backend)          # F1
+        if backend == 'baseline':
+            emb_synced = f1_total                                     # F1
+            del f1_total, prev
+        else:
+            emb_synced = xm.all_reduce(
+                xm.REDUCE_SUM, emb_param.grad.detach()) / ws          # F1
         lv = step_loss.reshape(1)
         m_log, m_sched, m_anom = f2_loss_metrics(lv, ws, backend)    # F2
         chk = f3_checksum(lv, backend)                                # F3
@@ -477,9 +503,11 @@ def main():
         mhat = m_state / (1 - 0.9 ** adam_t)
         vhat = v_state / (1 - 0.999 ** adam_t)
         upd = args.lr * mhat / (vhat.sqrt() + 1e-8)
+        del mhat, vhat, gsync, f5_grad
         if backend == 'sorcar':
             upd = xm.all_gather(upd, dim=0)
         f5_flat = f5_flat - upd
+        del upd
         off = 0
         with torch.no_grad():
             for p in oproj_params:
