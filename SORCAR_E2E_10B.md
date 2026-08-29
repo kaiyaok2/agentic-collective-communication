@@ -42,6 +42,7 @@ family sites, plus CE-gather and metric collectives.
 | SEQLEN=192, N_MB=2 (compute+a2av heavy) | 6051.4 | 5929.1 | **1.02×** | 9.97 → 4.36 / 4.31 |
 | SEQLEN=96, N_MB=2 (shorter compute) | 4348.2 | 4194.4 | **1.04×** | 10.00 → 4.31 / 4.36 |
 | SEQLEN=96, N_MB=4, naive-DDP baseline (per-microbatch grad sync, no `no_sync()`) | 8352.9 | 8051.5 | **1.04×** | 9.97 → 4.27 / 4.29 |
+| SEQLEN=96, seed=7 (replication) | 4333.1 | 4201.7 | **1.03×** | 9.88 → 4.10 / 4.09 |
 
 The third row makes the baseline strictly more communication-heavy —
 the textbook DDP schedule re-syncs the 91M replicated grads on every
@@ -50,10 +51,12 @@ once. The absolute saving grows to ~300 ms/step, but the a2av volume
 grows with N_MB too (4 microbatches × 14 a2av dispatches × fwd+bwd), so
 the ratio stays at 1.04×.
 
-Loss parity: final-loss delta 0.051, max per-step divergence 0.16 —
-consistent with bf16 reduction-order noise on a 9.4B model (both curves
-descend from 9.97 to ~4.3 in lockstep; the F3 checksum is exactly 0.0
-every step of every run).
+Loss parity: final-loss deltas 0.008–0.051 across the four pairs, max
+per-step divergence 0.16 — consistent with bf16 reduction-order noise
+on a 9.4B model (all curves descend from ~9.9 to ~4.1–4.4 in lockstep;
+the F3 checksum is exactly 0.0 every step of every run). The 1.02–1.04×
+speedup replicates across sequence lengths, microbatch schedules, and
+seeds.
 
 **Interpretation.** At this scale the step is dominated by the 28
 AllToAllV dispatches (fixed in both backends — 2 per layer × 7 layers ×
