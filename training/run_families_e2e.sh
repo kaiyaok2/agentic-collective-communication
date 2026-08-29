@@ -7,11 +7,12 @@ BACKEND=$2
 MASTER_IP=$3
 WORKERS=$4
 STEPS=${5:-40}
+SEED=${6:-42}
 NNODES=7
 
 export_env='export PATH=/opt/aws_neuronx_venv_pytorch_2_9/bin:$PATH FI_PROVIDER=efa FI_EFA_USE_DEVICE_RDMA=1 FI_EFA_FORK_SAFE=1 PJRT_DEVICE=NEURON NEURON_RT_LOG_LEVEL=ERROR'
 SCRIPT=/home/ubuntu/train_families_e2e_7node.py
-CMD_ARGS="--arch $ARCH --backend $BACKEND --steps $STEPS"
+CMD_ARGS="--arch $ARCH --backend $BACKEND --steps $STEPS --seed $SEED"
 
 master_cmd="$export_env && cd /home/ubuntu && timeout 5400 torchrun --nnodes=$NNODES --nproc_per_node=32 --rdzv_backend=c10d --rdzv_endpoint=$MASTER_IP:29500 --node_rank=0 $SCRIPT $CMD_ARGS"
 

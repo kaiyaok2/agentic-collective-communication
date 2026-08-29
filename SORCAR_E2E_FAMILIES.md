@@ -54,6 +54,10 @@ backends.
 | llama (26.0M) | 1226.9 | 209.0 | **5.87×** |
 | moe (10.2M) | 389.8 | 360.3 | **1.08×** |
 
+**Multi-seed stability (llama, seeds 43/44)**: 1228.0→210.8 ms
+(**5.82×**) and 1228.3→211.1 ms (**5.82×**); final-loss deltas 0.011 and
+0.014. The headline speedup and loss parity replicate across 3 seeds.
+
 ### Loss parity (exactness check)
 
 | Arch | baseline first→final | sorcar first→final | max per-step divergence |

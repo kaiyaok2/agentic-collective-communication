@@ -322,13 +322,14 @@ def main():
     ap.add_argument('--steps', type=int, default=40)
     ap.add_argument('--warmup', type=int, default=8)
     ap.add_argument('--lr', type=float, default=3e-4)
+    ap.add_argument('--seed', type=int, default=42)
     args = ap.parse_args()
 
     dist.init_process_group('xla', init_method='xla://')
     rank = xr.global_ordinal()
     ws = xr.world_size()
     device = torch_xla.device()
-    torch.manual_seed(SEED)          # identical init on every rank (DP)
+    torch.manual_seed(args.seed)     # identical init on every rank (DP)
 
     model = LM(args.arch).to(device)
     n_params = sum(p.numel() for p in model.parameters())
