@@ -40,6 +40,7 @@ family sites, plus CE-gather and metric collectives.
 | Config | baseline | sorcar | Speedup | loss (both) |
 |---|---|---|---|---|
 | SEQLEN=192 (compute+a2av heavy) | 6051.4 | 5929.1 | **1.02×** | 9.97 → 4.36 / 4.31 |
+| SEQLEN=96 (shorter compute) | 4348.2 | 4194.4 | **1.04×** | 10.00 → 4.31 / 4.36 |
 
 Loss parity: final-loss delta 0.051, max per-step divergence 0.16 —
 consistent with bf16 reduction-order noise on a 9.4B model (both curves
@@ -47,15 +48,15 @@ descend from 9.97 to ~4.3 in lockstep; the F3 checksum is exactly 0.0
 every step of every run).
 
 **Interpretation.** At this scale the step is dominated by the 28
-AllToAllV dispatches (fixed in both backends) and expert compute; the
-family sites' total collective-count saving (~25 dispatches → ~8) is
-worth ~120 ms of the 6-second step. This is the same absolute-saving
-pattern measured across the pool: family wins are dispatch-count
-savings, so their relative impact scales inversely with everything else
-in the step. A short-sequence variant (SEQLEN=96, grad-sync-dominated)
-is measured separately below.
-
-<!-- SEQLEN96_RESULTS -->
+AllToAllV dispatches (fixed in both backends — 2 per layer × 7 layers ×
+fwd+bwd) and expert compute. The family sites' saving is 122–154 ms per
+step (SEQLEN 192/96) — the same absolute dispatch-count saving pattern
+measured across the microbenchmark pool — so the relative speedup grows
+as the rest of the step shrinks (1.02× → 1.04× when sequence length is
+halved), but at OverlayCCL scale the a2av exchange the families don't
+touch owns the budget. The paper's own a2av/grad_ar agent solutions
+(measured separately in OverlayCCL) are the lever for that portion;
+the 7 post-paper families are additive on top.
 
 ## trn1 engineering findings at 9.4B/224 ranks (reproduction guide)
 
