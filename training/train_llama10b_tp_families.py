@@ -320,7 +320,11 @@ def main():
     ap.add_argument('--lr', type=float, default=1.5e-4)
     ap.add_argument('--seed', type=int, default=SEED)
     ap.add_argument('--layers', type=int, default=None)
+    ap.add_argument('--nmb', type=int, default=None)
     args = ap.parse_args()
+    global N_MB
+    if args.nmb:
+        N_MB = args.nmb
     backend = args.backend
     global LAYERS
     if args.layers:

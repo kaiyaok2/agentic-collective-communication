@@ -1,0 +1,28 @@
+[10bT] backend=sorcar ws=224 TP=32 DP=7 layers=48 per-core=305.4M cluster=9.70B
+[10bT] sites: emb(F1)=1.05M norms(F4a)=194x4096 qkv0(F7)=1.6M F4b tensors=192 F5 flat=303.0M (+pad 5242880)
+[10bT] step   0 loss=6.0714 chk=0.00e+00 gmax=4.443e-02 mon=0.00e+00 ms=11585.7
+[10bT] step   1 loss=16.2334 chk=0.00e+00 gmax=1.338e-01 mon=0.00e+00 ms=7501.5
+[10bT] step   2 loss=13.0094 chk=0.00e+00 gmax=1.055e-01 mon=0.00e+00 ms=6003.1
+[10bT] step   3 loss=13.8394 chk=0.00e+00 gmax=9.033e-02 mon=0.00e+00 ms=5925.0
+[10bT] step   4 loss=13.8385 chk=0.00e+00 gmax=7.715e-02 mon=0.00e+00 ms=5956.8
+[10bT] step   5 loss=12.5625 chk=0.00e+00 gmax=9.912e-02 mon=0.00e+00 ms=5805.1
+[10bT] step   6 loss=11.4829 chk=0.00e+00 gmax=6.494e-02 mon=0.00e+00 ms=5885.2
+[10bT] step   7 loss=9.6338 chk=0.00e+00 gmax=5.151e-02 mon=0.00e+00 ms=5863.3
+[10bT] step   8 loss=7.2313 chk=0.00e+00 gmax=3.955e-02 mon=0.00e+00 ms=5813.3
+[10bT] step   9 loss=8.0513 chk=0.00e+00 gmax=8.984e-02 mon=0.00e+00 ms=5849.0
+[10bT] step  10 loss=6.2318 chk=0.00e+00 gmax=4.150e-02 mon=0.00e+00 ms=5888.6
+[10bT] step  11 loss=5.7511 chk=0.00e+00 gmax=3.979e-02 mon=0.00e+00 ms=5793.9
+[10bT] step  12 loss=5.3788 chk=0.00e+00 gmax=4.297e-02 mon=0.00e+00 ms=5872.4
+[10bT] step  13 loss=5.0467 chk=0.00e+00 gmax=4.565e-02 mon=0.00e+00 ms=5876.8
+[10bT] step  14 loss=4.6073 chk=0.00e+00 gmax=3.955e-02 mon=0.00e+00 ms=5796.4
+[10bT] step  15 loss=4.4481 chk=0.00e+00 gmax=5.591e-02 mon=0.00e+00 ms=5816.4
+[10bT] step  16 loss=3.8490 chk=0.00e+00 gmax=4.224e-02 mon=0.00e+00 ms=5813.0
+[10bT] step  17 loss=3.6186 chk=0.00e+00 gmax=2.576e-02 mon=0.00e+00 ms=5874.9
+[10bT] step  18 loss=4.0341 chk=0.00e+00 gmax=4.712e-02 mon=0.00e+00 ms=5746.6
+[10bT] step  19 loss=4.2532 chk=0.00e+00 gmax=6.250e-02 mon=0.00e+00 ms=5810.3
+[10bT] step  20 loss=3.7608 chk=0.00e+00 gmax=3.442e-02 mon=0.00e+00 ms=5797.8
+[10bT] step  21 loss=3.4949 chk=0.00e+00 gmax=1.831e-02 mon=0.00e+00 ms=5827.1
+[10bT] step  22 loss=3.6066 chk=0.00e+00 gmax=2.625e-02 mon=0.00e+00 ms=5808.3
+[10bT] step  23 loss=3.6875 chk=0.00e+00 gmax=3.271e-02 mon=0.00e+00 ms=5815.5
+[10bT] step  24 loss=3.6266 chk=0.00e+00 gmax=2.979e-02 mon=0.00e+00 ms=5795.3
+RESULT_JSON {"arch": "gpt10b_tp", "backend": "sorcar", "ws": 224, "tp": 32, "dp": 7, "layers": 48, "cluster_params_b": 9.699598336, "median_ms_per_step": 5816.363096237183, "mean_ms_per_step": 5837.768164548007, "first_loss": 6.071444511413574, "final_loss": 3.626633405685425, "losses": [6.071444511413574, 16.23341178894043, 13.009446144104004, 13.839380264282227, 13.838504791259766, 12.56253433227539, 11.482928276062012, 9.63377571105957, 7.231293678283691, 8.051309585571289, 6.2317986488342285, 5.751112461090088, 5.378824234008789, 5.0466628074646, 4.607326507568359, 4.4480814933776855, 3.8489744663238525, 3.618617057800293, 4.034090995788574, 4.253236770629883, 3.760847806930542, 3.4949076175689697, 3.6066133975982666, 3.6875429153442383, 3.626633405685425]}
