@@ -112,7 +112,7 @@ not a family site — they are held fixed to isolate the family effect.
 | Dense Llama pure-DP (`SORCAR_E2E_FAMILIES.md`) | 26M | replicated-Adam-dominated | 5.8× (3 seeds) |
 | Expert-choice MoE (`SORCAR_E2E_10B.md`) | 9.4B | a2av-exchange-dominated | 1.02–1.04× (loss-neutral) |
 | **Dense Llama TP×DP (this doc)** | **9.75B** | **grad-sync + optimizer-dominated** | **2.02×** |
-| **Dense GPT-3-class TP×DP (this doc)** | **9.70B** | same | **1.90×** |
+| **Dense GPT-3-class TP×DP (this doc)** | **9.70B** | same | **2.04×** |
 
 The family rewrites' value tracks the fraction of the step owned by
 DP-sync + optimizer traffic — the component the 7 families rewrite.
