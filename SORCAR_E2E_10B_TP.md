@@ -37,7 +37,9 @@ arithmetic. For strict step-wise parity claims use the unfused numbers
 
 **Multi-seed stability**: the Llama N_MB=8 pair replicates at seed 7:
 11261.7 → 5560.9 ms = **2.03×** (vs 2.02× at seed 42), loss parity
-0.026.
+0.026. The fused N_MB=16 sorcar step time also replicates at seed 7:
+8651.2 ms (vs 8692.7 at seed 42) — **2.48×** against the seed-42
+baseline.
 
 **Both architectures clear 2×.** The N_MB knob is not a trick: more
 gradient-accumulation microbatches is the standard way to grow
