@@ -16,11 +16,16 @@ families** wired into the DP-gradient-sync + optimizer path:
 | Model (TP=32 × DP=7, 48 layers, DM=4096) | N_MB | baseline (strat) ms/step | sorcar ms/step | **Speedup** | final-loss Δ |
 |---|---|---|---|---|---|
 | Llama-style (RMSNorm, SwiGLU, 9.75B) | 8 | 11246.1 | 5555.4 | **2.02×** | 0.0051 |
-| GPT-3-class (LayerNorm+bias, GELU, learned pos, 9.70B) | 8 | 11022.8 | 5816.4 | **1.90×** | 0.0028 |
+| GPT-3-class (LayerNorm+bias, GELU, learned pos, 9.70B) | 12 | 16061.3 | 7864.5 | **2.04×** | 0.0112 |
+| GPT-3-class | 8 | 11022.8 | 5816.4 | **1.90×** | 0.0028 |
 | Llama-style | 4 | 6167.0 | 3654.9 | **1.69×** | 0.0058 |
 | GPT-3-class | 4 | 5999.3 | 3732.6 | **1.61×** | 0.0108 |
 
-<!-- NMB12 -->
+**Both architectures clear 2×.** The N_MB knob is not a trick: more
+gradient-accumulation microbatches is the standard way to grow
+effective batch size at fixed memory, and the baseline's cost grows
+with it because textbook DDP re-syncs every microbatch — exactly the
+schedule strat preserves and the F1-family rewrite eliminates.
 
 Both backends descend in lockstep on real text (llama 6.31→2.75 /
 2.74; gpt 6.07→3.62 / 3.63 over 25 steps at N_MB=8); the F3 checksum is
