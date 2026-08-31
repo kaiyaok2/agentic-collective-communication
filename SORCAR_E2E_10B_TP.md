@@ -20,6 +20,7 @@ families** wired into the DP-gradient-sync + optimizer path:
 | Llama-style (unfused) | 16 | 21445.8 | 9337.8 | **2.30×** | 0.043 |
 | GPT-3-class (unfused) | 16 | 21075.7 | 10055.3 | **2.10×** | 0.030 |
 | Llama-style (RMSNorm, SwiGLU, 9.75B) | 8 | 11246.1 | 5555.4 | **2.02×** | 0.0051 |
+| GPT-3-class + F4b×F5 fusion | 12 | 16061.3 | 7606.6 | **2.11×** | 0.048* |
 | GPT-3-class (LayerNorm+bias, GELU, learned pos, 9.70B) | 12 | 16061.3 | 7864.5 | **2.04×** | 0.0112 |
 | GPT-3-class | 8 | 11022.8 | 5816.4 | **1.90×** | 0.0028 |
 | Llama-style | 4 | 6167.0 | 3654.9 | **1.69×** | 0.0058 |
