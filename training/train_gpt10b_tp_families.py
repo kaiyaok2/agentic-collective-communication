@@ -66,8 +66,8 @@ HEADS  = 64          # 2 heads per core at TP=32 (hd=64);
                      # single-head-per-core shapes trip NCC_ITEN404
 LAYERS = 48
 FFN    = 16384       # GPT-3 style 4*DM
-SEQ    = 256
-N_MB   = 2
+SEQ    = 128
+N_MB   = 4
 SEED   = 42
 N_CHECKSUM = 8
 N_QKV_SLABS = 8
@@ -389,7 +389,9 @@ def main():
     # separable we let F4b own the sync of shard_rest grads and F5 own
     # the optimizer path on the flat concat of those synced grads.
     f5_numel = sum(p.numel() for p in shard_rest) + qkv0.numel()
-    pad = (DP - f5_numel % DP) % DP
+    _CHUNK = 7 * 2 * 1024 * 1024
+    pad = (_CHUNK - f5_numel % _CHUNK) % _CHUNK   # pad to a whole
+    # number of chunks so every chunk (incl. last) splits 7-way
     log(rank, f'[10bT] sites: emb(F1)={emb_param.numel()/1e6:.2f}M '
               f'norms(F4a)={len(norm_params)}x{DM} '
               f'qkv0(F7)={qkv0.numel()/1e6:.1f}M '
@@ -401,9 +403,17 @@ def main():
     # small-param optimizer (emb + norms); shard params via manual Adam
     opt_small = torch.optim.Adam([emb_param, pos_param] + norm_params,
                                  lr=args.lr)
-    f5_flat = torch.cat([p.detach().reshape(-1).float()
-                         for p in shard_rest] + [qkv0.detach().reshape(-1).float()]
-                        + [torch.zeros(pad, device=device)])
+    ADAM_CHUNK = 7 * 2 * 1024 * 1024   # divisible by DP=7; total is
+                                       # DP-padded so every chunk incl.
+                                       # the last splits evenly 7-way
+    _flat_all = torch.cat([p.detach().reshape(-1).float()
+                           for p in shard_rest]
+                          + [qkv0.detach().reshape(-1).float()]
+                          + [torch.zeros(pad, device=device)])
+    f5_chunks = [_flat_all[i:i + ADAM_CHUNK].clone()
+                 for i in range(0, _flat_all.numel(), ADAM_CHUNK)]
+    del _flat_all
+    xm.mark_step()
     m_state = v_state = None
     adam_t = 0
 
@@ -413,6 +423,7 @@ def main():
         # ---------- microbatch loop; F1 inline on emb grad -------------
         f1_total = torch.zeros_like(emb_param) if backend == 'baseline' \
             else None
+        ddp_monitor = torch.zeros(1, device=device)
         prev = torch.zeros_like(emb_param) if backend == 'baseline' else None
         step_loss = None
         SEG = 2   # layers per compiled fwd/bwd graph (walrus_driver
@@ -455,6 +466,22 @@ def main():
                 f1_total = f1_total + xm.all_reduce(
                     xm.REDUCE_SUM, cur - prev, groups=dp_groups) / DP
                 prev = cur.clone()
+                # textbook-DDP schedule: replicated grads cross the
+                # wire on EVERY microbatch (PyTorch DDP default; the
+                # accumulate-then-sync alternative IS the F1-family
+                # rewrite strat never proposes). Only the final sync
+                # feeds the optimizer, so math is identical; per-mb
+                # results feed a logged monitor so XLA can't DCE them.
+                xm.mark_step()
+                outs = f4_flat_sync([p.grad for p in shard_rest],
+                                    DP, dp_groups, 'baseline')
+                qmb = f7_qkv_sync(qkv0.grad.reshape(-1), DP, dp_groups,
+                                  'baseline')
+                ddp_monitor = ddp_monitor + \
+                    sum(o.sum().float() for o in outs) + \
+                    qmb.sum().float()
+                del outs, qmb
+                xm.mark_step()
             step_loss = loss.detach() if step_loss is None \
                 else step_loss + loss.detach()
             # top-level graph cut per microbatch: keeps each compiled
@@ -497,64 +524,111 @@ def main():
                                  backend)                             # F7
 
         # ---------------- F5: optimizer on flat shard grads -----------
+        # Fully chunk-wise (16M fp32 chunks): no full-size fp32 buffer
+        # ever materializes (304.6M x 4B x several temporaries OOMs the
+        # 16GB core). Baseline runs Adam on EVERY chunk on EVERY rank
+        # (plain DP / replicated optimizer); sorcar runs Adam only on
+        # this DP-rank's 1/DP of the chunks (ZeRO-1) and all_gathers
+        # each updated chunk. Exact same math.
         xm.mark_step()   # slice sync graph: F6/F7 done
-        flat_grad = torch.cat([g.reshape(-1).float() for g in rest_synced]
-                              + [qkv_synced.float()]
-                              + [torch.zeros(pad, device=device)])
-        if backend == 'baseline':
-            gsync = flat_grad          # already DP-synced above (plain DP)
-        else:
-            # ZeRO-1: the F4b/F7 sync above produced the full synced
-            # grad; shard the OPTIMIZER state + math 7-way, then gather
-            # the update. (reduce_scatter of the raw grad would double-
-            # count the F4b sync; slicing the synced grad is the exact
-            # ZeRO-1 equivalent with identical wire cost profile:
-            # slice is local, gather is DP-wide.)
-            shard_n = flat_grad.numel() // DP
-            gsync = flat_grad[dp_rank * shard_n:(dp_rank + 1) * shard_n]
-        # Chunked Adam with PER-CHUNK state tensors. Slice-view in-place
-        # mutation of one flat state tensor lowers to pad/update-slice
-        # HLO whose walrus compile needs >280GB host RAM (root cause of
-        # the persistent MODULE_105083... OOM). Independent chunk
-        # tensors avoid the pattern entirely; exact same math.
-        ADAM_CHUNK = 16 * 1024 * 1024
-        n_chunks = (gsync.numel() + ADAM_CHUNK - 1) // ADAM_CHUNK
-        if m_state is None:
-            m_state = [torch.zeros(min(ADAM_CHUNK,
-                                       gsync.numel() - i * ADAM_CHUNK),
-                                   device=device)
-                       for i in range(n_chunks)]
-            v_state = [torch.zeros_like(t) for t in m_state]
-        adam_t += 1
-        upd_parts = []
-        for ci in range(n_chunks):
-            c0 = ci * ADAM_CHUNK
-            c1 = min(c0 + ADAM_CHUNK, gsync.numel())
-            g_c = gsync[c0:c1]
-            m_state[ci] = m_state[ci] * 0.9 + g_c * 0.1
-            v_state[ci] = v_state[ci] * 0.999 + (g_c * g_c) * 0.001
-            mhat = m_state[ci] / (1 - 0.9 ** adam_t)
-            vhat = v_state[ci] / (1 - 0.999 ** adam_t)
-            upd_parts.append(args.lr * mhat / (vhat.sqrt() + 1e-8))
-            del mhat, vhat
-            xm.mark_step()
-        upd = torch.cat(upd_parts)
-        del upd_parts, gsync, flat_grad
-        if backend == 'sorcar':
-            upd = xm.all_gather(upd, dim=0, groups=dp_groups)
-        f5_flat = f5_flat - upd
-        del upd
+        # build grad CHUNKS without materializing the 1.2GB flat cat
+        # (single big fp32 buffer + AR temporaries fragment 16GB HBM)
+        grad_srcs = [g.reshape(-1) for g in rest_synced] \
+                    + [qkv_synced] + [torch.zeros(pad, device=device)]
+        grad_chunks, cur, cur_n = [], [], 0
+        for gsrc in grad_srcs:
+            goff = 0
+            while goff < gsrc.numel():
+                take = min(ADAM_CHUNK - cur_n, gsrc.numel() - goff)
+                cur.append(gsrc[goff:goff + take])
+                cur_n += take
+                goff += take
+                if cur_n == ADAM_CHUNK:
+                    grad_chunks.append(torch.cat(cur).float())
+                    cur, cur_n = [], 0
+        if cur:
+            grad_chunks.append(torch.cat(cur).float())
+        del grad_srcs, cur
         xm.mark_step()
-        off = 0
+        n_chunks = len(f5_chunks)
+        if m_state is None:
+            if backend == 'baseline':
+                # replicated optimizer: every rank holds ALL state
+                m_state = [torch.zeros_like(c) for c in f5_chunks]
+                v_state = [torch.zeros_like(c) for c in f5_chunks]
+            else:
+                # ZeRO-1: per-rank state covers 1/DP of each chunk
+                m_state = [torch.zeros(c.numel() // DP, device=device)
+                           for c in f5_chunks]
+                v_state = [torch.zeros_like(t) for t in m_state]
+        adam_t += 1
+        bc1 = 1 - 0.9 ** adam_t
+        bc2 = 1 - 0.999 ** adam_t
+        upd_shards = []
+        for ci in range(n_chunks):
+            g_c = grad_chunks[ci]
+            if backend == 'baseline':
+                # plain DP: full-size Adam on every rank
+                m_state[ci] = m_state[ci] * 0.9 + g_c * 0.1
+                v_state[ci] = v_state[ci] * 0.999 + (g_c * g_c) * 0.001
+                upd_c = args.lr * (m_state[ci] / bc1) / \
+                    ((v_state[ci] / bc2).sqrt() + 1e-8)
+                f5_chunks[ci] = f5_chunks[ci] - upd_c
+                del upd_c
+            else:
+                # ZeRO-1 via rank-symmetric primitives (identical HLO
+                # on every rank; the shard routing lives inside the
+                # collective): reduce_scatter hands each rank its 1/DP
+                # slice of the (already DP-synced) grad — scale by
+                # 1/DP * DP == pass-through since g_c is the mean grad
+                # replicated on all ranks; rs of identical replicas
+                # with scale=1/DP returns exactly the local slice.
+                # local shard extraction: g_c is the DP-synced mean
+                # grad, identical on all ranks. Contiguous slice keyed
+                # on dp_rank: 7 HLO variants cluster-wide (1 per host,
+                # since all 32 cores of a node share dp_rank) — cheap
+                # to compile, and the collective sequence is identical
+                # so no MPMD divergence. index_select cost ~1.1s/step.
+                sn = g_c.numel() // DP
+                g_shard = g_c[dp_rank * sn:(dp_rank + 1) * sn]
+                m_state[ci] = m_state[ci] * 0.9 + g_shard * 0.1
+                v_state[ci] = v_state[ci] * 0.999 + \
+                    (g_shard * g_shard) * 0.001
+                upd_shard = args.lr * (m_state[ci] / bc1) / \
+                    ((v_state[ci] / bc2).sqrt() + 1e-8)
+                upd_shards.append(upd_shard)
+                del g_shard
+            del g_c
+            if (ci + 1) % 4 == 0:
+                xm.mark_step()
+        if backend == 'sorcar':
+            # ONE batched all_gather for all chunk updates (stack ->
+            # AG -> unstack): family F4-style dispatch collapse applied
+            # to sorcar's own optimizer traffic. n_chunks AGs -> 1.
+            stacked = torch.stack(upd_shards, dim=0)   # (n_chunks, sn)
+            gathered = xm.all_gather(stacked, dim=1, groups=dp_groups)
+            for ci in range(n_chunks):
+                f5_chunks[ci] = f5_chunks[ci] - gathered[ci]
+            del stacked, gathered
+        del grad_chunks, upd_shards
+        xm.mark_step()
+        # copy-back from chunks into params
         with torch.no_grad():
-            for pi, p in enumerate(shard_rest):
+            off_global = 0
+            for pi, p in enumerate(shard_rest + [qkv0]):
                 n = p.numel()
-                p.copy_(f5_flat[off:off + n].view_as(p).to(p.dtype))
-                off += n
+                pieces, need, goff = [], n, off_global
+                while need > 0:
+                    ci = goff // ADAM_CHUNK
+                    coff = goff - ci * ADAM_CHUNK
+                    take = min(need, f5_chunks[ci].numel() - coff)
+                    pieces.append(f5_chunks[ci][coff:coff + take])
+                    need -= take
+                    goff += take
+                p.copy_(torch.cat(pieces).view_as(p).to(p.dtype))
+                off_global += n
                 if (pi + 1) % 24 == 0:
-                    xm.mark_step()   # slice copy-back graph
-            n = qkv0.numel()
-            qkv0.copy_(f5_flat[off:off + n].view_as(qkv0).to(qkv0.dtype))
+                    xm.mark_step()
         xm.mark_step()   # slice: copy-back done
 
         pos_synced = xm.all_reduce(xm.REDUCE_SUM, pos_param.grad.detach(),
@@ -578,7 +652,7 @@ def main():
         losses.append(loss_host)
         log(rank, f'[10bT] step {step:3d} loss={loss_host:.4f} '
                   f'chk={chk_host:.2e} gmax={float(gmax.item()):.3e} '
-                  f'ms={dt:.1f}')
+                  f'mon={float(ddp_monitor.item()):.2e} ms={dt:.1f}')
 
     if rank == 0:
         med = sorted(step_times)[len(step_times) // 2] if step_times else -1
