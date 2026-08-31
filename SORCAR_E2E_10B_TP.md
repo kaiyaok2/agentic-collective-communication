@@ -15,8 +15,8 @@ families** wired into the DP-gradient-sync + optimizer path:
 
 | Model (TP=32 × DP=7, 48 layers, DM=4096) | N_MB | baseline (strat) ms/step | sorcar ms/step | **Speedup** | final-loss Δ |
 |---|---|---|---|---|---|
-| **Llama-style + F4b×F5 fusion** | 16 | 21445.8 | 8692.7 | **2.47×** | bf16 noise band |
-| **GPT-3-class + F4b×F5 fusion** | 16 | 21075.7 | 9530.5 | **2.21×** | bf16 noise band |
+| **Llama-style + F4b×F5 fusion** | 16 | 21445.8 | 8692.7 | **2.47×** | 0.135* |
+| **GPT-3-class + F4b×F5 fusion** | 16 | 21075.7 | 9530.5 | **2.21×** | 0.020* |
 | Llama-style (unfused) | 16 | 21445.8 | 9337.8 | **2.30×** | 0.043 |
 | GPT-3-class (unfused) | 16 | 21075.7 | 10055.3 | **2.10×** | 0.030 |
 | Llama-style (RMSNorm, SwiGLU, 9.75B) | 8 | 11246.1 | 5555.4 | **2.02×** | 0.0051 |
@@ -24,6 +24,15 @@ families** wired into the DP-gradient-sync + optimizer path:
 | GPT-3-class | 8 | 11022.8 | 5816.4 | **1.90×** | 0.0028 |
 | Llama-style | 4 | 6167.0 | 3654.9 | **1.69×** | 0.0058 |
 | GPT-3-class | 4 | 5999.3 | 3732.6 | **1.61×** | 0.0108 |
+
+\* Fused-run caveat: reduce_scatter-of-raw-grads changes the reduction
+order more than the unfused rewrites, so per-step loss deltas vs the
+baseline reach 0.5–0.8 during the chaotic early steps (final deltas
+0.135 llama / 0.020 gpt over 15 steps; the fused llama run ends LOWER
+than baseline, 3.50 vs 3.63). Both curves descend on the same
+trajectory band; the rewrite is algebraically exact in exact
+arithmetic. For strict step-wise parity claims use the unfused numbers
+(Δ≤0.043).
 
 **Multi-seed stability**: the Llama N_MB=8 pair replicates at seed 7:
 11261.7 → 5560.9 ms = **2.03×** (vs 2.02× at seed 42), loss parity
