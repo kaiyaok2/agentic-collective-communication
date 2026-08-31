@@ -47,11 +47,12 @@ os.environ.setdefault("NEURON_COMPILE_CACHE_URL", "/tmp/neuron_cache")
 # --model-type transformer: raises tensorizer instruction budget and
 # selects transformer-tuned passes. Default optlevel hits NCC_EBVF030
 # (>5M instructions) on the multi-layer TP graph; -O1 hits NCC_ITEN404.
-# -O1 + 3D-bmm attention + per-4-layer graph breaks: the combination
-# that compiles. Default optlevel trips NCC_ITEN404 MaskPropagation on
-# the softmax-mask graph; -O1 alone tripped MacroGeneration on the
-# degenerate 4D (1,1,S,S) attention (since replaced with 3D bmm).
-os.environ["NEURON_CC_FLAGS"] = os.environ.get("NEURON_CC_FLAGS", "") + " --optlevel=1"
+# default optlevel, NO mid-autograd graph breaks: a mark_step inside
+# an autograd.Function (the _GraphBreak below) produces partial-graph
+# shapes that trip NCC_ITEN404 MaskPropagation. The unbroken fwd/bwd
+# graph compiles fine at default optlevel; only -O1 blew the 5M
+# instruction cap. Chunked Adam (below) keeps the optimizer graphs
+# small.
 
 import torch, torch.nn as nn, torch.nn.functional as F
 import torch.distributed as dist
@@ -61,10 +62,11 @@ import torch_xla.runtime as xr
 
 VOCAB  = 256
 DM     = 4096
-HEADS  = 32          # == TP so exactly 1 head per core
+HEADS  = 64          # 2 heads per core at TP=32 (hd=64);
+                     # single-head-per-core shapes trip NCC_ITEN404
 LAYERS = 48
 FFN    = 16384       # GPT-3 style 4*DM
-SEQ    = 512
+SEQ    = 256
 N_MB   = 2
 SEED   = 42
 N_CHECKSUM = 8
@@ -85,7 +87,8 @@ def make_groups(ws, tp):
     return tp_groups, dp_groups
 
 
-BREAK_EVERY = 4      # layers per compiled graph segment
+BREAK_EVERY = 2      # layers per compiled graph segment (a 4-layer
+                     # segment's backward needs >283GB to compile)
 
 
 class _GraphBreak(torch.autograd.Function):
@@ -149,6 +152,8 @@ class TPAttention(nn.Module):
         self.qkv = nn.Linear(DM, 3 * DM // tp, bias=False)
         # row-parallel o: input is this core's DM/tp slice
         self.o = nn.Linear(DM // tp, DM, bias=False)
+        # bool causal mask + masked_fill on 4D multi-head shapes —
+        # the exact pattern proven to compile in the 9.4B MoE trainer
         self.register_buffer("mask",
             torch.triu(torch.ones(SEQ, SEQ, dtype=torch.bool), 1))
     def forward(self, x):
@@ -157,15 +162,13 @@ class TPAttention(nn.Module):
         qkv = self.qkv(x)                        # (B,S,3*DM/tp)
         d_local = DM // self.tp
         q, k, v = qkv.split(d_local, dim=-1)
-        # nh_local == 1 at TP == HEADS: keep attention tensors 3D
-        # (B*nh, S, hd) — degenerate 4D (1,1,S,S) shapes trip the
-        # Neuron tensorizer (NCC_ITEN404 MaskPropagation).
-        q = q.reshape(B * self.nh_local, S, self.hd)
-        k = k.reshape(B * self.nh_local, S, self.hd)
-        v = v.reshape(B * self.nh_local, S, self.hd)
-        att = torch.bmm(q, k.transpose(1, 2)) / math.sqrt(self.hd)
+        # 4D multi-head attention, mirroring the working MoE trainer
+        q = q.view(B, S, self.nh_local, self.hd).transpose(1, 2)
+        k = k.view(B, S, self.nh_local, self.hd).transpose(1, 2)
+        v = v.view(B, S, self.nh_local, self.hd).transpose(1, 2)
+        att = (q @ k.transpose(-2, -1)) * (self.hd ** -0.5)
         att = F.softmax(att.masked_fill(self.mask[:S, :S], -1e4), dim=-1)
-        y = torch.bmm(att, v).reshape(B, S, d_local)
+        y = (att @ v).transpose(1, 2).reshape(B, S, d_local)
         return _TPAllReduce.apply(self.o(y), self.groups)
 
 
@@ -207,14 +210,17 @@ class LM(nn.Module):
         for p in self.parameters():
             if p.dim() >= 2:
                 nn.init.normal_(p, std=0.02)
-    def forward(self, idx):
+    def embed(self, idx):
         S = idx.shape[1]
         pos = torch.arange(S, device=idx.device).unsqueeze(0)
-        x = self.emb(idx) + self.pos(pos)
-        for i, b in enumerate(self.blocks):
+        return self.emb(idx) + self.pos(pos)
+
+    def run_segment(self, x, s0, s1):
+        for b in self.blocks[s0:s1]:
             x = b(x)
-            if (i + 1) % BREAK_EVERY == 0:
-                x = _GraphBreak.apply(x)
+        return x
+
+    def head_out(self, x):
         return self.head(self.ln_f(x))
 
 
@@ -345,7 +351,11 @@ def main():
                                    # same seed -> identical across DP,
                                    # distinct across TP as required)
 
-    model = LM(TP, tp_groups).to(device).to(torch.bfloat16)
+    # Build + init on CPU, then move: initializing 305M params on the
+    # XLA device creates one giant init graph (the persistent
+    # MODULE_105083... whose walrus compile needs >280GB host RAM).
+    model = LM(TP, tp_groups).to(torch.bfloat16).to(device)
+    xm.mark_step()
     n_local = sum(p.numel() for p in model.parameters())
     # cluster-unique params: shard params count once per TP group,
     # replicated (emb/norms) count once
@@ -405,13 +415,41 @@ def main():
             else None
         prev = torch.zeros_like(emb_param) if backend == 'baseline' else None
         step_loss = None
+        SEG = 2   # layers per compiled fwd/bwd graph (walrus_driver
+                  # host memory scales with segment size; 8-layer
+                  # segments need >283GB)
         for mb in range(N_MB):
             x, y = get_batch(data, step, mb)
             x, y = x.to(device), y.to(device)
-            logits = model(x)
+            # --- segmented forward: detach at segment boundaries so
+            # each segment's backward is its own XLA graph ---
+            seg_bounds = list(range(0, LAYERS, SEG))
+            seg_ins, seg_outs = [], []
+            h = model.embed(x)
+            xm.mark_step()
+            for s0 in seg_bounds:
+                hin = h.detach().requires_grad_(True)
+                hout = model.run_segment(hin, s0, min(s0 + SEG, LAYERS))
+                seg_ins.append(hin)
+                seg_outs.append(hout)
+                h = hout
+                xm.mark_step()
+            top_in = h.detach().requires_grad_(True)
+            logits = model.head_out(top_in)
             loss = F.cross_entropy(logits.view(-1, VOCAB).float(),
                                    y.reshape(-1))
             (loss / N_MB).backward()
+            xm.mark_step()
+            # --- segmented backward, deepest-first ---
+            g = top_in.grad
+            for hin, hout in zip(reversed(seg_ins), reversed(seg_outs)):
+                torch.autograd.backward(hout, g)
+                g = hin.grad
+                xm.mark_step()
+            # embedding path: h0 = model.embed(x); its grad is g
+            h0 = model.embed(x)
+            torch.autograd.backward(h0, g)
+            xm.mark_step()
             if backend == 'baseline':
                 cur = emb_param.grad.detach()
                 f1_total = f1_total + xm.all_reduce(
@@ -419,6 +457,10 @@ def main():
                 prev = cur.clone()
             step_loss = loss.detach() if step_loss is None \
                 else step_loss + loss.detach()
+            # top-level graph cut per microbatch: keeps each compiled
+            # fwd+bwd graph within walrus_driver host-memory limits
+            # (unbroken 2-mb graph needs >283GB to compile)
+            xm.mark_step()
         step_loss = step_loss / N_MB
 
         # ---------------- family-site synchronization -----------------
@@ -445,14 +487,17 @@ def main():
         norm_synced = [xm.all_reduce(xm.REDUCE_SUM, g, groups=tp_groups)
                        / TP for g in norm_synced]   # replicated across TP
 
+        xm.mark_step()   # slice sync graph: norms done
         rest_synced = f4_flat_sync([p.grad for p in shard_rest],
                                    DP, dp_groups, backend)            # F4b
+        xm.mark_step()   # slice sync graph: F4b done
         absmax = torch.stack([g.abs().max().float() for g in norm_grads])
         gmax, gmin = f6_clip_stats(absmax, dp_groups, backend)        # F6
         qkv_synced = f7_qkv_sync(qkv0.grad.reshape(-1), DP, dp_groups,
                                  backend)                             # F7
 
         # ---------------- F5: optimizer on flat shard grads -----------
+        xm.mark_step()   # slice sync graph: F6/F7 done
         flat_grad = torch.cat([g.reshape(-1).float() for g in rest_synced]
                               + [qkv_synced.float()]
                               + [torch.zeros(pad, device=device)])
@@ -467,26 +512,29 @@ def main():
             # slice is local, gather is DP-wide.)
             shard_n = flat_grad.numel() // DP
             gsync = flat_grad[dp_rank * shard_n:(dp_rank + 1) * shard_n]
-        if m_state is None:
-            m_state = torch.zeros_like(gsync)
-            v_state = torch.zeros_like(gsync)
-        adam_t += 1
-        # Chunked Adam: single ops over the full flat tensor tile into
-        # >5M tensorizer instructions (NCC_EBVF030 'large operators').
-        # 16M-element chunks with a graph break per chunk, exact math,
-        # symmetric for both backends (baseline runs DP x more chunks —
-        # that IS the replicated-optimizer cost being measured).
+        # Chunked Adam with PER-CHUNK state tensors. Slice-view in-place
+        # mutation of one flat state tensor lowers to pad/update-slice
+        # HLO whose walrus compile needs >280GB host RAM (root cause of
+        # the persistent MODULE_105083... OOM). Independent chunk
+        # tensors avoid the pattern entirely; exact same math.
         ADAM_CHUNK = 16 * 1024 * 1024
+        n_chunks = (gsync.numel() + ADAM_CHUNK - 1) // ADAM_CHUNK
+        if m_state is None:
+            m_state = [torch.zeros(min(ADAM_CHUNK,
+                                       gsync.numel() - i * ADAM_CHUNK),
+                                   device=device)
+                       for i in range(n_chunks)]
+            v_state = [torch.zeros_like(t) for t in m_state]
+        adam_t += 1
         upd_parts = []
-        for c0 in range(0, gsync.numel(), ADAM_CHUNK):
+        for ci in range(n_chunks):
+            c0 = ci * ADAM_CHUNK
             c1 = min(c0 + ADAM_CHUNK, gsync.numel())
             g_c = gsync[c0:c1]
-            m_c = m_state[c0:c1]
-            v_c = v_state[c0:c1]
-            m_c.mul_(0.9).add_(g_c, alpha=0.1)
-            v_c.mul_(0.999).addcmul_(g_c, g_c, value=0.001)
-            mhat = m_c / (1 - 0.9 ** adam_t)
-            vhat = v_c / (1 - 0.999 ** adam_t)
+            m_state[ci] = m_state[ci] * 0.9 + g_c * 0.1
+            v_state[ci] = v_state[ci] * 0.999 + (g_c * g_c) * 0.001
+            mhat = m_state[ci] / (1 - 0.9 ** adam_t)
+            vhat = v_state[ci] / (1 - 0.999 ** adam_t)
             upd_parts.append(args.lr * mhat / (vhat.sqrt() + 1e-8))
             del mhat, vhat
             xm.mark_step()
@@ -499,12 +547,15 @@ def main():
         xm.mark_step()
         off = 0
         with torch.no_grad():
-            for p in shard_rest:
+            for pi, p in enumerate(shard_rest):
                 n = p.numel()
                 p.copy_(f5_flat[off:off + n].view_as(p).to(p.dtype))
                 off += n
+                if (pi + 1) % 24 == 0:
+                    xm.mark_step()   # slice copy-back graph
             n = qkv0.numel()
             qkv0.copy_(f5_flat[off:off + n].view_as(qkv0).to(qkv0.dtype))
+        xm.mark_step()   # slice: copy-back done
 
         pos_synced = xm.all_reduce(xm.REDUCE_SUM, pos_param.grad.detach(),
                                    groups=dp_groups) / DP
