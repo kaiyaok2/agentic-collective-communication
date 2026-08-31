@@ -15,6 +15,10 @@ families** wired into the DP-gradient-sync + optimizer path:
 
 | Model (TP=32 × DP=7, 48 layers, DM=4096) | N_MB | baseline (strat) ms/step | sorcar ms/step | **Speedup** | final-loss Δ |
 |---|---|---|---|---|---|
+| **Llama-style + F4b×F5 fusion** | 16 | 21445.8 | 8692.7 | **2.47×** | bf16 noise band |
+| **GPT-3-class + F4b×F5 fusion** | 16 | 21075.7 | 9530.5 | **2.21×** | bf16 noise band |
+| Llama-style (unfused) | 16 | 21445.8 | 9337.8 | **2.30×** | 0.043 |
+| GPT-3-class (unfused) | 16 | 21075.7 | 10055.3 | **2.10×** | 0.030 |
 | Llama-style (RMSNorm, SwiGLU, 9.75B) | 8 | 11246.1 | 5555.4 | **2.02×** | 0.0051 |
 | GPT-3-class (LayerNorm+bias, GELU, learned pos, 9.70B) | 12 | 16061.3 | 7864.5 | **2.04×** | 0.0112 |
 | GPT-3-class | 8 | 11022.8 | 5816.4 | **1.90×** | 0.0028 |
@@ -73,6 +77,13 @@ not a family site — they are held fixed to isolate the family effect.
   microbatch (a full 304M-element per-tensor sync sweep each);
   sorcar's sync cost is constant in N_MB. 1.61–1.69× at N_MB=4 →
   1.90–2.02× at N_MB=8.
+- **F4b×F5 fusion** (`--fuse`): when ZeRO-1 owns the optimizer, the
+  standalone F4b grad all-reduce is dead code — its only consumer is
+  the optimizer, so reduce_scatter-ing the RAW accumulated grad
+  directly into shards both syncs and shards in one collective at 1/7
+  the wire bytes. Worth another ~0.1-0.2× (2.30→2.47 on llama). This
+  is itself a family-F5-style dead-collective elimination applied to
+  sorcar's own schedule.
 - **F5 anatomy** (measured on the N_MB=4 pair): gate-masked ZeRO-1 that
   still ran full-size Adam math on every rank measured 0.74× —
   *slower* than baseline — before the true 1/7-shard implementation

@@ -330,6 +330,9 @@ def main():
     ap.add_argument('--seed', type=int, default=SEED)
     ap.add_argument('--layers', type=int, default=None)
     ap.add_argument('--nmb', type=int, default=None)
+    ap.add_argument('--fuse', action='store_true',
+                    help='F4b+F5 fusion: reduce_scatter raw grads into '
+                         'optimizer shards (full ZeRO-1)')
     args = ap.parse_args()
     global N_MB
     if args.nmb:
@@ -519,13 +522,22 @@ def main():
                        / TP for g in norm_synced]   # replicated across TP
 
         xm.mark_step()   # slice sync graph: norms done
-        rest_synced = f4_flat_sync([p.grad for p in shard_rest],
-                                   DP, dp_groups, backend)            # F4b
+        if backend == 'sorcar' and args.fuse:
+            # F4b+F5 fused: the optimizer reduce_scatter below is the
+            # only sync the shard grads need (their sole consumer is
+            # the optimizer). rest_synced points at RAW grads.
+            rest_synced = [p.grad for p in shard_rest]
+        else:
+            rest_synced = f4_flat_sync([p.grad for p in shard_rest],
+                                       DP, dp_groups, backend)        # F4b
         xm.mark_step()   # slice sync graph: F4b done
         absmax = torch.stack([g.abs().max().float() for g in norm_grads])
         gmax, gmin = f6_clip_stats(absmax, dp_groups, backend)        # F6
-        qkv_synced = f7_qkv_sync(qkv0.grad.reshape(-1), DP, dp_groups,
-                                 backend)                             # F7
+        if backend == 'sorcar' and args.fuse:
+            qkv_synced = qkv0.grad.reshape(-1)   # raw; F5 rs syncs it
+        else:
+            qkv_synced = f7_qkv_sync(qkv0.grad.reshape(-1), DP,
+                                     dp_groups, backend)              # F7
 
         # ---------------- F5: optimizer on flat shard grads -----------
         # Fully chunk-wise (16M fp32 chunks): no full-size fp32 buffer
@@ -593,8 +605,16 @@ def main():
                 # since all 32 cores of a node share dp_rank) — cheap
                 # to compile, and the collective sequence is identical
                 # so no MPMD divergence. index_select cost ~1.1s/step.
-                sn = g_c.numel() // DP
-                g_shard = g_c[dp_rank * sn:(dp_rank + 1) * sn]
+                if args.fuse:
+                    # fused: g_c is RAW; reduce_scatter sums across DP
+                    # AND shards — 1/DP the wire bytes of a full AR.
+                    g_shard = xm.reduce_scatter(
+                        xm.REDUCE_SUM, g_c, scale=1.0 / DP,
+                        scatter_dim=0, shard_count=DP,
+                        groups=dp_groups)
+                else:
+                    sn = g_c.numel() // DP
+                    g_shard = g_c[dp_rank * sn:(dp_rank + 1) * sn]
                 m_state[ci] = m_state[ci] * 0.9 + g_shard * 0.1
                 v_state[ci] = v_state[ci] * 0.999 + \
                     (g_shard * g_shard) * 0.001
