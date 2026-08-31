@@ -21,6 +21,10 @@ families** wired into the DP-gradient-sync + optimizer path:
 | Llama-style | 4 | 6167.0 | 3654.9 | **1.69×** | 0.0058 |
 | GPT-3-class | 4 | 5999.3 | 3732.6 | **1.61×** | 0.0108 |
 
+**Multi-seed stability**: the Llama N_MB=8 pair replicates at seed 7:
+11261.7 → 5560.9 ms = **2.03×** (vs 2.02× at seed 42), loss parity
+0.026.
+
 **Both architectures clear 2×.** The N_MB knob is not a trick: more
 gradient-accumulation microbatches is the standard way to grow
 effective batch size at fixed memory, and the baseline's cost grows
