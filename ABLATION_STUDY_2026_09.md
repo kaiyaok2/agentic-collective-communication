@@ -174,6 +174,32 @@ local-compute class (the paper sim is flat there), and the remaining
 0.2 ms absolute, on candidates that are all ≥10× faster than any
 collective alternative).
 
+## Result 6: prompt ablations on the `_bcast` class
+
+Extending arms (b) and (c) to the same 6 `_bcast` problems:
+
+| Problem | base | papersim | longprompt | noadv |
+|---|---|---|---|---|
+| mod_sq_bcast | 60.7 | 2.0 | **824.2** | 60.7 |
+| xor_grid_bcast | 88.8 | 29.0 | 88.8 | 88.8 |
+| triangle_num_bcast | 60.7 | 3.0 | 60.7 | 60.7 |
+| sign_alt_bcast | 88.8 | 6.0 | 88.8 | 88.8 |
+| gray_code_bcast | 60.7 | 29.0 | 60.7 | 60.7 |
+| hamming_dist_bcast | 61.7 | 29.0 | 60.7 | 60.7 |
+| calls / wall | 40 / 482s | 27 / 390s | 31 / 480s | 38 / 465s |
+
+The long prompt produced its first concrete regression here:
+on `mod_sq_bcast` it settled on the `torch.arange` arithmetic form
+(sim 824.2) and never found the `torch.tensor([listcomp])` const-fold
+(sim 60.7) that base/noadv found — the const-fold-vs-arange worked
+idiom lives in the reference doc served by `read_reference()`, which
+the old inline prompt does not have. RT confirms the direction
+(const-fold 0.077 ms vs arange 0.112 ms on this 1D shape, Result 5),
+though the RT margin (1.45×) is smaller than the sim margin. noadv
+matched base on every `_bcast` problem: adversarial testing does not
+change outcomes on position-formula problems whose hazard is
+mis-reading, not communication correctness.
+
 ## Assets
 
 - Winner candidates + per-search summaries: `session_logs_2026_09_07/abl/`
