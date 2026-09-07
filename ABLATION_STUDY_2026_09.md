@@ -60,10 +60,10 @@ two back-to-back runs.
 
 ## Result 3: search-cost differences (where the arms DO differ)
 
-| Metric (sum over 8 problems) | base | longprompt | noadv |
-|---|---|---|---|
-| score_candidate calls | 52 | 41 | 54 |
-| wall seconds | 684 | 623 | 703 |
+| Metric (sum over 8 problems) | base | papersim | longprompt | noadv |
+|---|---|---|---|---|
+| score_candidate calls | 52 | 59 | 41 | 54 |
+| wall seconds | 684 | 669 | 623 | 703 |
 
 Notable per-problem behavior:
 - `reduce_scatter_from_ar` (F5): base converged in 7 calls;
