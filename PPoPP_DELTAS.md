@@ -93,28 +93,16 @@ the primitive-viability term.
 Code: `search/agent_simulator_config.py::_test_primitive_compilation`
 + the `for prim in [...]` loop in `experiments/run_search.py`.
 
-### 1.4 Structural graph analysis at scoring time (post-paper additions)
+### 1.4 Structural graph analysis (clarification, not a delta)
 
-Two AST-level analyses were added to the simulator's scoring path
-beyond the paper's op-count features:
-
-- **Graph-inducing collective count** (loop-structure analysis around
-  `_count_collectives`): distinguishes M collectives issued inside a
-  Python loop (M separate dispatch/launch events at runtime) from M
-  collectives fused into one stacked payload. This is the feature that
-  lets the sim price the dispatch-collapse family (F4) correctly —
-  a flat op count scores both shapes identically.
-- **Bucket-cap detection** (`_ast_detect_bucket_cap`): detects a
-  hardcoded byte cap (e.g. `bucket_bytes = 32 * 1024 * 1024`) in a
-  candidate and models its peak-intermediate clamp. At training scale
-  this is the structural property separating a paper-quality bucketed
-  reduce from a naive cat-all-then-reduce — the latter wins in a
-  microbenchmark sim but OOMs device HBM in real training
-  (independently re-confirmed at 10B: `SORCAR_E2E_10B_TP.md`,
-  finding 5).
-
-Code: `search/correctness_test.py::_ast_detect_bucket_cap`,
-`::_count_collectives` and the surrounding loop-structure analysis.
+The AST-level scoring features — graph-inducing collective count
+(loop-issued vs fused collectives) and bucket-cap detection
+(`_ast_detect_bucket_cap`) — are sometimes assumed post-paper because
+the paper text does not describe them; they are in fact present in the
+submission-era code and unchanged. Noted here to pre-empt the
+misattribution. The bucket-cap feature's importance was independently
+re-confirmed at 10B scale post-paper (`SORCAR_E2E_10B_TP.md`,
+finding 5: unbucketed cat-all-then-reduce OOMs device HBM).
 
 ### 1.5 Known accepted drift: amortization constants
 
