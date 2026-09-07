@@ -224,6 +224,14 @@ scores to a candidate that keeps the AR and one that drops it, so the
 agent has no gradient toward eliminating the collective. **224-rank RT:
 base winner 0.081 ms vs papersim winner 2.909 ms — a 36× hardware
 difference caused solely by the phase-1 simulator deltas.**
+
+Stochasticity check (4 independent searches per arm on this problem):
+the current-sim arm emits the collective-free `zeros_like` in **4/4**
+runs; the papersim arm keeps the AR in **2/4** runs (and finds
+`zeros_like` in the other 2 — the LLM sometimes reasons its way to
+dropping the AR without simulator pressure). The sim deltas convert a
+coin-flip into a certainty; at deployment time a 50% chance of
+shipping the 36×-slower variant is the difference being measured.
 (`ag_slice_use` shows the same flat-scoring pathology in the other
 direction: papersim scores the local candidate 1.0 us — indistinguishable
 from free — while the current sim's 786.4 us reflects the real memcpy
