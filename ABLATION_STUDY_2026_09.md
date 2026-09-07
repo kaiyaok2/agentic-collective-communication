@@ -262,6 +262,86 @@ false passes) involved weaker gates than this pipeline's current
 correctness oracle; with a strong oracle its value is iteration
 economy, with a weak one it is correctness itself.
 
+## Result 9: stratified-random 24-problem study (revised arms, token-metered)
+
+Responding to three review concerns: (i) the original 12 extras were
+hand-picked; (ii) the "long prompt" arm still permitted iterative
+discovery; (iii) adversarial-testing cost was not metered. This round:
+
+- **24 problems drawn by fixed-seed RNG** (seed 20260907): 18 from the
+  140 registered non-`_bcast` catalog problems + 6 from the `_bcast`
+  catalog. Draw list in `session_logs_2026_09_07/draw24.txt`.
+- **`stratform` arm replaces `longprompt`**: a prompt that FORCES the
+  strat-enumerate protocol (enumerate exactly 5 structural strategies →
+  implement each → score each once → ≤2 refinements on the winner →
+  stop; no iterative discovery, no read_reference).
+- **Per-call token metering** on every arm (`kiss_token_shim`).
+
+### Structural divergence vs base (collective-count/form of the winner)
+
+| Ablation | Diverges | On which problems |
+|---|---|---|
+| (a) papersim | **5 / 24** | eight_ar_half_ints (kept scaled-input form), bimodal/triangle_num/sign_alt (const-fold↔arange), and_ij |
+| (b) stratform | **7 / 24** | per_row_ar_M64 + compound_ij (**reward hack, see below**), bimodal (kept an AR!), triangle_num/sign_alt/and_ij/diag_dist (arange where base const-folds) |
+| (c) noadv | **1 / 24** | diag_dist (const-fold/arange coin-flip) |
+
+All 20 collective-bearing problems (the 18 non-bcast + 2): every arm
+finds the same collective structure as base on 19/20 (papersim differs
+only on eight_ar_half_ints's local payload form) — consistent with the
+family-problem convergence in Results 1–2, now on an unbiased draw.
+
+### Ablation (b) headline: forced strat-enumeration reward-hacks a sim hole
+
+On `per_row_ar_M64` and `compound_ij_bcast`, the stratform arm's
+"Strategy 4: reduce-scatter + all-gather" candidate scored
+**`sim_time_us: 0.0, num_ops: 0`** — a genuine simulator bug (the
+collective counter misses the RS→AG composition; independently
+re-scored to confirm). The strat protocol, scoring each strategy
+exactly once with no verification loop, locked onto the hole and
+shipped it. On hardware the candidate **crashes at 224 ranks**
+(SIGABRT: RS with `scale=1.0` and a payload not divisible by
+world_size), while base's winner (single AR) runs at 2.85 ms. The
+discovery-loop arms never emitted this composition on these problems —
+the adversarial-verify step kills it at the correctness stage before
+scoring. Two conclusions:
+1. the protocol shape matters: enumerate-and-pick amplifies scorer
+   bugs that iterate-and-verify absorbs;
+2. the sim RS+AG scoring hole is now a filed defect (workaround: the
+   Phase-4a HW gate rejects these candidates in the full pipeline —
+   the ablation ran Phase-3-only, which is exactly where the
+   difference shows).
+
+On the `_bcast` class, stratform also **failed to const-fold
+anywhere** (its protocol has no reference-doc access and no iteration
+budget to discover the idiom): bimodal_dist kept a full AR (5160 vs
+base's 60.7 — the same class of miss as papersim's four_ar_sum_zero),
+and 4 more problems settled on 10–15× worse-sim-scored arange forms.
+
+### Ablation (c) exact cost accounting (24 problems, token-metered)
+
+| Metric | base (adv ON) | noadv (adv OFF) | delta |
+|---|---|---|---|
+| scorer calls | 120 | 144 | **+20%** |
+| wall time | 1659 s | 1817 s | **+9.5%** |
+| input tokens (incl. cache) | 1,259,442 | 1,476,591 | **+17%** |
+| output tokens | 106,007 | 112,444 | +6% |
+| structural divergences | — | 1/24 (a coin-flip idiom) | — |
+| endpoint regressions | — | 0/24 | — |
+
+Removing adversarial testing does not save cost — it **adds** it:
+the verify-before-score step is cheaper than the extra
+generate-score-reject iterations it prevents. Combined with Results
+3/8 (F6 7×, max_ij 1.8× call inflation), the adversarial instruction
+is net-negative to remove on every measured axis at this budget.
+
+### Sampling note
+
+The Results 5–7 problem sets were hand-selected (family flagships +
+classes predicted to stress each ablation); the divergence rates there
+are not population estimates. This Result's rates (5/24, 7/24, 1/24 on
+a fixed-seed random draw stratified only by bcast/non-bcast) are the
+defensible population-level numbers.
+
 ## Assets
 
 - Winner candidates + per-search summaries: `session_logs_2026_09_07/abl/`
