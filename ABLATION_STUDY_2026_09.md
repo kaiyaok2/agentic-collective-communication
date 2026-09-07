@@ -114,6 +114,66 @@ Notable per-problem behavior:
    pairs re-run on this cluster (CB `cr-037b5eccfc31cc735`) are logged
    in `session_logs_2026_09_07/`.
 
+## Result 4: e2e replication on the ablation cluster
+
+The 10B TP e2e pairs re-run on this cluster (fresh compile caches,
+different physical nodes than CB10):
+
+| Model (N_MB=16, fused) | baseline | sorcar | Speedup | CB10 reference |
+|---|---|---|---|---|
+| Llama-style 9.75B | 21656.1 | 8734.7 | **2.48×** | 2.47× |
+| GPT-3-class 9.70B | 21170.7 | 9546.5 | **2.22×** | 2.21× |
+
+Since all ablation arms converged to the same per-problem rewrites on
+the 8 family sites (Result 1), each arm's winners instantiate the same
+training schedule — the ≥2× e2e result holds for every arm.
+
+## Result 5: `_bcast` extension — where the sim deltas DO change guidance
+
+The 8 e2e family problems all have collective-bearing optima, so
+ablation (a) was invisible there. Extending base-vs-papersim to 6
+`_bcast` problems (optimum = zero-collective local compute):
+
+**Sim scores of each arm's winner (us):**
+
+| Problem | base (current sim) | papersim (paper sim) |
+|---|---|---|
+| mod_sq_bcast | 60.7 | 2.0 |
+| xor_grid_bcast | 88.8 | 29.0 |
+| triangle_num_bcast | 60.7 | 3.0 |
+| sign_alt_bcast | 88.8 | 6.0 |
+| gray_code_bcast | 60.7 | 29.0 |
+| hamming_dist_bcast | 61.7 | 29.0 |
+
+Both sims correctly steer away from the 5160-us AR baseline; both arms'
+winners are correct zero-collective candidates. The difference is
+**what the sim can distinguish within the local-compute class**: the
+paper sim scores every local candidate 2–29 us (near-free, no
+structure), while the current sim's standalone-graph model separates
+const-fold (`torch.tensor([listcomp])`) from arithmetic
+(`torch.arange` chains) candidates.
+
+**224-rank RT of the two arms' winners on the two problems where their
+code diverged:**
+
+| Problem | base winner (RT ms) | papersim winner (RT ms) | forms |
+|---|---|---|---|
+| mod_sq_bcast (1D) | **0.077** | 0.112 | base: const-fold `torch.tensor([...])`; papersim: `arange` arithmetic |
+| sign_alt_bcast (2D) | 0.371 | **0.169** | base: nested-list const-fold; papersim: `arange` broadcast |
+
+This is precisely the const-fold-vs-arange trade-off the current sim's
+auto-fit encodes (1D small → const-fold wins; 2D → arange wins, since
+nested-list `torch.tensor` construction pays a per-element host cost).
+The current sim correctly told the agent const-fold was cheaper on the
+1D problem (its 60.7 beat its arith alternative) but its guidance on
+the 2D problem kept the const-fold form that RT shows is 2.2× slower —
+the fitted 2D const-fold points under-charge at N=32. Net: the
+standalone-graph deltas make the sim *rankable* inside the
+local-compute class (the paper sim is flat there), and the remaining
+2D miscalibration is now a documented, bounded issue (worst observed:
+0.2 ms absolute, on candidates that are all ≥10× faster than any
+collective alternative).
+
 ## Assets
 
 - Winner candidates + per-search summaries: `session_logs_2026_09_07/abl/`
