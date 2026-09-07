@@ -88,7 +88,8 @@ strictly more capable than the paper's kiss: it exposes a
 enforcement, and integrates cleanly with a hosted reference doc via a
 `read_reference` tool.
 
-Head-to-head results (`SORCAR_VS_STRAT_RESULTS.md` Round 28): Sorcar
+Head-to-head results (Round 28; per-problem numbers now consolidated
+in `SORCAR_FAMILY_TAXONOMY.md`): Sorcar
 wins 54 of 92 problems (58.7%), strat wins 29 (31.5%), tied 9 — where
 "strat" is the paper's `strategy-enumerate` Phase-3 shape run through
 the same 5-phase pipeline.
@@ -156,7 +157,7 @@ in problems where the paper's kiss template set only produces
 collective candidates. These are LLM-stochastic — the same problem
 can produce either a 5160us AR-based candidate or a 29-us const-fold
 candidate depending on the run. This is documented in
-`SORCAR_VS_STRAT_RESULTS.md` (§ "Sorcar wins breakdown"): 27 of 29
+the family-taxonomy doc's per-problem records: 27 of 29
 strat wins are of this form and evaluate to identical NEFFs at RT.
 
 ## Phase 4a — Hardware correctness gate
@@ -196,7 +197,7 @@ function + evolved kernel).
 
 ### RT warm-cache methodology
 
-Every RT number reported in `SORCAR_VS_STRAT_RESULTS.md` is the
+Every RT number reported in this project's results docs is the
 **second** measurement of a candidate. The first run pays cold Neuron
 compile-cache cost (~10-16× the steady-state ms/iter), which
 masqueraded as sim-vs-RT divergence in earlier rounds until we
@@ -205,4 +206,5 @@ identified the artifact (see `memory/rt_warm_cache_pitfall.md`).
 ### Anchor tag
 
 - `anchor-round28-Sorcar-2026-08-15` on `main` — reproducibility
-  checkpoint for the results in `SORCAR_VS_STRAT_RESULTS.md`.
+  checkpoint for the Round-28 results (2-node era; superseded by the
+  7-node numbers in `SORCAR_FAMILY_TAXONOMY.md`).

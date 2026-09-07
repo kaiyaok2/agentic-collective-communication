@@ -1,12 +1,15 @@
 # Composing Collectives Above a Black-Box Vendor Library
 
-> **Post-submission update (2026-08-13):** For Sorcar vs strat-enumerate
-> head-to-head results on 30+ problems (12 `_bcast` + 10 `_comm` +
-> 11 `_chal` + 8 OverlayCCL originals), see
-> [`SORCAR_VS_STRAT_RESULTS.md`](SORCAR_VS_STRAT_RESULTS.md). Round-by-round
-> methodology under `v12_study/round{1..15}/`. The `bootstrap_v6/` folder
-> contains all post-submission sim/pipeline patches and a self-installing
-> `apply.sh` for a fresh OverlayCCL clone.
+> **Post-submission update (2026-09-07):** For the complete Sorcar vs
+> strat-enumerate results — the 143-problem RT-verified pool organized
+> into 7 optimization families with per-problem warm-cache numbers — see
+> [`SORCAR_FAMILY_TAXONOMY.md`](SORCAR_FAMILY_TAXONOMY.md). End-to-end
+> training validation: [`SORCAR_E2E_FAMILIES.md`](SORCAR_E2E_FAMILIES.md)
+> (26M scale) and [`SORCAR_E2E_10B_TP.md`](SORCAR_E2E_10B_TP.md) (~10B,
+> ≥2× at 224 ranks). Round-by-round methodology under
+> `v12_study/round{1..15}/`; raw logs under `session_logs_*/`. The
+> `bootstrap_v6/` folder contains all post-submission sim/pipeline
+> patches and a self-installing `apply.sh` for a fresh OverlayCCL clone.
 
 ---
 **What this is.** A workflow that finds faster collective-communication
