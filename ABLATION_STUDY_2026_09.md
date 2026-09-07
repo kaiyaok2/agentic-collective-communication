@@ -200,6 +200,35 @@ matched base on every `_bcast` problem: adversarial testing does not
 change outcomes on position-formula problems whose hazard is
 mis-reading, not communication correctness.
 
+## Result 7: tier-2 problems (family flagships not used in e2e)
+
+Extending all 4 arms to 6 more family-taxonomy problems:
+
+| Problem | base | papersim | longprompt | noadv |
+|---|---|---|---|---|
+| per_row_ar_M1024 (F4) | 5177.1 | 5177.1 | 5177.1 | 5177.1 |
+| per_column_ar_C64 (F4) | 5160.0 | 5160.0 | 5160.0 | 5160.0 |
+| nine_ar_same_input (F2) | 5166.4 | 5166.4 | 5166.4 | 5166.4 |
+| four_ar_sum_zero (F3) | **0.0** | **5177.8** | 29.0 | 0.0 |
+| ag_slice_use (F3/F5) | 786.4 | 1.0 | 786.4 | 786.4 |
+| five_ar_mixed_sign (F1) | 5165.6 | 5165.0 | 5165.6 | 5165.6 |
+| calls / wall | 10/238s | 27/347s | 6/168s | 9/207s |
+
+**The headline ablation-(a) result lives here.** On `four_ar_sum_zero`
+(coefficients 2+3−1−4 = 0), the papersim arm emitted `0 * AR(x)` —
+keeping the all-reduce — while every current-sim arm emitted
+`zeros_like(x)` with no collective. Both are algebraically correct;
+the difference is what the simulator rewards: without the
+standalone-graph cost branch, the paper sim gives near-identical
+scores to a candidate that keeps the AR and one that drops it, so the
+agent has no gradient toward eliminating the collective. **224-rank RT:
+base winner 0.081 ms vs papersim winner 2.909 ms — a 36× hardware
+difference caused solely by the phase-1 simulator deltas.**
+(`ag_slice_use` shows the same flat-scoring pathology in the other
+direction: papersim scores the local candidate 1.0 us — indistinguishable
+from free — while the current sim's 786.4 us reflects the real memcpy
+cost of the (65536,) payload.)
+
 ## Assets
 
 - Winner candidates + per-search summaries: `session_logs_2026_09_07/abl/`
