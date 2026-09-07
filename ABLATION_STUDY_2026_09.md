@@ -237,6 +237,31 @@ direction: papersim scores the local candidate 1.0 us — indistinguishable
 from free — while the current sim's 786.4 us reflects the real memcpy
 cost of the (65536,) payload.)
 
+## Result 8: adversarial ablation on the MockTorch-hazard class (3 repeats)
+
+The 3 registered problems from the deterministic-fail class of
+2026-08-17 (`max_ij_bcast`, `or_ij_bcast`, `piecewise_bcast`), 3
+independent searches per arm:
+
+| Problem | base best (3 reps) | noadv best (3 reps) | base calls (Σ) | noadv calls (Σ) |
+|---|---|---|---|---|
+| max_ij_bcast | 31.0 / 31.0 / 31.0 | 31.0 / 31.0 / 31.0 | 12 | **22** |
+| or_ij_bcast | 88.8 ×3 | 88.8 ×3 | 25 | 19 |
+| piecewise_bcast | 60.7 ×3 | 60.7 ×3 | 13 | 13 |
+
+Endpoints identical again; the adversarial instruction's measurable
+effect is concentrated in call count on the op-confusion problems
+(max_ij: noadv needs 1.8× the scorer calls, consistent with the F6
+mixmaxmin finding). Combined verdict for ablation (c) across all 17
+problems tested: **no endpoint regression observed with sonnet-4-5 at
+30-step budget, but 1.3–7× more scorer iterations on problems with
+reduction-op-confusion hazards** — adversarial testing front-loads the
+correctness check the scorer would otherwise perform by rejection. The
+historical wrecks it prevented (atol-slack acceptance, symmetric-input
+false passes) involved weaker gates than this pipeline's current
+correctness oracle; with a strong oracle its value is iteration
+economy, with a weak one it is correctness itself.
+
 ## Assets
 
 - Winner candidates + per-search summaries: `session_logs_2026_09_07/abl/`
