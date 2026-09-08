@@ -317,6 +317,17 @@ budget to discover the idiom): bimodal_dist kept a full AR (5160 vs
 base's 60.7 — the same class of miss as papersim's four_ar_sum_zero),
 and 4 more problems settled on 10–15× worse-sim-scored arange forms.
 
+### Ablation (b) zero-class follow-up: forced enumeration under-eliminates
+
+stratform on the 7 zero/dead-class problems (2 reps): identical to base
+on the 6 problems whose optimum keeps 1 AR, but on `four_ar_sum_zero`
+it keeps the AR in **1/2 runs** (base: 0/7 across the session) — the
+5-strategy protocol enumerates *collective layouts*, and "no collective
+at all" only appears if the LLM volunteers it as a "strategy". Combined
+with the RS+AG sim-hole hack above, the two failure modes of forced
+enumeration are now both instantiated: it under-explores semantic
+elimination AND over-trusts single-shot scores.
+
 ### Ablation (c) exact cost accounting (24 problems, token-metered)
 
 | Metric | base (adv ON) | noadv (adv OFF) | delta |
