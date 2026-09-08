@@ -281,14 +281,20 @@ discovery; (iii) adversarial-testing cost was not metered. This round:
 
 | Ablation | Diverges | On which problems |
 |---|---|---|
-| (a) papersim | **5 / 24** | eight_ar_half_ints (kept scaled-input form), bimodal/triangle_num/sign_alt (const-fold↔arange), and_ij |
+| (a) papersim | **4 / 24**\* | bimodal/triangle_num/sign_alt (const-fold↔arange), and_ij |
 | (b) stratform | **7 / 24** | per_row_ar_M64 + compound_ij (**reward hack, see below**), bimodal (kept an AR!), triangle_num/sign_alt/and_ij/diag_dist (arange where base const-folds) |
 | (c) noadv | **1 / 24** | diag_dist (const-fold/arange coin-flip) |
 
-All 20 collective-bearing problems (the 18 non-bcast + 2): every arm
-finds the same collective structure as base on 19/20 (papersim differs
-only on eight_ar_half_ints's local payload form) — consistent with the
-family-problem convergence in Results 1–2, now on an unbiased draw.
+\* eight_ar_half_ints was initially flagged but on inspection both
+arms found the identical F1 rewrite (1 AR of locally-combined payload;
+the diff is stack+arange vs explicit sum for the local math) —
+downgraded to convergent.
+
+All 20 collective-bearing problems (18 non-bcast + 2): every arm finds
+the same collective structure as base on **20/20** — consistent with
+the family-problem convergence in Results 1–2, now on an unbiased
+draw. Every papersim divergence on the random draw is in the
+zero-collective `_bcast` local-idiom class.
 
 ### Ablation (b) headline: forced strat-enumeration reward-hacks a sim hole
 
