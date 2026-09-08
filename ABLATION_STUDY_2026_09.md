@@ -334,6 +334,33 @@ with the RS+AG sim-hole hack above, the two failure modes of forced
 enumeration are now both instantiated: it under-explores semantic
 elimination AND over-trusts single-shot scores.
 
+### Cost accounting, all arms (24 random problems, token-metered)
+
+| Metric | base | papersim (a) | stratform (b) | noadv (c) |
+|---|---|---|---|---|
+| scorer calls | 120 | 104 (−13%) | **202 (+68%)** | 144 (+20%) |
+| wall time | 1659 s | 1622 s (−2%) | 1458 s (−12%) | 1817 s (+9.5%) |
+| input tokens (incl. cache) | 1,259,442 | 1,137,386 (−10%) | **620,205 (−51%)** | 1,476,591 (+17%) |
+| output tokens | 106,007 | 107,285 (+1%) | 96,008 (−9%) | 112,444 (+6%) |
+
+Cost reading per ablation:
+- **(a) papersim is marginally cheaper to search with** (−13% calls,
+  −10% input tokens): its flat local-cost scoring gives the agent
+  nothing to iterate against on local-compute problems, so searches
+  terminate earlier — cheaper, but the savings are exactly the
+  iterations that would have found better candidates (the 4/24
+  divergences and the four_ar_sum_zero misses). Cheap search, worse
+  artifact.
+- **(b) stratform is the cheapest in tokens (−51%) but the most
+  scorer-hungry (+68% calls)**: the protocol always burns 5–7 scores
+  per problem (5 mandatory strategies + refinements) even when the
+  first candidate is optimal, while its fixed structure eliminates the
+  long exploratory transcripts that dominate discovery-loop token
+  spend. The token savings are real; they bought the RS+AG reward
+  hack and the missed eliminations documented above. Per *correct
+  deployed artifact*, it is the most expensive arm.
+- **(c) noadv costs more on every axis** (below).
+
 ### Ablation (c) exact cost accounting (24 problems, token-metered)
 
 | Metric | base (adv ON) | noadv (adv OFF) | delta |
