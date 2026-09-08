@@ -1,0 +1,156 @@
+[_sso_creds] no live SSO at import; AWS calls will fail if attempted (Command '['aws', 'configure', 'export-credentials', '--profile', 'default', '--format', 'process']' returned non-zero exit status 2.)
+======================================================================
+Collective Search Pipeline: Problem P_4700 (5-Phase)
+Pattern: uniform | LLM: True | HW eval: False
+======================================================================
+
+======================================================================
+[Phase 1] Agent Hardware Profiling — LLM Builds Simulator
+======================================================================
+  Deterministic phase-1 auto-probe (LLM-driven path deprecated)
+Trainium cluster topology (7 node(s)):
+  Nodes: 7, Devices: 112, Cores: 224
+  NeuronLink BW: 192.0 GB/s, Latency: 0.5 us
+  EFA BW: 12.5 GB/s x 8 adapters/node, Latency: 5.0 us
+  Max hops: 4, Avg hops: 1.14
+  Hardware constraints: unsupported primitives = ['all_to_all', 'cumsum']
+  [Phase 1 done] pipeline_amort_alphas = (0.300, 0.100, 0.020)
+
+======================================================================
+[Phase 2] Baseline Evaluation: Problem P_4700
+======================================================================
+  four_ar_evens: 5764.9 us, 11 local ops, 0 ag, 4 ar, 0 cp
+
+  Best baseline: baseline:four_ar_evens (5764.9 us)
+
+======================================================================
+[Phase 3 / Strategy-Enumerate] Problem P_4700
+======================================================================
+  K=5 strategies, R=4 refinement rounds per top-2 (budget ~14 LLM calls)
+  Enumerated 5 strategies:
+    1. Sequential All-Reduce (Baseline): Four independent all-reduce operations on x1, x2, x3, x4, each followed by scala...
+    2. Weighted Concatenation Single All-Reduce: Locally pre-multiply each vector (2*x1, 4*x2, 6*x3, 8*x4), concatenate into sing...
+    3. Stacked Batch All-Reduce: Stack the four vectors into shape (4, N), apply coefficient vector [2, 4, 6, 8] ...
+    4. Pipelined All-Reduce with Async Launch: Launch all four all-reduce operations asynchronously without waiting, accumulate...
+    5. Reduce-Scatter + All-Gather Decomposition: Locally compute weighted sum w = 2*x1 + 4*x2 + 6*x3 + 8*x4, perform reduce-scatt...
+  No correct candidates from strategy enumeration; falling back to multi-island.
+
+======================================================================
+[Phase 3] Multi-island Template Evolution: Problem P_4700
+======================================================================
+  Islands (3): ['four_ar_evens', 'four_ar_evens', 'four_ar_evens']
+
+  --- Island 1/3: four_ar_evens ---
+  Starting template: four_ar_evens (XLA)
+  Baseline: 5764.9 us, 0 permutes, 0 gathers, 11 local ops
+
+  --- Evolution round 1 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 2 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 3 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 4 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 5 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 6 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 7 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 8 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Island 2/3: four_ar_evens ---
+  Starting template: four_ar_evens (XLA)
+  Baseline: 5764.9 us, 0 permutes, 0 gathers, 11 local ops
+
+  --- Evolution round 1 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 2 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 3 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 4 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 5 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 6 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 7 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=4.000000
+
+  --- Evolution round 8 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Island 3/3: four_ar_evens ---
+  Starting template: four_ar_evens (XLA)
+  Baseline: 5764.9 us, 0 permutes, 0 gathers, 11 local ops
+
+  --- Evolution round 1 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 2 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 3 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 4 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=4.000000
+
+  --- Evolution round 5 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 6 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 7 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 8 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  Evolution complete. 4 total candidates.
+  Best: baseline:four_ar_evens (5764.9 us, 11 local ops)
+
+======================================================================
+RANKING (post-evolution, pre-hardware)
+======================================================================
+  1. baseline:four_ar_evens: 5764.9 us, 11 ops
+  2. evo:four_ar_evens_0: 5764.9 us, 11 ops
+  3. evo:four_ar_evens_1: 5764.9 us, 11 ops
+  4. evo:four_ar_evens_2: 5764.9 us, 11 ops
+
+Simulator winner: baseline:four_ar_evens (sim=5764.9 us)
+
+======================================================================
+[Phase 4b] Training-shape gate (all candidates): Problem P_4700
+======================================================================
+  PASS baseline:four_ar_evens
+  PASS evo:four_ar_evens_0
+  PASS evo:four_ar_evens_1
+  PASS evo:four_ar_evens_2
+  Summary: 4 pass / 0 fail / 0 skip (total 4)
+
+======================================================================
+[Phase 5] Code Generation → runtime/trainium_four_ar_evens_edge_chal.py
+======================================================================
+  Winner: baseline:four_ar_evens
+  Score: 57.649, SimTime: 5764.9 us, Local ops: 11
+  Results: /home/ubuntu/abl/strat_raw/four_ar_evens_edge_chal/results_four_ar_evens_edge_chal.json
+  Generated: runtime/trainium_four_ar_evens_edge_chal_7node.py
+

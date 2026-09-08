@@ -1,0 +1,22 @@
+[
+  {
+    "template": "strategy_enumerate_final",
+    "cost_score": 51.6,
+    "sim_time_us": 5160.0,
+    "local_ops": 1,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 1,
+    "name": "strat:Single all-reduce full vector"
+  },
+  {
+    "template": "eight_slab_loop",
+    "cost_score": 53.77,
+    "sim_time_us": 5377.0,
+    "local_ops": 17,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 8,
+    "name": "baseline:eight_slab_loop"
+  }
+]

@@ -1,0 +1,74 @@
+[_sso_creds] no live SSO at import; AWS calls will fail if attempted (Command '['aws', 'configure', 'export-credentials', '--profile', 'default', '--format', 'process']' returned non-zero exit status 2.)
+======================================================================
+Collective Search Pipeline: Problem P_6100 (5-Phase)
+Pattern: uniform | LLM: True | HW eval: False
+======================================================================
+
+======================================================================
+[Phase 1] Agent Hardware Profiling — LLM Builds Simulator
+======================================================================
+  Deterministic phase-1 auto-probe (LLM-driven path deprecated)
+Trainium cluster topology (7 node(s)):
+  Nodes: 7, Devices: 112, Cores: 224
+  NeuronLink BW: 192.0 GB/s, Latency: 0.5 us
+  EFA BW: 12.5 GB/s x 8 adapters/node, Latency: 5.0 us
+  Max hops: 4, Avg hops: 1.14
+  Hardware constraints: unsupported primitives = ['all_to_all', 'cumsum']
+  [Phase 1 done] pipeline_amort_alphas = (0.300, 0.100, 0.020)
+
+======================================================================
+[Phase 2] Baseline Evaluation: Problem P_6100
+======================================================================
+  ar_before_sum_norm: 5220.3 us, 2 local ops, 0 ag, 1 ar, 0 cp
+
+  Best baseline: baseline:ar_before_sum_norm (5220.3 us)
+
+======================================================================
+[Phase 3 / Strategy-Enumerate] Problem P_6100
+======================================================================
+  K=5 strategies, R=4 refinement rounds per top-2 (budget ~14 LLM calls)
+  Enumerated 5 strategies:
+    1. Local sum then allreduce scalar: Compute local squared sum first (reducing N elements to 1 scalar), then allreduc...
+    2. Allreduce vector then local sum: Allreduce the full squared vector (N elements), then sum locally. Two dispatches...
+    3. Reduce-scatter then local sum and allgather: Reduce-scatter the squared vector (each rank gets N/world_size elements summed),...
+    4. Hierarchical two-level reduction: Exploit num_nodes structure: local sum within each node, reduce scalars across n...
+    5. Chunked reduce-scatter with progressive aggregation: Partition vector into chunks, reduce-scatter each chunk independently, sum local...
+  Strategy 1 (Local sum then allreduce scalar): sim=5180.3 us
+  Strategy 2 (Allreduce vector then local sum): sim=5220.3 us
+  Strategy 3 (Reduce-scatter then local sum and allgather): sim=5280.3 us
+  Strategy 4 (Hierarchical two-level reduction) INCORRECT: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modu
+  Strategy 5 (Chunked reduce-scatter with progressive aggregation): sim=6117.0 us
+
+  Top after enumeration:
+    Local sum then allreduce scalar: 5180.3 us
+    Allreduce vector then local sum: 5220.3 us
+    top 1 round 1: NEW BEST 5160.7 us (0.4% improvement)
+    top 2 round 1: NEW BEST 5180.3 us (0.8% improvement)
+    top 2 round 2: NEW BEST 5160.7 us (0.4% improvement)
+
+  Strategy-Enumerate complete. 6 total candidates.
+  Best: refined-from-Local sum then allreduce scalar (sim=5160.7 us)
+
+======================================================================
+RANKING (post-evolution, pre-hardware)
+======================================================================
+  1. strat:refined-from-Local sum then al: 5160.7 us, 2 ops
+  2. baseline:ar_before_sum_norm: 5220.3 us, 2 ops
+
+Simulator winner: strat:refined-from-Local sum then al (sim=5160.7 us)
+
+======================================================================
+[Phase 4b] Training-shape gate (all candidates): Problem P_6100
+======================================================================
+  PASS strat:refined-from-Local sum then al
+  PASS baseline:ar_before_sum_norm
+  Summary: 2 pass / 0 fail / 0 skip (total 2)
+
+======================================================================
+[Phase 5] Code Generation → runtime/trainium_global_l2_norm_sq_chal.py
+======================================================================
+  Winner: strat:refined-from-Local sum then al
+  Score: 51.607, SimTime: 5160.7 us, Local ops: 2
+  Results: /home/ubuntu/abl/strat_raw/global_l2_norm_sq_chal/results_global_l2_norm_sq_chal.json
+  Generated: runtime/trainium_global_l2_norm_sq_chal_7node.py
+

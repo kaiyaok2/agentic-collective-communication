@@ -1,0 +1,71 @@
+[_sso_creds] no live SSO at import; AWS calls will fail if attempted (Command '['aws', 'configure', 'export-credentials', '--profile', 'default', '--format', 'process']' returned non-zero exit status 2.)
+======================================================================
+Collective Search Pipeline: Problem P_9002 (5-Phase)
+Pattern: uniform | LLM: True | HW eval: False
+======================================================================
+
+======================================================================
+[Phase 1] Agent Hardware Profiling — LLM Builds Simulator
+======================================================================
+  Deterministic phase-1 auto-probe (LLM-driven path deprecated)
+Trainium cluster topology (7 node(s)):
+  Nodes: 7, Devices: 112, Cores: 224
+  NeuronLink BW: 192.0 GB/s, Latency: 0.5 us
+  EFA BW: 12.5 GB/s x 8 adapters/node, Latency: 5.0 us
+  Max hops: 4, Avg hops: 1.14
+  Hardware constraints: unsupported primitives = ['all_to_all', 'cumsum']
+  [Phase 1 done] pipeline_amort_alphas = (0.300, 0.100, 0.020)
+
+======================================================================
+[Phase 2] Baseline Evaluation: Problem P_9002
+======================================================================
+  eight_slab_loop: 5377.0 us, 17 local ops, 0 ag, 8 ar, 0 cp
+
+  Best baseline: baseline:eight_slab_loop (5377.0 us)
+
+======================================================================
+[Phase 3 / Strategy-Enumerate] Problem P_9002
+======================================================================
+  K=5 strategies, R=4 refinement rounds per top-2 (budget ~14 LLM calls)
+  Enumerated 5 strategies:
+    1. Single all-reduce full vector: One xm.all_reduce call on the entire (8192,) tensor. Single dispatch with maximu...
+    2. Binary tree recursive halving: Recursively split the tensor into halves, performing all_reduce on each half in ...
+    3. Power-of-two slab decomposition: Split into 16, 32, or 64 equal slabs and all_reduce each independently, then con...
+    4. Reduce-scatter then all-gather: Use xm.reduce_scatter to distribute partial sums across ranks (each rank holds 8...
+    5. Pipelined overlapping window all-reduce: Divide tensor into overlapping or sequential windows, issuing all_reduce calls w...
+  Strategy 1 (Single all-reduce full vector): sim=5160.0 us
+  Strategy 2 (Binary tree recursive halving): sim=1205086.0 us
+  Strategy 3 (Power-of-two slab decomposition): sim=5497.0 us
+  Strategy 4 (Reduce-scatter then all-gather): sim=5220.0 us
+  Strategy 5 (Pipelined overlapping window all-reduce): sim=5377.0 us
+
+  Top after enumeration:
+    Single all-reduce full vector: 5160.0 us
+    Reduce-scatter then all-gather: 5220.0 us
+
+  Strategy-Enumerate complete. 7 total candidates.
+  Best: Single all-reduce full vector (sim=5160.0 us)
+
+======================================================================
+RANKING (post-evolution, pre-hardware)
+======================================================================
+  1. strat:Single all-reduce full vector: 5160.0 us, 1 ops
+  2. baseline:eight_slab_loop: 5377.0 us, 17 ops
+
+Simulator winner: strat:Single all-reduce full vector (sim=5160.0 us)
+
+======================================================================
+[Phase 4b] Training-shape gate (all candidates): Problem P_9002
+======================================================================
+  PASS strat:Single all-reduce full vector
+  PASS baseline:eight_slab_loop
+  Summary: 2 pass / 0 fail / 0 skip (total 2)
+
+======================================================================
+[Phase 5] Code Generation → runtime/trainium_eightslab_chal.py
+======================================================================
+  Winner: strat:Single all-reduce full vector
+  Score: 51.600, SimTime: 5160.0 us, Local ops: 1
+  Results: /home/ubuntu/abl/strat_raw/smoke/results_eightslab_chal.json
+  Generated: runtime/trainium_eightslab_chal_7node.py
+

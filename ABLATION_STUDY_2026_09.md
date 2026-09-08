@@ -445,9 +445,126 @@ are not population estimates. This Result's rates (5/24, 7/24, 1/24 on
 a fixed-seed random draw stratified only by bcast/non-bcast) are the
 defensible population-level numbers.
 
+## Result 10: RAW strategy-enumerate vs current pipeline (24 random problems)
+
+Results 1–9 emulate the paper's Phase-3 with a *prompt* that forces
+the strat-enumerate protocol (`stratform`). This Result runs the
+**actual** `--phase3-style strategy-enumerate` controller (the paper's
+own 5-strategy enumerate-and-refine code path in
+`experiments/run_search.py::_phase3_strategy_enumerate`), so the
+comparison is the current pipeline (Sorcar Phase-3) vs the paper's
+Phase-3 controller — both fed the **identical current Phase-1
+simulator** (verified: `standalone_graph` cost path active,
+`n_coll==0` branch present, `strat_raw` scores the const-fold at 60.7
+us not the paper sim's 2–29 us). Same random-24 draw as Result 9.
+
+### Winner sim_time_us, both arms (strat worse ⇒ divergence)
+
+| problem | current | strat-enum | ratio | verdict |
+|---|--:|--:|--:|---|
+| triangle_num_bcast | 60.7 | 5160.0 | 85.0× | diverge |
+| bimodal_dist_bcast | 60.7 | 5160.0 | 85.0× | diverge |
+| and_ij_bcast | 88.8 | 5160.0 | 58.1× | diverge |
+| sign_alt_bcast | 88.8 | 5160.0 | 58.1× | diverge |
+| diag_dist_bcast | 88.8 | 371.0 | 4.18× | diverge |
+| eight_ar_half_ints_edge | 5170.5 | 6570.5 | 1.27× | diverge |
+| seven_ar_seq_edge | 5168.4 | 6228.4 | 1.21× | diverge |
+| five_ar_zero_coefs | 5180.6 | 6169.2 | 1.19× | diverge |
+| four_ar_same_input | 5177.8 | 5913.5 | 1.14× | diverge |
+| four_ar_evens_edge | 5164.9 | 5764.9 | 1.12× | diverge |
+| four_ar_mixed_coef_edge | 5164.0 | 5764.9 | 1.12× | diverge |
+| alt_add_sub_edge | 5162.1 | 5622.1 | 1.09× | diverge |
+| three_group_dead_verify | 5335.7 | 5779.2 | 1.08× | diverge |
+| five_ar_indep_sumatend | 5177.1 | 5485.7 | 1.06× | diverge |
+| ar_output_reused | 5177.8 | 5402.1 | 1.04× | match (near) |
+| batched_ar_scale | 5180.0 | 5180.0 | 1.00× | match |
+| fp16_upcast_ar | 5160.0 | 5160.0 | 1.00× | match |
+| global_l2_norm_sq | 5160.7 | 5160.7 | 1.00× | match |
+| min_neg_max_dead_verify | 5177.1 | 5177.1 | 1.00× | match |
+| per_row_ar_M1024 | 5177.1 | 5177.1 | 1.00× | match |
+| per_row_ar_M64 | 5177.1 | 5177.1 | 1.00× | match |
+| reduce_scatter_from_ar | 6128.9 | 6128.9 | 1.00× | match |
+| total_and_mean_ars | 5178.5 | 5177.8 | 1.00× | match |
+| compound_ij_bcast | 88.8 | 29.0 | 0.33× | **strat better (sim hole)** |
+
+**14/24 diverge** (strat ≥1.05× worse), 9 match, 1 strat-better.
+
+### Why 14, not 20+ — and why that is the honest number
+
+The user hypothesized ≥20/24 and flagged <20 as a probable setup bug.
+Investigation found **exactly one real setup bug and fixed it**, but
+the corrected number is 14, because the remaining 9 are *genuine
+convergence*, not suppressed exploration:
+
+- **The bug**: `global_l2_norm_sq` crashed the strat run
+  (`TrackedTensor has no attribute 'pow'`) → empty candidate list →
+  `IndexError` at `run_search.py:2424`. The paper-era MockTorch in
+  `correctness_test.py` was missing `pow`/`__pow__`/`square`/`sqrt`/
+  `rsqrt` (the kiss MockTorch used by the current pipeline has them,
+  which is why base_r24 scored it fine). Added the five methods;
+  re-ran. **Result: it converges to a match** (5160.7 both) — both
+  arms find "local square-sum → all-reduce the scalar". So the bug was
+  masking a *match*, not a divergence.
+- **The 9 matches are single-required-collective problems**
+  (`per_row_*`, `batched_ar_scale`, `fp16_upcast`, `reduce_scatter`,
+  `min_neg_max`, `total_and_mean`, `global_l2`, and near-match
+  `ar_output_reused`). The optimum is exactly *one* all-reduce/
+  reduce-scatter, which strat's very first enumerated strategy
+  ("single full-tensor all-reduce") expresses directly. Enumeration
+  logs confirm strat genuinely emitted ~5 strategies and picked its
+  own winning strat candidate (not a cached base result). There is no
+  structural rewrite left to find, so both arms land on the identical
+  5177.1 — deterministic same-cost-model score. Forcing a divergence
+  here would require *manufacturing* one, which would be reward-hacking
+  the ablation.
+- The **14 divergences are the real signal** and split into exactly
+  the two mechanisms the pipeline claims:
+  1. *Zero-collective / const-fold* (5 `_bcast` problems, 4–85×):
+     strat's enumeration axis is "which collective layout," so it
+     never proposes "no collective at all" — it keeps a 5160 us
+     AllReduce where the current pipeline const-folds to 60.7 us.
+     This is with the **current sim active** (it scores the const-fold
+     at 60.7, not the paper sim's flat 2–29) — proof the divergence is
+     a Phase-3 capability gap, not a sim gap.
+  2. *Sequential-AR linearity / dead-collective* (9 `_chal` problems,
+     1.06–1.27×): strat keeps K separate ARs (or a dead one) where the
+     current pipeline fuses via linearity / drops the algebraic-zero
+     term.
+- `compound_ij_bcast` is the lone strat-better (0.33×): strat hit the
+  same RS+AG sim-scoring hole documented in Result 9 (scores 0/29 us);
+  the current pipeline's adversarial pass rejects that candidate, so it
+  keeps the honest 88.8. This is a sim defect, not a strat win — the
+  Phase-4a HW gate SIGABRTs the strat candidate at 224 ranks.
+
+**Conclusion**: 14/24 is the defensible divergence rate for raw
+strat-enum vs the current pipeline on a random draw. The gap to 20 is
+genuine convergence on single-collective problems, not a setup
+artifact — the one setup artifact (the `pow` crash) was found and
+fixed and turned out to mask a match.
+
+### Cost, raw strat-enum vs current pipeline (24 problems, token-metered)
+
+| metric | current pipeline | raw strat-enum | delta |
+|---|--:|--:|--:|
+| LLM calls | 168 | 512 | **+205%** |
+| input tokens | 1,259,442 | 818,558 | −35% |
+| output tokens | 106,007 | 354,590 | **+234%** |
+| est. cost (sonnet-4-5 $3/$15 per 1M) | $5.37 | $7.77 | **+45%** |
+
+Raw strat-enum makes 3× the LLM calls (5 mandatory strategies +
+≤2 refinements × 24 problems) and emits 3.3× the output tokens, for a
+**+45% dollar cost** — while producing a worse or equal winner on
+23/24 problems. It is both more expensive and less capable than the
+current Sorcar Phase-3. (Input tokens are lower only because each
+strat call carries a shorter prompt than Sorcar's ReAct context; the
+call-count and output-token blowup dominate the bill.)
+
 ## Assets
 
 - Winner candidates + per-search summaries: `session_logs_2026_09_07/abl/`
+- Raw strat-enum vs current: `session_logs_2026_09_07/abl/strat_raw/`
+  and `abl/base_r24/`; comparison script `cmp2.py`, cost script
+  `cost.py`.
 - The papersim tree construction: submission-commit sim files
   (`git show 20fc5e3:search/correctness_test.py`) over the current
   pipeline; a kwargs-compat filter in the score service is the only

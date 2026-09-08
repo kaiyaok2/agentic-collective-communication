@@ -1,0 +1,71 @@
+[_sso_creds] no live SSO at import; AWS calls will fail if attempted (Command '['aws', 'configure', 'export-credentials', '--profile', 'default', '--format', 'process']' returned non-zero exit status 2.)
+======================================================================
+Collective Search Pipeline: Problem P_163 (5-Phase)
+Pattern: uniform | LLM: True | HW eval: False
+======================================================================
+
+======================================================================
+[Phase 1] Agent Hardware Profiling — LLM Builds Simulator
+======================================================================
+  Deterministic phase-1 auto-probe (LLM-driven path deprecated)
+Trainium cluster topology (7 node(s)):
+  Nodes: 7, Devices: 112, Cores: 224
+  NeuronLink BW: 192.0 GB/s, Latency: 0.5 us
+  EFA BW: 12.5 GB/s x 8 adapters/node, Latency: 5.0 us
+  Max hops: 4, Avg hops: 1.14
+  Hardware constraints: unsupported primitives = ['all_to_all', 'cumsum']
+  [Phase 1 done] pipeline_amort_alphas = (0.300, 0.100, 0.020)
+
+======================================================================
+[Phase 2] Baseline Evaluation: Problem P_163
+======================================================================
+  baseline_ar_bcast: 5160.0 us, 1 local ops, 0 ag, 1 ar, 0 cp
+
+  Best baseline: baseline:baseline_ar_bcast (5160.0 us)
+
+======================================================================
+[Phase 3 / Strategy-Enumerate] Problem P_163
+======================================================================
+  K=5 strategies, R=4 refinement rounds per top-2 (budget ~14 LLM calls)
+  Enumerated 5 strategies:
+    1. Single all-reduce baseline: One all-reduce on full (N, N) tensor to sum across all ranks. Single collective ...
+    2. Local computation only, no collectives: Each rank independently computes y[i,j] = |i - j| using torch.arange operations ...
+    3. Broadcast reference then local compute: Rank 0 broadcasts a single scalar or small metadata (e.g., just N value or a 1D ...
+    4. Row-wise decomposition with reduce-scatter + all-gather: Partition output into N/world_size row chunks, each rank computes its assigned r...
+    5. Conditional broadcast with rank-based branching: Rank 0 computes full result locally via vectorized formula, then broadcasts (N, ...
+  Strategy 1 (Single all-reduce baseline): sim=5160.0 us
+  Strategy 2 (Local computation only, no collectives): sim=371.0 us
+  Strategy 3 (Broadcast reference then local compute) INCORRECT: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no a
+  Strategy 4 (Row-wise decomposition with reduce-scatter + all-gather) INCORRECT: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no a
+  Strategy 5 (Conditional broadcast with rank-based branching) INCORRECT: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no a
+
+  Top after enumeration:
+    Local computation only, no collectives: 371.0 us
+    Single all-reduce baseline: 5160.0 us
+
+  Strategy-Enumerate complete. 4 total candidates.
+  Best: Local computation only, no collectives (sim=371.0 us)
+
+======================================================================
+RANKING (post-evolution, pre-hardware)
+======================================================================
+  1. strat:Local computation only, no col: 371.0 us, 4 ops
+  2. baseline:baseline_ar_bcast: 5160.0 us, 1 ops
+
+Simulator winner: strat:Local computation only, no col (sim=371.0 us)
+
+======================================================================
+[Phase 4b] Training-shape gate (all candidates): Problem P_163
+======================================================================
+  PASS strat:Local computation only, no col
+  PASS baseline:baseline_ar_bcast
+  Summary: 2 pass / 0 fail / 0 skip (total 2)
+
+======================================================================
+[Phase 5] Code Generation → runtime/trainium_diag_dist_bcast.py
+======================================================================
+  Winner: strat:Local computation only, no col
+  Score: 3.710, SimTime: 371.0 us, Local ops: 4
+  Results: /home/ubuntu/abl/strat_raw/diag_dist_bcast/results_diag_dist_bcast.json
+  Generated: runtime/trainium_diag_dist_bcast_7node.py
+

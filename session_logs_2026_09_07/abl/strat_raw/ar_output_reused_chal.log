@@ -1,0 +1,157 @@
+[_sso_creds] no live SSO at import; AWS calls will fail if attempted (Command '['aws', 'configure', 'export-credentials', '--profile', 'default', '--format', 'process']' returned non-zero exit status 2.)
+======================================================================
+Collective Search Pipeline: Problem P_4800 (5-Phase)
+Pattern: uniform | LLM: True | HW eval: False
+======================================================================
+
+======================================================================
+[Phase 1] Agent Hardware Profiling — LLM Builds Simulator
+======================================================================
+  Deterministic phase-1 auto-probe (LLM-driven path deprecated)
+Trainium cluster topology (7 node(s)):
+  Nodes: 7, Devices: 112, Cores: 224
+  NeuronLink BW: 192.0 GB/s, Latency: 0.5 us
+  EFA BW: 12.5 GB/s x 8 adapters/node, Latency: 5.0 us
+  Max hops: 4, Avg hops: 1.14
+  Hardware constraints: unsupported primitives = ['all_to_all', 'cumsum']
+  [Phase 1 done] pipeline_amort_alphas = (0.300, 0.100, 0.020)
+
+======================================================================
+[Phase 2] Baseline Evaluation: Problem P_4800
+======================================================================
+  redundant_ar: 5402.1 us, 5 local ops, 0 ag, 2 ar, 0 cp
+
+  Best baseline: baseline:redundant_ar (5402.1 us)
+
+======================================================================
+[Phase 3 / Strategy-Enumerate] Problem P_4800
+======================================================================
+  K=5 strategies, R=4 refinement rounds per top-2 (budget ~14 LLM calls)
+  Enumerated 5 strategies:
+    1. Single fused all-reduce: Perform one all-reduce on x, store the result, then compute a = 2 * result and b...
+    2. Redundant independent all-reduces: Execute two separate all-reduce operations on x independently, then multiply fir...
+    3. Pre-scaled concatenated all-reduce: Concatenate [2*x, 3*x] locally into a (2N,) tensor, perform single all-reduce on...
+    4. Stacked tensor batched all-reduce: Stack 2*x and 3*x into shape (2, N), perform single all-reduce treating it as ba...
+    5. Async overlapped dual all-reduce: Launch first all-reduce on x asynchronously, immediately launch second all-reduc...
+  Strategy 5 (Async overlapped dual all-reduce) INCORRECT: CRASH in collect pass 0: world=4 pattern=uniform rank=0: TypeError: MockXM.all_reduce() got an unexp
+  No correct candidates from strategy enumeration; falling back to multi-island.
+
+======================================================================
+[Phase 3] Multi-island Template Evolution: Problem P_4800
+======================================================================
+  Islands (3): ['redundant_ar', 'redundant_ar', 'redundant_ar']
+
+  --- Island 1/3: redundant_ar ---
+  Starting template: redundant_ar (XLA)
+  Baseline: 5402.1 us, 0 permutes, 0 gathers, 5 local ops
+
+  --- Evolution round 1 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 2 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 3 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 4 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 5 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 6 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 7 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 8 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Island 2/3: redundant_ar ---
+  Starting template: redundant_ar (XLA)
+  Baseline: 5402.1 us, 0 permutes, 0 gathers, 5 local ops
+
+  --- Evolution round 1 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 2 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 3 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 4 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 5 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 6 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 7 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 8 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Island 3/3: redundant_ar ---
+  Starting template: redundant_ar (XLA)
+  Baseline: 5402.1 us, 0 permutes, 0 gathers, 5 local ops
+
+  --- Evolution round 1 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 2 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 3 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 4 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 5 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 6 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 7 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 8 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  Evolution complete. 4 total candidates.
+  Best: baseline:redundant_ar (5402.1 us, 5 local ops)
+
+======================================================================
+RANKING (post-evolution, pre-hardware)
+======================================================================
+  1. baseline:redundant_ar: 5402.1 us, 5 ops
+  2. evo:redundant_ar_0: 5402.1 us, 5 ops
+  3. evo:redundant_ar_1: 5402.1 us, 5 ops
+  4. evo:redundant_ar_2: 5402.1 us, 5 ops
+
+Simulator winner: baseline:redundant_ar (sim=5402.1 us)
+
+======================================================================
+[Phase 4b] Training-shape gate (all candidates): Problem P_4800
+======================================================================
+  PASS baseline:redundant_ar
+  PASS evo:redundant_ar_0
+  PASS evo:redundant_ar_1
+  PASS evo:redundant_ar_2
+  Summary: 4 pass / 0 fail / 0 skip (total 4)
+
+======================================================================
+[Phase 5] Code Generation → runtime/trainium_ar_output_reused_chal.py
+======================================================================
+  Winner: baseline:redundant_ar
+  Score: 54.021, SimTime: 5402.1 us, Local ops: 5
+  Results: /home/ubuntu/abl/strat_raw/ar_output_reused_chal/results_ar_output_reused_chal.json
+  Generated: runtime/trainium_ar_output_reused_chal_7node.py
+

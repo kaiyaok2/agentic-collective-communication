@@ -1,0 +1,22 @@
+[
+  {
+    "template": "strategy_enumerate_final",
+    "cost_score": 51.80000000000001,
+    "sim_time_us": 5180.000000000001,
+    "local_ops": 22,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 1,
+    "name": "strat:Concatenate-AllReduce-Split Si"
+  },
+  {
+    "template": "naive_per_tensor_scaled_ar",
+    "cost_score": 59.635,
+    "sim_time_us": 5963.5,
+    "local_ops": 10,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 5,
+    "name": "baseline:naive_per_tensor_scaled_ar"
+  }
+]

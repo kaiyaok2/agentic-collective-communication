@@ -670,6 +670,28 @@ class TrackedTensor:
         self._counter.record("abs")
         return TrackedTensor(self._t.abs(), self._counter)
 
+    def pow(self, exp):
+        exp_t = _unwrap(exp) if isinstance(exp, TrackedTensor) else exp
+        self._counter.record("pow")
+        return TrackedTensor(self._t.pow(exp_t), self._counter)
+
+    def __pow__(self, exp):
+        exp_t = _unwrap(exp) if isinstance(exp, TrackedTensor) else exp
+        self._counter.record("pow")
+        return TrackedTensor(self._t ** exp_t, self._counter)
+
+    def square(self):
+        self._counter.record("mul")
+        return TrackedTensor(self._t * self._t, self._counter)
+
+    def sqrt(self):
+        self._counter.record("sqrt")
+        return TrackedTensor(self._t.sqrt(), self._counter)
+
+    def rsqrt(self):
+        self._counter.record("rsqrt")
+        return TrackedTensor(self._t.rsqrt(), self._counter)
+
     @property
     def tensor(self):
         return self._t

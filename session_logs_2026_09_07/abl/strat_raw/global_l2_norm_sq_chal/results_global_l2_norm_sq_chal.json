@@ -1,0 +1,22 @@
+[
+  {
+    "template": "strategy_enumerate_final",
+    "cost_score": 51.607,
+    "sim_time_us": 5160.7,
+    "local_ops": 2,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 1,
+    "name": "strat:refined-from-Local sum then al"
+  },
+  {
+    "template": "ar_before_sum_norm",
+    "cost_score": 52.203,
+    "sim_time_us": 5220.3,
+    "local_ops": 2,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 1,
+    "name": "baseline:ar_before_sum_norm"
+  }
+]
