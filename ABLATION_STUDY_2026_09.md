@@ -334,6 +334,33 @@ generate-score-reject iterations it prevents. Combined with Results
 3/8 (F6 7×, max_ij 1.8× call inflation), the adversarial instruction
 is net-negative to remove on every measured axis at this budget.
 
+### Ablation (a) frequency study on the dead/zero class
+
+The user-facing question "does the paper sim diverge on MANY problems"
+gets its sharpest answer on the dead/zero-collective class — 8
+registered problems, 3 independent searches per arm per problem (48
+searches):
+
+- **7 of the 8 problems genuinely require communication** (the dead
+  part is a sub-expression): both arms converge to the identical 1-AR
+  optimum in **3/3 runs each**. No divergence — the paper sim ranks
+  collective-bearing candidates fine (its alpha model is unchanged).
+- **On the one problem where total elimination is possible**
+  (`four_ar_sum_zero`), the full-session aggregate is now **papersim
+  keeps the AR in 2/7 runs vs base 0/7**.
+
+Combined with the random draw (papersim diverges 5/24, of which 4 are
+`_bcast` local-idiom differences and 1 a local-payload form) and the
+143-problem context (~15 problems in the pool have zero-collective or
+local-idiom-sensitive optima), the honest population statement is:
+**the sim deltas change the found artifact on roughly 10–20% of
+problems — precisely the zero-collective/local-compute subset — and
+change nothing on the ~80–90% whose optimum keeps a collective. Within
+the affected subset the consequences are large (36× RT on
+four_ar_sum_zero; unrankable local-idiom guidance on `_bcast`).** The
+deltas are a targeted fix for a class the paper's benchmark suite did
+not contain, not a broad re-calibration.
+
 ### Sampling note
 
 The Results 5–7 problem sets were hand-selected (family flagships +
