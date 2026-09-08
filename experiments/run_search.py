@@ -62,6 +62,7 @@ from search.iterative_refinement import IterativeRefinement
 from search.island_evolution import IslandEvolution
 from search.template_evolution import TemplateEvolution
 from search.problems import get_problem, PROBLEMS
+import search.problems_all_catalogs  # noqa  registers every catalog incl. taxonomy extras
 from search.profiling import profile_schedule, format_profiling_report
 from search.agent_simulator_config import (
     run_profiling_agent, refine_simulator, AgentSimulator,
