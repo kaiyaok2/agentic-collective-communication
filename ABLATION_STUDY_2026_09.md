@@ -361,6 +361,38 @@ four_ar_sum_zero; unrankable local-idiom guidance on `_bcast`).** The
 deltas are a targeted fix for a class the paper's benchmark suite did
 not contain, not a broad re-calibration.
 
+### Ablation (c) deep-dive: 12 op-hazard problems × 2 reps (48 searches)
+
+Targeting the class where adversarial testing should matter most —
+MAX/MIN semantics, transposes, permutations, top-k (the op-confusion
+hazards behind the F6/max_ij call inflation):
+
+| Aggregate (24 searches/arm) | base (adv ON) | noadv (adv OFF) |
+|---|---|---|
+| scorer calls | 121 | 129 (+7%) |
+| input tokens | 1,461,526 | 1,560,252 (+7%) |
+| output tokens | 104,482 | 99,314 (−5%) |
+| wall | 1695 s | 1626 s (−4%) |
+| endpoint divergence (>5% sim) | — | **0 / 12 problems** |
+
+Per-problem best scores are identical or within run-noise everywhere;
+the search-cost gap concentrates on the same problems as before
+(per_row_min_ar_M32: noadv 9 calls vs base 2; sparse_topk: 42 vs 34)
+but partially reverses on others (ar_transposed: 7 vs 11), netting a
+smaller aggregate cost delta than the random-draw round (+7% calls vs
++20%).
+
+**Final verdict for ablation (c), across all 53 problems / 120+
+searches this study ran**: removing adversarial testing produced **zero
+endpoint regressions** with sonnet-4-5 behind this pipeline's strong
+correctness oracle, and a **consistently positive but variable cost
+overhead (+7% to +29% scorer calls, +7% to +17% input tokens)**
+concentrated on reduction-op-confusion problems. Its historical value
+(atol-hack and symmetric-input rejection in rounds with weaker gates)
+is defense-in-depth: the instruction is effectively free when not
+needed (the verify step replaces rejected-iteration cost it would
+otherwise incur) and load-bearing when the oracle is weak.
+
 ### Sampling note
 
 The Results 5–7 problem sets were hand-selected (family flagships +
