@@ -1,0 +1,22 @@
+[
+  {
+    "template": "strategy_enumerate_final",
+    "cost_score": 53.085714285714296,
+    "sim_time_us": 5308.571428571429,
+    "local_ops": 1,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 1,
+    "name": "strat:refined-from-Chunk-parallel ba"
+  },
+  {
+    "template": "perbatchmaxM16big",
+    "cost_score": 83.3757142857143,
+    "sim_time_us": 8337.57142857143,
+    "local_ops": 17,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 16,
+    "name": "baseline:perbatchmaxM16big"
+  }
+]

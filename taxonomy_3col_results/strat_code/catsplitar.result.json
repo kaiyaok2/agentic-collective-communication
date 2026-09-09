@@ -1,0 +1,22 @@
+[
+  {
+    "template": "strategy_enumerate_final",
+    "cost_score": 51.6,
+    "sim_time_us": 5160.0,
+    "local_ops": 1,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 1,
+    "name": "strat:refined-from-Concatenate then "
+  },
+  {
+    "template": "catsplitar",
+    "cost_score": 53.92400000000001,
+    "sim_time_us": 5392.400000000001,
+    "local_ops": 7,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 2,
+    "name": "baseline:catsplitar"
+  }
+]

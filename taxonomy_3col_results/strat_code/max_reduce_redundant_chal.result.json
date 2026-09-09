@@ -1,0 +1,22 @@
+[
+  {
+    "template": "strategy_enumerate_final",
+    "cost_score": 51.77142857142858,
+    "sim_time_us": 5177.142857142858,
+    "local_ops": 1,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 1,
+    "name": "strat:Single all-reduce REDUCE_MAX"
+  },
+  {
+    "template": "sum_hack_max",
+    "cost_score": 54.0,
+    "sim_time_us": 5400.0,
+    "local_ops": 2,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 2,
+    "name": "baseline:sum_hack_max"
+  }
+]

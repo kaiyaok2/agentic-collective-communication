@@ -1,0 +1,22 @@
+[
+  {
+    "template": "strategy_enumerate_final",
+    "cost_score": 51.77142857142858,
+    "sim_time_us": 5177.142857142858,
+    "local_ops": 1,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 1,
+    "name": "strat:Single full-tensor all-reduce "
+  },
+  {
+    "template": "perrowmaxM64",
+    "cost_score": 178.0614285714286,
+    "sim_time_us": 17806.14285714286,
+    "local_ops": 65,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 64,
+    "name": "baseline:perrowmaxM64"
+  }
+]

@@ -1,0 +1,22 @@
+[
+  {
+    "template": "strategy_enumerate_final",
+    "cost_score": 51.713,
+    "sim_time_us": 5171.3,
+    "local_ops": 16,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 1,
+    "name": "strat:Concatenate-then-single-allred"
+  },
+  {
+    "template": "five_ar_arith_prog",
+    "cost_score": 59.663000000000004,
+    "sim_time_us": 5966.3,
+    "local_ops": 14,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 5,
+    "name": "baseline:five_ar_arith_prog"
+  }
+]
