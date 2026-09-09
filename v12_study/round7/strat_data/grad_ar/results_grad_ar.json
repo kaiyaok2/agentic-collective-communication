@@ -1,0 +1,62 @@
+[
+  {
+    "template": "chunked_ar",
+    "cost_score": 72.8742,
+    "sim_time_us": 7287.42,
+    "local_ops": 99,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 1,
+    "name": "baseline:chunked_ar"
+  },
+  {
+    "template": "strategy_enumerate_final",
+    "cost_score": 72.8742,
+    "sim_time_us": 7287.42,
+    "local_ops": 99,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 1,
+    "name": "strat:Fixed-byte-budget chunked AllR"
+  },
+  {
+    "template": "per_tensor_loop",
+    "cost_score": 539.024,
+    "sim_time_us": 53902.4,
+    "local_ops": 64,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 32,
+    "name": "baseline:per_tensor_loop"
+  },
+  {
+    "template": "async_back_to_back",
+    "cost_score": 539.024,
+    "sim_time_us": 53902.4,
+    "local_ops": 64,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 32,
+    "name": "baseline:async_back_to_back"
+  },
+  {
+    "template": "flat_single_ar",
+    "cost_score": 541.8524011178016,
+    "sim_time_us": 54185.240111780164,
+    "local_ops": 99,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 1,
+    "name": "baseline:flat_single_ar"
+  },
+  {
+    "template": "hierarchical_intra_inter",
+    "cost_score": 1019.0239999999999,
+    "sim_time_us": 101902.4,
+    "local_ops": 96,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 64,
+    "name": "baseline:hierarchical_intra_inter"
+  }
+]

@@ -1,0 +1,9 @@
+{
+  "problem": "tp_mlp",
+  "best_code": "def evolved_tp_mlp(partials, M, N_LAYERS, rank, world_size,\n                   num_devices, cores_per_device, xm, torch, num_nodes=1):\n    # Formula: outputs[m][L] = all-reduce SUM across ranks of partials[m][L].\n    # Stack all into one tensor, single all_reduce, index back.\n    flat = [partials[m][L] for m in range(M) for L in range(N_LAYERS)]\n    red = xm.all_reduce(xm.REDUCE_SUM, torch.stack(flat))\n    outs = []\n    idx = 0\n    for m in range(M):\n        per_layer = []\n        for L in range(N_LAYERS):\n            per_layer.append(red[idx])\n            idx += 1\n        outs.append(per_layer)\n    return outs\n",
+  "best_score_us": 18680.0,
+  "sim_time_us": 18680.0,
+  "best_name": "kiss_4",
+  "n_score_calls": 4,
+  "wall_seconds": 47.976337909698486
+}

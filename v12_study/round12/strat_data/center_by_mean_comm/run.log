@@ -1,0 +1,72 @@
+[_sso_creds] no live SSO at import; AWS calls will fail if attempted (Command '['aws', 'configure', 'export-credentials', '--profile', 'default', '--format', 'process']' returned non-zero exit status 2.)
+======================================================================
+Collective Search Pipeline: Problem P_118 (5-Phase)
+Pattern: moe | LLM: True | HW eval: False
+======================================================================
+
+======================================================================
+[Phase 1] Agent Hardware Profiling — LLM Builds Simulator
+======================================================================
+  Deterministic phase-1 auto-probe (LLM-driven path deprecated)
+Trainium cluster topology (2 node(s)):
+  Nodes: 2, Devices: 32, Cores: 64
+  NeuronLink BW: 192.0 GB/s, Latency: 0.5 us
+  EFA BW: 12.5 GB/s x 8 adapters/node, Latency: 5.0 us
+  Max hops: 4, Avg hops: 1.50
+  Hardware constraints: unsupported primitives = ['all_to_all', 'cumsum']
+  [Phase 1 done] pipeline_amort_alphas = (0.300, 0.100, 0.020)
+
+======================================================================
+[Phase 2] Baseline Evaluation: Problem P_118
+======================================================================
+  baseline_center: 5161.4 us, 3 local ops, 0 ag, 1 ar, 0 cp
+
+  Best baseline: baseline:baseline_center (5161.4 us)
+
+======================================================================
+[Phase 3 / Strategy-Enumerate] Problem P_118
+======================================================================
+  K=5 strategies, R=1 refinement rounds per top-2 (budget ~8 LLM calls)
+  Enumerated 5 strategies:
+    1. Single all-reduce then subtract: Compute the global sum via one xm.all_reduce(REDUCE_SUM, x), divide by world_siz...
+    2. All-gather then local mean subtraction: Use xm.all_gather to collect all 64 rank vectors into a (world_size*N,) tensor, ...
+    3. Reduce-scatter followed by all-gather reconstruction: First reduce-scatter the sum across ranks (each rank gets a 1/64th chunk of the ...
+    4. Chunked pipelined all-reduce: Split x into K chunks and issue K independent all-reduce calls on successive chu...
+    5. Broadcast-based pairwise subtraction accumulation: Each rank broadcasts its local x to all others in a ring of 64 broadcast calls (...
+  Strategy 1 (Single all-reduce then subtract): sim=5161.4 us
+  Strategy 2 (All-gather then local mean subtraction): sim=5161.7 us
+  Strategy 3 (Reduce-scatter followed by all-gather reconstruction): sim=5363.1 us
+  Strategy 4 (Chunked pipelined all-reduce) INCORRECT: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no a
+  Strategy 5 (Broadcast-based pairwise subtraction accumulation): sim=17605.5 us
+
+  Top after enumeration:
+    Single all-reduce then subtract: 5161.4 us
+    All-gather then local mean subtraction: 5161.7 us
+    top 2 round 1: NEW BEST 5161.4 us (0.0% improvement)
+
+  Strategy-Enumerate complete. 6 total candidates.
+  Best: Single all-reduce then subtract (sim=5161.4 us)
+
+======================================================================
+RANKING (post-evolution, pre-hardware)
+======================================================================
+  1. baseline:baseline_center: 5161.4 us, 3 ops
+  2. strat:Single all-reduce then subtrac: 5161.4 us, 3 ops
+
+Simulator winner: baseline:baseline_center (sim=5161.4 us)
+
+======================================================================
+[Phase 4b] Training-shape gate (all candidates): Problem P_118
+======================================================================
+  PASS baseline:baseline_center
+  PASS strat:Single all-reduce then subtrac
+  Summary: 2 pass / 0 fail / 0 skip (total 2)
+
+======================================================================
+[Phase 5] Code Generation → runtime/trainium_center_by_mean_comm.py
+======================================================================
+  Winner: baseline:baseline_center
+  Score: 51.614, SimTime: 5161.4 us, Local ops: 3
+  Results: /tmp/strat_v12/center_by_mean_comm/results_center_by_mean_comm.json
+  Generated: runtime/trainium_center_by_mean_comm_2node.py
+

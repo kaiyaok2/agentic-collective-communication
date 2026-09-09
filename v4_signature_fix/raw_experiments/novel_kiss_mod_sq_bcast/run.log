@@ -1,0 +1,25 @@
+[shim] Anthropic -> AnthropicBedrock (us-east-1)
+[shim] kiss AnthropicModel._create_message patched -> /tmp/tokens.jsonl
+[scorer init] 
+[scorer init] ======================================================================
+[scorer init] [Phase 1] Agent Hardware Profiling — LLM Builds Simulator
+[scorer init] ======================================================================
+[scorer init]   Skipping LLM profiling (--no-llm), using defaults
+[scorer init] Trainium cluster topology (2 node(s)):
+[scorer init]   Nodes: 2, Devices: 32, Cores: 64
+[scorer init]   NeuronLink BW: 192.0 GB/s, Latency: 0.5 us
+[scorer init]   EFA BW: 12.5 GB/s x 8 adapters/node, Latency: 5.0 us
+[scorer init]   Max hops: 4, Avg hops: 1.50
+[scorer init]   Hardware constraints: unsupported primitives = ['all_to_all']
+[scorer init] [score_service_v2] ready for mod_sq_bcast/moe/nn=2 (HW_GATE=on)
+[kiss] baseline baseline_ar_bcast: {'ok': True, 'sim_time_us': 5160.0, 'num_ops': 1, 'num_all_gather': 0, 'num_all_reduce': 1, 'num_collective_permute': 0}
+{
+  "problem": "mod_sq_bcast",
+  "wall_seconds": 221.3709499835968,
+  "baseline_sim_time_us": 5160.0,
+  "best_sim_time_us": 7.0,
+  "best_name": "kiss_4",
+  "n_score_calls": 5,
+  "target_score": null,
+  "hit_target": false
+}

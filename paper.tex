@@ -1,0 +1,111 @@
+\documentclass[sigplan,10pt,nonacm,anonymous]{acmart}
+\renewcommand\footnotetextcopyrightpermission[1]{}
+\settopmatter{printfolios=true,printccs=false,printacmref=false}
+\microtypesetup{expansion=false,protrusion=false}
+\setcopyright{none}
+
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{xspace}
+\usepackage{placeins}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{fancyvrb}
+\usepackage[switch]{lineno}
+\renewcommand\linenumberfont{\normalfont\tiny\color{red!70!black}}
+\sloppy
+\emergencystretch=2em
+
+\newcommand{\tool}{\textsc{ACC-Search}\xspace}
+\newcommand{\todo}[1]{\textcolor{red}{[#1]}}
+
+\citestyle{acmnumeric}
+
+\begin{document}
+
+\title{Composing Collectives Above a Black-Box Vendor Library:
+A Closed-Stack Search Loop}
+\author{Anonymous Authors}
+\affiliation{%
+  \institution{University of California, Berkeley}
+  \city{Berkeley}\state{CA}\country{USA}
+}
+\email{anonymous@review.org}
+\renewcommand{\shortauthors}{Anonymous}
+\makeatletter
+\AtBeginDocument{%
+  \gdef\@author{Anonymous Authors}%
+  \gdef\authors{Anonymous Authors}%
+  \gdef\addresses{\@author{Anonymous Authors}}%
+}
+\makeatother
+
+\begin{abstract}
+Picking the fastest collective-communication strategy for a
+distributed-training workload is hard. Timing each strategy on
+a microbenchmark is cheap but can pick a strategy that is slow or
+fails to compile inside a real training step. Running each
+strategy end-to-end is direct, but realistic GPU-cluster
+experiments are expensive. Cost-model simulators have been
+explored, but existing ones are tuned against a fixed reference,
+so their internal numbers drift across machines, model shapes,
+and library versions. The simulator approach is even harder on
+closed-source vendor stacks (AWS Trainium, Google TPU, Meta
+MTIA), because of two specific properties: \emph{(C1) no
+visibility into the runtime} --- when an operation is slow the
+user cannot inspect the vendor library to see why --- and
+\emph{(C2) no low-level control} --- vendor primitives are
+called through a fixed API, with no exposed schedule-level
+intermediate representation (which would let a user choose how
+chunks are split, routed, or fused inside a collective).
+
+This paper introduces a new design that addresses each of these
+challenges. For (C1), we have an LLM agent build the cost-model
+simulator on the target deployment itself: it writes probing
+code that measures the simulator's internal numbers against the
+actual device, model, and library version, so the simulator's
+estimates re-adapt to the deployment whenever any of those
+changes. For (C2), we accept the API as fixed and search one
+layer above it: which primitives to call, in what order, and
+how to reshape, pad, or slice the input/output tensors around
+each call. Against an internal-AWS-optimized baseline used in
+production on Trainium today, the deployed strategies deliver
+\textbf{1.40$\times$} end-to-end speedup on OLMoE-10B at actual
+training runs, with matched descent on real OpenWebText
+(Figure~\ref{fig:loss-curve}), and \textbf{3.24$\times$} on
+Llama-7B.
+\end{abstract}
+
+\pagestyle{plain}
+\maketitle
+\linenumbers
+\modulolinenumbers[1]
+
+\input{introduction/introduction}
+\input{related_work/related_work}
+\input{system_model/system_model}
+\input{evaluation/evaluation}
+\input{ablation_study/ablation_study}
+\input{future_work/future_work}
+\input{conclusion/conclusion}
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\appendix
+
+\input{appendix/loss_match_evidence_for_algorithm_equivalence}
+\input{appendix/methodology_details}
+\input{appendix/per_problem_ablation_tables}
+\input{appendix/strategies_discovered}
+\input{appendix/case_study_ag_rs_vs_pack_and_gather}
+\input{appendix/cost_model_implementation_details}
+\input{appendix/profiling_tool_details}
+\input{appendix/search_style_prompt_scaffolds}
+\input{appendix/per_phase_code_snippets}
+
+\end{document}

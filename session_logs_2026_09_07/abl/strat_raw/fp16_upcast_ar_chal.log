@@ -1,0 +1,67 @@
+[_sso_creds] no live SSO at import; AWS calls will fail if attempted (Command '['aws', 'configure', 'export-credentials', '--profile', 'default', '--format', 'process']' returned non-zero exit status 2.)
+======================================================================
+Collective Search Pipeline: Problem P_5200 (5-Phase)
+Pattern: uniform | LLM: True | HW eval: False
+======================================================================
+
+======================================================================
+[Phase 1] Agent Hardware Profiling — LLM Builds Simulator
+======================================================================
+  Deterministic phase-1 auto-probe (LLM-driven path deprecated)
+Trainium cluster topology (7 node(s)):
+  Nodes: 7, Devices: 112, Cores: 224
+  NeuronLink BW: 192.0 GB/s, Latency: 0.5 us
+  EFA BW: 12.5 GB/s x 8 adapters/node, Latency: 5.0 us
+  Max hops: 4, Avg hops: 1.14
+  Hardware constraints: unsupported primitives = ['all_to_all', 'cumsum']
+  [Phase 1 done] pipeline_amort_alphas = (0.300, 0.100, 0.020)
+
+======================================================================
+[Phase 2] Baseline Evaluation: Problem P_5200
+======================================================================
+  cast_up_ar_down: ERROR: 'MockTorch' object has no attribute 'float16'
+
+======================================================================
+[Phase 3 / Strategy-Enumerate] Problem P_5200
+======================================================================
+  K=5 strategies, R=4 refinement rounds per top-2 (budget ~14 LLM calls)
+  Enumerated 5 strategies:
+    1. Cast-up AllReduce Cast-down: Cast fp16 to fp32, single all-reduce on fp32 tensor, cast result back to fp16. O...
+    2. Native fp16 AllReduce: Direct all-reduce on fp16 tensor without casting. Single all-reduce dispatch wit...
+    3. Chunked fp16 AllReduce with Sequential Casts: Split input into K chunks, loop over chunks doing fp16→fp32 cast, all-reduce on ...
+    4. ReduceScatter then AllGather: Cast to fp32, reduce-scatter (each rank gets N/world_size slice of sum), then al...
+    5. Hierarchical Two-level AllReduce: Cast to fp32, perform intra-node all-reduce across cores within each node, then ...
+  Strategy 1 (Cast-up AllReduce Cast-down) INCORRECT: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no a
+  Strategy 2 (Native fp16 AllReduce): sim=5160.0 us
+  Strategy 3 (Chunked fp16 AllReduce with Sequential Casts): sim=5298.7 us
+  Strategy 4 (ReduceScatter then AllGather): sim=5225.8 us
+  Strategy 5 (Hierarchical Two-level AllReduce) INCORRECT: world=4 pattern=uniform rank=1: max_diff=23.421875
+
+  Top after enumeration:
+    Native fp16 AllReduce: 5160.0 us
+    ReduceScatter then AllGather: 5225.8 us
+
+  Strategy-Enumerate complete. 5 total candidates.
+  Best: Native fp16 AllReduce (sim=5160.0 us)
+
+======================================================================
+RANKING (post-evolution, pre-hardware)
+======================================================================
+  1. strat:Native fp16 AllReduce: 5160.0 us, 1 ops
+
+Simulator winner: strat:Native fp16 AllReduce (sim=5160.0 us)
+
+======================================================================
+[Phase 4b] Training-shape gate (all candidates): Problem P_5200
+======================================================================
+  PASS strat:Native fp16 AllReduce
+  Summary: 1 pass / 0 fail / 0 skip (total 1)
+
+======================================================================
+[Phase 5] Code Generation → runtime/trainium_fp16_upcast_ar_chal.py
+======================================================================
+  Winner: strat:Native fp16 AllReduce
+  Score: 51.600, SimTime: 5160.0 us, Local ops: 1
+  Results: /home/ubuntu/abl/strat_raw/fp16_upcast_ar_chal/results_fp16_upcast_ar_chal.json
+  Generated: runtime/trainium_fp16_upcast_ar_chal_7node.py
+

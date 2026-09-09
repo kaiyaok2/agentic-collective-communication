@@ -1,0 +1,195 @@
+[_sso_creds] no live SSO at import; AWS calls will fail if attempted (Command '['aws', 'configure', 'export-credentials', '--profile', 'default', '--format', 'process']' returned non-zero exit status 2.)
+======================================================================
+Collective Search Pipeline: Uniform AllToAll (Fixed-Capacity MoE) (5-Phase)
+Pattern: moe | LLM: True | HW eval: False
+======================================================================
+
+======================================================================
+[Phase 1] Agent Hardware Profiling — LLM Builds Simulator
+======================================================================
+  Model: opus | max_turns: 15
+  [Turn 1] Tool: get_device_info({})
+  [Turn 1] Tool: check_primitive_compilation({"primitive": "all_gather"})
+  [Turn 1] Tool: check_primitive_compilation({"primitive": "reduce_scatter"})
+  [Turn 1] Tool: check_primitive_compilation({"primitive": "all_reduce"})
+  [Turn 1] Tool: check_primitive_compilation({"primitive": "collective_permute"})
+  [Turn 1] Tool: check_primitive_compilation({"primitive": "all_to_all"})
+  [Turn 1] Tool: discover_device_adjacency({})
+  [Turn 2] Agent: Excellent! Key findings so far:
+- 16 devices, 2 cores per device, 32 total ranks
+- **Supported primitives**: all_gather, reduce_scatter
+- **Unsupported primitives**: all_reduce (TIMEOUT), collective_p...
+  [Turn 2] Tool: measure_collective_latency({"collective_type": "all_gather", "tensor_bytes": 4096, "world_size": 32})
+  [Turn 2] Tool: measure_collective_latency({"collective_type": "all_gather", "tensor_bytes": 65536, "world_size": 32})
+  [Turn 2] Tool: measure_collective_latency({"collective_type": "all_gather", "tensor_bytes": 1048576, "world_size": 32})
+  [Turn 2] Tool: measure_collective_latency({"collective_type": "reduce_scatter", "tensor_bytes": 4096, "world_size": 32})
+  [Turn 2] Tool: measure_collective_latency({"collective_type": "reduce_scatter", "tensor_bytes": 65536, "world_size": 32})
+  [Turn 2] Tool: measure_collective_latency({"collective_type": "reduce_scatter", "tensor_bytes": 1048576, "world_size": 32})
+  [Turn 2] Tool: measure_p2p_transfer({"src_device": 0, "dst_device": 1, "tensor_bytes": 4096})
+  [Turn 2] Tool: measure_p2p_transfer({"src_device": 0, "dst_device": 1, "tensor_bytes": 1048576})
+  [Turn 2] Tool: measure_p2p_transfer({"src_device": 0, "dst_device": 6, "tensor_bytes": 4096})
+  [Turn 3] Agent: Interesting! Collectives have fixed overhead (1050µs for all_gather, 95µs for reduce_scatter) regardless of tensor size. P2P shows ~2.5µs per hop. Let me now profile all local XLA ops and other charac...
+  [Turn 3] Tool: measure_xla_op_overhead({"op_name": "index_select", "num_ops": 1, "tensor_size": 1024})
+  [Turn 3] Tool: measure_xla_op_overhead({"op_name": "slice", "num_ops": 1, "tensor_size": 1024})
+  [Turn 3] Tool: measure_xla_op_overhead({"op_name": "cat", "num_ops": 1, "tensor_size": 1024})
+  [Turn 3] Tool: measure_xla_op_overhead({"op_name": "view", "num_ops": 1, "tensor_size": 1024})
+  [Turn 3] Tool: measure_xla_op_overhead({"op_name": "reshape", "num_ops": 1, "tensor_size": 1024})
+  [Turn 3] Tool: measure_xla_op_overhead({"op_name": "unsqueeze", "num_ops": 1, "tensor_size": 1024})
+  [Turn 3] Tool: measure_xla_op_overhead({"op_name": "squeeze", "num_ops": 1, "tensor_size": 1024})
+  [Turn 3] Tool: measure_xla_op_overhead({"op_name": "flatten", "num_ops": 1, "tensor_size": 1024})
+  [Turn 3] Tool: measure_xla_op_overhead({"op_name": "narrow", "num_ops": 1, "tensor_size": 1024})
+  [Turn 3] Tool: measure_xla_op_overhead({"op_name": "transpose", "num_ops": 1, "tensor_size": 1024})
+  [Turn 3] Tool: measure_xla_op_overhead({"op_name": "permute", "num_ops": 1, "tensor_size": 1024})
+  [Turn 3] Tool: measure_xla_op_overhead({"op_name": "expand", "num_ops": 1, "tensor_size": 1024})
+  [Turn 3] Tool: measure_xla_op_overhead({"op_name": "contiguous", "num_ops": 1, "tensor_size": 1024})
+  [Turn 3] Tool: measure_xla_op_overhead({"op_name": "zeros", "num_ops": 1, "tensor_size": 1024})
+  [Turn 3] Tool: measure_xla_op_overhead({"op_name": "tensor", "num_ops": 1, "tensor_size": 1024})
+  [Turn 3] Tool: measure_xla_op_overhead({"op_name": "stack", "num_ops": 1, "tensor_size": 1024})
+  [Turn 3] Tool: measure_xla_op_overhead({"op_name": "gather", "num_ops": 1, "tensor_size": 1024})
+  [Turn 3] Tool: measure_xla_op_overhead({"op_name": "scatter", "num_ops": 1, "tensor_size": 1024})
+  [Turn 3] Tool: measure_xla_op_overhead({"op_name": "split", "num_ops": 1, "tensor_size": 1024})
+  [Turn 3] Tool: measure_xla_op_overhead({"op_name": "chunk", "num_ops": 1, "tensor_size": 1024})
+  [Turn 4] Agent: Clear pattern: metadata-only ops (view, reshape, unsqueeze, squeeze, flatten, narrow, transpose, permute, expand, contiguous) cost ~0.1µs, while compute ops (index_select, slice, cat, zeros, tensor, s...
+  [Turn 4] Tool: measure_index_select_scaling({"index_tensor_size": 32, "source_tensor_size": 1024})
+  [Turn 4] Tool: measure_index_select_scaling({"index_tensor_size": 1024, "source_tensor_size": 32768})
+  [Turn 4] Tool: measure_index_select_scaling({"index_tensor_size": 4096, "source_tensor_size": 131072})
+  [Turn 4] Tool: measure_graph_launch_overhead({})
+  [Turn 4] Tool: measure_memory_copy_throughput({})
+  [Turn 4] Tool: measure_compilation_cost({"tensor_bytes": 4096})
+  [Turn 4] Tool: measure_compilation_cost({"tensor_bytes": 1048576})
+  [Turn 4] Tool: measure_compilation_cost({"tensor_bytes": 16777216})
+  [Turn 4] Tool: measure_back_to_back_amortization({"depth": 1})
+  [Turn 4] Tool: measure_back_to_back_amortization({"depth": 2})
+  [Turn 4] Tool: measure_back_to_back_amortization({"depth": 4})
+  [Turn 4] Tool: measure_back_to_back_amortization({"depth": 8})
+  [Turn 4] Tool: measure_back_to_back_amortization({"depth": 16})
+  [Turn 4] Tool: measure_back_to_back_amortization({"depth": 32})
+  [Turn 5] Agent: Excellent data! Let me now compute the pipeline amortization alphas and get ground truth algorithm latencies:
+
+**Back-to-back amortization analysis:**
+- depth=1: 100µs total, first issue = 100µs
+- dep...
+  [Turn 5] Tool: measure_algorithm_latency({"algorithm": "algo_1coll_3localops_32ranks"})
+  [Turn 5] Tool: measure_algorithm_latency({"algorithm": "algo_1coll_35localops_32ranks"})
+  [Turn 5] Tool: measure_algorithm_latency({"algorithm": "algo_31coll_62localops_32ranks"})
+  [Turn 5] Tool: measure_algorithm_latency({"algorithm": "algo_2coll_5localops_32ranks"})
+  [Turn 5] Tool: measure_algorithm_latency({"algorithm": "algo_fused_32ranks"})
+  [Turn 5] Tool: measure_algorithm_latency({"algorithm": "algo_15coll_30localops_32ranks"})
+  [Turn 5] Tool: check_cross_node_support({"collective_type": "all_gather"})
+  [Turn 5] Tool: check_cross_node_support({"collective_type": "reduce_scatter"})
+  [Turn 5] Tool: measure_standalone_graph_cost({})
+  [Turn 6] Agent: Now I have all the ground truth. Let me analyze the algorithm latencies to understand the cost model:
+
+**Ground truth analysis:**
+- `algo_1coll_3localops_32ranks`: 130µs → 1 collective + 3 local ops
+-...
+  [Turn 6] Tool: measure_xla_op_overhead({"op_name": "index_select", "num_ops": 10, "tensor_size": 1024})
+  [Turn 6] Tool: measure_xla_op_overhead({"op_name": "cat", "num_ops": 10, "tensor_size": 1024})
+  [Turn 6] Tool: measure_xla_op_overhead({"op_name": "slice", "num_ops": 10, "tensor_size": 1024})
+  [Turn 6] Tool: measure_xla_op_overhead({"op_name": "view", "num_ops": 10, "tensor_size": 1024})
+  [Turn 6] Tool: measure_overlap_potential({"collective_type": "all_gather", "pattern": "per_tensor"})
+  [Turn 6] Tool: measure_overlap_potential({"collective_type": "reduce_scatter", "pattern": "per_tensor"})
+  [Turn 6] Tool: measure_overlap_potential({"collective_type": "reduce_scatter", "pattern": "batched"})
+  [Turn 7] Agent: Good. Now I have a clear picture. Let me analyze the algorithm latencies more carefully.
+
+The key insight is that the back-to-back amortization data uses `all_reduce` (which doesn't compile as a stand...
+  [Turn 7] Tool: measure_xla_op_overhead({"op_name": "slice", "num_ops": 1, "tensor_size": 32768})
+  [Turn 7] Tool: measure_xla_op_overhead({"op_name": "cat", "num_ops": 1, "tensor_size": 32768})
+  [Turn 7] Tool: measure_xla_op_overhead({"op_name": "index_select", "num_ops": 1, "tensor_size": 32768})
+  [Turn 7] Tool: measure_xla_op_overhead({"op_name": "split", "num_ops": 1, "tensor_size": 32768})
+  [Turn 7] Tool: measure_xla_op_overhead({"op_name": "gather", "num_ops": 1, "tensor_size": 32768})
+  [Turn 7] Tool: measure_xla_op_overhead({"op_name": "scatter", "num_ops": 1, "tensor_size": 32768})
+  [Turn 7] Tool: measure_collective_latency({"collective_type": "reduce_scatter", "tensor_bytes": 131072, "world_size": 32})
+  [Turn 7] Tool: measure_collective_latency({"collective_type": "all_gather", "tensor_bytes": 131072, "world_size": 32})
+  [Turn 8] Agent: Op costs are consistent at ~29µs regardless of tensor size. Collectives are also size-independent. Let me think about this differently.
+
+The key insight might be that the back-to-back amortization app...
+  [Turn 8] Tool: measure_collective_latency({"collective_type": "reduce_scatter", "tensor_bytes": 4096, "world_size": 2})
+  [Turn 8] Tool: measure_collective_latency({"collective_type": "reduce_scatter", "tensor_bytes": 4096, "world_size": 8})
+  [Turn 8] Tool: measure_collective_latency({"collective_type": "reduce_scatter", "tensor_bytes": 4096, "world_size": 16})
+  [Turn 8] Tool: measure_collective_latency({"collective_type": "all_gather", "tensor_bytes": 4096, "world_size": 2})
+  [Turn 8] Tool: measure_collective_latency({"collective_type": "all_gather", "tensor_bytes": 4096, "world_size": 8})
+  [Turn 8] Tool: measure_collective_latency({"collective_type": "all_gather", "tensor_bytes": 4096, "world_size": 16})
+  [Turn 9] Bedrock error: Read timeout on endpoint URL: "https://bedrock-runtime.us-west-2.amazonaws.com/model/us.anthropic.claude-opus-4-6-v1/invoke"
+
+  Simulator config:
+    collective_dispatch_overhead_us = 0.0
+    local_op_overhead_us = 0.0
+    link_bandwidth_gbps = 0.0
+    link_latency_us = 0.0
+    unsupported_primitives = ['all_to_all']
+    Simulator built: False
+    Simulator validated: False
+    Config complete: False
+  Agent config incomplete, using defaults
+Trainium cluster topology (2 node(s)):
+  Nodes: 2, Devices: 32, Cores: 64
+  NeuronLink BW: 192.0 GB/s, Latency: 0.5 us
+  EFA BW: 12.5 GB/s x 8 adapters/node, Latency: 5.0 us
+  Max hops: 4, Avg hops: 1.50
+  Hardware constraints: unsupported primitives = ['all_to_all']
+  [Phase 1 done] pipeline_amort_alphas = (0.300, 0.100, 0.020)
+
+======================================================================
+[Phase 2] Baseline Evaluation: Uniform AllToAll (Fixed-Capacity MoE)
+======================================================================
+  slice_loop: 6107.9 us, 68 local ops, 1 ag, 0 ar, 0 cp
+  ag_flat_extract: 7260.3 us, 5 local ops, 1 ag, 0 ar, 0 cp
+  allgather_reduce_scatter: 19254.1 us, 7 local ops, 1 ag, 0 ar, 0 cp
+  permute_ring: 6490.8 us, 128 local ops, 0 ag, 0 ar, 63 cp
+
+  Best baseline: baseline:slice_loop (6107.9 us)
+
+======================================================================
+[Phase 3 / Strategy-Enumerate] Uniform AllToAll (Fixed-Capacity MoE)
+======================================================================
+  K=5 strategies, R=1 refinement rounds per top-2 (budget ~8 LLM calls)
+  Enumerated 5 strategies:
+    1. AllGather + Index Select Extraction: Single all_gather to collect all data, then build a precomputed index tensor and...
+    2. AllGather + Reshape Transpose Slice: Single all_gather, reshape into [world_size, world_size, chunk_size], permute/tr...
+    3. AllGather + Transpose + ReduceScatter: AllGather the full tensor, reshape to [world_size, world_size, chunk_size], tran...
+    4. Log2 Butterfly AllGather Stages: Perform log2(world_size)=6 stages of group-based all_gather on progressively lar...
+    5. Chunked AllGather with Strided Cat Assembly: Split input_tensor into K equal-sized super-chunks (e.g., K=8 groups of 8 destin...
+  Strategy 1 (AllGather + Index Select Extraction): sim=7260.3 us
+  Strategy 2 (AllGather + Reshape Transpose Slice): sim=6423.4 us
+  Strategy 3 (AllGather + Transpose + ReduceScatter): sim=19254.1 us
+  Strategy 4 (Log2 Butterfly AllGather Stages) INCORRECT: CRASH in collect pass 0: world=4 pattern=uniform rank=0: RuntimeError: shape '[4, 4, 128]' is invali
+  Strategy 5 (Chunked AllGather with Strided Cat Assembly): sim=6305.8 us
+
+  Top after enumeration:
+    Chunked AllGather with Strided Cat Assembly: 6305.8 us
+    AllGather + Reshape Transpose Slice: 6423.4 us
+    top 2 round 1: NEW BEST 6421.4 us (0.0% improvement)
+
+  Strategy-Enumerate complete. 6 total candidates.
+  Best: Chunked AllGather with Strided Cat Assembly (sim=6305.8 us)
+
+======================================================================
+RANKING (post-evolution, pre-hardware)
+======================================================================
+  1. baseline:slice_loop: 6107.9 us, 68 ops
+  2. strat:Chunked AllGather with Strided: 6305.8 us, 90 ops
+  3. baseline:permute_ring: 6490.8 us, 128 ops
+  4. baseline:ag_flat_extract: 7260.3 us, 5 ops
+  5. baseline:allgather_reduce_scatter: 19254.1 us, 7 ops
+
+Simulator winner: baseline:slice_loop (sim=6107.9 us)
+
+======================================================================
+[Phase 4b] Training-shape gate (all candidates): Uniform AllToAll (Fixed-Capacity MoE)
+======================================================================
+  PASS baseline:slice_loop
+  PASS strat:Chunked AllGather with Strided
+  FAIL baseline:permute_ring: AttributeError: type object '_StubXM' has no attribute 'collective_permute'
+  PASS baseline:ag_flat_extract
+  PASS baseline:allgather_reduce_scatter
+  Summary: 4 pass / 1 fail / 0 skip (total 5)
+
+======================================================================
+[Phase 5] Code Generation → runtime/trainium_uniform_a2a.py
+======================================================================
+  Winner: baseline:slice_loop
+  Score: 61.079, SimTime: 6107.9 us, Local ops: 68
+  Results: /tmp/sweep3/strat_orig/uniform_a2a/results_uniform_a2a.json
+  Generated: runtime/trainium_uniform_a2a_2node.py
+

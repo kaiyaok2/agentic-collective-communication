@@ -1,0 +1,82 @@
+[_sso_creds] no live SSO at import; AWS calls will fail if attempted (Command '['aws', 'configure', 'export-credentials', '--profile', 'default', '--format', 'process']' returned non-zero exit status 2.)
+======================================================================
+Collective Search Pipeline: Uniform AllToAll (Fixed-Capacity MoE) (5-Phase)
+Pattern: moe | LLM: True | HW eval: False
+======================================================================
+
+======================================================================
+[Phase 1] Agent Hardware Profiling — LLM Builds Simulator
+======================================================================
+  Deterministic phase-1 auto-probe (LLM-driven path deprecated)
+Trainium cluster topology (2 node(s)):
+  Nodes: 2, Devices: 32, Cores: 64
+  NeuronLink BW: 192.0 GB/s, Latency: 0.5 us
+  EFA BW: 12.5 GB/s x 8 adapters/node, Latency: 5.0 us
+  Max hops: 4, Avg hops: 1.50
+  Hardware constraints: unsupported primitives = ['all_to_all']
+  [Phase 1 done] pipeline_amort_alphas = (0.300, 0.100, 0.020)
+
+======================================================================
+[Phase 2] Baseline Evaluation: Uniform AllToAll (Fixed-Capacity MoE)
+======================================================================
+  slice_loop: 6107.9 us, 68 local ops, 1 ag, 0 ar, 0 cp
+  ag_flat_extract: 7260.3 us, 5 local ops, 1 ag, 0 ar, 0 cp
+  allgather_reduce_scatter: 19254.1 us, 7 local ops, 1 ag, 0 ar, 0 cp
+  permute_ring: 6491.8 us, 128 local ops, 0 ag, 0 ar, 63 cp
+
+  Best baseline: baseline:slice_loop (6107.9 us)
+
+======================================================================
+[Phase 3 / Strategy-Enumerate] Uniform AllToAll (Fixed-Capacity MoE)
+======================================================================
+  K=5 strategies, R=1 refinement rounds per top-2 (budget ~8 LLM calls)
+  Enumerated 5 strategies:
+    1. AllGather + index_select extraction: Single all_gather of full input tensors, then a single index_select (or gather) ...
+    2. AllGather + reshape + transpose + slice: All_gather into [world_size, world_size, chunk_size], transpose dims 0 and 1, th...
+    3. AllGather + transpose + ReduceScatter identity fusion: All_gather, reshape to [W,W,chunk], transpose to [W,W,chunk], then reduce_scatte...
+    4. Log-depth recursive halving all-to-all: Decompose into log2(world_size)=6 rounds; in each round, partition ranks into pa...
+    5. Hierarchical two-level AllGather with local shuffle: Exploit num_devices × cores_per_device topology: first do an intra-device all_ga...
+  Strategy 1 (AllGather + index_select extraction): sim=7260.3 us
+  Strategy 2 (AllGather + reshape + transpose + slice): sim=6423.4 us
+  Strategy 3 (AllGather + transpose + ReduceScatter identity fusion): sim=19254.1 us
+  Strategy 4 (Log-depth recursive halving all-to-all): sim=6423.4 us
+  Strategy 5 (Hierarchical two-level AllGather with local shuffle): sim=6805.4 us
+
+  Top after enumeration:
+    AllGather + reshape + transpose + slice: 6423.4 us
+    Log-depth recursive halving all-to-all: 6423.4 us
+    top 1 round 1: NEW BEST 6422.4 us (0.0% improvement)
+    top 2 round 1: NEW BEST 6421.4 us (0.0% improvement)
+
+  Strategy-Enumerate complete. 7 total candidates.
+  Best: refined-from-Log-depth recursive halving all-to-all (sim=6421.4 us)
+
+======================================================================
+RANKING (post-evolution, pre-hardware)
+======================================================================
+  1. baseline:slice_loop: 6107.9 us, 68 ops
+  2. strat:refined-from-Log-depth recursi: 6421.4 us, 4 ops
+  3. baseline:permute_ring: 6491.8 us, 128 ops
+  4. baseline:ag_flat_extract: 7260.3 us, 5 ops
+  5. baseline:allgather_reduce_scatter: 19254.1 us, 7 ops
+
+Simulator winner: baseline:slice_loop (sim=6107.9 us)
+
+======================================================================
+[Phase 4b] Training-shape gate (all candidates): Uniform AllToAll (Fixed-Capacity MoE)
+======================================================================
+  PASS baseline:slice_loop
+  PASS strat:refined-from-Log-depth recursi
+  FAIL baseline:permute_ring: AttributeError: type object '_StubXM' has no attribute 'collective_permute'
+  PASS baseline:ag_flat_extract
+  PASS baseline:allgather_reduce_scatter
+  Summary: 4 pass / 1 fail / 0 skip (total 5)
+
+======================================================================
+[Phase 5] Code Generation → runtime/trainium_uniform_a2a.py
+======================================================================
+  Winner: baseline:slice_loop
+  Score: 61.079, SimTime: 6107.9 us, Local ops: 68
+  Results: /tmp/strat_full/uniform_a2a/results_uniform_a2a.json
+  Generated: runtime/trainium_uniform_a2a_2node.py
+

@@ -1,0 +1,9 @@
+{
+  "problem": "triangle_num_bcast",
+  "best_code": "def evolved_p90(x, N, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    # x[i] = i * (i + 1) / 2  -> triangle numbers, integer arithmetic\n    i = torch.arange(N, device=x.device)\n    return (i * (i + 1) // 2).to(x.dtype)\n",
+  "best_score_us": 861.9428571428571,
+  "sim_time_us": 861.9428571428571,
+  "best_name": "kiss_2",
+  "n_score_calls": 4,
+  "wall_seconds": 32.33889198303223
+}

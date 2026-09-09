@@ -1,0 +1,25 @@
+[shim] kiss AnthropicModel._create_message patched -> /home/ubuntu/abl/noadv_af1/idempotent_reduce_max_chal/tokens.jsonl
+[scorer init] 
+[scorer init] ======================================================================
+[scorer init] [Phase 1] Agent Hardware Profiling — LLM Builds Simulator
+[scorer init] ======================================================================
+[scorer init]   Deterministic phase-1 auto-probe (LLM-driven path deprecated)
+[scorer init] Trainium cluster topology (7 node(s)):
+[scorer init]   Nodes: 7, Devices: 112, Cores: 224
+[scorer init]   NeuronLink BW: 192.0 GB/s, Latency: 0.5 us
+[scorer init]   EFA BW: 12.5 GB/s x 8 adapters/node, Latency: 5.0 us
+[scorer init]   Max hops: 4, Avg hops: 1.14
+[scorer init]   Hardware constraints: unsupported primitives = ['all_to_all', 'cumsum', 'cumprod', 'sort', 'argsort']
+[scorer init] [score_service_v2] ready for idempotent_reduce_max_chal/uniform/nn=7 (HW_GATE=off)
+[kiss] scoring baseline...
+[kiss] baseline three_max_ars: {'ok': True, 'sim_time_us': 5514.985714285714, 'num_ops': 4, 'num_all_gather': 0, 'num_all_reduce': 3, 'num_collective_permute': 0}
+{
+  "problem": "idempotent_reduce_max_chal",
+  "wall_seconds": 24.210917472839355,
+  "baseline_sim_time_us": 5514.985714285714,
+  "best_sim_time_us": 5177.142857142858,
+  "best_name": "kiss_1",
+  "n_score_calls": 1,
+  "target_score": null,
+  "hit_target": false
+}

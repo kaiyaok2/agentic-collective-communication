@@ -1,0 +1,52 @@
+[
+  {
+    "template": "per_slot_allgather",
+    "cost_score": 52.64,
+    "sim_time_us": 5264.0,
+    "local_ops": 6,
+    "num_collective_permute": 0,
+    "num_all_gather": 2,
+    "num_all_reduce": 0,
+    "name": "baseline:per_slot_allgather"
+  },
+  {
+    "template": "strategy_enumerate_final",
+    "cost_score": 52.64,
+    "sim_time_us": 5264.0,
+    "local_ops": 6,
+    "num_collective_permute": 0,
+    "num_all_gather": 2,
+    "num_all_reduce": 0,
+    "name": "strat:Independent per-slot all_gathe"
+  },
+  {
+    "template": "per_chunk_per_part_allgather",
+    "cost_score": 60.038860799999995,
+    "sim_time_us": 6003.886079999999,
+    "local_ops": 130,
+    "num_collective_permute": 0,
+    "num_all_gather": 32,
+    "num_all_reduce": 0,
+    "name": "baseline:per_chunk_per_part_allgather"
+  },
+  {
+    "template": "joint_cat_allgather",
+    "cost_score": 68.807216,
+    "sim_time_us": 6880.7216,
+    "local_ops": 7,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "baseline:joint_cat_allgather"
+  },
+  {
+    "template": "per_slot_permute",
+    "cost_score": 72.42866666666662,
+    "sim_time_us": 7242.866666666661,
+    "local_ops": 128,
+    "num_collective_permute": 126,
+    "num_all_gather": 0,
+    "num_all_reduce": 0,
+    "name": "baseline:per_slot_permute"
+  }
+]

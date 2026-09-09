@@ -1,0 +1,81 @@
+[_sso_creds] no live SSO at import; AWS calls will fail if attempted (Command '['aws', 'configure', 'export-credentials', '--profile', 'default', '--format', 'process']' returned non-zero exit status 2.)
+======================================================================
+Collective Search Pipeline: Ring Attention KV Distribution (5-Phase)
+Pattern: moe | LLM: True | HW eval: False
+======================================================================
+
+======================================================================
+[Phase 1] Agent Hardware Profiling — LLM Builds Simulator
+======================================================================
+  Deterministic phase-1 auto-probe (LLM-driven path deprecated)
+Trainium cluster topology (2 node(s)):
+  Nodes: 2, Devices: 32, Cores: 64
+  NeuronLink BW: 192.0 GB/s, Latency: 0.5 us
+  EFA BW: 12.5 GB/s x 8 adapters/node, Latency: 5.0 us
+  Max hops: 4, Avg hops: 1.50
+  Hardware constraints: unsupported primitives = ['all_to_all']
+  [Phase 1 done] pipeline_amort_alphas = (0.300, 0.100, 0.020)
+
+======================================================================
+[Phase 2] Baseline Evaluation: Ring Attention KV Distribution
+======================================================================
+  per_slot_allgather: 5264.0 us, 6 local ops, 2 ag, 0 ar, 0 cp
+  per_chunk_per_part_allgather: 6003.9 us, 130 local ops, 32 ag, 0 ar, 0 cp
+  joint_cat_allgather: 6880.7 us, 7 local ops, 1 ag, 0 ar, 0 cp
+  per_slot_permute: 7242.9 us, 128 local ops, 0 ag, 0 ar, 126 cp
+
+  Best baseline: baseline:per_slot_allgather (5264.0 us)
+
+======================================================================
+[Phase 3 / Strategy-Enumerate] Ring Attention KV Distribution
+======================================================================
+  K=5 strategies, R=1 refinement rounds per top-2 (budget ~8 LLM calls)
+  Enumerated 5 strategies:
+    1. Single fused all_gather over concatenated slots: Concatenate all slot tensors into one flat buffer, issue a single xm.all_gather,...
+    2. Independent per-slot all_gather: Issue one xm.all_gather per slot tensor independently, yielding len(kv_chunks) d...
+    3. Pairwise slot fusion with multiple all_gathers: Pair adjacent slots (concatenate two at a time), issue ceil(num_slots/2) all_gat...
+    4. Hierarchical two-level grouped all_gather: Use xm.all_gather with explicit intra-node groups first (gathering across cores_...
+    5. Chunked pipeline of partial all_gathers: Split each slot into K equal-sized segments and issue K back-to-back all_gathers...
+  Strategy 1 (Single fused all_gather over concatenated slots): sim=6880.7 us
+  Strategy 2 (Independent per-slot all_gather): sim=5264.0 us
+  Strategy 3 (Pairwise slot fusion with multiple all_gathers): sim=6880.7 us
+  Strategy 4 (Hierarchical two-level grouped all_gather): sim=8057.4 us
+  Strategy 5 (Chunked pipeline of partial all_gathers): sim=7675.5 us
+
+  Top after enumeration:
+    Independent per-slot all_gather: 5264.0 us
+    Single fused all_gather over concatenated slots: 6880.7 us
+    top 2 round 1: NEW BEST 5370.8 us (21.9% improvement)
+
+  Strategy-Enumerate complete. 7 total candidates.
+  Best: Independent per-slot all_gather (sim=5264.0 us)
+
+======================================================================
+RANKING (post-evolution, pre-hardware)
+======================================================================
+  1. baseline:per_slot_allgather: 5264.0 us, 6 ops
+  2. strat:Independent per-slot all_gathe: 5264.0 us, 6 ops
+  3. baseline:per_chunk_per_part_allgather: 6003.9 us, 130 ops
+  4. baseline:joint_cat_allgather: 6880.7 us, 7 ops
+  5. baseline:per_slot_permute: 7242.9 us, 128 ops
+
+Simulator winner: baseline:per_slot_allgather (sim=5264.0 us)
+
+======================================================================
+[Phase 4b] Training-shape gate (all candidates): Ring Attention KV Distribution
+======================================================================
+  PASS baseline:per_slot_allgather
+  PASS strat:Independent per-slot all_gathe
+  PASS baseline:per_chunk_per_part_allgather
+  PASS baseline:joint_cat_allgather
+  FAIL baseline:per_slot_permute: AttributeError: type object '_StubXM' has no attribute 'collective_permute'
+  Summary: 4 pass / 1 fail / 0 skip (total 5)
+
+======================================================================
+[Phase 5] Code Generation → runtime/trainium_ring_kv.py
+======================================================================
+  Winner: baseline:per_slot_allgather
+  Score: 52.640, SimTime: 5264.0 us, Local ops: 6
+  Results: /tmp/strat_full/ring_kv/results_ring_kv.json
+  Generated: runtime/trainium_ring_kv_2node.py
+

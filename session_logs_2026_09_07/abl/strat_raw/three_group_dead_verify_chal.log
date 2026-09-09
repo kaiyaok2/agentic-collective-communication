@@ -1,0 +1,159 @@
+[_sso_creds] no live SSO at import; AWS calls will fail if attempted (Command '['aws', 'configure', 'export-credentials', '--profile', 'default', '--format', 'process']' returned non-zero exit status 2.)
+======================================================================
+Collective Search Pipeline: Problem P_7201 (5-Phase)
+Pattern: uniform | LLM: True | HW eval: False
+======================================================================
+
+======================================================================
+[Phase 1] Agent Hardware Profiling — LLM Builds Simulator
+======================================================================
+  Deterministic phase-1 auto-probe (LLM-driven path deprecated)
+Trainium cluster topology (7 node(s)):
+  Nodes: 7, Devices: 112, Cores: 224
+  NeuronLink BW: 192.0 GB/s, Latency: 0.5 us
+  EFA BW: 12.5 GB/s x 8 adapters/node, Latency: 5.0 us
+  Max hops: 4, Avg hops: 1.14
+  Hardware constraints: unsupported primitives = ['all_to_all', 'cumsum']
+  [Phase 1 done] pipeline_amort_alphas = (0.300, 0.100, 0.020)
+
+======================================================================
+[Phase 2] Baseline Evaluation: Problem P_7201
+======================================================================
+  three_group_dead_verify: 5779.2 us, 9 local ops, 0 ag, 6 ar, 0 cp
+
+  Best baseline: baseline:three_group_dead_verify (5779.2 us)
+
+======================================================================
+[Phase 3 / Strategy-Enumerate] Problem P_7201
+======================================================================
+  K=5 strategies, R=4 refinement rounds per top-2 (budget ~14 LLM calls)
+  Enumerated 5 strategies:
+    1. Concatenate-then-split single allreduce: Concatenate x, y, z into a single tensor of shape (3*N,), perform one allreduce ...
+    2. Interleaved tensor with strided operations: Interleave x, y, z into shape (N, 3) or (3, N), use three separate allreduces wi...
+    3. Pipelined non-blocking allreduce chain: Issue all three allreduces (max, sum, min) as non-blocking operations simultaneo...
+    4. Two-stage hierarchical reduction tree: First stage performs intra-node reductions (assuming multi-node setup) using fas...
+    5. Fused verification in single pass: Instead of separate verify allreduces, pack the three intermediate results (max_...
+  Strategy 3 (Pipelined non-blocking allreduce chain) INCORRECT: CRASH in collect pass 0: world=4 pattern=uniform rank=0: TypeError: MockXM.all_reduce() got an unexp
+  Strategy 4 (Two-stage hierarchical reduction tree) INCORRECT: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modu
+  Strategy 5 (Fused verification in single pass) INCORRECT: world=4 pattern=uniform rank=0: shape () != (65536,)
+  No correct candidates from strategy enumeration; falling back to multi-island.
+
+======================================================================
+[Phase 3] Multi-island Template Evolution: Problem P_7201
+======================================================================
+  Islands (3): ['three_group_dead_verify', 'three_group_dead_verify', 'three_group_dead_verify']
+
+  --- Island 1/3: three_group_dead_verify ---
+  Starting template: three_group_dead_verify (XLA)
+  Baseline: 5779.2 us, 0 permutes, 0 gathers, 9 local ops
+
+  --- Evolution round 1 ---
+  INCORRECT: world=4 pattern=uniform rank=0: max_diff=16.146835
+
+  --- Evolution round 2 ---
+  INCORRECT: world=4 pattern=uniform rank=0: max_diff=16.146835
+
+  --- Evolution round 3 ---
+  INCORRECT: world=4 pattern=uniform rank=0: max_diff=16.146835
+
+  --- Evolution round 4 ---
+  INCORRECT: world=4 pattern=uniform rank=0: max_diff=16.146835
+
+  --- Evolution round 5 ---
+  INCORRECT: world=4 pattern=uniform rank=0: max_diff=2566.598145
+
+  --- Evolution round 6 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=0.500000
+
+  --- Evolution round 7 ---
+  INCORRECT: world=4 pattern=uniform rank=0: max_diff=16.146835
+
+  --- Evolution round 8 ---
+  INCORRECT: CRASH in resolve phase: world=4 pattern=uniform rank=0: AttributeError: 'NoneType' object has no attribute 'float'
+
+  --- Island 2/3: three_group_dead_verify ---
+  Starting template: three_group_dead_verify (XLA)
+  Baseline: 5779.2 us, 0 permutes, 0 gathers, 9 local ops
+
+  --- Evolution round 1 ---
+  INCORRECT: world=4 pattern=uniform rank=0: max_diff=16.146835
+
+  --- Evolution round 2 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=0.500000
+
+  --- Evolution round 3 ---
+  INCORRECT: world=4 pattern=uniform rank=0: max_diff=16.146835
+
+  --- Evolution round 4 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=0.500000
+
+  --- Evolution round 5 ---
+  INCORRECT: world=4 pattern=uniform rank=0: max_diff=16.146835
+
+  --- Evolution round 6 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=0.500000
+
+  --- Evolution round 7 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=0.500000
+
+  --- Evolution round 8 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=0.500000
+
+  --- Island 3/3: three_group_dead_verify ---
+  Starting template: three_group_dead_verify (XLA)
+  Baseline: 5779.2 us, 0 permutes, 0 gathers, 9 local ops
+
+  --- Evolution round 1 ---
+  INCORRECT: world=4 pattern=uniform rank=0: max_diff=16.146835
+
+  --- Evolution round 2 ---
+  INCORRECT: world=4 pattern=uniform rank=0: max_diff=658.448975
+
+  --- Evolution round 3 ---
+  INCORRECT: world=4 pattern=uniform rank=0: max_diff=16.146835
+
+  --- Evolution round 4 ---
+  INCORRECT: world=4 pattern=uniform rank=0: max_diff=16.146835
+
+  --- Evolution round 5 ---
+  INCORRECT: world=4 pattern=uniform rank=0: shape (1,) != (65536,)
+
+  --- Evolution round 6 ---
+  INCORRECT: world=4 pattern=uniform rank=0: max_diff=2566.598145
+
+  --- Evolution round 7 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=0.500000
+
+  --- Evolution round 8 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=0.500000
+
+  Evolution complete. 4 total candidates.
+  Best: baseline:three_group_dead_verify (5779.2 us, 9 local ops)
+
+======================================================================
+RANKING (post-evolution, pre-hardware)
+======================================================================
+  1. baseline:three_group_dead_verify: 5779.2 us, 9 ops
+  2. evo:three_group_dead_verify_0: 5779.2 us, 9 ops
+  3. evo:three_group_dead_verify_1: 5779.2 us, 9 ops
+  4. evo:three_group_dead_verify_2: 5779.2 us, 9 ops
+
+Simulator winner: baseline:three_group_dead_verify (sim=5779.2 us)
+
+======================================================================
+[Phase 4b] Training-shape gate (all candidates): Problem P_7201
+======================================================================
+  PASS baseline:three_group_dead_verify
+  PASS evo:three_group_dead_verify_0
+  PASS evo:three_group_dead_verify_1
+  PASS evo:three_group_dead_verify_2
+  Summary: 4 pass / 0 fail / 0 skip (total 4)
+
+======================================================================
+[Phase 5] Code Generation → runtime/trainium_three_group_dead_verify_chal.py
+======================================================================
+  Winner: baseline:three_group_dead_verify
+  Score: 57.792, SimTime: 5779.2 us, Local ops: 9
+  Results: /home/ubuntu/abl/strat_raw/three_group_dead_verify_chal/results_three_group_dead_verify_chal.json
+  Generated: runtime/trainium_three_group_dead_verify_chal_7node.py
+

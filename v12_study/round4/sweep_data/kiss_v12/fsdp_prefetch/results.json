@@ -1,0 +1,9 @@
+{
+  "problem": "fsdp_prefetch",
+  "best_code": "def evolved_fsdp_prefetch(shards, M, N_LAYERS, rank, world_size,\n                          num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"Batch all-gathers: stack across microbatches per layer, one AG per layer.\"\"\"\n    outs = [[None] * N_LAYERS for _ in range(M)]\n    for L in range(N_LAYERS):\n        stacked = torch.stack([shards[m][L] for m in range(M)], dim=0)\n        gathered = xm.all_gather(stacked, dim=-1)\n        for m in range(M):\n            outs[m][L] = gathered[m]\n    return outs\n",
+  "best_score_us": 18680.0,
+  "sim_time_us": 18680.0,
+  "best_name": "kiss_1",
+  "n_score_calls": 4,
+  "wall_seconds": 68.53687620162964
+}

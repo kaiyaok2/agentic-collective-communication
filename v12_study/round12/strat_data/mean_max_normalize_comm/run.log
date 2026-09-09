@@ -1,0 +1,72 @@
+[_sso_creds] no live SSO at import; AWS calls will fail if attempted (Command '['aws', 'configure', 'export-credentials', '--profile', 'default', '--format', 'process']' returned non-zero exit status 2.)
+======================================================================
+Collective Search Pipeline: Problem P_116 (5-Phase)
+Pattern: moe | LLM: True | HW eval: False
+======================================================================
+
+======================================================================
+[Phase 1] Agent Hardware Profiling — LLM Builds Simulator
+======================================================================
+  Deterministic phase-1 auto-probe (LLM-driven path deprecated)
+Trainium cluster topology (2 node(s)):
+  Nodes: 2, Devices: 32, Cores: 64
+  NeuronLink BW: 192.0 GB/s, Latency: 0.5 us
+  EFA BW: 12.5 GB/s x 8 adapters/node, Latency: 5.0 us
+  Max hops: 4, Avg hops: 1.50
+  Hardware constraints: unsupported primitives = ['all_to_all', 'cumsum']
+  [Phase 1 done] pipeline_amort_alphas = (0.300, 0.100, 0.020)
+
+======================================================================
+[Phase 2] Baseline Evaluation: Problem P_116
+======================================================================
+  baseline_two_ar: 5242.7 us, 6 local ops, 1 ag, 1 ar, 0 cp
+
+  Best baseline: baseline:baseline_two_ar (5242.7 us)
+
+======================================================================
+[Phase 3 / Strategy-Enumerate] Problem P_116
+======================================================================
+  K=5 strategies, R=1 refinement rounds per top-2 (budget ~8 LLM calls)
+  Enumerated 5 strategies:
+    1. Two separate all-reduces (sum + max): Compute local abs-max, then issue two independent all-reduces: one REDUCE_SUM fo...
+    2. Fused single all-reduce on concatenated payload: Concatenate x and |x| into a 2N tensor, perform a single all-reduce SUM, then de...
+    3. All-gather then local reduction: Perform a single all-gather of x (payload N per rank, total world_size×N), then ...
+    4. Reduce-scatter followed by all-gather with pre-computed local stats: Compute local partial sum and local abs-max, stack them into a (2, N) tensor, us...
+    5. Pipelined chunked two-all-reduce with overlap: Split x into K chunks along dim 0; for each chunk, issue the SUM all-reduce and ...
+  Strategy 1 (Two separate all-reduces (sum + max)): sim=5242.4 us
+  Strategy 2 (Fused single all-reduce on concatenated payload) INCORRECT: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no a
+  Strategy 3 (All-gather then local reduction): sim=5181.3 us
+  Strategy 4 (Reduce-scatter followed by all-gather with pre-computed local stats) INCORRECT: world=4 pattern=uniform rank=0: max_diff=0.525900
+  Strategy 5 (Pipelined chunked two-all-reduce with overlap): sim=5303.3 us
+
+  Top after enumeration:
+    All-gather then local reduction: 5181.3 us
+    Two separate all-reduces (sum + max): 5242.4 us
+    top 2 round 1: NEW BEST 5192.0 us (1.0% improvement)
+
+  Strategy-Enumerate complete. 5 total candidates.
+  Best: All-gather then local reduction (sim=5181.3 us)
+
+======================================================================
+RANKING (post-evolution, pre-hardware)
+======================================================================
+  1. strat:All-gather then local reductio: 5181.3 us, 3 ops
+  2. baseline:baseline_two_ar: 5242.7 us, 6 ops
+
+Simulator winner: strat:All-gather then local reductio (sim=5181.3 us)
+
+======================================================================
+[Phase 4b] Training-shape gate (all candidates): Problem P_116
+======================================================================
+  PASS strat:All-gather then local reductio
+  PASS baseline:baseline_two_ar
+  Summary: 2 pass / 0 fail / 0 skip (total 2)
+
+======================================================================
+[Phase 5] Code Generation → runtime/trainium_mean_max_normalize_comm.py
+======================================================================
+  Winner: strat:All-gather then local reductio
+  Score: 51.813, SimTime: 5181.3 us, Local ops: 3
+  Results: /tmp/strat_v12/mean_max_normalize_comm/results_mean_max_normalize_comm.json
+  Generated: runtime/trainium_mean_max_normalize_comm_2node.py
+

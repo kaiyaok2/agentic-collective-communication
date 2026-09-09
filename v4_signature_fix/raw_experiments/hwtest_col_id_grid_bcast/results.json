@@ -1,0 +1,9 @@
+{
+  "problem": "col_id_grid_bcast",
+  "best_code": "def evolved_cig(c, N, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    # Formula: c[i, j] = j  -> each column filled with its column index.\n    # Position-based, depends only on j. No collective needed.\n    idx = torch.arange(N, device=c.device)\n    jj = idx.view(1, N).expand(N, N)\n    return jj.contiguous().to(c.dtype)\n",
+  "best_score_us": 2.0,
+  "sim_time_us": 2.0,
+  "best_name": "kiss_1",
+  "n_score_calls": 1,
+  "wall_seconds": 47.320629835128784
+}

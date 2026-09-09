@@ -1,0 +1,140 @@
+\section{Related Work}
+\label{sec:related}
+
+\paragraph{Distributed training systems above the collective layer.}
+Systems such as ZeRO~\cite{rajbhandari2020zero, ren2021zerooffload},
+DeepSpeed~\cite{rasley2020deepspeed},
+Megatron-LM~\cite{shoeybi2019megatron, korthikanti2023reducing,
+narayanan2021efficient}, PyTorch DDP and
+FSDP~\cite{li2020pytorch, zhao2023pytorchfsdp},
+GPipe~\cite{huang2019gpipe}, PipeDream~\cite{narayanan2019pipedream},
+Horovod~\cite{sergeev2018horovod}, BytePS~\cite{jiang2020byteps}, and
+FlexFlow~\cite{jia2019flexflow} optimize a different layer than
+this paper does: they decide \emph{how the training job itself is
+laid out across devices} --- how model weights, optimizer states,
+activations, and microbatches are partitioned, replicated, or
+pipelined --- and then leave the collective calls themselves to
+the underlying runtime (NVIDIA's collective-communication library
+NCCL~\cite{nvidia_nccl} or AMD's equivalent RCCL on open stacks,
+or to a schedule-synthesis framework like
+MSCCL~\cite{cowan2022msccl} or TACCL~\cite{shah2023taccl} where
+that is available). Our search instead fixes the model-parallel
+layout and optimizes the next layer down: \emph{how each
+individual collective is implemented} --- which vendor primitive
+to call, in what order, and how to reshape, pad, or slice the
+input/output tensors around each call --- against the closed
+Trainium API where \texttt{xm.*} primitives cannot be modified or
+introspected. Strategy-layer systems do not catch
+vendor-specific pathologies on this stack (e.g.,
+\texttt{xm.all\_to\_all} fails to compile across multiple nodes
+on Trainium; a tensor reshape that looks free on paper actually
+forces the runtime to physically copy the full tensor at slower,
+non-sequential memory bandwidth), and schedule-synthesis
+frameworks rely on rewriting schedules \emph{below} the runtime
+boundary, which Neuron disallows. We treat \texttt{xm.*} as
+fixed and search strategies \emph{above} it.
+
+\paragraph{Cost-model simulators for distributed training.}
+SimAI~\cite{wang2025simai},
+ASTRA-sim~\cite{rashidi2020astrasim}, and
+ASTRA-sim~2.0~\cite{won2023astrasim2} score training-system
+choices against a cost-model simulator instead of running them
+end-to-end. They are written and tuned against a fixed reference
+configuration; we discuss the resulting drift problem and our
+LLM-recalibrated alternative in \S\ref{sec:intro} and
+\S\ref{sec:cost}.
+
+\paragraph{Collective synthesis below an open boundary.}
+A line of work synthesizes collective algorithms by exposing the
+in-fabric schedule: SCCL~\cite{cai2021sccl} casts it as a constraint
+problem; MSCCL/MSCCLang~\cite{cowan2022msccl} compiles a DSL to an
+NCCL schedule IR; TACCL~\cite{shah2023taccl} adds communication
+sketches and topology-aware search; Blink~\cite{wang2023blink}
+targets multi-GPU servers; CoCoNet~\cite{jangda2022breaking}
+jointly optimizes compute+communication;
+AutoCCL~\cite{xu2025autoccl} auto-tunes low-level NCCL parameters
+under compute-comm interference. All depend on a vendor library
+that allows replacing or parameterizing the in-fabric schedule, a
+prerequisite met on open NVIDIA/AMD stacks but not on closed-stack
+accelerators such as AWS Trainium (Neuron Runtime), Google TPU
+(where collectives are emitted by the XLA compiler as nodes in
+its compute-graph IR, called HLO --- High-Level Operations), and
+Meta MTIA --- where the in-fabric schedule lives behind a vendor
+compiler and is not externally addressable. The Neuron stack we use as our case study
+has no analogue of MSCCL-IR; we therefore search above the
+primitives, not beneath them. The same closed-stack constraint
+holds on TPU and MTIA, which makes the strategy-search
+paradigm we describe potentially applicable to them as well
+(§\ref{sec:future}).
+
+\paragraph{Algorithm discovery with LLMs.}
+FunSearch~\cite{romera2024funsearch} pioneered the LLM-as-mutator
+loop for mathematical discovery;
+AlphaEvolve~\cite{novikov2025alphaevolve} extended it to
+code-level optimization;
+ShinkaEvolve~\cite{lange2025shinkaevolve} emphasized
+sample-efficient open-ended evolution.
+AlphaTensor~\cite{fawzi2022alphatensor} and
+AlphaDev~\cite{mankowitz2023alphadev} use deep RL for
+matmul/sorting discovery. LLM code-generation work
+(Codex~\cite{chen2021codex}, AlphaCode~\cite{li2022alphacode},
+Self-Refine~\cite{madaan2023selfrefine},
+Reflexion~\cite{shinn2023reflexion},
+ToT~\cite{yao2023tot},
+Self-Instruct~\cite{wang2023selfinstruct}) further established
+LLMs as practical mutation oracles given a feedback loop. All
+search the \emph{algorithm} or \emph{program text} space; in our
+setting the same strategy admits many syntactic forms and the
+cost surface is dominated by hardware quirks (NEFF cache, EFA
+pipelining, implicit copies) none of these frameworks model. We
+take the LLM-mutation loop structure from this lineage and graft
+it onto a closed-stack-appropriate cost function; the headline
+configuration is a single-trajectory ReAct agent because in our
+setting the cost model and profiling toolkit already do the work
+island parallelism would otherwise do — and the single-trajectory
+variant is cheaper. Multi-island appears as an ablation.
+
+\paragraph{Kernel autotuning and graph optimization.}
+TVM~\cite{chen2018tvm}, AutoTVM~\cite{chen2018autotvm},
+Ansor~\cite{zheng2020ansor} search kernel-implementation choices;
+Halide~\cite{ragankelley2013halide} and
+Triton~\cite{tillet2019triton} provide DSLs;
+Tensor Comprehensions~\cite{vasilache2018tc},
+MLIR~\cite{lattner2021mlir}, TASO~\cite{jia2019taso} operate at
+the graph level. LLM-driven kernel-optimization systems
+(STARK~\cite{stark2025}, K-Search~\cite{ksearch2026},
+Astra~\cite{astra2025}, KernelEvolve~\cite{kernelevolve2025})
+refine individual GPU kernels by 1.25--17$\times$. Our problem
+is one level above: the Neuron compiler writes each
+\texttt{xm.*} kernel; we vary which primitives are composed and
+how, not their internal schedule.
+
+\paragraph{MoE and Llama communication patterns.}
+The Sparsely-Gated MoE
+layer~\cite{shazeer2017outrageously},
+GShard~\cite{lepikhin2021gshard},
+Switch~\cite{fedus2022switch}, ST-MoE~\cite{zoph2022stmoe},
+DeepSpeed-MoE~\cite{rajbhandari2022dsmoe},
+Mixtral~\cite{jiang2024mixtral},
+DeepSeekMoE~\cite{dai2024deepseekmoe}, and
+OLMoE~\cite{muennighoff2024olmoe} together established that MoE
+expert dispatch dominates the training step once active parameters
+exceed a few hundred million. Expert-choice
+routing~\cite{zhou2022expertchoice} fixes per-expert receive
+counts and removes per-step host-side count computation from the
+AllToAllV path; we use it in the end-to-end OLMoE evaluation.
+On Llama~\cite{touvron2023llama, touvron2023llama2}, the PP
+cross-stage send/recv $+$ TP MLP $+$ FSDP weight-prefetch
+strategy we evaluate matches the standard training recipe.
+Trainium practitioners typically issue one collective per
+microbatch (e.g.\ one TP-MLP all-reduce per microbatch for a
+training step of $M$ microbatches uses $M$ all-reduce calls).
+We show that, when the per-microbatch payloads can share an
+underlying buffer, the same logical strategy can also be
+implemented by issuing a single collective per training step
+that covers all $M$ microbatches at once --- trading $M$
+launch costs for one. Whether this trade is profitable depends
+on the device (a larger payload may take longer to compile or
+exceed memory limits), so we let the search make that choice
+per problem rather than fixing it by hand.
+

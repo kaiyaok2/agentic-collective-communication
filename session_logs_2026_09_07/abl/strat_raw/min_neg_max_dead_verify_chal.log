@@ -1,0 +1,72 @@
+[_sso_creds] no live SSO at import; AWS calls will fail if attempted (Command '['aws', 'configure', 'export-credentials', '--profile', 'default', '--format', 'process']' returned non-zero exit status 2.)
+======================================================================
+Collective Search Pipeline: Problem P_6301 (5-Phase)
+Pattern: uniform | LLM: True | HW eval: False
+======================================================================
+
+======================================================================
+[Phase 1] Agent Hardware Profiling — LLM Builds Simulator
+======================================================================
+  Deterministic phase-1 auto-probe (LLM-driven path deprecated)
+Trainium cluster topology (7 node(s)):
+  Nodes: 7, Devices: 112, Cores: 224
+  NeuronLink BW: 192.0 GB/s, Latency: 0.5 us
+  EFA BW: 12.5 GB/s x 8 adapters/node, Latency: 5.0 us
+  Max hops: 4, Avg hops: 1.14
+  Hardware constraints: unsupported primitives = ['all_to_all', 'cumsum']
+  [Phase 1 done] pipeline_amort_alphas = (0.300, 0.100, 0.020)
+
+======================================================================
+[Phase 2] Baseline Evaluation: Problem P_6301
+======================================================================
+  min_neg_max_dead_verify: 5401.4 us, 4 local ops, 0 ag, 2 ar, 0 cp
+
+  Best baseline: baseline:min_neg_max_dead_verify (5401.4 us)
+
+======================================================================
+[Phase 3 / Strategy-Enumerate] Problem P_6301
+======================================================================
+  K=5 strategies, R=4 refinement rounds per top-2 (budget ~14 LLM calls)
+  Enumerated 5 strategies:
+    1. Single REDUCE_MIN AllReduce: One direct xm.all_reduce(xm.REDUCE_MIN, x) call. Single collective dispatch with...
+    2. Chunked REDUCE_MIN with overlapping: Split N=65536 into multiple chunks (e.g., 4 or 8 chunks), launch separate REDUCE...
+    3. Reduce-Scatter then AllGather MIN: Two-phase approach: REDUCE_SCATTER with MIN operation distributes N/world_size e...
+    4. Hierarchical two-level MIN reduction: Exploit num_nodes structure: first intra-node REDUCE_MIN across cores within eac...
+    5. MIN via sorted-bucket ring exchange: Each rank maintains running local min, performs ring-based send/recv in world_si...
+  Strategy 1 (Single REDUCE_MIN AllReduce): sim=5177.1 us
+  Strategy 2 (Chunked REDUCE_MIN with overlapping): sim=5394.1 us
+  Strategy 3 (Reduce-Scatter then AllGather MIN) INCORRECT: world=4 pattern=uniform rank=0: max_diff=22.463474
+  Strategy 4 (Hierarchical two-level MIN reduction) INCORRECT: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modu
+  Strategy 5 (MIN via sorted-bucket ring exchange) INCORRECT: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no a
+
+  Top after enumeration:
+    Single REDUCE_MIN AllReduce: 5177.1 us
+    Chunked REDUCE_MIN with overlapping: 5394.1 us
+    top 2 round 1: NEW BEST 5177.1 us (4.0% improvement)
+
+  Strategy-Enumerate complete. 4 total candidates.
+  Best: Single REDUCE_MIN AllReduce (sim=5177.1 us)
+
+======================================================================
+RANKING (post-evolution, pre-hardware)
+======================================================================
+  1. strat:Single REDUCE_MIN AllReduce: 5177.1 us, 1 ops
+  2. baseline:min_neg_max_dead_verify: 5401.4 us, 4 ops
+
+Simulator winner: strat:Single REDUCE_MIN AllReduce (sim=5177.1 us)
+
+======================================================================
+[Phase 4b] Training-shape gate (all candidates): Problem P_6301
+======================================================================
+  PASS strat:Single REDUCE_MIN AllReduce
+  PASS baseline:min_neg_max_dead_verify
+  Summary: 2 pass / 0 fail / 0 skip (total 2)
+
+======================================================================
+[Phase 5] Code Generation → runtime/trainium_min_neg_max_dead_verify_chal.py
+======================================================================
+  Winner: strat:Single REDUCE_MIN AllReduce
+  Score: 51.771, SimTime: 5177.1 us, Local ops: 1
+  Results: /home/ubuntu/abl/strat_raw/min_neg_max_dead_verify_chal/results_min_neg_max_dead_verify_chal.json
+  Generated: runtime/trainium_min_neg_max_dead_verify_chal_7node.py
+

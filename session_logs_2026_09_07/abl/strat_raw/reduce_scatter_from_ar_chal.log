@@ -1,0 +1,72 @@
+[_sso_creds] no live SSO at import; AWS calls will fail if attempted (Command '['aws', 'configure', 'export-credentials', '--profile', 'default', '--format', 'process']' returned non-zero exit status 2.)
+======================================================================
+Collective Search Pipeline: Problem P_4900 (5-Phase)
+Pattern: uniform | LLM: True | HW eval: False
+======================================================================
+
+======================================================================
+[Phase 1] Agent Hardware Profiling — LLM Builds Simulator
+======================================================================
+  Deterministic phase-1 auto-probe (LLM-driven path deprecated)
+Trainium cluster topology (7 node(s)):
+  Nodes: 7, Devices: 112, Cores: 224
+  NeuronLink BW: 192.0 GB/s, Latency: 0.5 us
+  EFA BW: 12.5 GB/s x 8 adapters/node, Latency: 5.0 us
+  Max hops: 4, Avg hops: 1.14
+  Hardware constraints: unsupported primitives = ['all_to_all', 'cumsum']
+  [Phase 1 done] pipeline_amort_alphas = (0.300, 0.100, 0.020)
+
+======================================================================
+[Phase 2] Baseline Evaluation: Problem P_4900
+======================================================================
+  ar_then_narrow: 6129.9 us, 2 local ops, 0 ag, 1 ar, 0 cp
+
+  Best baseline: baseline:ar_then_narrow (6129.9 us)
+
+======================================================================
+[Phase 3 / Strategy-Enumerate] Problem P_4900
+======================================================================
+  K=5 strategies, R=4 refinement rounds per top-2 (budget ~14 LLM calls)
+  Enumerated 5 strategies:
+    1. Reduce-scatter only: Single xm.reduce_scatter(xm.REDUCE_SUM, x) that directly produces the N-sized sl...
+    2. Hierarchical two-level reduce-scatter: First reduce-scatter within each node (across devices_per_node ranks) producing ...
+    3. Allreduce then narrow (baseline): Full xm.all_reduce followed by narrow/slice operation to extract rank's portion....
+    4. Manual ring reduce-scatter: Explicit send/recv loop implementing ring algorithm: world_size - 1 point-to-poi...
+    5. Chunk and pipeline reduce-scatter: Split local N-sized slice into K sub-chunks, launch K overlapping reduce_scatter...
+  Strategy 1 (Reduce-scatter only): sim=6128.9 us
+  Strategy 2 (Hierarchical two-level reduce-scatter) INCORRECT: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modu
+  Strategy 3 (Allreduce then narrow (baseline)): sim=6129.9 us
+  Strategy 4 (Manual ring reduce-scatter) INCORRECT: world=4 pattern=uniform rank=0: max_diff=22.463474
+  Strategy 5 (Chunk and pipeline reduce-scatter) INCORRECT: world=4 pattern=uniform rank=0: max_diff=31.398190
+
+  Top after enumeration:
+    Reduce-scatter only: 6128.9 us
+    Allreduce then narrow (baseline): 6129.9 us
+    top 2 round 1: NEW BEST 6128.9 us (0.0% improvement)
+
+  Strategy-Enumerate complete. 4 total candidates.
+  Best: Reduce-scatter only (sim=6128.9 us)
+
+======================================================================
+RANKING (post-evolution, pre-hardware)
+======================================================================
+  1. strat:Reduce-scatter only: 6128.9 us, 1 ops
+  2. baseline:ar_then_narrow: 6129.9 us, 2 ops
+
+Simulator winner: strat:Reduce-scatter only (sim=6128.9 us)
+
+======================================================================
+[Phase 4b] Training-shape gate (all candidates): Problem P_4900
+======================================================================
+  PASS strat:Reduce-scatter only
+  PASS baseline:ar_then_narrow
+  Summary: 2 pass / 0 fail / 0 skip (total 2)
+
+======================================================================
+[Phase 5] Code Generation → runtime/trainium_reduce_scatter_from_ar_chal.py
+======================================================================
+  Winner: strat:Reduce-scatter only
+  Score: 61.289, SimTime: 6128.9 us, Local ops: 1
+  Results: /home/ubuntu/abl/strat_raw/reduce_scatter_from_ar_chal/results_reduce_scatter_from_ar_chal.json
+  Generated: runtime/trainium_reduce_scatter_from_ar_chal_7node.py
+

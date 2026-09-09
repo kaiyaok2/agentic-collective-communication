@@ -1,0 +1,99 @@
+[_sso_creds] no live SSO at import; AWS calls will fail if attempted (Command '['aws', 'configure', 'export-credentials', '--profile', 'default', '--format', 'process']' returned non-zero exit status 2.)
+======================================================================
+Collective Search Pipeline: TP MLP with microbatching (5-Phase)
+Pattern: moe | LLM: True | HW eval: False
+======================================================================
+
+======================================================================
+[Phase 1] Agent Hardware Profiling — LLM Builds Simulator
+======================================================================
+  Model: opus | max_turns: 15
+  [Turn 1] Tool: get_device_info({})
+  [Turn 1] Tool: check_primitive_compilation({"primitive": "all_gather"})
+  [Turn 1] Tool: check_primitive_compilation({"primitive": "reduce_scatter"})
+  [Turn 1] Tool: check_primitive_compilation({"primitive": "all_reduce"})
+  [Turn 1] Tool: check_primitive_compilation({"primitive": "collective_permute"})
+  [Turn 1] Tool: check_primitive_compilation({"primitive": "all_to_all"})
+  [Turn 1] Tool: discover_device_adjacency({})
+  [Turn 2] Agent: Excellent! Key findings so far:
+- 16 devices, 2 cores per device, 32 total ranks
+- **Supported primitives**: all_gather, reduce_scatter
+- **Unsupported primitives**: all_reduce (TIMEOUT), collective_p...
+  [Turn 2] Tool: measure_collective_latency({"collective_type": "all_gather", "tensor_bytes": 4096, "world_size": 32})
+  [Turn 2] Tool: measure_collective_latency({"collective_type": "all_gather", "tensor_bytes": 65536, "world_size": 32})
+  [Turn 2] Tool: measure_collective_latency({"collective_type": "all_gather", "tensor_bytes": 1048576, "world_size": 32})
+  [Turn 2] Tool: measure_collective_latency({"collective_type": "reduce_scatter", "tensor_bytes": 4096, "world_size": 32})
+  [Turn 2] Tool: measure_collective_latency({"collective_type": "reduce_scatter", "tensor_bytes": 65536, "world_size": 32})
+  [Turn 2] Tool: measure_collective_latency({"collective_type": "reduce_scatter", "tensor_bytes": 1048576, "world_size": 32})
+  [Turn 2] Tool: measure_p2p_transfer({"src_device": 0, "dst_device": 1, "tensor_bytes": 4096})
+  [Turn 2] Tool: measure_p2p_transfer({"src_device": 0, "dst_device": 1, "tensor_bytes": 1048576})
+  [Turn 2] Tool: measure_p2p_transfer({"src_device": 0, "dst_device": 6, "tensor_bytes": 4096})
+  [Turn 3] Agent: Interesting! Collectives have fixed overhead (not data-dependent at these sizes). Let me now profile all local XLA ops and other characteristics:
+  [Turn 3] Tool: measure_xla_op_overhead({"op_name": "index_select", "num_ops": 1, "tensor_size": 1024})
+  [Turn 3] Tool: measure_xla_op_overhead({"op_name": "slice", "num_ops": 1, "tensor_size": 1024})
+  [Turn 3] Tool: measure_xla_op_overhead({"op_name": "cat", "num_ops": 1, "tensor_size": 1024})
+  [Turn 3] Tool: measure_xla_op_overhead({"op_name": "view", "num_ops": 1, "tensor_size": 1024})
+  [Turn 3] Tool: measure_xla_op_overhead({"op_name": "reshape", "num_ops": 1, "tensor_size": 1024})
+  [Turn 3] Tool: measure_xla_op_overhead({"op_name": "unsqueeze", "num_ops": 1, "tensor_size": 1024})
+  [Turn 3] Tool: measure_xla_op_overhead({"op_name": "squeeze", "num_ops": 1, "tensor_size": 1024})
+  [Turn 3] Tool: measure_xla_op_overhead({"op_name": "flatten", "num_ops": 1, "tensor_size": 1024})
+  [Turn 3] Tool: measure_xla_op_overhead({"op_name": "narrow", "num_ops": 1, "tensor_size": 1024})
+  [Turn 3] Tool: measure_xla_op_overhead({"op_name": "transpose", "num_ops": 1, "tensor_size": 1024})
+  [Turn 3] Tool: measure_xla_op_overhead({"op_name": "permute", "num_ops": 1, "tensor_size": 1024})
+  [Turn 3] Tool: measure_xla_op_overhead({"op_name": "expand", "num_ops": 1, "tensor_size": 1024})
+  [Turn 3] Tool: measure_xla_op_overhead({"op_name": "contiguous", "num_ops": 1, "tensor_size": 1024})
+  [Turn 3] Tool: measure_xla_op_overhead({"op_name": "zeros", "num_ops": 1, "tensor_size": 1024})
+  [Turn 3] Tool: measure_xla_op_overhead({"op_name": "tensor", "num_ops": 1, "tensor_size": 1024})
+  [Turn 3] Tool: measure_xla_op_overhead({"op_name": "stack", "num_ops": 1, "tensor_size": 1024})
+  [Turn 3] Tool: measure_xla_op_overhead({"op_name": "gather", "num_ops": 1, "tensor_size": 1024})
+  [Turn 3] Tool: measure_xla_op_overhead({"op_name": "scatter", "num_ops": 1, "tensor_size": 1024})
+  [Turn 3] Tool: measure_xla_op_overhead({"op_name": "split", "num_ops": 1, "tensor_size": 1024})
+  [Turn 3] Tool: measure_xla_op_overhead({"op_name": "chunk", "num_ops": 1, "tensor_size": 1024})
+  [Turn 4] Agent: Clear pattern: metadata-only ops (view, reshape, unsqueeze, squeeze, flatten, narrow, transpose, permute, expand, contiguous) cost ~0.1µs, while compute ops (index_select, slice, cat, zeros, tensor, s...
+  [Turn 4] Tool: measure_graph_launch_overhead({})
+  [Turn 4] Tool: measure_memory_copy_throughput({})
+  [Turn 4] Tool: measure_index_select_scaling({"index_tensor_size": 32, "source_tensor_size": 1024})
+  [Turn 4] Tool: measure_index_select_scaling({"index_tensor_size": 1024, "source_tensor_size": 32768})
+  [Turn 4] Tool: measure_back_to_back_amortization({"depth": 1})
+  [Turn 4] Tool: measure_back_to_back_amortization({"depth": 2})
+  [Turn 4] Tool: measure_back_to_back_amortization({"depth": 4})
+  [Turn 4] Tool: measure_back_to_back_amortization({"depth": 8})
+  [Turn 4] Tool: measure_back_to_back_amortization({"depth": 16})
+  [Turn 4] Tool: measure_back_to_back_amortization({"depth": 32})
+  [Turn 4] Tool: measure_compilation_cost({"tensor_bytes": 4096})
+  [Turn 4] Tool: measure_compilation_cost({"tensor_bytes": 1048576})
+  [Turn 4] Tool: measure_compilation_cost({"tensor_bytes": 16777216})
+  [Turn 5] Agent: Now let me get the ground truth algorithm latencies and measure some additional characteristics:
+  [Turn 5] Tool: measure_algorithm_latency({"algorithm": "algo_1coll_3localops_32ranks"})
+  [Turn 5] Tool: measure_algorithm_latency({"algorithm": "algo_1coll_35localops_32ranks"})
+  [Turn 5] Tool: measure_algorithm_latency({"algorithm": "algo_31coll_62localops_32ranks"})
+  [Turn 5] Tool: measure_algorithm_latency({"algorithm": "algo_2coll_5localops_32ranks"})
+  [Turn 5] Tool: measure_algorithm_latency({"algorithm": "algo_fused_32ranks"})
+  [Turn 5] Tool: measure_algorithm_latency({"algorithm": "algo_15coll_30localops_32ranks"})
+  [Turn 5] Tool: check_cross_node_support({"collective_type": "all_gather"})
+  [Turn 5] Tool: check_cross_node_support({"collective_type": "reduce_scatter"})
+  [Turn 6] Agent: Now let me analyze the data and understand the cost model. Let me compute the back-to-back amortization alphas:
+
+**Back-to-back amortization analysis:**
+- depth=1: 100µs total → first issue = 100µs
+- ...
+  [Turn 6] Tool: measure_standalone_graph_cost({})
+  [Turn 6] Tool: measure_overlap_potential({"collective_type": "all_gather", "pattern": "per_tensor"})
+  [Turn 6] Tool: measure_overlap_potential({"collective_type": "reduce_scatter", "pattern": "per_tensor"})
+  [Turn 6] Tool: measure_collective_latency({"collective_type": "all_gather", "tensor_bytes": 131072, "world_size": 32})
+  [Turn 6] Tool: measure_collective_latency({"collective_type": "reduce_scatter", "tensor_bytes": 131072, "world_size": 32})
+  [Turn 7] Agent: Now I have a clear picture. Let me analyze the algorithm latencies to build my cost model:
+
+**Key parameters discovered:**
+- all_gather dispatch: 1050µs (fixed, size-independent)
+- reduce_scatter disp...
+  [Turn 7] Tool: measure_collective_latency({"collective_type": "reduce_scatter", "tensor_bytes": 4096, "world_size": 32})
+  [Turn 7] Tool: measure_collective_latency({"collective_type": "all_gather", "tensor_bytes": 4096, "world_size": 32})
+  [Turn 7] Tool: measure_xla_op_overhead({"op_name": "index_select", "num_ops": 10, "tensor_size": 1024})
+  [Turn 7] Tool: measure_xla_op_overhead({"op_name": "cat", "num_ops": 10, "tensor_size": 1024})
+  [Turn 7] Tool: measure_xla_op_overhead({"op_name": "slice", "num_ops": 10, "tensor_size": 1024})
+  [Turn 7] Tool: measure_xla_op_overhead({"op_name": "view", "num_ops": 10, "tensor_size": 1024})
+  [Turn 8] Agent: Good, the per-op costs are consistent. Now let me think about the algorithm cost model differently.
+
+The key insight is that the "local ops" in algorithm descriptions might be a mix of compute ops and...
+  [Turn 8] Tool: measure_xla_op_overhead({"op_name": "index_select", "num_ops": 1, "tensor_size": 32768})

@@ -1,0 +1,72 @@
+[_sso_creds] no live SSO at import; AWS calls will fail if attempted (Command '['aws', 'configure', 'export-credentials', '--profile', 'default', '--format', 'process']' returned non-zero exit status 2.)
+======================================================================
+Collective Search Pipeline: Problem P_117 (5-Phase)
+Pattern: moe | LLM: True | HW eval: False
+======================================================================
+
+======================================================================
+[Phase 1] Agent Hardware Profiling — LLM Builds Simulator
+======================================================================
+  Deterministic phase-1 auto-probe (LLM-driven path deprecated)
+Trainium cluster topology (2 node(s)):
+  Nodes: 2, Devices: 32, Cores: 64
+  NeuronLink BW: 192.0 GB/s, Latency: 0.5 us
+  EFA BW: 12.5 GB/s x 8 adapters/node, Latency: 5.0 us
+  Max hops: 4, Avg hops: 1.50
+  Hardware constraints: unsupported primitives = ['all_to_all', 'cumsum']
+  [Phase 1 done] pipeline_amort_alphas = (0.300, 0.100, 0.020)
+
+======================================================================
+[Phase 2] Baseline Evaluation: Problem P_117
+======================================================================
+  baseline_ag_prefix: 5162.0 us, 3 local ops, 1 ag, 0 ar, 0 cp
+
+  Best baseline: baseline:baseline_ag_prefix (5162.0 us)
+
+======================================================================
+[Phase 3 / Strategy-Enumerate] Problem P_117
+======================================================================
+  K=5 strategies, R=1 refinement rounds per top-2 (budget ~8 LLM calls)
+  Enumerated 5 strategies:
+    1. AllGather then local prefix sum: Single all_gather collecting all ranks' vectors into a (world_size, N) tensor, t...
+    2. Exclusive scan via chained reduce-scatter: Use log2(world_size) rounds of point-to-point send/recv (or reduce_scatter with ...
+    3. Sequential send-accumulate pipeline: Rank 0 sends its data to rank 1, rank 1 adds and forwards cumulative sum to rank...
+    4. AllReduce with rank-masked weights: Create a (world_size, N) tensor where rank r's contribution is x replicated with...
+    5. Cumulative sum via reduce with rotating root: Perform rank+1 independent reduce operations (or a single reduce_scatter reinter...
+  Strategy 1 (AllGather then local prefix sum): sim=5162.0 us
+  Strategy 2 (Exclusive scan via chained reduce-scatter): sim=5300.0 us
+  Strategy 3 (Sequential send-accumulate pipeline): sim=5560.0 us
+  Strategy 4 (AllReduce with rank-masked weights): sim=5190.0 us
+  Strategy 5 (Cumulative sum via reduce with rotating root): sim=5300.0 us
+
+  Top after enumeration:
+    AllGather then local prefix sum: 5162.0 us
+    AllReduce with rank-masked weights: 5190.0 us
+    top 2 round 1: NEW BEST 5162.0 us (0.5% improvement)
+
+  Strategy-Enumerate complete. 7 total candidates.
+  Best: AllGather then local prefix sum (sim=5162.0 us)
+
+======================================================================
+RANKING (post-evolution, pre-hardware)
+======================================================================
+  1. baseline:baseline_ag_prefix: 5162.0 us, 3 ops
+  2. strat:AllGather then local prefix su: 5162.0 us, 3 ops
+
+Simulator winner: baseline:baseline_ag_prefix (sim=5162.0 us)
+
+======================================================================
+[Phase 4b] Training-shape gate (all candidates): Problem P_117
+======================================================================
+  PASS baseline:baseline_ag_prefix
+  PASS strat:AllGather then local prefix su
+  Summary: 2 pass / 0 fail / 0 skip (total 2)
+
+======================================================================
+[Phase 5] Code Generation → runtime/trainium_rank_prefix_sum_comm.py
+======================================================================
+  Winner: baseline:baseline_ag_prefix
+  Score: 51.620, SimTime: 5162.0 us, Local ops: 3
+  Results: /tmp/strat_v12/rank_prefix_sum_comm/results_rank_prefix_sum_comm.json
+  Generated: runtime/trainium_rank_prefix_sum_comm_2node.py
+

@@ -1,0 +1,9 @@
+{
+  "problem": "alltoallv",
+  "best_code": "def evolved_alltoallv(input_tensor, send_counts, recv_counts, max_chunk,\n                      rank, world_size, num_devices, cores_per_device,\n                      xm, torch, num_nodes=1):\n    \"\"\"All-gather; pack via loop, unpack via single torch.index_select.\"\"\"\n    pack_size = world_size * max_chunk\n    packed = torch.zeros(pack_size, device=input_tensor.device, dtype=input_tensor.dtype)\n    send_off = 0\n    for i in range(world_size):\n        sc = send_counts[i]\n        if sc > 0:\n            packed[i * max_chunk:i * max_chunk + sc] = input_tensor[send_off:send_off + sc]\n        send_off += sc\n    gathered = xm.all_gather(packed.unsqueeze(0), dim=0).view(-1)\n    gather_idx = []\n    for src in range(world_size):\n        base = src * pack_size + rank * max_chunk\n        for j in range(recv_counts[src]):\n            gather_idx.append(base + j)\n    gidx = torch.tensor(gather_idx, device=input_tensor.device, dtype=torch.long)\n    return torch.index_select(gathered, 0, gidx)\n",
+  "best_score_us": 5376.428800000001,
+  "sim_time_us": 5376.428800000001,
+  "best_name": "kiss_7",
+  "n_score_calls": 7,
+  "wall_seconds": 126.60196185112
+}

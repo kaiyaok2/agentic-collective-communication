@@ -1,0 +1,157 @@
+[_sso_creds] no live SSO at import; AWS calls will fail if attempted (Command '['aws', 'configure', 'export-credentials', '--profile', 'default', '--format', 'process']' returned non-zero exit status 2.)
+======================================================================
+Collective Search Pipeline: Problem P_5001 (5-Phase)
+Pattern: uniform | LLM: True | HW eval: False
+======================================================================
+
+======================================================================
+[Phase 1] Agent Hardware Profiling — LLM Builds Simulator
+======================================================================
+  Deterministic phase-1 auto-probe (LLM-driven path deprecated)
+Trainium cluster topology (7 node(s)):
+  Nodes: 7, Devices: 112, Cores: 224
+  NeuronLink BW: 192.0 GB/s, Latency: 0.5 us
+  EFA BW: 12.5 GB/s x 8 adapters/node, Latency: 5.0 us
+  Max hops: 4, Avg hops: 1.14
+  Hardware constraints: unsupported primitives = ['all_to_all', 'cumsum']
+  [Phase 1 done] pipeline_amort_alphas = (0.300, 0.100, 0.020)
+
+======================================================================
+[Phase 2] Baseline Evaluation: Problem P_5001
+======================================================================
+  four_ar_same_input: 5913.5 us, 11 local ops, 0 ag, 4 ar, 0 cp
+
+  Best baseline: baseline:four_ar_same_input (5913.5 us)
+
+======================================================================
+[Phase 3 / Strategy-Enumerate] Problem P_5001
+======================================================================
+  K=5 strategies, R=4 refinement rounds per top-2 (budget ~14 LLM calls)
+  Enumerated 5 strategies:
+    1. Single all-reduce with coefficient fusion: Compute 15*x locally first, then perform one all-reduce on the scaled input. Sin...
+    2. Coefficient factorization with two all-reduces: Factor as (2+3)*AR(x) + (4+6)*AR(x) = 5*AR(x) + 10*AR(x). Compute AR(x) once, sc...
+    3. Pipelined asynchronous four all-reduces: Launch all four all-reduce operations asynchronously without waiting, allowing n...
+    4. Staged reduce-scatter then all-gather: Use reduce-scatter to distribute chunks of summed x across ranks, then scale eac...
+    5. Hierarchical two-level reduction with broadcast: Perform intra-node reductions to aggregate x within each node, then inter-node a...
+  Strategy 5 (Hierarchical two-level reduction with broadcast) INCORRECT: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modu
+  No correct candidates from strategy enumeration; falling back to multi-island.
+
+======================================================================
+[Phase 3] Multi-island Template Evolution: Problem P_5001
+======================================================================
+  Islands (3): ['four_ar_same_input', 'four_ar_same_input', 'four_ar_same_input']
+
+  --- Island 1/3: four_ar_same_input ---
+  Starting template: four_ar_same_input (XLA)
+  Baseline: 5913.5 us, 0 permutes, 0 gathers, 11 local ops
+
+  --- Evolution round 1 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=4.000000
+
+  --- Evolution round 2 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=4.000000
+
+  --- Evolution round 3 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=4.000000
+
+  --- Evolution round 4 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=4.000000
+
+  --- Evolution round 5 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=4.000000
+
+  --- Evolution round 6 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=4.000000
+
+  --- Evolution round 7 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=4.000000
+
+  --- Evolution round 8 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=4.000000
+
+  --- Island 2/3: four_ar_same_input ---
+  Starting template: four_ar_same_input (XLA)
+  Baseline: 5913.5 us, 0 permutes, 0 gathers, 11 local ops
+
+  --- Evolution round 1 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=4.000000
+
+  --- Evolution round 2 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=4.000000
+
+  --- Evolution round 3 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=4.000000
+
+  --- Evolution round 4 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=4.000000
+
+  --- Evolution round 5 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=4.000000
+
+  --- Evolution round 6 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=4.000000
+
+  --- Evolution round 7 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=4.000000
+
+  --- Evolution round 8 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=4.000000
+
+  --- Island 3/3: four_ar_same_input ---
+  Starting template: four_ar_same_input (XLA)
+  Baseline: 5913.5 us, 0 permutes, 0 gathers, 11 local ops
+
+  --- Evolution round 1 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=4.000000
+
+  --- Evolution round 2 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=4.000000
+
+  --- Evolution round 3 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=4.000000
+
+  --- Evolution round 4 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=4.000000
+
+  --- Evolution round 5 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=4.000000
+
+  --- Evolution round 6 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=4.000000
+
+  --- Evolution round 7 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=4.000000
+
+  --- Evolution round 8 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=4.000000
+
+  Evolution complete. 4 total candidates.
+  Best: baseline:four_ar_same_input (5913.5 us, 11 local ops)
+
+======================================================================
+RANKING (post-evolution, pre-hardware)
+======================================================================
+  1. baseline:four_ar_same_input: 5913.5 us, 11 ops
+  2. evo:four_ar_same_input_0: 5913.5 us, 11 ops
+  3. evo:four_ar_same_input_1: 5913.5 us, 11 ops
+  4. evo:four_ar_same_input_2: 5913.5 us, 11 ops
+
+Simulator winner: baseline:four_ar_same_input (sim=5913.5 us)
+
+======================================================================
+[Phase 4b] Training-shape gate (all candidates): Problem P_5001
+======================================================================
+  PASS baseline:four_ar_same_input
+  PASS evo:four_ar_same_input_0
+  PASS evo:four_ar_same_input_1
+  PASS evo:four_ar_same_input_2
+  Summary: 4 pass / 0 fail / 0 skip (total 4)
+
+======================================================================
+[Phase 5] Code Generation → runtime/trainium_four_ar_same_input_chal.py
+======================================================================
+  Winner: baseline:four_ar_same_input
+  Score: 59.135, SimTime: 5913.5 us, Local ops: 11
+  Results: /home/ubuntu/abl/strat_raw/four_ar_same_input_chal/results_four_ar_same_input_chal.json
+  Generated: runtime/trainium_four_ar_same_input_chal_7node.py
+

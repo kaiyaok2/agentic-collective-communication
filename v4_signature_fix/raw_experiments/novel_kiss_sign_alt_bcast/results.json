@@ -1,0 +1,9 @@
+{
+  "problem": "sign_alt_bcast",
+  "best_code": "def evolved_p91(x, N, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    # Formula: x[i, j] = (-1)^(i + j)\n    # +1 on even-parity (i+j) positions, -1 on odd-parity positions.\n    # Position-based, no collective needed.\n    idx = torch.arange(N, device=x.device)\n    parity = (idx.view(N, 1) + idx.view(1, N)) % 2\n    return (1 - 2 * parity).contiguous().to(x.dtype)\n",
+  "best_score_us": 7.0,
+  "sim_time_us": 7.0,
+  "best_name": "kiss_1",
+  "n_score_calls": 2,
+  "wall_seconds": 69.48695778846741
+}

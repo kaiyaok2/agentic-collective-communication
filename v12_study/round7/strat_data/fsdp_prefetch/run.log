@@ -1,0 +1,71 @@
+[_sso_creds] no live SSO at import; AWS calls will fail if attempted (Command '['aws', 'configure', 'export-credentials', '--profile', 'default', '--format', 'process']' returned non-zero exit status 2.)
+======================================================================
+Collective Search Pipeline: FSDP-style sharded weight prefetch with microbatching (5-Phase)
+Pattern: moe | LLM: True | HW eval: False
+======================================================================
+
+======================================================================
+[Phase 1] Agent Hardware Profiling — LLM Builds Simulator
+======================================================================
+  Deterministic phase-1 auto-probe (LLM-driven path deprecated)
+Trainium cluster topology (2 node(s)):
+  Nodes: 2, Devices: 32, Cores: 64
+  NeuronLink BW: 192.0 GB/s, Latency: 0.5 us
+  EFA BW: 12.5 GB/s x 8 adapters/node, Latency: 5.0 us
+  Max hops: 4, Avg hops: 1.50
+  Hardware constraints: unsupported primitives = ['all_to_all']
+  [Phase 1 done] pipeline_amort_alphas = (0.300, 0.100, 0.020)
+
+======================================================================
+[Phase 2] Baseline Evaluation: FSDP-style sharded weight prefetch with microbatching
+======================================================================
+  per_mb: 69868.8 us, 128 local ops, 128 ag, 0 ar, 0 cp
+
+  Best baseline: baseline:per_mb (69868.8 us)
+
+======================================================================
+[Phase 3 / Strategy-Enumerate] FSDP-style sharded weight prefetch with microbatching
+======================================================================
+  K=5 strategies, R=1 refinement rounds per top-2 (budget ~8 LLM calls)
+  Enumerated 5 strategies:
+    1. Per-microbatch per-layer baseline: Issues M*N_LAYERS independent all-gather dispatches with mark_step boundaries be...
+    2. Layer-stacked all-gather per microbatch: For each microbatch m, concatenate/stack all N_LAYERS shards into a single tenso...
+    3. Microbatch-stacked all-gather per layer: For each layer L, stack M microbatch shards along a new leading dimension and is...
+    4. Fully fused single all-gather: Stack all M*N_LAYERS shards into one large tensor and issue a single all-gather ...
+    5. Pipelined double-buffered prefetch: Overlap computation and communication by issuing the all-gather for layer L+1 (o...
+  Strategy 1 (Per-microbatch per-layer baseline): sim=69868.8 us
+  Strategy 2 (Layer-stacked all-gather per microbatch): sim=44217.7 us
+  Strategy 3 (Microbatch-stacked all-gather per layer): sim=18680.0 us
+  Strategy 4 (Fully fused single all-gather): sim=18680.0 us
+  Strategy 5 (Pipelined double-buffered prefetch): sim=18780.0 us
+
+  Top after enumeration:
+    Microbatch-stacked all-gather per layer: 18680.0 us
+    Fully fused single all-gather: 18680.0 us
+
+  Strategy-Enumerate complete. 7 total candidates.
+  Best: Microbatch-stacked all-gather per layer (sim=18680.0 us)
+
+======================================================================
+RANKING (post-evolution, pre-hardware)
+======================================================================
+  1. strat:Microbatch-stacked all-gather : 18680.0 us, 4 ops
+  2. baseline:per_mb: 69868.8 us, 128 ops
+
+Simulator winner: strat:Microbatch-stacked all-gather  (sim=18680.0 us)
+
+======================================================================
+[Phase 4b] Training-shape gate (all candidates): FSDP-style sharded weight prefetch with microbatching
+======================================================================
+  FAIL strat:Microbatch-stacked all-gather : TypeError: evolved_fsdp_prefetch() missing 1 required positional argument: 'torch'
+  FAIL baseline:per_mb: TypeError: evolved_fsdp_prefetch() missing 1 required positional argument: 'torch'
+  Summary: 0 pass / 2 fail / 0 skip (total 2)
+
+======================================================================
+[Phase 5] Code Generation → runtime/trainium_fsdp_prefetch.py
+======================================================================
+  Winner: strat:Microbatch-stacked all-gather 
+  Score: 186.800, SimTime: 18680.0 us, Local ops: 4
+  Results: /tmp/strat_full/fsdp_prefetch/results_fsdp_prefetch.json
+  Generated: runtime/trainium_fsdp_prefetch_2node.py
+

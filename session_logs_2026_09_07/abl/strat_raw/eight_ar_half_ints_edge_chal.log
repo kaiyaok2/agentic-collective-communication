@@ -1,0 +1,156 @@
+[_sso_creds] no live SSO at import; AWS calls will fail if attempted (Command '['aws', 'configure', 'export-credentials', '--profile', 'default', '--format', 'process']' returned non-zero exit status 2.)
+======================================================================
+Collective Search Pipeline: Problem P_4401 (5-Phase)
+Pattern: uniform | LLM: True | HW eval: False
+======================================================================
+
+======================================================================
+[Phase 1] Agent Hardware Profiling — LLM Builds Simulator
+======================================================================
+  Deterministic phase-1 auto-probe (LLM-driven path deprecated)
+Trainium cluster topology (7 node(s)):
+  Nodes: 7, Devices: 112, Cores: 224
+  NeuronLink BW: 192.0 GB/s, Latency: 0.5 us
+  EFA BW: 12.5 GB/s x 8 adapters/node, Latency: 5.0 us
+  Max hops: 4, Avg hops: 1.14
+  Hardware constraints: unsupported primitives = ['all_to_all', 'cumsum']
+  [Phase 1 done] pipeline_amort_alphas = (0.300, 0.100, 0.020)
+
+======================================================================
+[Phase 2] Baseline Evaluation: Problem P_4401
+======================================================================
+  eight_ar_half_ints: 6570.5 us, 23 local ops, 0 ag, 8 ar, 0 cp
+
+  Best baseline: baseline:eight_ar_half_ints (6570.5 us)
+
+======================================================================
+[Phase 3 / Strategy-Enumerate] Problem P_4401
+======================================================================
+  K=5 strategies, R=4 refinement rounds per top-2 (budget ~14 LLM calls)
+  Enumerated 5 strategies:
+    1. Sequential AllReduce (baseline): Eight separate all-reduce operations, one per input vector, with scalar multipli...
+    2. Concatenate-AllReduce-Split with pre-scaling: Concatenate all 8 vectors into a single tensor of shape (8*N,), perform one all-...
+    3. Interleaved tensor AllReduce with strided layout: Stack vectors into shape (8, N), apply coefficients locally before all-reduce, t...
+    4. Pipelined AllReduce with async dispatch: Issue all 8 all-reduce operations asynchronously without waiting, perform local ...
+    5. Hierarchical reduce-scatter then all-gather: Apply coefficients locally, perform reduce-scatter to distribute partial sums ac...
+  No correct candidates from strategy enumeration; falling back to multi-island.
+
+======================================================================
+[Phase 3] Multi-island Template Evolution: Problem P_4401
+======================================================================
+  Islands (3): ['eight_ar_half_ints', 'eight_ar_half_ints', 'eight_ar_half_ints']
+
+  --- Island 1/3: eight_ar_half_ints ---
+  Starting template: eight_ar_half_ints (XLA)
+  Baseline: 6570.5 us, 0 permutes, 0 gathers, 23 local ops
+
+  --- Evolution round 1 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=4.000000
+
+  --- Evolution round 2 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=4.000000
+
+  --- Evolution round 3 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=4.000000
+
+  --- Evolution round 4 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=14.000000
+
+  --- Evolution round 5 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 6 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 7 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=4.000000
+
+  --- Evolution round 8 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Island 2/3: eight_ar_half_ints ---
+  Starting template: eight_ar_half_ints (XLA)
+  Baseline: 6570.5 us, 0 permutes, 0 gathers, 23 local ops
+
+  --- Evolution round 1 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=4.000000
+
+  --- Evolution round 2 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=4.000000
+
+  --- Evolution round 3 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 4 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 5 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 6 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=4.000000
+
+  --- Evolution round 7 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=4.000000
+
+  --- Evolution round 8 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Island 3/3: eight_ar_half_ints ---
+  Starting template: eight_ar_half_ints (XLA)
+  Baseline: 6570.5 us, 0 permutes, 0 gathers, 23 local ops
+
+  --- Evolution round 1 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=4.000000
+
+  --- Evolution round 2 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=4.000000
+
+  --- Evolution round 3 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=4.000000
+
+  --- Evolution round 4 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=4.000000
+
+  --- Evolution round 5 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=4.000000
+
+  --- Evolution round 6 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=4.000000
+
+  --- Evolution round 7 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=4.000000
+
+  --- Evolution round 8 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=4.000000
+
+  Evolution complete. 4 total candidates.
+  Best: baseline:eight_ar_half_ints (6570.5 us, 23 local ops)
+
+======================================================================
+RANKING (post-evolution, pre-hardware)
+======================================================================
+  1. baseline:eight_ar_half_ints: 6570.5 us, 23 ops
+  2. evo:eight_ar_half_ints_0: 6570.5 us, 23 ops
+  3. evo:eight_ar_half_ints_1: 6570.5 us, 23 ops
+  4. evo:eight_ar_half_ints_2: 6570.5 us, 23 ops
+
+Simulator winner: baseline:eight_ar_half_ints (sim=6570.5 us)
+
+======================================================================
+[Phase 4b] Training-shape gate (all candidates): Problem P_4401
+======================================================================
+  PASS baseline:eight_ar_half_ints
+  PASS evo:eight_ar_half_ints_0
+  PASS evo:eight_ar_half_ints_1
+  PASS evo:eight_ar_half_ints_2
+  Summary: 4 pass / 0 fail / 0 skip (total 4)
+
+======================================================================
+[Phase 5] Code Generation → runtime/trainium_eight_ar_half_ints_edge_chal.py
+======================================================================
+  Winner: baseline:eight_ar_half_ints
+  Score: 65.705, SimTime: 6570.5 us, Local ops: 23
+  Results: /home/ubuntu/abl/strat_raw/eight_ar_half_ints_edge_chal/results_eight_ar_half_ints_edge_chal.json
+  Generated: runtime/trainium_eight_ar_half_ints_edge_chal_7node.py
+

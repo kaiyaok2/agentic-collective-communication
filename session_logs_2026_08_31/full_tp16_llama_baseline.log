@@ -1,0 +1,18 @@
+[10bT] backend=baseline ws=224 TP=32 DP=7 layers=48 per-core=306.1M cluster=9.75B
+[10bT] sites: emb(F1)=1.05M norms(F4a)=97x4096 qkv0(F7)=1.6M F4b tensors=240 F5 flat=304.6M (+pad 3670016)
+[10bT] step   0 loss=6.3034 chk=0.00e+00 gmax=3.955e-02 mon=5.17e+00 ms=34085.6
+[10bT] step   1 loss=8.2680 chk=0.00e+00 gmax=8.008e-02 mon=-8.69e-01 ms=22974.6
+[10bT] step   2 loss=7.0254 chk=0.00e+00 gmax=2.087e-02 mon=-5.57e+00 ms=21618.9
+[10bT] step   3 loss=4.8689 chk=0.00e+00 gmax=2.881e-02 mon=-1.38e+01 ms=21437.5
+[10bT] step   4 loss=7.4626 chk=0.00e+00 gmax=4.297e-02 mon=1.05e+01 ms=21503.9
+[10bT] step   5 loss=5.7718 chk=0.00e+00 gmax=2.100e-02 mon=-4.63e+00 ms=21611.3
+[10bT] step   6 loss=4.9433 chk=0.00e+00 gmax=1.807e-02 mon=1.24e+01 ms=21536.3
+[10bT] step   7 loss=4.9937 chk=0.00e+00 gmax=1.636e-02 mon=4.29e+00 ms=21609.6
+[10bT] step   8 loss=4.4443 chk=0.00e+00 gmax=1.178e-02 mon=-6.09e+00 ms=21445.8
+[10bT] step   9 loss=4.2327 chk=0.00e+00 gmax=2.185e-02 mon=-9.84e-01 ms=21392.3
+[10bT] step  10 loss=3.7772 chk=0.00e+00 gmax=2.283e-02 mon=-1.97e+00 ms=21404.4
+[10bT] step  11 loss=3.7122 chk=0.00e+00 gmax=2.295e-02 mon=1.38e+00 ms=21366.4
+[10bT] step  12 loss=3.4218 chk=0.00e+00 gmax=1.428e-02 mon=1.01e+00 ms=21460.4
+[10bT] step  13 loss=3.4959 chk=0.00e+00 gmax=1.074e-02 mon=-7.77e-01 ms=21376.7
+[10bT] step  14 loss=3.6325 chk=0.00e+00 gmax=1.086e-02 mon=3.32e+00 ms=21350.9
+RESULT_JSON {"arch": "llama10b_tp", "backend": "baseline", "ws": 224, "tp": 32, "dp": 7, "layers": 48, "cluster_params_b": 9.749008384, "median_ms_per_step": 21445.753812789917, "mean_ms_per_step": 21457.942207654316, "first_loss": 6.303441047668457, "final_loss": 3.632507562637329, "losses": [6.303441047668457, 8.267963409423828, 7.025434494018555, 4.868922233581543, 7.4625630378723145, 5.7717790603637695, 4.9433417320251465, 4.993722915649414, 4.444320201873779, 4.232719421386719, 3.7772371768951416, 3.7121798992156982, 3.4217920303344727, 3.4958810806274414, 3.632507562637329]}

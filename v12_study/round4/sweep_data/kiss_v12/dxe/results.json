@@ -1,0 +1,9 @@
+{
+  "problem": "dxe",
+  "best_code": "def evolved_dxe(logits_local, targets, V_local, rank, world_size, num_devices,\n                cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"1-AR distributed CE: fused sum-exp + target-gather, mask via multiply.\"\"\"\n    local_sum_exp = logits_local.exp().sum(dim=-1)\n    lo = rank * V_local\n    target_local = targets - lo\n    in_shard = (target_local >= 0) & (target_local < V_local)\n    target_local_safe = target_local.clamp(0, V_local - 1)\n    local_target = logits_local.gather(1, target_local_safe.unsqueeze(1)).squeeze(1) * in_shard.to(logits_local.dtype)\n    stacked = torch.stack([local_sum_exp, local_target], dim=0)\n    reduced = xm.all_reduce(xm.REDUCE_SUM, stacked)\n    return (reduced[0].log() - reduced[1]).mean()\n",
+  "best_score_us": 5272.0,
+  "sim_time_us": 5272.0,
+  "best_name": "kiss_3",
+  "n_score_calls": 3,
+  "wall_seconds": 84.87305402755737
+}

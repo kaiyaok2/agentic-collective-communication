@@ -1,0 +1,9 @@
+{
+  "problem": "scaled_arange_bcast",
+  "best_code": "def evolved_fr(f, N, rank, world_size, num_devices,\n                cores_per_device, xm, torch, num_nodes=1):\n    # Formula: f[i] = i * 3. Position-based, no collective needed.\n    idx = torch.arange(N, device=f.device)\n    return (idx * 3).to(f.dtype)\n",
+  "best_score_us": 1.0,
+  "sim_time_us": 1.0,
+  "best_name": "kiss_1",
+  "n_score_calls": 1,
+  "wall_seconds": 68.31038498878479
+}

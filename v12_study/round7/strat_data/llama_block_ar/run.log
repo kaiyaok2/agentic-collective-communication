@@ -1,0 +1,72 @@
+[_sso_creds] no live SSO at import; AWS calls will fail if attempted (Command '['aws', 'configure', 'export-credentials', '--profile', 'default', '--format', 'process']' returned non-zero exit status 2.)
+======================================================================
+Collective Search Pipeline: Llama transformer-block AR fusion (parallel-attention) (5-Phase)
+Pattern: moe | LLM: True | HW eval: False
+======================================================================
+
+======================================================================
+[Phase 1] Agent Hardware Profiling — LLM Builds Simulator
+======================================================================
+  Deterministic phase-1 auto-probe (LLM-driven path deprecated)
+Trainium cluster topology (2 node(s)):
+  Nodes: 2, Devices: 32, Cores: 64
+  NeuronLink BW: 192.0 GB/s, Latency: 0.5 us
+  EFA BW: 12.5 GB/s x 8 adapters/node, Latency: 5.0 us
+  Max hops: 4, Avg hops: 1.50
+  Hardware constraints: unsupported primitives = ['all_to_all']
+  [Phase 1 done] pipeline_amort_alphas = (0.300, 0.100, 0.020)
+
+======================================================================
+[Phase 2] Baseline Evaluation: Llama transformer-block AR fusion (parallel-attention)
+======================================================================
+  sequential_2ar: 6046.5 us, 2 local ops, 0 ag, 2 ar, 0 cp
+
+  Best baseline: baseline:sequential_2ar (6046.5 us)
+
+======================================================================
+[Phase 3 / Strategy-Enumerate] Llama transformer-block AR fusion (parallel-attention)
+======================================================================
+  K=5 strategies, R=1 refinement rounds per top-2 (budget ~8 LLM calls)
+  Enumerated 5 strategies:
+    1. Sequential independent all-reduces: Issue two separate xm.all_reduce(REDUCE_SUM, ...) calls sequentially—one for att...
+    2. Concatenate-then-single-all-reduce: Concatenate attn_partial and mlp_partial along a new or existing dimension (e.g....
+    3. Fused all-reduce with reduce-scatter plus all-gather decomposition: Manually decompose each all-reduce into reduce-scatter + all-gather, then interl...
+    4. Summed-partial single all-reduce plus local correction: Compute combined = attn_partial + mlp_partial locally, issue one all-reduce on c...
+    5. Parallel asynchronous all-reduces with explicit group handles: Launch both all-reduces concurrently using separate replica groups or async hand...
+  Strategy 1 (Sequential independent all-reduces): sim=6046.5 us
+  Strategy 2 (Concatenate-then-single-all-reduce): sim=5984.5 us
+  Strategy 3 (Fused all-reduce with reduce-scatter plus all-gather decomposition): sim=6087.5 us
+  Strategy 4 (Summed-partial single all-reduce plus local correction): sim=6047.9 us
+  Strategy 5 (Parallel asynchronous all-reduces with explicit group handles): sim=6046.5 us
+
+  Top after enumeration:
+    Concatenate-then-single-all-reduce: 5984.5 us
+    Sequential independent all-reduces: 6046.5 us
+    top 2 round 1: NEW BEST 5988.5 us (1.0% improvement)
+
+  Strategy-Enumerate complete. 7 total candidates.
+  Best: Concatenate-then-single-all-reduce (sim=5984.5 us)
+
+======================================================================
+RANKING (post-evolution, pre-hardware)
+======================================================================
+  1. strat:Concatenate-then-single-all-re: 5984.5 us, 4 ops
+  2. baseline:sequential_2ar: 6046.5 us, 2 ops
+
+Simulator winner: strat:Concatenate-then-single-all-re (sim=5984.5 us)
+
+======================================================================
+[Phase 4b] Training-shape gate (all candidates): Llama transformer-block AR fusion (parallel-attention)
+======================================================================
+  PASS strat:Concatenate-then-single-all-re
+  PASS baseline:sequential_2ar
+  Summary: 2 pass / 0 fail / 0 skip (total 2)
+
+======================================================================
+[Phase 5] Code Generation → runtime/trainium_llama_block_ar.py
+======================================================================
+  Winner: strat:Concatenate-then-single-all-re
+  Score: 59.845, SimTime: 5984.5 us, Local ops: 4
+  Results: /tmp/strat_full/llama_block_ar/results_llama_block_ar.json
+  Generated: runtime/trainium_llama_block_ar_2node.py
+

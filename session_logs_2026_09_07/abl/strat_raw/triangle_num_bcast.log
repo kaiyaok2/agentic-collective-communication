@@ -1,0 +1,72 @@
+[_sso_creds] no live SSO at import; AWS calls will fail if attempted (Command '['aws', 'configure', 'export-credentials', '--profile', 'default', '--format', 'process']' returned non-zero exit status 2.)
+======================================================================
+Collective Search Pipeline: Problem P_90 (5-Phase)
+Pattern: uniform | LLM: True | HW eval: False
+======================================================================
+
+======================================================================
+[Phase 1] Agent Hardware Profiling — LLM Builds Simulator
+======================================================================
+  Deterministic phase-1 auto-probe (LLM-driven path deprecated)
+Trainium cluster topology (7 node(s)):
+  Nodes: 7, Devices: 112, Cores: 224
+  NeuronLink BW: 192.0 GB/s, Latency: 0.5 us
+  EFA BW: 12.5 GB/s x 8 adapters/node, Latency: 5.0 us
+  Max hops: 4, Avg hops: 1.14
+  Hardware constraints: unsupported primitives = ['all_to_all', 'cumsum']
+  [Phase 1 done] pipeline_amort_alphas = (0.300, 0.100, 0.020)
+
+======================================================================
+[Phase 2] Baseline Evaluation: Problem P_90
+======================================================================
+  baseline_ar_bcast: 5160.0 us, 1 local ops, 0 ag, 1 ar, 0 cp
+
+  Best baseline: baseline:baseline_ar_bcast (5160.0 us)
+
+======================================================================
+[Phase 3 / Strategy-Enumerate] Problem P_90
+======================================================================
+  K=5 strategies, R=4 refinement rounds per top-2 (budget ~14 LLM calls)
+  Enumerated 5 strategies:
+    1. Direct all-reduce broadcast: Single all-reduce with REDUCE_SUM operation on the full (N,) tensor. One collect...
+    2. Broadcast then local no-op: Single broadcast collective from rank 0 to all other ranks. One collective dispa...
+    3. Chunked broadcast with pipelining: Split the (N,) tensor into C chunks and issue C sequential broadcast operations,...
+    4. Hierarchical two-level broadcast: Exploit num_nodes topology: broadcast within node leaders (e.g., rank 0 to ranks...
+    5. Scatter-allgather decomposition: Rank 0 scatters N/world_size elements to each rank, then all ranks perform all-g...
+  Strategy 1 (Direct all-reduce broadcast): sim=5160.0 us
+  Strategy 2 (Broadcast then local no-op): sim=5161.0 us
+  Strategy 3 (Chunked broadcast with pipelining): sim=5264.0 us
+  Strategy 4 (Hierarchical two-level broadcast) INCORRECT: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modu
+  Strategy 5 (Scatter-allgather decomposition) INCORRECT: world=4 pattern=uniform rank=0: shape (4, 16) != (64,)
+
+  Top after enumeration:
+    Direct all-reduce broadcast: 5160.0 us
+    Broadcast then local no-op: 5161.0 us
+    top 2 round 1: NEW BEST 5160.0 us (0.0% improvement)
+
+  Strategy-Enumerate complete. 5 total candidates.
+  Best: Direct all-reduce broadcast (sim=5160.0 us)
+
+======================================================================
+RANKING (post-evolution, pre-hardware)
+======================================================================
+  1. baseline:baseline_ar_bcast: 5160.0 us, 1 ops
+  2. strat:Direct all-reduce broadcast: 5160.0 us, 1 ops
+
+Simulator winner: baseline:baseline_ar_bcast (sim=5160.0 us)
+
+======================================================================
+[Phase 4b] Training-shape gate (all candidates): Problem P_90
+======================================================================
+  PASS baseline:baseline_ar_bcast
+  PASS strat:Direct all-reduce broadcast
+  Summary: 2 pass / 0 fail / 0 skip (total 2)
+
+======================================================================
+[Phase 5] Code Generation → runtime/trainium_triangle_num_bcast.py
+======================================================================
+  Winner: baseline:baseline_ar_bcast
+  Score: 51.600, SimTime: 5160.0 us, Local ops: 1
+  Results: /home/ubuntu/abl/strat_raw/triangle_num_bcast/results_triangle_num_bcast.json
+  Generated: runtime/trainium_triangle_num_bcast_7node.py
+

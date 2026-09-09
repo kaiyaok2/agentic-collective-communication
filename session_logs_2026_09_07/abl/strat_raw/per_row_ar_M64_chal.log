@@ -1,0 +1,71 @@
+[_sso_creds] no live SSO at import; AWS calls will fail if attempted (Command '['aws', 'configure', 'export-credentials', '--profile', 'default', '--format', 'process']' returned non-zero exit status 2.)
+======================================================================
+Collective Search Pipeline: Problem P_6600 (5-Phase)
+Pattern: uniform | LLM: True | HW eval: False
+======================================================================
+
+======================================================================
+[Phase 1] Agent Hardware Profiling — LLM Builds Simulator
+======================================================================
+  Deterministic phase-1 auto-probe (LLM-driven path deprecated)
+Trainium cluster topology (7 node(s)):
+  Nodes: 7, Devices: 112, Cores: 224
+  NeuronLink BW: 192.0 GB/s, Latency: 0.5 us
+  EFA BW: 12.5 GB/s x 8 adapters/node, Latency: 5.0 us
+  Max hops: 4, Avg hops: 1.14
+  Hardware constraints: unsupported primitives = ['all_to_all', 'cumsum']
+  [Phase 1 done] pipeline_amort_alphas = (0.300, 0.100, 0.020)
+
+======================================================================
+[Phase 2] Baseline Evaluation: Problem P_6600
+======================================================================
+  per_row_ar_M64: 5610.1 us, 65 local ops, 0 ag, 64 ar, 0 cp
+
+  Best baseline: baseline:per_row_ar_M64 (5610.1 us)
+
+======================================================================
+[Phase 3 / Strategy-Enumerate] Problem P_6600
+======================================================================
+  K=5 strategies, R=4 refinement rounds per top-2 (budget ~14 LLM calls)
+  Enumerated 5 strategies:
+    1. Single full-tensor all-reduce: One all-reduce call on the entire (64, 1024) tensor. Single dispatch with maximu...
+    2. Chunked all-reduce with batching: Group rows into K chunks (e.g., 8 chunks of 8 rows each), perform all-reduce on ...
+    3. Allgather-reduce-reducescatter decomposition: Decompose into allgather on row indices, local reduction across gathered data, t...
+    4. Transpose-reduce-transpose pattern: Locally transpose to (1024, 64), perform single all-reduce, transpose back. Thre...
+    5. Pipelined overlapped row all-reduce: Launch all 64 row all-reduces asynchronously without waiting, allowing runtime t...
+  Strategy 1 (Single full-tensor all-reduce): sim=5177.1 us
+  Strategy 2 (Chunked all-reduce with batching): sim=5394.1 us
+  Strategy 4 (Transpose-reduce-transpose pattern) INCORRECT: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'TrackedTensor' object has 
+  Strategy 5 (Pipelined overlapped row all-reduce) INCORRECT: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockXM' object has no attr
+
+  Top after enumeration:
+    Single full-tensor all-reduce: 5177.1 us
+    Chunked all-reduce with batching: 5394.1 us
+    top 2 round 1: NEW BEST 5177.1 us (4.0% improvement)
+
+  Strategy-Enumerate complete. 4 total candidates.
+  Best: Single full-tensor all-reduce (sim=5177.1 us)
+
+======================================================================
+RANKING (post-evolution, pre-hardware)
+======================================================================
+  1. strat:Single full-tensor all-reduce: 5177.1 us, 1 ops
+  2. baseline:per_row_ar_M64: 5610.1 us, 65 ops
+
+Simulator winner: strat:Single full-tensor all-reduce (sim=5177.1 us)
+
+======================================================================
+[Phase 4b] Training-shape gate (all candidates): Problem P_6600
+======================================================================
+  PASS strat:Single full-tensor all-reduce
+  PASS baseline:per_row_ar_M64
+  Summary: 2 pass / 0 fail / 0 skip (total 2)
+
+======================================================================
+[Phase 5] Code Generation → runtime/trainium_per_row_ar_M64_chal.py
+======================================================================
+  Winner: strat:Single full-tensor all-reduce
+  Score: 51.771, SimTime: 5177.1 us, Local ops: 1
+  Results: /home/ubuntu/abl/strat_raw/per_row_ar_M64_chal/results_per_row_ar_M64_chal.json
+  Generated: runtime/trainium_per_row_ar_M64_chal_7node.py
+

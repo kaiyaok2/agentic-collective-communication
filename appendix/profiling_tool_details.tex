@@ -1,0 +1,39 @@
+\section{Profiling tool details}
+\label{sec:profile-impl}
+
+The five $\Theta$ buckets are populated by seven
+calibration tools the agent invokes through Phase~1's
+\texttt{ToolBox}:
+\begin{itemize}
+  \item \texttt{measure\_algorithm\_latency} ---
+  parameterized over primitive choice and tensor size for
+  \texttt{all\_gather}, \texttt{reduce\_scatter},
+  \texttt{all\_reduce}, \texttt{collective\_permute},
+  \texttt{all\_to\_all}. Probes world sizes $\in \{4, 32, 224\}$
+  and payload sizes $\in \{2^k : k = 10, \ldots, 22\}$ bytes,
+  fits $T(b,N) = \alpha(N) + \beta(N) b$ per collective.
+  \item \texttt{measure\_p2p\_transfer} --- disambiguates
+  intra-node NeuronLink from inter-node EFA bandwidth.
+  \item \texttt{measure\_xla\_op\_overhead} --- per-local-op
+  floor.
+  \item \texttt{measure\_compilation\_cost} --- fits the
+  per-NEFF reload curve $C(b)$ over the largest collective tensor
+  size (sweep $b \in \{2^{12}, 2^{16}, 2^{20}, 2^{24}\}$).
+  \item \texttt{measure\_graph\_launch\_overhead} --- $\ell$, the
+  per-\texttt{mark\_step} framework cost, measured as the
+  marginal cost of $k+1$ no-op collectives in a single graph.
+  \item \texttt{measure\_memory\_copy\_throughput} --- sequential
+  and strided HBM bandwidth.
+  \item \texttt{check\_cross\_node\_support} and
+  \texttt{check\_primitive\_compilation} --- guardrails (catch
+  cluster-broken primitives at calibration time, not at deployment).
+\end{itemize}
+The LLM picks call sites, sweeps, and aggregation strategy
+autonomously --- it draws on its general knowledge of LLM
+training, GPU and Trainium collective semantics, and
+performance-engineering practice --- and produces the numerical
+constants that populate the simulator. We supply the tools (so
+the LLM cannot fabricate numbers), not the experimental design
+(so the LLM exploits domain knowledge to choose probes more
+informative than a hardcoded script would).
+

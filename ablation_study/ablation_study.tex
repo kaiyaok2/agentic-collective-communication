@@ -1,0 +1,175 @@
+\section{Ablation Study}
+\label{sec:ablation}
+
+The main results (Tables~\ref{tab:perproblem}--\ref{tab:llama-sweep})
+use the default \emph{strategy-enumerate} Phase~3 loop. The
+ablations below show (i)~that two alternative LLM-driven Phase~3
+styles (cc-react, multi-island GA) reach the same deployed
+end-to-end performance but cost $\sim$25\% more wall-time and
+$\sim$20\% more tokens (Table~\ref{tab:ablation-cost}), and
+(ii)~that disabling the simulator's per-op cost feedback collapses
+the $1.40\times$ OLMoE headline to $1.00\times$ because the
+LLM-judge falls back to whichever pattern wins a small-shape
+microbench --- structurally the inline developer baseline.
+
+\subsection{Alternative Phase-3 loops: cc-react and multi-island GA}
+\label{sec:ablation-styles}
+
+\textbf{cc-react} is a single-trajectory ReAct agent on Claude
+Code~\cite{anthropic_claude_code} that maintains a scratchpad of
+running champion plus per-op cost feedback and proposes
+sequential refinements. \textbf{multi-island GA} uses three or
+more populations seeded from distinct baselines with LLM-mutation
+per round and occasional champion exchange, modelled on
+AlphaEvolve~\cite{novikov2025alphaevolve} with our simulator as
+fitness. Both share Phase~1's simulator and Phase-4/5's gates.
+
+\textbf{Result}: per-problem cells sit within $\sim$10\% of
+strategy-enumerate at every scope
+(Appendix~Table~\ref{tab:ablation-perproblem}); OLMoE end-to-end
+reproduces $\mathbf{1.40\times}$ within $<0.5\%$
+(Appendix~Table~\ref{tab:ablation-e2e}); Llama amp1--amp4 stays
+within $\sim$10\% (Appendix~Table~\ref{tab:ablation-llama-sweep}). All three
+styles converge to the same deployed Phase-5 winner. The Phase~3
+search shape does not move the headline.
+
+\textbf{Why strategy-enumerate is preferred}: it gets to the same
+deployed strategy with $\sim$25\% less wall-time and $\sim$20\%
+less LLM token spend (Table~\ref{tab:ablation-cost}) at the same
+total LLM-call budget of $10$ calls per problem, distributed as
+follows: one call asks the LLM to \emph{enumerate} $K{=}5$
+structurally distinct strategy sketches, $K$ calls implement each
+sketch, and the remaining $2R{=}4$ calls (two rounds, two
+candidates) refine the top two implementations against the
+simulator. The first six calls thus spend the budget on
+\emph{exploring different ideas}, and only the last four refine
+within the best ones. The classical greedy-vs-portfolio
+trade-off~\cite{kocsis2006ucb, russell2010ai} applies: an LLM's
+first emission for one template explores a narrower neighbourhood
+than one round each on $K$ distinct templates, which is why
+cc-react and multi-island spend more rounds to converge. Prompt
+scaffolds for the alternatives are in
+Appendix~\ref{sec:search-prompts}; per-style OLMoE end-to-end
+and Llama amp1--amp4 cells are in
+Appendix~Tables~\ref{tab:ablation-e2e},~\ref{tab:ablation-llama-sweep}.
+
+\begin{table}[!htbp]
+\centering\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lrr}
+\toprule
+\textbf{Phase-3 style} & \textbf{Wall} & \textbf{LLM cost} \\
+                       & (min) & (Sonnet 4.5) \\
+\midrule
+strategy-enumerate (default) & 56 & \textbf{\$19} \\
+cc-react                     & 75 & \$22 \\
+multi-island                 & 78 & \$24 \\
+\bottomrule
+\end{tabular}
+\caption{Per-style search cost over the eight collective problems
+on the 7-node cluster. Strategy-enumerate is the cheapest of the
+three by both wall-time and LLM token cost; cc-react and
+multi-island spend extra rounds without changing the deployed
+strategy's end-to-end performance
+(Appendix~Tables~\ref{tab:ablation-e2e},~\ref{tab:ablation-llama-sweep}).}
+\label{tab:ablation-cost}
+\end{table}
+
+\subsection{No-simulator ablation: necessity of Phase-3 cost feedback}
+\label{sec:ablation-nosim}
+
+To isolate the simulator's per-op cost feedback, strategy-enumerate
+runs in \texttt{--no-simulator} mode on the same eight-problem set
+under the same per-style LLM budget. Phase~1 still builds the
+simulator, but its output is hidden from the agent in Phase~3;
+the saved Phase-3-refinement budget is spent letting the agent
+enumerate candidates, write its own microbenchmarks, and produce
+code. Phase~5 cannot rank by simulator either, so all
+Phase-4-shape-gate survivors are shown back to the LLM with their
+HW microbench latencies and code, and the LLM emits the candidate
+name it considers best (``LLM-judge'' Phase~5). Search wall-time
+is unchanged ($\sim$59 vs $\sim$56 min across the eight problems).
+
+\paragraph{What got deployed and end-to-end outcome.}
+With the simulator hidden, the LLM-judge ranks survivors by h7-style
+HW microbench latencies and falls back to whichever pattern wins at
+small shapes. On all three load-bearing OLMoE primitives this is
+structurally the inline developer baseline: for \texttt{alltoallv}
+and \texttt{uniform\_a2a} the judge picks the
+\texttt{allgather\_reduce\_scatter} (AG+T+RS) pattern; for
+\texttt{dxe} it picks the \texttt{full\_vocab\_ag} 1-AG strategy,
+both call-level bit-equivalent to the inline baseline the OLMoE
+harness exercises. The end-to-end OLMoE ratio is therefore
+$\mathbf{1.00\times}$ (Table~\ref{tab:ablation-nosim}) ---
+exactly what the mechanistic reading predicts when both paths run
+bit-identical collective strategies for the load-bearing
+primitives, and the $1.40\times$ headline collapses entirely. The
+per-problem deployments and a per-problem cell table are in
+Appendix~\ref{sec:perproblem-ablation-tables} (Table~\ref{tab:ablation-nosim-perproblem}).
+
+\begin{table}[!htbp]
+\centering\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lrrr}
+\toprule
+\textbf{Harness} & \textbf{base (ms)} & \textbf{no-sim (ms)} & \textbf{Ratio} \\
+\midrule
+OLMoE-10B (a2av + dxe)     & 4399.8 & 4393.4 & $\mathbf{1.00\times}$ \\
+Llama-7B$^{\diamondsuit}$  & 76.9   & 76.0   & $1.01\times$ \\
+\bottomrule
+\end{tabular}
+\caption{No-simulator ablation end-to-end. OLMoE $\mathbf{1.00\times}$
+is the central finding: stripping simulator scores collapses the
+$1.40\times$ headline. $^{\diamondsuit}$Llama-7B drops PP, uses
+TP$+$FSDP$+$lbar; per-problem rows in
+Appendix~\ref{sec:perproblem-ablation-tables}.}
+\label{tab:ablation-nosim}
+\end{table}
+
+\subsection{Cluster-size generalization: 7-node to 3-node}
+\label{sec:ablation-3node}
+
+The deployed strategies have a few \emph{topology constants}
+baked in at codegen --- specifically, the total number of ranks,
+the half-cluster size used by the pipeline-parallel split, and
+the number of physical nodes. On the 7-node cluster these
+constants are $(\text{total ranks}, \text{half}, \text{nodes})
+{=}(224, 112, 7)$. To check that the agent's strategies are not
+overfitted to this specific cluster shape --- a real risk for
+any strategy calibrated against device-specific characteristics
+--- we redeploy the same strategies on smaller clusters by
+setting these constants to $(96, 48, 3)$ at 3 nodes and
+$(160, 80, 5)$ at 5 nodes, and re-derive the model-shape
+parameters (e.g.\ MoE expert count and Llama hidden dimension)
+so the model still fits cleanly at the new cluster size
+(Appendix~\ref{sec:3node-detail}). If the strategies were
+overfitted to the 7-node shape, the speedup would either
+disappear or invert at these smaller clusters. Table~\ref{tab:ablation-3node}
+shows the speedup persists in both directions, indicating that
+the agent's strategies capture device behavior that
+generalizes across cluster sizes rather than tuning to one
+particular topology.
+
+\begin{table}[!htbp]
+\centering\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lrrr}
+\toprule
+\textbf{Harness} & \textbf{base (ms)} & \textbf{agent (ms)} & \textbf{Speedup} \\
+\midrule
+OLMoE-10B 7n (224r) & 4404.3 & 3139.8 & $1.40\times$ \\
+OLMoE-8B 5n (160r)  & 3258.0 & 2173.0 & $\mathbf{1.50\times}$ \\
+OLMoE-5B 3n (96r)   & 2547.4 & 1422.0 & $\mathbf{1.79\times}$ \\
+\midrule
+Llama-7B 7n (224r)  & 76.90 & 21.50 & $3.58\times$ \\
+Llama-7B 5n (160r)  & 67.94 & 24.77 & $\mathbf{2.74\times}$ \\
+Llama-7B 3n (96r)   & 67.82 & 27.20 & $\mathbf{2.49\times}$ \\
+\bottomrule
+\end{tabular}
+\caption{Cluster-size generalization: same runtimes re-deployed at
+5-node and 3-node with topology constants re-fitted. OLMoE speedup
+widens as cluster shrinks; Llama speedup compresses. See
+§\ref{sec:ablation-3node}.}
+\label{tab:ablation-3node}
+\end{table}
+

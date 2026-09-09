@@ -1,0 +1,22 @@
+[
+  {
+    "template": "strategy_enumerate_final",
+    "cost_score": 59.845,
+    "sim_time_us": 5984.5,
+    "local_ops": 4,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 1,
+    "name": "strat:Fused single all-reduce on con"
+  },
+  {
+    "template": "sequential_2ar",
+    "cost_score": 60.465,
+    "sim_time_us": 6046.5,
+    "local_ops": 2,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 2,
+    "name": "baseline:sequential_2ar"
+  }
+]

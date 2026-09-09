@@ -1,0 +1,22 @@
+[
+  {
+    "template": "strategy_enumerate_final",
+    "cost_score": 51.77142857142858,
+    "sim_time_us": 5177.142857142858,
+    "local_ops": 1,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 1,
+    "name": "strat:Single REDUCE_MIN AllReduce"
+  },
+  {
+    "template": "min_neg_max_dead_verify",
+    "cost_score": 54.014,
+    "sim_time_us": 5401.400000000001,
+    "local_ops": 4,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 2,
+    "name": "baseline:min_neg_max_dead_verify"
+  }
+]

@@ -1,0 +1,83 @@
+[_sso_creds] no live SSO at import; AWS calls will fail if attempted (Command '['aws', 'configure', 'export-credentials', '--profile', 'default', '--format', 'process']' returned non-zero exit status 2.)
+======================================================================
+Collective Search Pipeline: Replicated-Gradient AllReduce (5-Phase)
+Pattern: moe | LLM: True | HW eval: False
+======================================================================
+
+======================================================================
+[Phase 1] Agent Hardware Profiling — LLM Builds Simulator
+======================================================================
+  Deterministic phase-1 auto-probe (LLM-driven path deprecated)
+Trainium cluster topology (2 node(s)):
+  Nodes: 2, Devices: 32, Cores: 64
+  NeuronLink BW: 192.0 GB/s, Latency: 0.5 us
+  EFA BW: 12.5 GB/s x 8 adapters/node, Latency: 5.0 us
+  Max hops: 4, Avg hops: 1.50
+  Hardware constraints: unsupported primitives = ['all_to_all']
+  [Phase 1 done] pipeline_amort_alphas = (0.300, 0.100, 0.020)
+
+======================================================================
+[Phase 2] Baseline Evaluation: Replicated-Gradient AllReduce
+======================================================================
+  per_tensor_loop: 53902.4 us, 64 local ops, 0 ag, 32 ar, 0 cp
+  async_back_to_back: 53902.4 us, 64 local ops, 0 ag, 32 ar, 0 cp
+  flat_single_ar: 54185.2 us, 99 local ops, 0 ag, 1 ar, 0 cp
+  chunked_ar: 7287.4 us, 99 local ops, 0 ag, 1 ar, 0 cp
+  hierarchical_intra_inter: 101902.4 us, 96 local ops, 0 ag, 64 ar, 0 cp
+
+  Best baseline: baseline:chunked_ar (7287.4 us)
+
+======================================================================
+[Phase 3 / Strategy-Enumerate] Replicated-Gradient AllReduce
+======================================================================
+  K=5 strategies, R=1 refinement rounds per top-2 (budget ~8 LLM calls)
+  Enumerated 5 strategies:
+    1. Single flat concatenation AllReduce: Concatenate all gradient tensors into one contiguous buffer, issue a single xm.a...
+    2. Fixed-byte-budget chunked AllReduce: Bucket gradients into chunks whose cumulative size stays below a configurable by...
+    3. Batch list AllReduce without concatenation: Pass the entire list of gradient tensors to a single xm.all_reduce call (which a...
+    4. Pipelined two-stage reduce-scatter then all-gather: Partition the flat gradient buffer into world_size shards, perform a reduce-scat...
+    5. Hierarchical grouped AllReduce with topology-aware groups: Divide ranks into intra-device (cores within a chip) and inter-device groups, pe...
+  Strategy 1 (Single flat concatenation AllReduce): sim=54185.2 us
+  Strategy 2 (Fixed-byte-budget chunked AllReduce): sim=7287.4 us
+  Strategy 3 (Batch list AllReduce without concatenation) INCORRECT: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'list' object has no attrib
+  Strategy 4 (Pipelined two-stage reduce-scatter then all-gather): sim=54935.2 us
+  Strategy 5 (Hierarchical grouped AllReduce with topology-aware groups): sim=8598.1 us
+
+  Top after enumeration:
+    Fixed-byte-budget chunked AllReduce: 7287.4 us
+    Hierarchical grouped AllReduce with topology-aware groups: 8598.1 us
+
+  Strategy-Enumerate complete. 6 total candidates.
+  Best: Fixed-byte-budget chunked AllReduce (sim=7287.4 us)
+
+======================================================================
+RANKING (post-evolution, pre-hardware)
+======================================================================
+  1. baseline:chunked_ar: 7287.4 us, 99 ops
+  2. strat:Fixed-byte-budget chunked AllR: 7287.4 us, 99 ops
+  3. baseline:per_tensor_loop: 53902.4 us, 64 ops
+  4. baseline:async_back_to_back: 53902.4 us, 64 ops
+  5. baseline:flat_single_ar: 54185.2 us, 99 ops
+  6. baseline:hierarchical_intra_inter: 101902.4 us, 96 ops
+
+Simulator winner: baseline:chunked_ar (sim=7287.4 us)
+
+======================================================================
+[Phase 4b] Training-shape gate (all candidates): Replicated-Gradient AllReduce
+======================================================================
+  PASS baseline:chunked_ar
+  PASS strat:Fixed-byte-budget chunked AllR
+  PASS baseline:per_tensor_loop
+  PASS baseline:async_back_to_back
+  PASS baseline:flat_single_ar
+  PASS baseline:hierarchical_intra_inter
+  Summary: 6 pass / 0 fail / 0 skip (total 6)
+
+======================================================================
+[Phase 5] Code Generation → runtime/trainium_grad_ar.py
+======================================================================
+  Winner: baseline:chunked_ar
+  Score: 72.874, SimTime: 7287.4 us, Local ops: 99
+  Results: /tmp/strat_full/grad_ar/results_grad_ar.json
+  Generated: runtime/trainium_grad_ar_2node.py
+

@@ -1,0 +1,157 @@
+[_sso_creds] no live SSO at import; AWS calls will fail if attempted (Command '['aws', 'configure', 'export-credentials', '--profile', 'default', '--format', 'process']' returned non-zero exit status 2.)
+======================================================================
+Collective Search Pipeline: Problem P_4300 (5-Phase)
+Pattern: uniform | LLM: True | HW eval: False
+======================================================================
+
+======================================================================
+[Phase 1] Agent Hardware Profiling — LLM Builds Simulator
+======================================================================
+  Deterministic phase-1 auto-probe (LLM-driven path deprecated)
+Trainium cluster topology (7 node(s)):
+  Nodes: 7, Devices: 112, Cores: 224
+  NeuronLink BW: 192.0 GB/s, Latency: 0.5 us
+  EFA BW: 12.5 GB/s x 8 adapters/node, Latency: 5.0 us
+  Max hops: 4, Avg hops: 1.14
+  Hardware constraints: unsupported primitives = ['all_to_all', 'cumsum']
+  [Phase 1 done] pipeline_amort_alphas = (0.300, 0.100, 0.020)
+
+======================================================================
+[Phase 2] Baseline Evaluation: Problem P_4300
+======================================================================
+  seven_ar_seq: 6228.4 us, 19 local ops, 0 ag, 7 ar, 0 cp
+
+  Best baseline: baseline:seven_ar_seq (6228.4 us)
+
+======================================================================
+[Phase 3 / Strategy-Enumerate] Problem P_4300
+======================================================================
+  K=5 strategies, R=4 refinement rounds per top-2 (budget ~14 LLM calls)
+  Enumerated 5 strategies:
+    1. Sequential AllReduce (baseline): Seven independent all-reduce dispatches, one per vector, with sequential depende...
+    2. Concatenate-AllReduce-Slice with pre-weighting: Locally concatenate all seven vectors into one (7N,) tensor after applying weigh...
+    3. Pipelined AllReduce with async dispatch: Issue all seven all-reduce operations asynchronously without waiting, then accum...
+    4. Tree-reduce locally then AllReduce: Compute weighted local sum s_local = 1*x1 + 2*x2 + ... + 7*x7, then single all-r...
+    5. Hierarchical AllReduce with vector pairing: Group vectors into pairs (x1+2*x2), (x3+3*x4), (x5+5*x6), x7, perform 4 all-redu...
+  Strategy 5 (Hierarchical AllReduce with vector pairing) INCORRECT: CRASH in collect pass 0: world=4 pattern=uniform rank=0: NameError: name 'g7' is not defined
+  No correct candidates from strategy enumeration; falling back to multi-island.
+
+======================================================================
+[Phase 3] Multi-island Template Evolution: Problem P_4300
+======================================================================
+  Islands (3): ['seven_ar_seq', 'seven_ar_seq', 'seven_ar_seq']
+
+  --- Island 1/3: seven_ar_seq ---
+  Starting template: seven_ar_seq (XLA)
+  Baseline: 6228.4 us, 0 permutes, 0 gathers, 19 local ops
+
+  --- Evolution round 1 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=3.000000
+
+  --- Evolution round 2 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 3 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=3.000000
+
+  --- Evolution round 4 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 5 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=8.000000
+
+  --- Evolution round 6 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 7 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=3.000000
+
+  --- Evolution round 8 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Island 2/3: seven_ar_seq ---
+  Starting template: seven_ar_seq (XLA)
+  Baseline: 6228.4 us, 0 permutes, 0 gathers, 19 local ops
+
+  --- Evolution round 1 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 2 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=3.000000
+
+  --- Evolution round 3 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 4 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 5 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=3.000000
+
+  --- Evolution round 6 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 7 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=3.000000
+
+  --- Evolution round 8 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=3.000000
+
+  --- Island 3/3: seven_ar_seq ---
+  Starting template: seven_ar_seq (XLA)
+  Baseline: 6228.4 us, 0 permutes, 0 gathers, 19 local ops
+
+  --- Evolution round 1 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 2 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=2.000000
+
+  --- Evolution round 3 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=3.000000
+
+  --- Evolution round 4 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=8.000000
+
+  --- Evolution round 5 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=3.000000
+
+  --- Evolution round 6 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=3.000000
+
+  --- Evolution round 7 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=3.000000
+
+  --- Evolution round 8 ---
+  BF16 FAIL: BF16 VALUE MISMATCH: world=8 pattern=uniform rank=0: max_diff=8.000000
+
+  Evolution complete. 4 total candidates.
+  Best: baseline:seven_ar_seq (6228.4 us, 19 local ops)
+
+======================================================================
+RANKING (post-evolution, pre-hardware)
+======================================================================
+  1. baseline:seven_ar_seq: 6228.4 us, 19 ops
+  2. evo:seven_ar_seq_0: 6228.4 us, 19 ops
+  3. evo:seven_ar_seq_1: 6228.4 us, 19 ops
+  4. evo:seven_ar_seq_2: 6228.4 us, 19 ops
+
+Simulator winner: baseline:seven_ar_seq (sim=6228.4 us)
+
+======================================================================
+[Phase 4b] Training-shape gate (all candidates): Problem P_4300
+======================================================================
+  PASS baseline:seven_ar_seq
+  PASS evo:seven_ar_seq_0
+  PASS evo:seven_ar_seq_1
+  PASS evo:seven_ar_seq_2
+  Summary: 4 pass / 0 fail / 0 skip (total 4)
+
+======================================================================
+[Phase 5] Code Generation → runtime/trainium_seven_ar_seq_edge_chal.py
+======================================================================
+  Winner: baseline:seven_ar_seq
+  Score: 62.284, SimTime: 6228.4 us, Local ops: 19
+  Results: /home/ubuntu/abl/strat_raw/seven_ar_seq_edge_chal/results_seven_ar_seq_edge_chal.json
+  Generated: runtime/trainium_seven_ar_seq_edge_chal_7node.py
+

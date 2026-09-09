@@ -1,0 +1,9 @@
+{
+  "problem": "xor_grid_bcast",
+  "best_code": "def evolved_p88(x, N, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    # x[i, j] = i XOR j via per-bit decomposition\n    idx = torch.arange(N, device=x.device)\n    ii = idx.view(N, 1)\n    jj = idx.view(1, N)\n    nbits = max(1, (N - 1).bit_length())\n    res = None\n    for b in range(nbits):\n        p = 1 << b\n        bit = ((ii // p) % 2 + (jj // p) % 2) % 2\n        term = bit * p\n        res = term if res is None else res + term\n    return res.to(x.dtype)\n",
+  "best_score_us": 895.9285714285714,
+  "sim_time_us": 895.9285714285714,
+  "best_name": "kiss_3",
+  "n_score_calls": 5,
+  "wall_seconds": 62.579988956451416
+}

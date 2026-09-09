@@ -1,0 +1,25 @@
+[shim] kiss AnthropicModel._create_message patched -> /tmp/tokens.jsonl
+[scorer init] 
+[scorer init] ======================================================================
+[scorer init] [Phase 1] Agent Hardware Profiling — LLM Builds Simulator
+[scorer init] ======================================================================
+[scorer init]   Deterministic phase-1 auto-probe (LLM-driven path deprecated)
+[scorer init] Trainium cluster topology (7 node(s)):
+[scorer init]   Nodes: 7, Devices: 112, Cores: 224
+[scorer init]   NeuronLink BW: 192.0 GB/s, Latency: 0.5 us
+[scorer init]   EFA BW: 12.5 GB/s x 8 adapters/node, Latency: 5.0 us
+[scorer init]   Max hops: 4, Avg hops: 1.14
+[scorer init]   Hardware constraints: unsupported primitives = ['all_to_all', 'cumsum', 'cumprod', 'sort', 'argsort']
+[scorer init] [score_service_v2] ready for per_column_ar_C64_chal/uniform/nn=7 (HW_GATE=off)
+[kiss] scoring baseline...
+[kiss] baseline per_column_ar_C64: {'ok': True, 'sim_time_us': 5657.0, 'num_ops': 129, 'num_all_gather': 0, 'num_all_reduce': 64, 'num_collective_permute': 0}
+{
+  "problem": "per_column_ar_C64_chal",
+  "wall_seconds": 27.038212776184082,
+  "baseline_sim_time_us": 5657.0,
+  "best_sim_time_us": 5160.0,
+  "best_name": "kiss_1",
+  "n_score_calls": 1,
+  "target_score": null,
+  "hit_target": false
+}

@@ -1,0 +1,71 @@
+[_sso_creds] no live SSO at import; AWS calls will fail if attempted (Command '['aws', 'configure', 'export-credentials', '--profile', 'default', '--format', 'process']' returned non-zero exit status 2.)
+======================================================================
+Collective Search Pipeline: Problem P_7200 (5-Phase)
+Pattern: uniform | LLM: True | HW eval: False
+======================================================================
+
+======================================================================
+[Phase 1] Agent Hardware Profiling — LLM Builds Simulator
+======================================================================
+  Deterministic phase-1 auto-probe (LLM-driven path deprecated)
+Trainium cluster topology (7 node(s)):
+  Nodes: 7, Devices: 112, Cores: 224
+  NeuronLink BW: 192.0 GB/s, Latency: 0.5 us
+  EFA BW: 12.5 GB/s x 8 adapters/node, Latency: 5.0 us
+  Max hops: 4, Avg hops: 1.14
+  Hardware constraints: unsupported primitives = ['all_to_all', 'cumsum']
+  [Phase 1 done] pipeline_amort_alphas = (0.300, 0.100, 0.020)
+
+======================================================================
+[Phase 2] Baseline Evaluation: Problem P_7200
+======================================================================
+  per_row_ar_M1024: 9450.1 us, 1025 local ops, 0 ag, 1024 ar, 0 cp
+
+  Best baseline: baseline:per_row_ar_M1024 (9450.1 us)
+
+======================================================================
+[Phase 3 / Strategy-Enumerate] Problem P_7200
+======================================================================
+  K=5 strategies, R=4 refinement rounds per top-2 (budget ~14 LLM calls)
+  Enumerated 5 strategies:
+    1. Per-row all-reduce (baseline): Issues 1024 separate all-reduce calls, one per row of shape (64,). Total dispatc...
+    2. Single full-tensor all-reduce: Issues 1 all-reduce on the entire (1024, 64) tensor. Total dispatch count is 1. ...
+    3. Chunked row-batch all-reduce: Groups rows into K chunks (e.g., K=32 chunks of 32 rows each), performs all-redu...
+    4. Reduce-scatter then all-gather: Splits the 1024 rows across world_size ranks via reduce-scatter (1 dispatch), th...
+    5. Hierarchical two-level all-reduce: First performs intra-node all-reduce on subsets of ranks within each node (1 dis...
+  Strategy 1 (Per-row all-reduce (baseline)): sim=9450.1 us
+  Strategy 2 (Single full-tensor all-reduce): sim=5177.1 us
+  Strategy 3 (Chunked row-batch all-reduce): sim=5514.1 us
+  Strategy 4 (Reduce-scatter then all-gather): sim=5237.2 us
+  Strategy 5 (Hierarchical two-level all-reduce) INCORRECT: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modu
+
+  Top after enumeration:
+    Single full-tensor all-reduce: 5177.1 us
+    Reduce-scatter then all-gather: 5237.2 us
+
+  Strategy-Enumerate complete. 6 total candidates.
+  Best: Single full-tensor all-reduce (sim=5177.1 us)
+
+======================================================================
+RANKING (post-evolution, pre-hardware)
+======================================================================
+  1. strat:Single full-tensor all-reduce: 5177.1 us, 1 ops
+  2. baseline:per_row_ar_M1024: 9450.1 us, 1025 ops
+
+Simulator winner: strat:Single full-tensor all-reduce (sim=5177.1 us)
+
+======================================================================
+[Phase 4b] Training-shape gate (all candidates): Problem P_7200
+======================================================================
+  PASS strat:Single full-tensor all-reduce
+  PASS baseline:per_row_ar_M1024
+  Summary: 2 pass / 0 fail / 0 skip (total 2)
+
+======================================================================
+[Phase 5] Code Generation → runtime/trainium_per_row_ar_M1024_chal.py
+======================================================================
+  Winner: strat:Single full-tensor all-reduce
+  Score: 51.771, SimTime: 5177.1 us, Local ops: 1
+  Results: /home/ubuntu/abl/strat_raw/per_row_ar_M1024_chal/results_per_row_ar_M1024_chal.json
+  Generated: runtime/trainium_per_row_ar_M1024_chal_7node.py
+

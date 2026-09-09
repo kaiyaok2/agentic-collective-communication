@@ -1,0 +1,51 @@
+=== RUN arch=moe backend=baseline ===
+[e2e] arch=moe backend=baseline ws=224 params=10.2M
+[e2e] data tokens per rank: 2413250
+[e2e] F5 flat grad numel=9314304 (+pad 64), shard=41582
+[e2e] step   0 loss=5.7299 chk=0.00e+00 gmax=5.087e-02 ms=323065.0
+[e2e] step   1 loss=4.3435 chk=0.00e+00 gmax=2.696e-02 ms=299560.5
+[e2e] step   2 loss=3.9794 chk=0.00e+00 gmax=3.922e-02 ms=390.4
+[e2e] step   3 loss=3.7312 chk=0.00e+00 gmax=2.403e-02 ms=395.4
+[e2e] step   4 loss=3.6174 chk=0.00e+00 gmax=2.200e-02 ms=395.5
+[e2e] step   5 loss=3.5289 chk=0.00e+00 gmax=2.460e-02 ms=395.6
+[e2e] step   6 loss=3.4722 chk=0.00e+00 gmax=2.355e-02 ms=398.9
+[e2e] step   7 loss=3.4033 chk=0.00e+00 gmax=1.902e-02 ms=394.9
+[e2e] step   8 loss=3.3695 chk=0.00e+00 gmax=1.493e-02 ms=400.3
+[e2e] step   9 loss=3.3354 chk=0.00e+00 gmax=1.388e-02 ms=389.4
+[e2e] step  10 loss=3.3017 chk=0.00e+00 gmax=1.239e-02 ms=384.6
+[e2e] step  11 loss=3.2677 chk=0.00e+00 gmax=1.339e-02 ms=389.2
+[e2e] step  12 loss=3.2421 chk=0.00e+00 gmax=1.553e-02 ms=396.6
+[e2e] step  13 loss=3.2252 chk=0.00e+00 gmax=1.250e-02 ms=392.4
+[e2e] step  14 loss=3.1983 chk=0.00e+00 gmax=1.242e-02 ms=397.4
+[e2e] step  15 loss=3.1670 chk=0.00e+00 gmax=1.034e-02 ms=400.2
+[e2e] step  16 loss=3.1415 chk=0.00e+00 gmax=8.707e-03 ms=398.6
+[e2e] step  17 loss=3.1277 chk=0.00e+00 gmax=8.352e-03 ms=386.3
+[e2e] step  18 loss=3.0850 chk=0.00e+00 gmax=7.293e-03 ms=385.9
+[e2e] step  19 loss=3.0598 chk=0.00e+00 gmax=1.191e-02 ms=394.1
+[e2e] step  20 loss=3.0317 chk=0.00e+00 gmax=1.478e-02 ms=396.8
+[e2e] step  21 loss=2.9731 chk=0.00e+00 gmax=1.035e-02 ms=389.8
+[e2e] step  22 loss=2.9391 chk=0.00e+00 gmax=1.018e-02 ms=392.9
+[e2e] step  23 loss=2.9128 chk=0.00e+00 gmax=1.600e-02 ms=397.3
+[e2e] step  24 loss=2.8948 chk=0.00e+00 gmax=1.270e-02 ms=388.7
+[e2e] step  25 loss=2.8749 chk=0.00e+00 gmax=1.504e-02 ms=382.1
+[e2e] step  26 loss=2.8361 chk=0.00e+00 gmax=1.125e-02 ms=385.3
+[e2e] step  27 loss=2.8137 chk=0.00e+00 gmax=9.096e-03 ms=384.3
+[e2e] step  28 loss=2.8064 chk=0.00e+00 gmax=1.787e-02 ms=381.2
+[e2e] step  29 loss=2.7777 chk=0.00e+00 gmax=1.294e-02 ms=393.7
+[e2e] step  30 loss=2.7697 chk=0.00e+00 gmax=1.165e-02 ms=403.0
+[e2e] step  31 loss=2.7657 chk=0.00e+00 gmax=9.962e-03 ms=387.5
+[e2e] step  32 loss=2.7567 chk=0.00e+00 gmax=2.269e-02 ms=388.7
+[e2e] step  33 loss=2.7387 chk=0.00e+00 gmax=1.174e-02 ms=388.5
+[e2e] step  34 loss=2.7286 chk=0.00e+00 gmax=6.839e-03 ms=387.2
+[e2e] step  35 loss=2.7174 chk=0.00e+00 gmax=8.036e-03 ms=403.8
+[e2e] step  36 loss=2.7072 chk=0.00e+00 gmax=1.093e-02 ms=399.3
+[e2e] step  37 loss=2.6974 chk=0.00e+00 gmax=1.069e-02 ms=388.0
+[e2e] step  38 loss=2.6859 chk=0.00e+00 gmax=8.557e-03 ms=387.6
+[e2e] step  39 loss=2.6875 chk=0.00e+00 gmax=1.041e-02 ms=390.7
+RESULT_JSON {"arch": "moe", "backend": "baseline", "ws": 224, "params_m": 10.236416, "median_ms_per_step": 389.817476272583, "mean_ms_per_step": 391.59297943115234, "first_loss": 5.729925632476807, "final_loss": 2.687488317489624, "losses": [5.729925632476807, 4.343511581420898, 3.9793882369995117, 3.7312445640563965, 3.6174261569976807, 3.528928279876709, 3.4722180366516113, 3.4032862186431885, 3.369515895843506, 3.335383892059326, 3.3016788959503174, 3.267688512802124, 3.2421233654022217, 3.225215196609497, 3.1982996463775635, 3.1669583320617676, 3.141467571258545, 3.1277222633361816, 3.084963798522949, 3.0597927570343018, 3.031656503677368, 2.973129987716675, 2.9391367435455322, 2.912766695022583, 2.894801139831543, 2.874915361404419, 2.836089611053467, 2.8137447834014893, 2.8063690662384033, 2.7776694297790527, 2.7697176933288574, 2.765693426132202, 2.7566888332366943, 2.738699197769165, 2.7286019325256348, 2.7173829078674316, 2.7071735858917236, 2.697392225265503, 2.685900926589966, 2.687488317489624]}
+=== RUN arch=moe backend=sorcar ===
+[e2e] arch=moe backend=sorcar ws=224 params=10.2M
+[e2e] data tokens per rank: 2413250
+[e2e] F5 flat grad numel=9314304 (+pad 64), shard=41582
+[e2e] step   0 loss=5.7299 chk=0.00e+00 gmax=5.087e-02 ms=369656.1/home/ubuntu/train_families_e2e_7node.py:457: DeprecationWarning: Use torch_xla.sync instead
+ALL_DONE

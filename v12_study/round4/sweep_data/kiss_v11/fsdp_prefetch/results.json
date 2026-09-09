@@ -1,0 +1,9 @@
+{
+  "problem": "fsdp_prefetch",
+  "best_code": "def evolved_fsdp_prefetch(shards, M, N_LAYERS, rank, world_size,\n                          num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"single all-gather across all microbatches and layers.\"\"\"\n    flat = [shards[m][L] for m in range(M) for L in range(N_LAYERS)]\n    stacked = torch.stack(flat, dim=0)        # [M*N_LAYERS, ..., shard_w]\n    g = xm.all_gather(stacked, dim=-1)         # gather last dim in one shot\n    outs = []\n    i = 0\n    for m in range(M):\n        per_layer = []\n        for L in range(N_LAYERS):\n            per_layer.append(g[i])\n            i += 1\n        outs.append(per_layer)\n    return outs\n",
+  "best_score_us": 18680.0,
+  "sim_time_us": 18680.0,
+  "best_name": "kiss_3",
+  "n_score_calls": 3,
+  "wall_seconds": 47.918278217315674
+}

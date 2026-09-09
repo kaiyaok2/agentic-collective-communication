@@ -1,0 +1,226 @@
+\section{Compositions discovered}
+\label{sec:algos}
+
+We use the word \emph{strategy} rather than \emph{algorithm}
+deliberately: AlphaEvolve, AlphaTensor, and FunSearch invent new
+algorithms over open scoring functions, but the loop here does not
+and cannot invent collective algorithms, because the underlying
+\texttt{xm.*} primitives are black boxes whose schedules and chunking
+are not reachable from above. The loop only chooses \emph{how many
+primitive dispatches, in what order, against what tensor layout,
+with what local pre- and post-processing}. What it emits for each
+collective is one short Python file describing such a strategy;
+we summarize them below because the contrast with their
+developer-written baselines is informative. Adding a further
+collective is roughly $\sim$100 lines of glue: a developer
+registers a new problem in \texttt{search/problems.py} with a
+pure-Python reference, a small set of seed templates, and the I/O
+shapes; Phases~1--5 then run unchanged. The cost model and the
+profiling toolkit are shared across problems.
+
+\paragraph{MoE token dispatch.} For \textbf{AllToAllV} the agent
+packs the variable-length per-rank payload into a fixed-size buffer
+where rank $i$'s payload starts at offset $i \cdot c_{\max}$, calls
+one \texttt{all\_gather} to materialize a $(N, N \cdot c_{\max})$
+tensor, and extracts each rank's receive slot with an
+\texttt{index\_select} keyed on a trace-time-precomputed index vector
+--- vs the two-dispatch AG$+$RS baseline Section~\ref{sec:agrs}
+dissects. For \textbf{Uniform AllToAll} the agent emits a single
+\texttt{all\_gather} followed by a \texttt{for}-loop over source
+ranks that slices each destination's chunk with \texttt{narrow} and
+concatenates via \texttt{torch.cat}; the contiguity-aware
+implicit-copy term makes this win against the AG$+$transpose$+$RS
+baseline, whose \texttt{permute$+$reshape} on a non-leading-dim
+source pays a real $O(\text{numel})$ strided copy that the four-op
+chain hides at the Python-op level.
+
+\paragraph{Ring Attention KV.} For two-slot (K, V) distribution the
+agent emits per-slot \texttt{all\_gather} calls --- two dispatches
+per layer regardless of head count --- vs the developer-written
+baseline that issues one \texttt{all\_gather} per head per slot
+(16 dispatches per layer at HEADS=8, the OLMoE Ring KV probe shape).
+Developers adopt the per-head form for principled reasons: small
+collectives are typically easier to overlap with surrounding
+compute, improve pipeline utilization, interact more predictably
+with runtime fusion and network scheduling, and keep per-call
+memory pressure low (the bundled form materializes a larger
+contiguous intermediate, which under tight memory budgets risks
+OOM). These are conservative defaults that generalize well across
+cluster sizes and workloads.
+The agent's contribution here is the empirical observation ---
+surfaced by its profiled simulator --- that \emph{none of those
+concerns bind} in this 7-node OLMoE setting: at the per-call
+payloads here, network contention is unsaturated, HBM headroom is
+ample, and the bundled intermediate fits comfortably. With those
+constraints lifted, fewer-and-larger collectives reduce
+per-dispatch launch and scheduling overhead. The per-call gain
+is largest at 1-node bench scope, where the four-tier per-dispatch
+launch floor dominates and Trainium has no opportunity to fuse
+across the per-head calls: Table~\ref{tab:perproblem} reports
+3.57\,ms baseline vs 1.07\,ms agent at 1-node bench
+($3.34\times$). At 7-node bench scope the same per-call ratio
+compresses to $1.46\times$ (2.95\,ms vs 2.02\,ms) because the
+collective payload begins to share the per-call latency floor
+with the cross-rank transport. At 7-node training scope the
+per-step contribution is 13.49\,ms baseline vs 10.32\,ms agent
+($1.31\times$), because the Neuron compiler's intra-graph
+fusion within a single \texttt{mark\_step} already amortizes
+part of the per-head dispatch floor that the bench scope cannot
+share --- the agent's bundled form still wins, but the headroom
+the developer baseline gives up at training scope is smaller than
+at bench scope. The bundled form has a secondary advantage worth
+flagging: it does not depend on the compiler's fusion behavior,
+so it provides more stable per-call latency across vendor library
+versions and avoids fragility when graph shapes shift across
+runs.
+
+\paragraph{Distributed cross-entropy.} For \textbf{distributed
+cross-entropy} on vocab-sharded logits the agent computes
+$\log\sum_v\exp(z_v)$ via two \texttt{all\_reduce}s. The first
+is a \texttt{REDUCE\_MAX} over per-token local maxima, which
+keeps the canonical max-shift required for bf16
+numerical safety~\cite{kalamkar2019bf16, micikevicius2018mixed}.
+The second is a single \texttt{REDUCE\_SUM} over a stacked
+$(T, 2)$ tensor that packs both the shifted
+$\sum_v\exp(z_v^{\text{local}} - \text{max})$ reduction and the
+per-token in-shard target-logit reduction into one collective
+dispatch. The non-obvious move is the stacking: a developer would
+typically write three independent AR calls
+(max, sum-exp, target); the agent collapses the two SUM ARs
+into one by carrying them in the second dimension of a stacked
+tensor.
+
+The reference baseline this agent runtime is compared against in
+Table~\ref{tab:perproblem} is the more common
+distributed-CE realization: one \texttt{xm.all\_gather} of the
+vocab-sharded logits along the head dimension, followed by a
+single local \texttt{F.cross\_entropy}. A developer landing on
+this 1-AG pattern is not being lazy. \texttt{F.cross\_entropy} does
+the log-softmax, the max-shift, the padding-mask handling, and the
+\texttt{ignore\_index} semantics in one
+well-tested fused kernel with a matching backward;
+a hand-rolled 2-AR strategy has to re-derive each of those
+correctly and trust bf16's exponent range, with the loss surface
+silently breaking
+(NaN, or worse a biased loss that still trains) if any of them is
+wrong. The 1-AG pattern is also what NeuronX-Distributed and
+Megatron-LM examples demonstrate, and it matches a single-rank
+reference byte-for-byte, so it is the natural unit-test target
+during convergence debugging. Notably, what the developer does \emph{not} get from picking 1-AG
+is a per-call microbench advantage: the bench numbers in
+Table~\ref{tab:perproblem} actually rank the deployed 2-AR agent
+faster at both bench scopes ($4.5\times$ at 1-node, $3.3\times$
+at 7-node), because the local $(T, V_\text{total})$
+\texttt{F.cross\_entropy} the 1-AG path executes after the gather
+is more expensive than the two scalar-tensor ARs of the 2-AR
+path. The developer is trading per-call latency for correctness
+guarantees, code idiom, and unit-test economy, and reasonably so
+--- the per-call gap is a fraction of a millisecond, and the
+correctness exposure of hand-rolling a stable distributed CE is
+real.
+
+The 2-AR agent runtime is also faster per-call than the 1-AG
+developer-written baseline at both bench scopes
+(Table~\ref{tab:perproblem}: 1.64\,ms baseline vs 0.37\,ms agent
+at 1-node bench, $4.5\times$; 1.87\,ms vs 0.57\,ms at 7-node
+bench, $3.3\times$). The win is volume: the two-AR strategy
+moves $(T, 2)$ scalars across ranks ($T = B \cdot S$) instead of
+the $(T, V)$ tensor the 1-AG baseline materializes on every rank
+before \texttt{F.cross\_entropy}, and at the small $T$ this
+probe uses ($T{=}256$), one cross-rank move of $(T, 2)$ bf16
+scalars is two orders of magnitude smaller than one
+$(T, V{=}32256)$ bf16 tensor.
+
+\paragraph{PP cross-stage.} The three Llama primitives of
+Section~\ref{sec:eval-llama} share a structural template: $M$
+independent per-microbatch collectives that the per-microbatch
+\texttt{mark\_step} forces into $M$ separate HLO graphs, so the
+Neuron runtime cannot fuse them. The baselines we compare against
+are not strawmen but the developer realizations the AWS
+NeuronX-Distributed tutorials demonstrate and that AWS
+practitioners adopt --- those baselines are believed to be
+best-performing on Trainium because they keep per-microbatch
+activation working sets inside HBM, avoid compile-time graph
+blow-up that NEFF compile latency would otherwise impose, and
+rely on the in-graph fusion XLA delivers within each microbatch.
+The agent's contribution is the negative observation that across
+microbatches the per-graph dispatch floor compounds and a single
+packed dispatch wins despite all three patterns. For PP
+cross-stage the agent packs the $M$ per-microbatch payloads into
+one leading-dim-extended tensor and issues a single dispatch:
+a masked \texttt{xm.all\_reduce} over a
+$(\textit{half}, M, \textit{Batch}, \textit{SeqLen}, D)$ buffer,
+where \textit{half} is the rank count per pipeline stage
+(here 112, since the 224 ranks are split into stage~0 and
+stage~1) and the buffer simultaneously moves the $M$ forward
+activations through the stage's send/recv pair. The agent
+recognizes that masked-AR is the only correctness-preserving
+substitute for \texttt{collective\_permute} on Neuron, where
+the latter is broken. The structural cost is one large dispatch
+instead of $M$ small dispatches, and the wall-clock saving comes
+from collapsing $M$ Trainium per-dispatch latency floors into
+one.
+
+\paragraph{TP MLP.} The agent finds the same structural template
+as for PP cross-stage but applied to the
+$M \cdot N_\text{layers}$ partial-output tensors that the
+per-microbatch \texttt{mark\_step} factors out across both
+microbatches and TP layers. It flattens all of them into a single
+contiguous 1-D buffer, emits one row-parallel AR, then
+slices/reshapes back to the $[M][N_\text{layers}]$ structure the
+caller expects. As with PP cross-stage the saving is one large
+dispatch in place of $M \cdot N_\text{layers}$ small ones.
+
+\paragraph{FSDP weight prefetch.} The interesting case is FSDP,
+because the analogous ``stack-the-$M$-shards-and-issue-one-AG''
+pattern that wins PP cross-stage and TP MLP \emph{does not
+survive Phase~4's training-shape gate at 224 ranks}: the packed
+shard tensor it constructs has shape
+$(M \cdot N_\text{layers}, \text{ws}, \text{shard\_size})$ which
+at the OLMoE Llama-block shapes exceeds the per-rank HBM
+allocation budget the Neuron compiler tolerates when the
+gathered intermediate is materialized in a single graph; the
+attempted compile aborts before the per-step measurement can be
+taken. This is the kind of hardware-binding constraint that
+candidate-by-candidate static analysis cannot predict --- the
+simulator's cost model ranks the packed candidate as the best,
+and the Phase~3 LLM enumerates it confidently --- but the search
+loop catches it at Phase~4 and falls back to the next-best
+strategy among the candidates Phase~3 produced. That fallback,
+which is what the deployed FSDP runtime actually is, is the
+per-microbatch per-layer loop ($M \cdot N_\text{layers}$
+individual AGs, structurally identical to the developer baseline
+at the call level). The agent's contribution is therefore
+\emph{not} dispatch collapsing; it is the choice to lift the
+per-microbatch \texttt{mark\_step} that the developer baseline
+emits between microbatches, letting NeuronCC fuse all
+$M \cdot N_\text{layers}$ AGs into one HLO graph per training
+step. The inline developer baseline keeps the per-microbatch
+\texttt{mark\_step} for the reasons the introductory paragraph
+of this section enumerates (HBM headroom, NEFF compile latency,
+in-graph fusion within a microbatch), but at 7-node training
+scale none of those concerns actually binds, and the agent's
+single-graph variant collapses $M$ per-graph dispatch and
+compile-amortization floors into one. The end-to-end ratio
+(Table~\ref{tab:perproblem}, FSDP row: 8.52~ms baseline vs
+2.01~ms agent at 7-node training) is the agent's contribution
+even though no per-call collective count changes: the dispatch
+count is identical, but the graph count drops from $M$ to $1$
+per step. The broader point this FSDP case makes about the
+search loop is the value of Phase~4 hardware validation:
+the agent's enumerated theoretically-best candidate would have
+crashed at compile if deployed blindly; the loop catches that
+and converges instead to the next-best candidate that still wins
+$4.2\times$ over the developer baseline. The agent's contribution
+on a problem like FSDP is therefore as much the
+\emph{robust convergence} to a deployable next-best as it is the
+discovery of a structurally novel strategy. The non-obvious common thread is that all three
+problems look like fundamentally different parallelism patterns at
+the framework level (pipeline, tensor, data) but reduce to the same
+strategy template once the per-microbatch \texttt{mark\_step}
+structure is made explicit; the simulator's four-tier amortization
+model (Section~\ref{sec:cost}) is what lets the agent see that
+structure without running on hardware.
+
+\FloatBarrier
+

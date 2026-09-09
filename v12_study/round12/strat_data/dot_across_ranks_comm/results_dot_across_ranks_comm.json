@@ -1,0 +1,22 @@
+[
+  {
+    "template": "baseline_ar_dot",
+    "cost_score": 51.607,
+    "sim_time_us": 5160.7,
+    "local_ops": 2,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 1,
+    "name": "baseline:baseline_ar_dot"
+  },
+  {
+    "template": "strategy_enumerate_final",
+    "cost_score": 51.607,
+    "sim_time_us": 5160.7,
+    "local_ops": 2,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 1,
+    "name": "strat:Local dot then all-reduce scal"
+  }
+]

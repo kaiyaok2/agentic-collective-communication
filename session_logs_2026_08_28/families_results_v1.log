@@ -1,0 +1,91 @@
+=== RUN arch=llama backend=baseline ===
+[e2e] arch=llama backend=baseline ws=224 params=26.0M
+[e2e] data tokens per rank: 2413250
+[e2e] F5 flat grad numel=25034752 (+pad 160), shard=111763
+[e2e] step   0 loss=5.5605 chk=0.00e+00 gmax=4.889e-02 ms=389061.4
+[e2e] step   1 loss=4.3788 chk=0.00e+00 gmax=2.857e-02 ms=307093.4
+[e2e] step   2 loss=3.9629 chk=0.00e+00 gmax=3.434e-02 ms=214.4
+[e2e] step   3 loss=3.7127 chk=0.00e+00 gmax=2.440e-02 ms=212.8
+[e2e] step   4 loss=3.6025 chk=0.00e+00 gmax=2.086e-02 ms=217.9
+[e2e] step   5 loss=3.5115 chk=0.00e+00 gmax=1.958e-02 ms=220.5
+[e2e] step   6 loss=3.4646 chk=0.00e+00 gmax=2.199e-02 ms=215.3
+[e2e] step   7 loss=3.4084 chk=0.00e+00 gmax=2.135e-02 ms=218.1
+[e2e] step   8 loss=3.3656 chk=0.00e+00 gmax=1.868e-02 ms=223.9
+[e2e] step   9 loss=3.3288 chk=0.00e+00 gmax=1.484e-02 ms=215.2
+[e2e] step  10 loss=3.3104 chk=0.00e+00 gmax=1.608e-02 ms=227.5
+[e2e] step  11 loss=3.2859 chk=0.00e+00 gmax=1.397e-02 ms=219.7
+[e2e] step  12 loss=3.2594 chk=0.00e+00 gmax=1.244e-02 ms=224.0
+[e2e] step  13 loss=3.2472 chk=0.00e+00 gmax=1.212e-02 ms=217.6
+[e2e] step  14 loss=3.2321 chk=0.00e+00 gmax=1.224e-02 ms=213.9
+[e2e] step  15 loss=3.2125 chk=0.00e+00 gmax=1.464e-02 ms=238.2
+[e2e] step  16 loss=3.1957 chk=0.00e+00 gmax=1.268e-02 ms=231.2
+[e2e] step  17 loss=3.1949 chk=0.00e+00 gmax=1.402e-02 ms=227.7
+[e2e] step  18 loss=3.1657 chk=0.00e+00 gmax=1.016e-02 ms=217.4
+[e2e] step  19 loss=3.1580 chk=0.00e+00 gmax=1.409e-02 ms=213.7
+[e2e] step  20 loss=3.1427 chk=0.00e+00 gmax=1.385e-02 ms=216.1
+[e2e] step  21 loss=3.1157 chk=0.00e+00 gmax=2.004e-02 ms=232.1
+[e2e] step  22 loss=3.0897 chk=0.00e+00 gmax=1.375e-02 ms=217.9
+[e2e] step  23 loss=3.0670 chk=0.00e+00 gmax=1.929e-02 ms=227.3
+[e2e] step  24 loss=3.0265 chk=0.00e+00 gmax=1.282e-02 ms=213.2
+[e2e] step  25 loss=2.9846 chk=0.00e+00 gmax=1.400e-02 ms=223.8
+[e2e] step  26 loss=2.9525 chk=0.00e+00 gmax=1.215e-02 ms=217.7
+[e2e] step  27 loss=2.9160 chk=0.00e+00 gmax=1.159e-02 ms=215.0
+[e2e] step  28 loss=2.8767 chk=0.00e+00 gmax=1.825e-02 ms=213.9
+[e2e] step  29 loss=2.8361 chk=0.00e+00 gmax=1.106e-02 ms=216.9
+[e2e] step  30 loss=2.8196 chk=0.00e+00 gmax=1.125e-02 ms=224.4
+[e2e] step  31 loss=2.8115 chk=0.00e+00 gmax=1.705e-02 ms=213.7
+[e2e] step  32 loss=2.7996 chk=0.00e+00 gmax=1.807e-02 ms=219.0
+[e2e] step  33 loss=2.7784 chk=0.00e+00 gmax=1.056e-02 ms=214.6
+[e2e] step  34 loss=2.7611 chk=0.00e+00 gmax=1.028e-02 ms=221.1
+[e2e] step  35 loss=2.7465 chk=0.00e+00 gmax=7.550e-03 ms=215.1
+[e2e] step  36 loss=2.7324 chk=0.00e+00 gmax=1.367e-02 ms=216.0
+[e2e] step  37 loss=2.7212 chk=0.00e+00 gmax=1.046e-02 ms=222.3
+[e2e] step  38 loss=2.7081 chk=0.00e+00 gmax=9.134e-03 ms=217.9
+[e2e] step  39 loss=2.7071 chk=0.00e+00 gmax=9.349e-03 ms=227.5
+RESULT_JSON {"arch": "llama", "backend": "baseline", "ws": 224, "params_m": 25.96096, "median_ms_per_step": 217.9093360900879, "mean_ms_per_step": 220.4860895872116, "first_loss": 5.560544013977051, "final_loss": 2.7070870399475098, "losses": [5.560544013977051, 4.378840446472168, 3.962919235229492, 3.7127318382263184, 3.6025094985961914, 3.5115208625793457, 3.4646263122558594, 3.408419370651245, 3.3655683994293213, 3.328815221786499, 3.3104469776153564, 3.2859339714050293, 3.2594003677368164, 3.247223377227783, 3.2320516109466553, 3.212489128112793, 3.1956593990325928, 3.1949045658111572, 3.1657350063323975, 3.157989025115967, 3.142666816711426, 3.1156516075134277, 3.0897252559661865, 3.066957712173462, 3.026547908782959, 2.98464298248291, 2.9524638652801514, 2.9160070419311523, 2.876713752746582, 2.8360953330993652, 2.8195605278015137, 2.8114826679229736, 2.799550771713257, 2.7784130573272705, 2.7611052989959717, 2.746515989303589, 2.732410192489624, 2.721177101135254, 2.7081007957458496, 2.7070870399475098]}
+=== RUN arch=llama backend=sorcar ===
+[e2e] arch=llama backend=sorcar ws=224 params=26.0M
+[e2e] data tokens per rank: 2413250
+[e2e] F5 flat grad numel=25034752 (+pad 160), shard=111763
+[e2e] step   0 loss=5.5605 chk=0.00e+00 gmax=4.889e-02 ms=373768.5
+[e2e] step   1 loss=4.3788 chk=0.00e+00 gmax=2.857e-02 ms=339201.6
+[e2e] step   2 loss=3.9625 chk=0.00e+00 gmax=3.434e-02 ms=211.0
+[e2e] step   3 loss=3.7125 chk=0.00e+00 gmax=2.443e-02 ms=206.1
+[e2e] step   4 loss=3.6023 chk=0.00e+00 gmax=2.091e-02 ms=214.1
+[e2e] step   5 loss=3.5113 chk=0.00e+00 gmax=1.960e-02 ms=214.2
+[e2e] step   6 loss=3.4643 chk=0.00e+00 gmax=2.197e-02 ms=209.1
+[e2e] step   7 loss=3.4081 chk=0.00e+00 gmax=2.134e-02 ms=227.4
+[e2e] step   8 loss=3.3652 chk=0.00e+00 gmax=1.868e-02 ms=205.9
+[e2e] step   9 loss=3.3283 chk=0.00e+00 gmax=1.486e-02 ms=213.8
+[e2e] step  10 loss=3.3097 chk=0.00e+00 gmax=1.611e-02 ms=202.7
+[e2e] step  11 loss=3.2849 chk=0.00e+00 gmax=1.400e-02 ms=208.9
+[e2e] step  12 loss=3.2581 chk=0.00e+00 gmax=1.248e-02 ms=209.6
+[e2e] step  13 loss=3.2455 chk=0.00e+00 gmax=1.217e-02 ms=223.2
+[e2e] step  14 loss=3.2298 chk=0.00e+00 gmax=1.228e-02 ms=230.9
+[e2e] step  15 loss=3.2095 chk=0.00e+00 gmax=1.472e-02 ms=212.1
+[e2e] step  16 loss=3.1917 chk=0.00e+00 gmax=1.278e-02 ms=210.1
+[e2e] step  17 loss=3.1897 chk=0.00e+00 gmax=1.413e-02 ms=221.8
+[e2e] step  18 loss=3.1589 chk=0.00e+00 gmax=1.020e-02 ms=210.4
+[e2e] step  19 loss=3.1489 chk=0.00e+00 gmax=1.429e-02 ms=208.8
+[e2e] step  20 loss=3.1307 chk=0.00e+00 gmax=1.417e-02 ms=206.4
+[e2e] step  21 loss=3.0998 chk=0.00e+00 gmax=2.048e-02 ms=216.0
+[e2e] step  22 loss=3.0694 chk=0.00e+00 gmax=1.400e-02 ms=207.0
+[e2e] step  23 loss=3.0423 chk=0.00e+00 gmax=1.962e-02 ms=207.1
+[e2e] step  24 loss=3.0004 chk=0.00e+00 gmax=1.282e-02 ms=206.8
+[e2e] step  25 loss=2.9626 chk=0.00e+00 gmax=1.398e-02 ms=208.4
+[e2e] step  26 loss=2.9219 chk=0.00e+00 gmax=1.206e-02 ms=212.7
+[e2e] step  27 loss=2.8825 chk=0.00e+00 gmax=1.228e-02 ms=218.2
+[e2e] step  28 loss=2.8560 chk=0.00e+00 gmax=1.877e-02 ms=211.1
+[e2e] step  29 loss=2.8166 chk=0.00e+00 gmax=1.108e-02 ms=229.1
+[e2e] step  30 loss=2.8056 chk=0.00e+00 gmax=9.808e-03 ms=209.8
+[e2e] step  31 loss=2.7941 chk=0.00e+00 gmax=1.817e-02 ms=207.4
+[e2e] step  32 loss=2.7868 chk=0.00e+00 gmax=2.150e-02 ms=203.2
+[e2e] step  33 loss=2.7657 chk=0.00e+00 gmax=1.011e-02 ms=210.0
+[e2e] step  34 loss=2.7512 chk=0.00e+00 gmax=1.076e-02 ms=215.9
+[e2e] step  35 loss=2.7353 chk=0.00e+00 gmax=9.633e-03 ms=205.2
+[e2e] step  36 loss=2.7195 chk=0.00e+00 gmax=1.407e-02 ms=206.7
+[e2e] step  37 loss=2.7079 chk=0.00e+00 gmax=1.154e-02 ms=215.0
+[e2e] step  38 loss=2.6965 chk=0.00e+00 gmax=1.021e-02 ms=208.5
+[e2e] step  39 loss=2.6966 chk=0.00e+00 gmax=9.283e-03 ms=203.7
+RESULT_JSON {"arch": "llama", "backend": "sorcar", "ws": 224, "params_m": 25.96096, "median_ms_per_step": 209.8402976989746, "mean_ms_per_step": 211.4577442407608, "first_loss": 5.560544013977051, "final_loss": 2.6966300010681152, "losses": [5.560544013977051, 4.378840446472168, 3.962503433227539, 3.7124626636505127, 3.602297306060791, 3.5112502574920654, 3.464278221130371, 3.408069372177124, 3.3651750087738037, 3.328253984451294, 3.3096556663513184, 3.2848920822143555, 3.2580671310424805, 3.2454991340637207, 3.2297866344451904, 3.2094736099243164, 3.1916592121124268, 3.189709186553955, 3.1589369773864746, 3.1489226818084717, 3.1307058334350586, 3.0998387336730957, 3.0694406032562256, 3.0423285961151123, 3.0004475116729736, 2.96264386177063, 2.9218878746032715, 2.882507562637329, 2.855982542037964, 2.816615581512451, 2.8055999279022217, 2.7941031455993652, 2.7867727279663086, 2.7656514644622803, 2.751193046569824, 2.7352640628814697, 2.7195065021514893, 2.707878351211548, 2.6965296268463135, 2.6966300010681152]}
+=== RUN arch=moe backend=baseline ===

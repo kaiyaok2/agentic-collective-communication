@@ -1,0 +1,72 @@
+[_sso_creds] no live SSO at import; AWS calls will fail if attempted (Command '['aws', 'configure', 'export-credentials', '--profile', 'default', '--format', 'process']' returned non-zero exit status 2.)
+======================================================================
+Collective Search Pipeline: Problem P_130 (5-Phase)
+Pattern: uniform | LLM: True | HW eval: False
+======================================================================
+
+======================================================================
+[Phase 1] Agent Hardware Profiling — LLM Builds Simulator
+======================================================================
+  Deterministic phase-1 auto-probe (LLM-driven path deprecated)
+Trainium cluster topology (7 node(s)):
+  Nodes: 7, Devices: 112, Cores: 224
+  NeuronLink BW: 192.0 GB/s, Latency: 0.5 us
+  EFA BW: 12.5 GB/s x 8 adapters/node, Latency: 5.0 us
+  Max hops: 4, Avg hops: 1.14
+  Hardware constraints: unsupported primitives = ['all_to_all', 'cumsum']
+  [Phase 1 done] pipeline_amort_alphas = (0.300, 0.100, 0.020)
+
+======================================================================
+[Phase 2] Baseline Evaluation: Problem P_130
+======================================================================
+  naive_per_tensor_scaled_ar: 5963.5 us, 10 local ops, 0 ag, 5 ar, 0 cp
+
+  Best baseline: baseline:naive_per_tensor_scaled_ar (5963.5 us)
+
+======================================================================
+[Phase 3 / Strategy-Enumerate] Problem P_130
+======================================================================
+  K=5 strategies, R=4 refinement rounds per top-2 (budget ~14 LLM calls)
+  Enumerated 5 strategies:
+    1. Naive Per-Tensor Scaled AllReduce: Apply scale locally to each of 5 tensors, then launch 5 independent all-reduce o...
+    2. Concatenate-AllReduce-Split Single Dispatch: Concatenate all 5 scaled tensors (grads[i] * scales[i]) into one contiguous buff...
+    3. Batch AllReduce with Pre-Scaled List: Scale all tensors locally first, then use batched all-reduce primitive (if avail...
+    4. Interleaved Scale-Reduce Pipeline: Launch all-reduce on grads[0]*scales[0] immediately, then while it's in-flight, ...
+    5. AllReduce Unscaled then Local Scale: Perform 5 all-reduces on unscaled grads tensors, then locally multiply each resu...
+  Strategy 1 (Naive Per-Tensor Scaled AllReduce): sim=5963.5 us
+  Strategy 2 (Concatenate-AllReduce-Split Single Dispatch): sim=5180.0 us
+  Strategy 3 (Batch AllReduce with Pre-Scaled List) INCORRECT: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'list' object has no attrib
+  Strategy 4 (Interleaved Scale-Reduce Pipeline): sim=5963.5 us
+  Strategy 5 (AllReduce Unscaled then Local Scale) INCORRECT: CRASH in collect pass 0: world=4 pattern=uniform rank=0: TypeError: len() of a 0-d tensor
+
+  Top after enumeration:
+    Concatenate-AllReduce-Split Single Dispatch: 5180.0 us
+    Naive Per-Tensor Scaled AllReduce: 5963.5 us
+    top 2 round 2: NEW BEST 5180.0 us (13.1% improvement)
+
+  Strategy-Enumerate complete. 5 total candidates.
+  Best: Concatenate-AllReduce-Split Single Dispatch (sim=5180.0 us)
+
+======================================================================
+RANKING (post-evolution, pre-hardware)
+======================================================================
+  1. strat:Concatenate-AllReduce-Split Si: 5180.0 us, 22 ops
+  2. baseline:naive_per_tensor_scaled_ar: 5963.5 us, 10 ops
+
+Simulator winner: strat:Concatenate-AllReduce-Split Si (sim=5180.0 us)
+
+======================================================================
+[Phase 4b] Training-shape gate (all candidates): Problem P_130
+======================================================================
+  PASS strat:Concatenate-AllReduce-Split Si
+  PASS baseline:naive_per_tensor_scaled_ar
+  Summary: 2 pass / 0 fail / 0 skip (total 2)
+
+======================================================================
+[Phase 5] Code Generation → runtime/trainium_batched_ar_scale_chal.py
+======================================================================
+  Winner: strat:Concatenate-AllReduce-Split Si
+  Score: 51.800, SimTime: 5180.0 us, Local ops: 22
+  Results: /home/ubuntu/abl/strat_raw/batched_ar_scale_chal/results_batched_ar_scale_chal.json
+  Generated: runtime/trainium_batched_ar_scale_chal_7node.py
+

@@ -1,0 +1,71 @@
+[_sso_creds] no live SSO at import; AWS calls will fail if attempted (Command '['aws', 'configure', 'export-credentials', '--profile', 'default', '--format', 'process']' returned non-zero exit status 2.)
+======================================================================
+Collective Search Pipeline: Problem P_92 (5-Phase)
+Pattern: uniform | LLM: True | HW eval: False
+======================================================================
+
+======================================================================
+[Phase 1] Agent Hardware Profiling — LLM Builds Simulator
+======================================================================
+  Deterministic phase-1 auto-probe (LLM-driven path deprecated)
+Trainium cluster topology (7 node(s)):
+  Nodes: 7, Devices: 112, Cores: 224
+  NeuronLink BW: 192.0 GB/s, Latency: 0.5 us
+  EFA BW: 12.5 GB/s x 8 adapters/node, Latency: 5.0 us
+  Max hops: 4, Avg hops: 1.14
+  Hardware constraints: unsupported primitives = ['all_to_all', 'cumsum']
+  [Phase 1 done] pipeline_amort_alphas = (0.300, 0.100, 0.020)
+
+======================================================================
+[Phase 2] Baseline Evaluation: Problem P_92
+======================================================================
+  baseline_ar_bcast: 5160.0 us, 1 local ops, 0 ag, 1 ar, 0 cp
+
+  Best baseline: baseline:baseline_ar_bcast (5160.0 us)
+
+======================================================================
+[Phase 3 / Strategy-Enumerate] Problem P_92
+======================================================================
+  K=5 strategies, R=4 refinement rounds per top-2 (budget ~14 LLM calls)
+  Enumerated 5 strategies:
+    1. Single all-reduce broadcast: Uses one xm.all_reduce with REDUCE_SUM on the full (N,) tensor. Rank 0 has data,...
+    2. Broadcast then skip all-reduce: Uses xm.broadcast to explicitly send data from rank 0 to all other ranks, then r...
+    3. Chunked progressive broadcast pipeline: Splits the (N,) tensor into K chunks and pipelines K separate xm.broadcast opera...
+    4. Reduce-scatter then all-gather: First xm.reduce_scatter to distribute sum-reduced chunks across ranks (O(N/world...
+    5. Hierarchical two-level broadcast: Uses xm.broadcast from rank 0 to one representative per node (num_nodes dispatch...
+  Strategy 1 (Single all-reduce broadcast): sim=5160.0 us
+  Strategy 2 (Broadcast then skip all-reduce): sim=5160.0 us
+  Strategy 3 (Chunked progressive broadcast pipeline): sim=5348.0 us
+  Strategy 4 (Reduce-scatter then all-gather): sim=5220.0 us
+  Strategy 5 (Hierarchical two-level broadcast) INCORRECT: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modu
+
+  Top after enumeration:
+    Single all-reduce broadcast: 5160.0 us
+    Broadcast then skip all-reduce: 5160.0 us
+
+  Strategy-Enumerate complete. 6 total candidates.
+  Best: Single all-reduce broadcast (sim=5160.0 us)
+
+======================================================================
+RANKING (post-evolution, pre-hardware)
+======================================================================
+  1. baseline:baseline_ar_bcast: 5160.0 us, 1 ops
+  2. strat:Single all-reduce broadcast: 5160.0 us, 1 ops
+
+Simulator winner: baseline:baseline_ar_bcast (sim=5160.0 us)
+
+======================================================================
+[Phase 4b] Training-shape gate (all candidates): Problem P_92
+======================================================================
+  PASS baseline:baseline_ar_bcast
+  PASS strat:Single all-reduce broadcast
+  Summary: 2 pass / 0 fail / 0 skip (total 2)
+
+======================================================================
+[Phase 5] Code Generation → runtime/trainium_bimodal_dist_bcast.py
+======================================================================
+  Winner: baseline:baseline_ar_bcast
+  Score: 51.600, SimTime: 5160.0 us, Local ops: 1
+  Results: /home/ubuntu/abl/strat_raw/bimodal_dist_bcast/results_bimodal_dist_bcast.json
+  Generated: runtime/trainium_bimodal_dist_bcast_7node.py
+

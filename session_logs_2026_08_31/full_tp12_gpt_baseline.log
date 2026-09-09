@@ -1,0 +1,23 @@
+[10bT] backend=baseline ws=224 TP=32 DP=7 layers=48 per-core=305.4M cluster=9.70B
+[10bT] sites: emb(F1)=1.05M norms(F4a)=194x4096 qkv0(F7)=1.6M F4b tensors=192 F5 flat=303.0M (+pad 5242880)
+[10bT] step   0 loss=6.0518 chk=0.00e+00 gmax=4.126e-02 mon=2.78e-01 ms=23944.4
+[10bT] step   1 loss=15.9593 chk=0.00e+00 gmax=1.309e-01 mon=-8.32e-01 ms=16745.6
+[10bT] step   2 loss=13.0076 chk=0.00e+00 gmax=1.118e-01 mon=1.68e+00 ms=16002.2
+[10bT] step   3 loss=14.2478 chk=0.00e+00 gmax=8.594e-02 mon=5.26e-02 ms=16048.6
+[10bT] step   4 loss=14.0115 chk=0.00e+00 gmax=7.275e-02 mon=-1.37e+00 ms=16014.3
+[10bT] step   5 loss=12.2597 chk=0.00e+00 gmax=9.277e-02 mon=2.65e-01 ms=16004.0
+[10bT] step   6 loss=11.1085 chk=0.00e+00 gmax=6.299e-02 mon=-2.77e-01 ms=15983.8
+[10bT] step   7 loss=9.0530 chk=0.00e+00 gmax=5.493e-02 mon=-2.92e-01 ms=15939.2
+[10bT] step   8 loss=6.8920 chk=0.00e+00 gmax=3.418e-02 mon=8.97e-02 ms=16073.6
+[10bT] step   9 loss=8.7073 chk=0.00e+00 gmax=9.229e-02 mon=7.52e-01 ms=16151.5
+[10bT] step  10 loss=6.0376 chk=0.00e+00 gmax=6.055e-02 mon=-6.70e-01 ms=16061.9
+[10bT] step  11 loss=5.7131 chk=0.00e+00 gmax=6.299e-02 mon=-6.45e-01 ms=16061.3
+[10bT] step  12 loss=5.5926 chk=0.00e+00 gmax=4.907e-02 mon=-5.41e-01 ms=16137.6
+[10bT] step  13 loss=5.7674 chk=0.00e+00 gmax=4.126e-02 mon=1.08e-01 ms=16089.4
+[10bT] step  14 loss=5.4960 chk=0.00e+00 gmax=4.395e-02 mon=-3.06e-01 ms=16075.6
+[10bT] step  15 loss=5.1673 chk=0.00e+00 gmax=4.736e-02 mon=-1.07e-01 ms=16068.7
+[10bT] step  16 loss=4.5215 chk=0.00e+00 gmax=3.589e-02 mon=-2.75e-01 ms=16062.5
+[10bT] step  17 loss=3.8313 chk=0.00e+00 gmax=2.637e-02 mon=-1.69e-01 ms=15980.8
+[10bT] step  18 loss=3.4453 chk=0.00e+00 gmax=2.380e-02 mon=-2.11e-01 ms=15928.1
+[10bT] step  19 loss=3.8602 chk=0.00e+00 gmax=5.298e-02 mon=3.21e-02 ms=15922.9
+RESULT_JSON {"arch": "gpt10b_tp", "backend": "baseline", "ws": 224, "tp": 32, "dp": 7, "layers": 48, "cluster_params_b": 9.699598336, "median_ms_per_step": 16061.318159103394, "mean_ms_per_step": 16035.507272271549, "first_loss": 6.051843643188477, "final_loss": 3.8601717948913574, "losses": [6.051843643188477, 15.959344863891602, 13.007600784301758, 14.247783660888672, 14.011490821838379, 12.259655952453613, 11.108542442321777, 9.05297565460205, 6.892006874084473, 8.707342147827148, 6.037567615509033, 5.713132858276367, 5.592635154724121, 5.767420291900635, 5.496008396148682, 5.167344093322754, 4.521523475646973, 3.831305980682373, 3.4453489780426025, 3.8601717948913574]}

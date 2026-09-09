@@ -1,0 +1,102 @@
+[
+  {
+    "template": "flat_single_ar",
+    "cost_score": 52.861999999999995,
+    "sim_time_us": 5286.2,
+    "local_ops": 99,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 1,
+    "name": "baseline:flat_single_ar"
+  },
+  {
+    "template": "bucket_32mb",
+    "cost_score": 52.861999999999995,
+    "sim_time_us": 5286.2,
+    "local_ops": 99,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 1,
+    "name": "baseline:bucket_32mb"
+  },
+  {
+    "template": "evolved_flat_single_ar",
+    "cost_score": 52.861999999999995,
+    "sim_time_us": 5286.2,
+    "local_ops": 99,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 1,
+    "name": "evo:flat_single_ar_2"
+  },
+  {
+    "template": "evolved_bucket_32mb",
+    "cost_score": 52.861999999999995,
+    "sim_time_us": 5286.2,
+    "local_ops": 99,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 1,
+    "name": "evo:bucket_32mb_3"
+  },
+  {
+    "template": "async_back_to_back",
+    "cost_score": 58.11999999999999,
+    "sim_time_us": 5811.999999999999,
+    "local_ops": 64,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 32,
+    "name": "baseline:async_back_to_back"
+  },
+  {
+    "template": "evolved_async_back_to_back",
+    "cost_score": 58.11999999999999,
+    "sim_time_us": 5811.999999999999,
+    "local_ops": 64,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 32,
+    "name": "evo:async_back_to_back_1"
+  },
+  {
+    "template": "per_tensor_loop",
+    "cost_score": 113.92,
+    "sim_time_us": 11392.0,
+    "local_ops": 64,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 32,
+    "name": "baseline:per_tensor_loop"
+  },
+  {
+    "template": "evolved_per_tensor_loop",
+    "cost_score": 113.92,
+    "sim_time_us": 11392.0,
+    "local_ops": 64,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 32,
+    "name": "evo:per_tensor_loop_0"
+  },
+  {
+    "template": "hierarchical_intra_inter",
+    "cost_score": 120.32,
+    "sim_time_us": 12032.0,
+    "local_ops": 96,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 64,
+    "name": "baseline:hierarchical_intra_inter"
+  },
+  {
+    "template": "evolved_hierarchical_intra_inter",
+    "cost_score": 120.32,
+    "sim_time_us": 12032.0,
+    "local_ops": 96,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 64,
+    "name": "evo:hierarchical_intra_inter_4"
+  }
+]

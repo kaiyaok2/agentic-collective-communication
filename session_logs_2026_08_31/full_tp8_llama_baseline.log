@@ -1,0 +1,28 @@
+[10bT] backend=baseline ws=224 TP=32 DP=7 layers=48 per-core=306.1M cluster=9.75B
+[10bT] sites: emb(F1)=1.05M norms(F4a)=97x4096 qkv0(F7)=1.6M F4b tensors=240 F5 flat=304.6M (+pad 3670016)
+[10bT] step   0 loss=6.3110 chk=0.00e+00 gmax=5.005e-02 mon=3.27e+00 ms=24902.7
+[10bT] step   1 loss=7.4548 chk=0.00e+00 gmax=1.128e-01 mon=-8.35e+00 ms=11664.4
+[10bT] step   2 loss=6.9776 chk=0.00e+00 gmax=3.613e-02 mon=-1.66e+00 ms=11247.8
+[10bT] step   3 loss=5.0520 chk=0.00e+00 gmax=3.589e-02 mon=3.13e+00 ms=11184.9
+[10bT] step   4 loss=7.0662 chk=0.00e+00 gmax=4.810e-02 mon=2.02e+00 ms=11272.9
+[10bT] step   5 loss=5.5865 chk=0.00e+00 gmax=2.087e-02 mon=-6.49e+00 ms=11215.1
+[10bT] step   6 loss=4.6896 chk=0.00e+00 gmax=1.929e-02 mon=-2.06e+00 ms=11273.5
+[10bT] step   7 loss=4.6690 chk=0.00e+00 gmax=2.039e-02 mon=-2.72e+00 ms=11340.2
+[10bT] step   8 loss=4.2268 chk=0.00e+00 gmax=1.514e-02 mon=-3.21e+00 ms=11274.6
+[10bT] step   9 loss=4.0595 chk=0.00e+00 gmax=1.123e-02 mon=-9.23e-01 ms=11280.4
+[10bT] step  10 loss=3.7539 chk=0.00e+00 gmax=9.583e-03 mon=1.59e+00 ms=11246.1
+[10bT] step  11 loss=3.5694 chk=0.00e+00 gmax=1.392e-02 mon=-7.09e-01 ms=11273.9
+[10bT] step  12 loss=3.6092 chk=0.00e+00 gmax=1.544e-02 mon=-1.55e+00 ms=11215.3
+[10bT] step  13 loss=3.4481 chk=0.00e+00 gmax=1.160e-02 mon=-3.03e+00 ms=11289.2
+[10bT] step  14 loss=3.2265 chk=0.00e+00 gmax=1.190e-02 mon=-3.95e-01 ms=11283.0
+[10bT] step  15 loss=3.1409 chk=0.00e+00 gmax=1.202e-02 mon=-8.12e-02 ms=11299.9
+[10bT] step  16 loss=3.0458 chk=0.00e+00 gmax=1.782e-02 mon=-3.93e-01 ms=11315.5
+[10bT] step  17 loss=3.0424 chk=0.00e+00 gmax=1.550e-02 mon=-2.08e-01 ms=11226.7
+[10bT] step  18 loss=2.9312 chk=0.00e+00 gmax=1.074e-02 mon=-1.16e+00 ms=11190.0
+[10bT] step  19 loss=3.0295 chk=0.00e+00 gmax=1.495e-02 mon=-6.66e-01 ms=11210.7
+[10bT] step  20 loss=3.0475 chk=0.00e+00 gmax=2.441e-02 mon=3.80e-01 ms=11203.9
+[10bT] step  21 loss=2.8520 chk=0.00e+00 gmax=1.447e-02 mon=-2.30e-02 ms=11243.4
+[10bT] step  22 loss=2.7634 chk=0.00e+00 gmax=1.154e-02 mon=-9.85e-02 ms=11204.1
+[10bT] step  23 loss=2.8042 chk=0.00e+00 gmax=1.514e-02 mon=-2.92e-01 ms=11160.9
+[10bT] step  24 loss=2.7489 chk=0.00e+00 gmax=1.282e-02 mon=1.92e-01 ms=11177.2
+RESULT_JSON {"arch": "llama10b_tp", "backend": "baseline", "ws": 224, "tp": 32, "dp": 7, "layers": 48, "cluster_params_b": 9.749008384, "median_ms_per_step": 11246.100664138794, "mean_ms_per_step": 11244.6181232279, "first_loss": 6.3109917640686035, "final_loss": 2.7488532066345215, "losses": [6.3109917640686035, 7.454845428466797, 6.977569580078125, 5.0520477294921875, 7.066232681274414, 5.586479663848877, 4.689633846282959, 4.668981075286865, 4.226789474487305, 4.059485912322998, 3.753894090652466, 3.56943416595459, 3.609168529510498, 3.4480695724487305, 3.2265145778656006, 3.1408698558807373, 3.04581618309021, 3.0424413681030273, 2.9312374591827393, 3.029524087905884, 3.0474839210510254, 2.851971387863159, 2.7634215354919434, 2.804173231124878, 2.7488532066345215]}

@@ -1,0 +1,22 @@
+[
+  {
+    "template": "strategy_enumerate_final",
+    "cost_score": 51.813,
+    "sim_time_us": 5181.3,
+    "local_ops": 3,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "strat:All-gather then local reductio"
+  },
+  {
+    "template": "baseline_two_ar",
+    "cost_score": 52.427,
+    "sim_time_us": 5242.7,
+    "local_ops": 6,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 1,
+    "name": "baseline:baseline_two_ar"
+  }
+]

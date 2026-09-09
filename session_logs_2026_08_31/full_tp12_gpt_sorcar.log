@@ -1,0 +1,23 @@
+[10bT] backend=sorcar ws=224 TP=32 DP=7 layers=48 per-core=305.4M cluster=9.70B
+[10bT] sites: emb(F1)=1.05M norms(F4a)=194x4096 qkv0(F7)=1.6M F4b tensors=192 F5 flat=303.0M (+pad 5242880)
+[10bT] step   0 loss=6.0518 chk=0.00e+00 gmax=4.199e-02 mon=0.00e+00 ms=13255.7
+[10bT] step   1 loss=15.9621 chk=0.00e+00 gmax=1.328e-01 mon=0.00e+00 ms=9409.9
+[10bT] step   2 loss=13.0211 chk=0.00e+00 gmax=1.123e-01 mon=0.00e+00 ms=7986.2
+[10bT] step   3 loss=14.2567 chk=0.00e+00 gmax=8.594e-02 mon=0.00e+00 ms=7972.2
+[10bT] step   4 loss=14.0213 chk=0.00e+00 gmax=7.275e-02 mon=0.00e+00 ms=7958.2
+[10bT] step   5 loss=12.2769 chk=0.00e+00 gmax=9.375e-02 mon=0.00e+00 ms=7864.5
+[10bT] step   6 loss=11.1026 chk=0.00e+00 gmax=6.299e-02 mon=0.00e+00 ms=8013.5
+[10bT] step   7 loss=9.0803 chk=0.00e+00 gmax=5.518e-02 mon=0.00e+00 ms=7881.8
+[10bT] step   8 loss=6.9107 chk=0.00e+00 gmax=3.516e-02 mon=0.00e+00 ms=7861.0
+[10bT] step   9 loss=8.6802 chk=0.00e+00 gmax=9.229e-02 mon=0.00e+00 ms=7814.1
+[10bT] step  10 loss=6.0714 chk=0.00e+00 gmax=6.104e-02 mon=0.00e+00 ms=8066.1
+[10bT] step  11 loss=5.7653 chk=0.00e+00 gmax=6.689e-02 mon=0.00e+00 ms=7754.9
+[10bT] step  12 loss=5.5940 chk=0.00e+00 gmax=4.810e-02 mon=0.00e+00 ms=7784.9
+[10bT] step  13 loss=5.7479 chk=0.00e+00 gmax=4.053e-02 mon=0.00e+00 ms=8042.3
+[10bT] step  14 loss=5.4665 chk=0.00e+00 gmax=4.272e-02 mon=0.00e+00 ms=7895.2
+[10bT] step  15 loss=5.1638 chk=0.00e+00 gmax=4.663e-02 mon=0.00e+00 ms=8155.7
+[10bT] step  16 loss=4.5297 chk=0.00e+00 gmax=3.760e-02 mon=0.00e+00 ms=7810.5
+[10bT] step  17 loss=3.8305 chk=0.00e+00 gmax=2.673e-02 mon=0.00e+00 ms=7855.4
+[10bT] step  18 loss=3.4165 chk=0.00e+00 gmax=2.075e-02 mon=0.00e+00 ms=7802.9
+[10bT] step  19 loss=3.8490 chk=0.00e+00 gmax=4.980e-02 mon=0.00e+00 ms=7724.1
+RESULT_JSON {"arch": "gpt10b_tp", "backend": "sorcar", "ws": 224, "tp": 32, "dp": 7, "layers": 48, "cluster_params_b": 9.699598336, "median_ms_per_step": 7864.52054977417, "mean_ms_per_step": 7897.492913638845, "first_loss": 6.051793098449707, "final_loss": 3.8489809036254883, "losses": [6.051793098449707, 15.962076187133789, 13.021105766296387, 14.256706237792969, 14.021305084228516, 12.276896476745605, 11.102555274963379, 9.080307006835938, 6.910660743713379, 8.680183410644531, 6.071417808532715, 5.765328884124756, 5.59395170211792, 5.747905254364014, 5.466512680053711, 5.16380500793457, 4.529660224914551, 3.830536127090454, 3.4165475368499756, 3.8489809036254883]}

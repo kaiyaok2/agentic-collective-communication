@@ -1,0 +1,71 @@
+[_sso_creds] no live SSO at import; AWS calls will fail if attempted (Command '['aws', 'configure', 'export-credentials', '--profile', 'default', '--format', 'process']' returned non-zero exit status 2.)
+======================================================================
+Collective Search Pipeline: Problem P_91 (5-Phase)
+Pattern: uniform | LLM: True | HW eval: False
+======================================================================
+
+======================================================================
+[Phase 1] Agent Hardware Profiling — LLM Builds Simulator
+======================================================================
+  Deterministic phase-1 auto-probe (LLM-driven path deprecated)
+Trainium cluster topology (7 node(s)):
+  Nodes: 7, Devices: 112, Cores: 224
+  NeuronLink BW: 192.0 GB/s, Latency: 0.5 us
+  EFA BW: 12.5 GB/s x 8 adapters/node, Latency: 5.0 us
+  Max hops: 4, Avg hops: 1.14
+  Hardware constraints: unsupported primitives = ['all_to_all', 'cumsum']
+  [Phase 1 done] pipeline_amort_alphas = (0.300, 0.100, 0.020)
+
+======================================================================
+[Phase 2] Baseline Evaluation: Problem P_91
+======================================================================
+  baseline_ar_bcast: 5160.0 us, 1 local ops, 0 ag, 1 ar, 0 cp
+
+  Best baseline: baseline:baseline_ar_bcast (5160.0 us)
+
+======================================================================
+[Phase 3 / Strategy-Enumerate] Problem P_91
+======================================================================
+  K=5 strategies, R=4 refinement rounds per top-2 (budget ~14 LLM calls)
+  Enumerated 5 strategies:
+    1. Single broadcast from rank 0: Uses one xm.collective_broadcast to send the entire (N, N) tensor from rank 0 to...
+    2. Local reconstruction without collectives: Each rank independently computes x[i, j] = (-1)^(i+j) locally using the known fo...
+    3. Row-wise broadcast with loop: Rank 0 broadcasts each row independently in N separate xm.collective_broadcast c...
+    4. Reduce-scatter then all-gather: Performs xm.reduce_scatter to distribute partial sums across ranks (payload N²/w...
+    5. All-reduce with chunked tiles: Splits tensor into K tiles, performs K sequential xm.all_reduce operations on ch...
+  Strategy 1 (Single broadcast from rank 0): sim=5160.0 us
+  Strategy 2 (Local reconstruction without collectives) INCORRECT: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no a
+  Strategy 3 (Row-wise broadcast with loop): sim=5500.0 us
+  Strategy 4 (Reduce-scatter then all-gather): sim=5220.0 us
+  Strategy 5 (All-reduce with chunked tiles): sim=5266.0 us
+
+  Top after enumeration:
+    Single broadcast from rank 0: 5160.0 us
+    Reduce-scatter then all-gather: 5220.0 us
+
+  Strategy-Enumerate complete. 6 total candidates.
+  Best: Single broadcast from rank 0 (sim=5160.0 us)
+
+======================================================================
+RANKING (post-evolution, pre-hardware)
+======================================================================
+  1. baseline:baseline_ar_bcast: 5160.0 us, 1 ops
+  2. strat:Single broadcast from rank 0: 5160.0 us, 1 ops
+
+Simulator winner: baseline:baseline_ar_bcast (sim=5160.0 us)
+
+======================================================================
+[Phase 4b] Training-shape gate (all candidates): Problem P_91
+======================================================================
+  PASS baseline:baseline_ar_bcast
+  PASS strat:Single broadcast from rank 0
+  Summary: 2 pass / 0 fail / 0 skip (total 2)
+
+======================================================================
+[Phase 5] Code Generation → runtime/trainium_sign_alt_bcast.py
+======================================================================
+  Winner: baseline:baseline_ar_bcast
+  Score: 51.600, SimTime: 5160.0 us, Local ops: 1
+  Results: /home/ubuntu/abl/strat_raw/sign_alt_bcast/results_sign_alt_bcast.json
+  Generated: runtime/trainium_sign_alt_bcast_7node.py
+
