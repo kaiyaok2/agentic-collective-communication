@@ -1,0 +1,22 @@
+[
+  {
+    "template": "strategy_enumerate_final",
+    "cost_score": 51.6,
+    "sim_time_us": 5160.0,
+    "local_ops": 1,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 1,
+    "name": "strat:Single fused all-reduce"
+  },
+  {
+    "template": "percolC128",
+    "cost_score": 307.16999999999996,
+    "sim_time_us": 30716.999999999996,
+    "local_ops": 257,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 128,
+    "name": "baseline:percolC128"
+  }
+]

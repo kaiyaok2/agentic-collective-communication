@@ -1,0 +1,1292 @@
+{
+  "n": 143,
+  "rows": [
+    {
+      "problem": "ag_slice_use_chal",
+      "winner": "strat:Local-only computation (no col",
+      "sim_time_us": 1.0,
+      "num_all_reduce": 0,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "algzero16",
+      "winner": "baseline:algzero16",
+      "sim_time_us": 8981.7,
+      "num_all_reduce": 16,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 1
+    },
+    {
+      "problem": "algzero20",
+      "winner": "baseline:algzero20",
+      "sim_time_us": 9797.3,
+      "num_all_reduce": 20,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 1
+    },
+    {
+      "problem": "alternating_indep_ars_chal",
+      "winner": "baseline:alternating_indep_ars",
+      "sim_time_us": 6165.657142857142,
+      "num_all_reduce": 5,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "ar_4chunk_pattern_chal",
+      "winner": "strat:Single full-tensor all-reduce",
+      "sim_time_us": 5177.142857142858,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "ar_before_local_reduce_M128_chal",
+      "winner": "baseline:ar_before_local_reduce",
+      "sim_time_us": 5525.714285714285,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "ar_dead_gather_verify_chal",
+      "winner": "strat:Direct all-reduce only",
+      "sim_time_us": 5177.142857142858,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "ar_scalar_chain_edge_chal",
+      "winner": "baseline:three_scaled_ar",
+      "sim_time_us": 5563.5,
+      "num_all_reduce": 3,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "ar_scaled_by_worldsize_chal",
+      "winner": "strat:Single all-reduce with mean",
+      "sim_time_us": 5177.842857142857,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "ar_then_scalar_reduce_largeN_chal",
+      "winner": "strat:Local sum then all-reduce scal",
+      "sim_time_us": 5160.0,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "ar_via_two_paths_chal",
+      "winner": "baseline:ar_via_two_paths",
+      "sim_time_us": 5402.1,
+      "num_all_reduce": 2,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "batchedar8",
+      "winner": "strat:refined-from-Single fused AllR",
+      "sim_time_us": 5160.0,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "catsplitar",
+      "winner": "strat:refined-from-Concatenate then ",
+      "sim_time_us": 5160.0,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "chained_ar_nested_edge_chal",
+      "winner": "baseline:three_ar_naive",
+      "sim_time_us": 5562.799999999999,
+      "num_all_reduce": 3,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "compare_two_ars_chal",
+      "winner": "baseline:compare_two_ars",
+      "sim_time_us": 5400.0,
+      "num_all_reduce": 2,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "conditional_ars_chal",
+      "winner": "baseline:conditional_ars",
+      "sim_time_us": 5655.685714285714,
+      "num_all_reduce": 3,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "cp_double_swap_chal",
+      "winner": "strat:No-op local return bypass",
+      "sim_time_us": 0.0,
+      "num_all_reduce": 0,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 1
+    },
+    {
+      "problem": "csescaleddiff",
+      "winner": "baseline:csescaleddiff",
+      "sim_time_us": 6169.157142857142,
+      "num_all_reduce": 5,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "eight_ar_half_ints_edge_chal",
+      "winner": "baseline:eight_ar_half_ints",
+      "sim_time_us": 6570.5,
+      "num_all_reduce": 8,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "eightslab",
+      "winner": "baseline:eightslab",
+      "sim_time_us": 6602.6,
+      "num_all_reduce": 8,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "eightyaltsum",
+      "winner": "baseline:eightyaltsum",
+      "sim_time_us": 21960.188888888886,
+      "num_all_reduce": 80,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "fiftyinline",
+      "winner": "baseline:fiftyinline",
+      "sim_time_us": 15909.855555555554,
+      "num_all_reduce": 50,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "five_ar_arith_prog_edge_chal",
+      "winner": "strat:Concatenate-then-single-allred",
+      "sim_time_us": 5171.3,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "five_ar_indep_sumatend_chal",
+      "winner": "baseline:five_ar_indep",
+      "sim_time_us": 6165.657142857142,
+      "num_all_reduce": 5,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "five_ar_mixed_sign_edge_chal",
+      "winner": "baseline:five_ar_mixed_sign",
+      "sim_time_us": 5965.599999999999,
+      "num_all_reduce": 5,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "five_ar_scaled_same_input_chal",
+      "winner": "baseline:ar_five_scaled_same",
+      "sim_time_us": 6169.157142857142,
+      "num_all_reduce": 5,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "fortyinline",
+      "winner": "baseline:fortyinline",
+      "sim_time_us": 13875.3,
+      "num_all_reduce": 40,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "four_ar_N224_edge_chal",
+      "winner": "baseline:four_ar_N224",
+      "sim_time_us": 5764.9,
+      "num_all_reduce": 4,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "four_ar_evens_edge_chal",
+      "winner": "baseline:four_ar_evens",
+      "sim_time_us": 5764.9,
+      "num_all_reduce": 4,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "four_ar_indep_large_N_chal",
+      "winner": "baseline:four_ar_indep_large_N",
+      "sim_time_us": 6127.814285714286,
+      "num_all_reduce": 4,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "four_ar_mixed_coef_edge_chal",
+      "winner": "evo:four_ar_mixed_coef_0",
+      "sim_time_us": 5168.900000000001,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "four_ar_pow2_edge_chal",
+      "winner": "baseline:four_ar_pow2",
+      "sim_time_us": 5764.200000000001,
+      "num_all_reduce": 4,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "four_ar_same_input_chal",
+      "winner": "baseline:four_ar_same_input",
+      "sim_time_us": 5913.471428571428,
+      "num_all_reduce": 4,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "four_ar_sum_zero_chal",
+      "winner": "strat:refined-from-Fused Coefficient",
+      "sim_time_us": 0.0,
+      "num_all_reduce": 0,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "four_scaled_plus_bcast_ar_chal",
+      "winner": "baseline:four_ar_scaled_plus_bcast",
+      "sim_time_us": 6168.4571428571435,
+      "num_all_reduce": 5,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "idempotent_reduce_max_chal",
+      "winner": "strat:Single MAX all-reduce only",
+      "sim_time_us": 5177.142857142858,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "large_N_4ar",
+      "winner": "baseline:large_N_4ar",
+      "sim_time_us": 5913.471428571428,
+      "num_all_reduce": 4,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "max_min_with_dead_chal",
+      "winner": "strat:refined-from-Direct two-collec",
+      "sim_time_us": 5201.7,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "max_reduce_redundant_chal",
+      "winner": "strat:Single all-reduce REDUCE_MAX",
+      "sim_time_us": 5177.142857142858,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "min_neg_max_dead_verify_chal",
+      "winner": "strat:Single REDUCE_MIN all-reduce",
+      "sim_time_us": 5177.142857142858,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "mixed_reduce_dead_sum_chal",
+      "winner": "baseline:sum_max_with_dead_sum",
+      "sim_time_us": 5655.685714285714,
+      "num_all_reduce": 3,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "mixedscaledseq",
+      "winner": "baseline:mixedscaledseq",
+      "sim_time_us": 6169.157142857142,
+      "num_all_reduce": 5,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "mixmaxmin",
+      "winner": "baseline:mixmaxmin",
+      "sim_time_us": 8198.842857142858,
+      "num_all_reduce": 16,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "nine_ar_same_input_chal",
+      "winner": "baseline:nine_ar_same_input",
+      "sim_time_us": 6948.314285714286,
+      "num_all_reduce": 9,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "per_batch_ar_3d_chal",
+      "winner": "strat:Single fused all-reduce",
+      "sim_time_us": 5179.142857142857,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "per_column_ar_C16_chal",
+      "winner": "strat:Single fused all-reduce",
+      "sim_time_us": 5160.0,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "per_column_ar_C32_chal",
+      "winner": "strat:Single full-tensor all-reduce",
+      "sim_time_us": 5160.0,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "per_column_ar_C64_chal",
+      "winner": "strat:Single full-tensor all-reduce",
+      "sim_time_us": 5160.0,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "per_column_ar_chal",
+      "winner": "strat:refined-from-Single allreduce ",
+      "sim_time_us": 5160.0,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "per_column_max_ar_chal",
+      "winner": "strat:Single full-tensor all-reduce",
+      "sim_time_us": 5160.0,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "per_row_ar_M1024_chal",
+      "winner": "strat:refined-from-Single full-tenso",
+      "sim_time_us": 5177.142857142858,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "per_row_ar_M128_chal",
+      "winner": "strat:Single Full-Tensor AllReduce",
+      "sim_time_us": 5177.142857142858,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "per_row_ar_M256_chal",
+      "winner": "strat:Single full-tensor all-reduce",
+      "sim_time_us": 5177.142857142858,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "per_row_ar_M32_chal",
+      "winner": "strat:refined-from-Single flattened ",
+      "sim_time_us": 5177.142857142858,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "per_row_ar_M48_chal",
+      "winner": "strat:refined-from-Single full-tenso",
+      "sim_time_us": 5171.428571428572,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "per_row_ar_M512_chal",
+      "winner": "strat:Single full-tensor all-reduce",
+      "sim_time_us": 5177.142857142858,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "per_row_ar_M64_chal",
+      "winner": "strat:Single Full Tensor AllReduce",
+      "sim_time_us": 5177.142857142858,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "per_row_ar_M8_chal",
+      "winner": "strat:Batched all-reduce with single",
+      "sim_time_us": 5177.142857142858,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "per_row_ar_M96_chal",
+      "winner": "strat:Single full-tensor all-reduce",
+      "sim_time_us": 5171.428571428572,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "per_row_max_ar_M32_chal",
+      "winner": "strat:Single all-reduce on full tens",
+      "sim_time_us": 5177.142857142858,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "per_row_max_ar_chal",
+      "winner": "strat:refined-from-All-gather then l",
+      "sim_time_us": 5177.142857142858,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "per_row_min_ar_M32_chal",
+      "winner": "strat:refined-from-Single full-tenso",
+      "sim_time_us": 5177.142857142858,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "per_row_min_ar_chal",
+      "winner": "strat:Single batched all-reduce oper",
+      "sim_time_us": 5177.142857142858,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "perbatch3dmaxM32",
+      "winner": "strat:refined-from-Fused single all-",
+      "sim_time_us": 5308.571428571429,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "perbatchM12",
+      "winner": "baseline:perbatchM12",
+      "sim_time_us": 7417.5714285714275,
+      "num_all_reduce": 12,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "perbatchM32",
+      "winner": "baseline:perbatchM32",
+      "sim_time_us": 11537.571428571428,
+      "num_all_reduce": 32,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "perbatchM4big",
+      "winner": "strat:refined-from-Single fused all-",
+      "sim_time_us": 5200.0,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "perbatchmax",
+      "winner": "strat:refined-from-Allgather followe",
+      "sim_time_us": 5177.142857142858,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "perbatchmaxBig",
+      "winner": "strat:refined-from-Single fused all-",
+      "sim_time_us": 5200.0,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "perbatchmaxM16big",
+      "winner": "strat:refined-from-Chunk-parallel ba",
+      "sim_time_us": 5308.571428571429,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "perbatchmin",
+      "winner": "strat:Batched allreduce with concate",
+      "sim_time_us": 5200.0,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "percolC128",
+      "winner": "strat:Single fused all-reduce",
+      "sim_time_us": 5160.0,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "percolC128Big",
+      "winner": "strat:Single full-tensor all-reduce",
+      "sim_time_us": 5165.714285714285,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "percolC128Bigger",
+      "winner": "strat:Single full-tensor allreduce",
+      "sim_time_us": 5177.142857142858,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "percolC192",
+      "winner": "strat:Batched all-reduce full tensor",
+      "sim_time_us": 5171.428571428572,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "percolC24",
+      "winner": "strat:Single fused full-matrix all-r",
+      "sim_time_us": 5160.0,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "percolC256",
+      "winner": "strat:Full matrix all-reduce single ",
+      "sim_time_us": 5165.714285714285,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "percolC384",
+      "winner": "strat:Single full-tensor all-reduce",
+      "sim_time_us": 5171.428571428572,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "percolC48",
+      "winner": "strat:Fused full-tensor all-reduce",
+      "sim_time_us": 5160.0,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "percolC512",
+      "winner": "strat:Full tensor all-reduce with vi",
+      "sim_time_us": 5200.0,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "percolC64Big",
+      "winner": "strat:Single fused all-reduce",
+      "sim_time_us": 5160.0,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "percolC96",
+      "winner": "strat:Single fused all-reduce",
+      "sim_time_us": 5160.714285714286,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "perrowM112",
+      "winner": "strat:refined-from-All-gather follow",
+      "sim_time_us": 5174.285714285715,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "perrowM144",
+      "winner": "strat:Single full-tensor AllReduce",
+      "sim_time_us": 5173.571428571428,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "perrowM1536",
+      "winner": "strat:refined-from-AllGather-ReduceS",
+      "sim_time_us": 5176.785714285715,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "perrowM192",
+      "winner": "strat:refined-from-All-gather then l",
+      "sim_time_us": 5171.428571428572,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "perrowM2048",
+      "winner": "strat:refined-from-All-gather plus l",
+      "sim_time_us": 5177.142857142858,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "perrowM28",
+      "winner": "strat:refined-from-All-gather then l",
+      "sim_time_us": 5164.285714285714,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "perrowM3072",
+      "winner": "strat:refined-from-Single fused all-",
+      "sim_time_us": 5180.000000000001,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "perrowM32N8K",
+      "winner": "baseline:perrowM32N8K",
+      "sim_time_us": 11537.571428571428,
+      "num_all_reduce": 32,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "perrowM384",
+      "winner": "strat:refined-from-Single all-reduce",
+      "sim_time_us": 5180.000000000001,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "perrowM40",
+      "winner": "strat:refined-from-All-gather follow",
+      "sim_time_us": 5161.4285714285725,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "perrowM56",
+      "winner": "strat:refined-from-Single full-tenso",
+      "sim_time_us": 5174.285714285715,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "perrowM64N4K",
+      "winner": "baseline:perrowM64N4K",
+      "sim_time_us": 17937.571428571428,
+      "num_all_reduce": 64,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "perrowM768",
+      "winner": "strat:refined-from-All-gather then l",
+      "sim_time_us": 5180.000000000001,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "perrowM80",
+      "winner": "strat:Single fused all-reduce collec",
+      "sim_time_us": 5161.4285714285725,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "perrow_mixed_bigM",
+      "winner": "strat:refined-from-Batched dual-oper",
+      "sim_time_us": 5179.542857142857,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "perrowmaxM128",
+      "winner": "strat:Single fused all-reduce entire",
+      "sim_time_us": 5177.142857142858,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "perrowmaxM128big",
+      "winner": "strat:refined-from-Single all-reduce",
+      "sim_time_us": 5177.142857142858,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "perrowmaxM256",
+      "winner": "strat:Single flattened all-reduce wi",
+      "sim_time_us": 5179.142857142857,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "perrowmaxM256big",
+      "winner": "strat:Single allreduce on full matri",
+      "sim_time_us": 5177.142857142858,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "perrowmaxM48N2K",
+      "winner": "strat:Single batched allreduce on fu",
+      "sim_time_us": 5188.571428571428,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "perrowmaxM64",
+      "winner": "strat:Single full-tensor all-reduce ",
+      "sim_time_us": 5177.142857142858,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "perrowmaxM96",
+      "winner": "strat:Single full-tensor allreduce",
+      "sim_time_us": 5171.428571428572,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "perrowmaxM96N1K",
+      "winner": "strat:Hierarchical two-level reducti",
+      "sim_time_us": 5188.571428571428,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "perrowminM128",
+      "winner": "strat:refined-from-Batched all-reduc",
+      "sim_time_us": 5177.142857142858,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "perrowminM256",
+      "winner": "strat:Batched all-reduce full matrix",
+      "sim_time_us": 5177.142857142858,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "perrowminM48",
+      "winner": "strat:refined-from-Hierarchical chun",
+      "sim_time_us": 5162.857142857142,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "perrowminM64",
+      "winner": "strat:refined-from-All-gather then l",
+      "sim_time_us": 5177.142857142858,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "perslice2d",
+      "winner": "strat:refined-from-All-gather then l",
+      "sim_time_us": 5177.142857142858,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "perslice3dM32",
+      "winner": "strat:refined-from-All-gather then l",
+      "sim_time_us": 5525.714285714285,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "perslice3dM64",
+      "winner": "strat:refined-from-Single fused allr",
+      "sim_time_us": 5525.714285714285,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "perslice3dM96",
+      "winner": "baseline:perslice3dM96",
+      "sim_time_us": 24446.142857142855,
+      "num_all_reduce": 96,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "pow_ar_double_verify_chal",
+      "winner": "strat:Single all-reduce squared tens",
+      "sim_time_us": 5177.842857142857,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "reduce_scatter_from_ar_chal",
+      "winner": "strat:Reduce-scatter only",
+      "sim_time_us": 6128.942222222222,
+      "num_all_reduce": 0,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "seq_dep_chain4_scaled_edge_chal",
+      "winner": "baseline:four_ar_seq_scaled",
+      "sim_time_us": 5764.9,
+      "num_all_reduce": 4,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "seq_dep_chain5_edge_chal",
+      "winner": "baseline:five_ar_seq_dep",
+      "sim_time_us": 5965.599999999999,
+      "num_all_reduce": 5,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "sequential_ar_chain_edge_chal",
+      "winner": "baseline:sequential_two_ar",
+      "sim_time_us": 5361.400000000001,
+      "num_all_reduce": 2,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "seven_ar_same_input_chal",
+      "winner": "baseline:seven_ar_same_input",
+      "sim_time_us": 6680.528571428571,
+      "num_all_reduce": 7,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "seven_ar_seq_edge_chal",
+      "winner": "baseline:seven_ar_seq",
+      "sim_time_us": 6368.4,
+      "num_all_reduce": 7,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "seven_scaled_diff",
+      "winner": "baseline:seven_scaled_diff",
+      "sim_time_us": 6680.528571428571,
+      "num_all_reduce": 7,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "seven_scaled_input",
+      "winner": "baseline:seven_scaled_input",
+      "sim_time_us": 6680.528571428571,
+      "num_all_reduce": 7,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "six_ar_altsign_edge_chal",
+      "winner": "baseline:six_ar_altsign",
+      "sim_time_us": 6167.7,
+      "num_all_reduce": 6,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "six_ar_arith_edge_chal",
+      "winner": "baseline:six_ar_arith",
+      "sim_time_us": 6167.0,
+      "num_all_reduce": 6,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "six_ar_indep_pool_chal",
+      "winner": "baseline:six_ar_indep_pool",
+      "sim_time_us": 6420.642857142857,
+      "num_all_reduce": 6,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "six_ar_seq_edge_chal",
+      "winner": "baseline:six_ar_seq",
+      "sim_time_us": 6167.0,
+      "num_all_reduce": 6,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "sixteeninlin",
+      "winner": "baseline:sixteeninlin",
+      "sim_time_us": 8981.7,
+      "num_all_reduce": 16,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "sixtyfourinline",
+      "winner": "baseline:sixtyfourinline",
+      "sim_time_us": 18733.344444444443,
+      "num_all_reduce": 64,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "ten_ar_alt_sign_zero_chal",
+      "winner": "strat:refined-from-Single AR with co",
+      "sim_time_us": 1.0,
+      "num_all_reduce": 0,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "tenariindep",
+      "winner": "baseline:tenariindep",
+      "sim_time_us": 7447.585714285714,
+      "num_all_reduce": 10,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "thirtyinline",
+      "winner": "baseline:thirtyinline",
+      "sim_time_us": 11836.300000000001,
+      "num_all_reduce": 30,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "thirtysixinline",
+      "winner": "baseline:thirtysixinline",
+      "sim_time_us": 13059.7,
+      "num_all_reduce": 36,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "thirtytwoalt",
+      "winner": "baseline:thirtytwoalt",
+      "sim_time_us": 12244.1,
+      "num_all_reduce": 32,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "three_ar_frac_dep_edge_chal",
+      "winner": "baseline:three_ar_frac_dep",
+      "sim_time_us": 5563.5,
+      "num_all_reduce": 3,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "three_ars_two_zero_chal",
+      "winner": "strat:Single all-reduce only",
+      "sim_time_us": 5177.142857142858,
+      "num_all_reduce": 1,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 2
+    },
+    {
+      "problem": "three_group_dead_verify_chal",
+      "winner": "baseline:three_group_dead_verify",
+      "sim_time_us": 6419.242857142857,
+      "num_all_reduce": 6,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "three_inline_ars_chal",
+      "winner": "baseline:three_inline_ars",
+      "sim_time_us": 5657.085714285714,
+      "num_all_reduce": 3,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "three_scaled_x_ars_chal",
+      "winner": "baseline:three_scaled_indep",
+      "sim_time_us": 5657.085714285714,
+      "num_all_reduce": 3,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "triple_ar_linear_edge_chal",
+      "winner": "baseline:three_seq_ar",
+      "sim_time_us": 5563.5,
+      "num_all_reduce": 3,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "twelveinlin",
+      "winner": "baseline:twelveinlin",
+      "sim_time_us": 7958.9571428571435,
+      "num_all_reduce": 12,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "twentyeightinline",
+      "winner": "baseline:twentyeightinline",
+      "sim_time_us": 11428.500000000002,
+      "num_all_reduce": 28,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "twentyfourinline",
+      "winner": "baseline:twentyfourinline",
+      "sim_time_us": 10612.9,
+      "num_all_reduce": 24,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    },
+    {
+      "problem": "twentyinline",
+      "winner": "baseline:twentyinline",
+      "sim_time_us": 9797.3,
+      "num_all_reduce": 20,
+      "num_all_gather": 0,
+      "num_collective_permute": 0,
+      "n_templates": 4
+    }
+  ]
+}

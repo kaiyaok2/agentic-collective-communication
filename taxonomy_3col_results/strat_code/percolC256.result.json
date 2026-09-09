@@ -1,0 +1,22 @@
+[
+  {
+    "template": "strategy_enumerate_final",
+    "cost_score": 51.65714285714285,
+    "sim_time_us": 5165.714285714285,
+    "local_ops": 1,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 1,
+    "name": "strat:Full matrix all-reduce single "
+  },
+  {
+    "template": "percolC256",
+    "cost_score": 564.5071428571429,
+    "sim_time_us": 56450.71428571428,
+    "local_ops": 513,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 256,
+    "name": "baseline:percolC256"
+  }
+]

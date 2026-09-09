@@ -1,0 +1,22 @@
+[
+  {
+    "template": "strategy_enumerate_final",
+    "cost_score": 51.77842857142857,
+    "sim_time_us": 5177.842857142857,
+    "local_ops": 2,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 1,
+    "name": "strat:Single all-reduce squared tens"
+  },
+  {
+    "template": "pow_ar_double",
+    "cost_score": 54.014,
+    "sim_time_us": 5401.400000000001,
+    "local_ops": 4,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 2,
+    "name": "baseline:pow_ar_double"
+  }
+]

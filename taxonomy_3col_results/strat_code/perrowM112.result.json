@@ -1,0 +1,22 @@
+[
+  {
+    "template": "strategy_enumerate_final",
+    "cost_score": 51.74285714285715,
+    "sim_time_us": 5174.285714285715,
+    "local_ops": 1,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 1,
+    "name": "strat:refined-from-All-gather follow"
+  },
+  {
+    "template": "perrowM112",
+    "cost_score": 274.0328571428571,
+    "sim_time_us": 27403.28571428571,
+    "local_ops": 113,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 112,
+    "name": "baseline:perrowM112"
+  }
+]
