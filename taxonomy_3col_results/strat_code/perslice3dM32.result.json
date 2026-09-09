@@ -1,0 +1,22 @@
+[
+  {
+    "template": "strategy_enumerate_final",
+    "cost_score": 55.25714285714285,
+    "sim_time_us": 5525.714285714285,
+    "local_ops": 1,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 1,
+    "name": "strat:refined-from-All-gather then l"
+  },
+  {
+    "template": "perslice3dM32",
+    "cost_score": 117.54714285714284,
+    "sim_time_us": 11754.714285714284,
+    "local_ops": 33,
+    "num_collective_permute": 0,
+    "num_all_gather": 0,
+    "num_all_reduce": 32,
+    "name": "baseline:perslice3dM32"
+  }
+]
