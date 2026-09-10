@@ -49,7 +49,8 @@ the machine + library, never of the training task.**
   outcome space is machine-determined, that variance only added noise
   and wall-time, not information.
 - Empirically, sim rankings under the deterministic Phase 1 were
-  validated against warm-cache hardware RT on 143 problems spanning 7
+  validated against warm-cache hardware RT; the **55-problem divergence
+  set** (sorcar > strat by >5% in sim, out of the 143-problem pool) spans 6
   optimization families plus the 8 paper originals (see
   `SORCAR_FAMILY_TAXONOMY.md`): 0 cases where a sim-picked winner lost
   on hardware, across problem classes the probes never saw.

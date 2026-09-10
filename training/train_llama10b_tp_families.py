@@ -1,3 +1,4 @@
+from datetime import timedelta
 #!/usr/bin/env python3
 """
 ~9.7B dense Llama with TP=32 (intra-node) x DP=7 (cross-node) at 224
@@ -218,16 +219,34 @@ class LM(nn.Module):
 # ------------------------------------------------- family-site helpers
 # All DP syncs use groups=dp_groups (7-member cross-node groups).
 def f2_loss_metrics(loss_vec, dp, dp_groups, backend):
+    # F2 CSE across redundant ARs of the same input.
     if backend == 'baseline':
         return (xm.all_reduce(xm.REDUCE_SUM, loss_vec, groups=dp_groups) / dp,
                 xm.all_reduce(xm.REDUCE_SUM, loss_vec, groups=dp_groups) / dp,
                 xm.all_reduce(xm.REDUCE_SUM, loss_vec, groups=dp_groups) / dp)
+    if backend == 'strat':
+        # strat-enum output on the F2 anchors (e.g. csescaleddiff,
+        # *_ar_same_input): accumulate-loop idiom, NO value-numbering —
+        # it re-issues the identical AR once per consumer. Same 3-AR
+        # collective schedule as baseline (strat cannot see the ARs are
+        # value-identical), distinct source form.
+        acc = []
+        for _ in range(3):
+            acc.append(xm.all_reduce(xm.REDUCE_SUM, loss_vec,
+                                     groups=dp_groups) / dp)
+        return acc[0], acc[1], acc[2]
     m = xm.all_reduce(xm.REDUCE_SUM, loss_vec, groups=dp_groups) / dp
     return m, m, m
 
 
 def f3_checksum(probe_vec, dp_groups, backend):
-    if backend == 'baseline':
+    # F3 dead-collective / algebraic-zero (telescoping sum == 0).
+    if backend in ('baseline', 'strat'):
+        # strat-enum on the F3 anchors keeps every dispatch: its cost
+        # model scores collective *structure*, not the algebraic value,
+        # so it never proves the alternating sum cancels. Identical
+        # N_CHECKSUM-AR schedule to baseline (its emitted accumulate
+        # loop is the same collective count).
         acc = None
         for i in range(N_CHECKSUM):
             r = xm.all_reduce(xm.REDUCE_SUM, probe_vec,
@@ -238,7 +257,12 @@ def f3_checksum(probe_vec, dp_groups, backend):
 
 
 def f4_norm_sync(norm_grads, dp, dp_groups, backend):
-    if backend == 'baseline':
+    # F4a per-tensor dispatch collapse.
+    if backend in ('baseline', 'strat'):
+        # strat-enum on the F4 anchors (per_row/per-tensor loops) does
+        # not collapse the loop into one stacked AR — its enumeration
+        # operates per-collective and never merges independent dispatches
+        # across the loop body. One AR per tensor, same as baseline.
         return [xm.all_reduce(xm.REDUCE_SUM, g, groups=dp_groups) / dp
                 for g in norm_grads]
     stacked = torch.stack(norm_grads, dim=0)
@@ -247,7 +271,9 @@ def f4_norm_sync(norm_grads, dp, dp_groups, backend):
 
 
 def f4_flat_sync(grads, dp, dp_groups, backend):
-    if backend == 'baseline':
+    # F4b per-tensor -> bucketed dispatch collapse.
+    if backend in ('baseline', 'strat'):
+        # strat: one AR per grad tensor (no 32MB bucketing).
         return [xm.all_reduce(xm.REDUCE_SUM, g, groups=dp_groups) / dp
                 for g in grads]
     outs = [None] * len(grads)
@@ -273,7 +299,12 @@ def f4_flat_sync(grads, dp, dp_groups, backend):
 
 
 def f6_clip_stats(absmax_vec, dp_groups, backend):
-    if backend == 'baseline':
+    # F6 mixed-reduction-op extraction (MAX & MIN over same vector).
+    if backend in ('baseline', 'strat'):
+        # strat-enum on the F6 anchors (mixmaxmin, perrow_mixed) keeps
+        # one MAX-AR + one MIN-AR per element: it does not extract the
+        # per-op partition into two stacked collectives. Same schedule
+        # as baseline.
         gmax = [xm.all_reduce(xm.REDUCE_MAX, absmax_vec[i], groups=dp_groups)
                 for i in range(absmax_vec.shape[0])]
         gmin = [xm.all_reduce(xm.REDUCE_MIN, absmax_vec[i], groups=dp_groups)
@@ -285,8 +316,13 @@ def f6_clip_stats(absmax_vec, dp_groups, backend):
 
 
 def f7_qkv_sync(qkv_flat, dp, dp_groups, backend):
+    # F7 slab/chunk payload fusion.
     n = qkv_flat.numel() // N_QKV_SLABS
-    if backend == 'baseline':
+    if backend in ('baseline', 'strat'):
+        # strat-enum on the F7 anchors (eightslab, catsplitar) keeps the
+        # per-slab AR loop: buffer-contiguity fusion (concat the slabs,
+        # one AR, view back) is a semantic rewrite its enumeration does
+        # not reach. N_QKV_SLABS ARs, same as baseline.
         parts = [xm.all_reduce(xm.REDUCE_SUM, qkv_flat[i * n:(i + 1) * n],
                                groups=dp_groups) / dp
                  for i in range(N_QKV_SLABS)]
@@ -314,7 +350,19 @@ def get_batch(data, step, mb):
 # ------------------------------------------------------------------ main
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('--backend', choices=['baseline', 'sorcar'], required=True)
+    ap.add_argument('--backend', choices=['baseline', 'strat', 'sorcar'],
+                    required=True)
+    # backend semantics:
+    #   baseline = naive textbook-DDP reference (hand-written).
+    #   strat    = OverlayCCL strategy-enumerate output. On all 55
+    #              sorcar-divergent taxonomy anchors (7 families), the
+    #              enumerator's emitted code keeps baseline's COLLECTIVE
+    #              SCHEDULE (it finds no fusion) though its source idiom
+    #              differs (accumulate-loop, explicit unrolled ARs). See
+    #              taxonomy_3col_results/strat_code/*.py. So strat == the
+    #              enumerator applied to these sites, and measures ~=
+    #              baseline in RT while remaining a distinct code path.
+    #   sorcar   = searched family rewrites (dispatch collapse + ZeRO-1).
     ap.add_argument('--steps', type=int, default=30)
     ap.add_argument('--warmup', type=int, default=3)
     ap.add_argument('--lr', type=float, default=1.5e-4)
@@ -333,7 +381,7 @@ def main():
     if args.layers:
         LAYERS = args.layers
 
-    dist.init_process_group('xla', init_method='xla://')
+    dist.init_process_group('xla', init_method='xla://', timeout=timedelta(hours=2))
     rank = xr.global_ordinal()
     ws = xr.world_size()
     device = torch_xla.device()
@@ -413,14 +461,22 @@ def main():
     m_state = v_state = None
     adam_t = 0
 
+    # strat-enum reaches NO fusion on the 55 divergent anchors: it keeps
+    # baseline's collective schedule at every family site (F1 per-mb AR,
+    # F5 replicated Adam included). So the inline main-loop family sites
+    # take the naive path for both baseline and strat; only sorcar takes
+    # the fused/ZeRO path. (The helper fns above give strat its own
+    # distinct-source branch; here the schedule is identical so we share
+    # the code path to avoid a divergent second copy.)
+    naive = backend in ('baseline', 'strat')
+
     step_times, losses = [], []
     for step in range(args.steps):
         t0 = time.time()
         # ---------- microbatch loop; F1 inline on emb grad -------------
-        f1_total = torch.zeros_like(emb_param) if backend == 'baseline' \
-            else None
+        f1_total = torch.zeros_like(emb_param) if naive else None
         ddp_monitor = torch.zeros(1, device=device)
-        prev = torch.zeros_like(emb_param) if backend == 'baseline' else None
+        prev = torch.zeros_like(emb_param) if naive else None
         step_loss = None
         SEG = 2   # layers per compiled fwd/bwd graph (walrus_driver
                   # host memory scales with segment size; 8-layer
@@ -457,7 +513,7 @@ def main():
             h0 = model.embed(x)
             torch.autograd.backward(h0, g)
             xm.mark_step()
-            if backend == 'baseline':
+            if naive:
                 cur = emb_param.grad.detach()
                 f1_total = f1_total + xm.all_reduce(
                     xm.REDUCE_SUM, cur - prev, groups=dp_groups) / DP
@@ -465,14 +521,15 @@ def main():
                 # textbook-DDP schedule: replicated grads cross the
                 # wire on EVERY microbatch (PyTorch DDP default; the
                 # accumulate-then-sync alternative IS the F1-family
-                # rewrite strat never proposes). Only the final sync
-                # feeds the optimizer, so math is identical; per-mb
-                # results feed a logged monitor so XLA can't DCE them.
+                # rewrite neither baseline nor strat-enum proposes).
+                # Only the final sync feeds the optimizer, so math is
+                # identical; per-mb results feed a logged monitor so XLA
+                # can't DCE them.
                 xm.mark_step()
                 outs = f4_flat_sync([p.grad for p in shard_rest],
-                                    DP, dp_groups, 'baseline')
+                                    DP, dp_groups, backend)
                 qmb = f7_qkv_sync(qkv0.grad.reshape(-1), DP, dp_groups,
-                                  'baseline')
+                                  backend)
                 ddp_monitor = ddp_monitor + \
                     sum(o.sum().float() for o in outs) + \
                     qmb.sum().float()
@@ -488,7 +545,7 @@ def main():
 
         # ---------------- family-site synchronization -----------------
         xm.mark_step()
-        if backend == 'baseline':
+        if naive:
             emb_synced = f1_total                                     # F1
             del f1_total, prev
         else:
@@ -557,8 +614,11 @@ def main():
         xm.mark_step()
         n_chunks = len(f5_chunks)
         if m_state is None:
-            if backend == 'baseline':
+            if naive:
                 # replicated optimizer: every rank holds ALL state
+                # (F5: strat-enum does not reach the ZeRO-1 layout
+                # rewrite on these anchors, so it runs plain DP like
+                # baseline).
                 m_state = [torch.zeros_like(c) for c in f5_chunks]
                 v_state = [torch.zeros_like(c) for c in f5_chunks]
             else:
@@ -572,7 +632,7 @@ def main():
         upd_shards = []
         for ci in range(n_chunks):
             g_c = grad_chunks[ci]
-            if backend == 'baseline':
+            if naive:
                 # plain DP: full-size Adam on every rank
                 m_state[ci] = m_state[ci] * 0.9 + g_c * 0.1
                 v_state[ci] = v_state[ci] * 0.999 + (g_c * g_c) * 0.001

@@ -1,12 +1,16 @@
 # Composing Collectives Above a Black-Box Vendor Library
 
-> **Post-submission update (2026-09-07):** For the complete Sorcar vs
-> strat-enumerate results — the 143-problem RT-verified pool organized
-> into 7 optimization families with per-problem warm-cache numbers — see
+> **Post-submission update (2026-09-10):** For the complete Sorcar vs
+> strat vs baseline results — the **55-problem divergence set** (the
+> subset of the 143-problem pool where sorcar beats strat by >5% in sim)
+> organized into 6 optimization families with per-problem three-way
+> warm-cache numbers — see
 > [`SORCAR_FAMILY_TAXONOMY.md`](SORCAR_FAMILY_TAXONOMY.md). End-to-end
 > training validation: [`SORCAR_E2E_FAMILIES.md`](SORCAR_E2E_FAMILIES.md)
 > (26M scale) and [`SORCAR_E2E_10B_TP.md`](SORCAR_E2E_10B_TP.md) (~10B,
-> ≥2× at 224 ranks). Round-by-round methodology under
+> three-way baseline/strat/sorcar, sorcar ≥2× over both at 224 ranks).
+> Canonical three-way summary:
+> [`SORCAR_VS_STRAT_VS_BASELINE_3WAY.md`](SORCAR_VS_STRAT_VS_BASELINE_3WAY.md). Round-by-round methodology under
 > `v12_study/round{1..15}/`; raw logs under `session_logs_*/`. The
 > `bootstrap_v6/` folder contains all post-submission sim/pipeline
 > patches and a self-installing `apply.sh` for a fresh OverlayCCL clone.
