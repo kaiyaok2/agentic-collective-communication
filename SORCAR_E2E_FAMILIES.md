@@ -9,16 +9,20 @@ tokenized, disjoint per-rank stripes, deterministic batch schedule
 
 ## What this measures
 
-The 142-problem microbenchmark pool established per-problem RT wins for
-Sorcar over strat-enumerate across 7 optimization families
+The **55-problem divergence set** (the subset of the 143-problem pool
+where Sorcar beats strat by >5% in sim) established per-problem RT wins
+for Sorcar over strat-enumerate across 6 optimization families
 (`SORCAR_FAMILY_TAXONOMY.md`). This experiment embeds **one
 representative site from every family into a single natural LLM
 training step** and trains two real architectures end-to-end at 224
-ranks, swapping only the collective schedule between backends:
+ranks, swapping only the collective schedule between three backends
+(baseline / strat / sorcar):
 
-- **baseline** = the strat-enumerate outcome. For every family, strat's
-  enumeration stayed at (or refined back to) the baseline collective
-  template, so the baseline schedule is strat's solution.
+- **baseline** = naive textbook-DDP source.
+- **strat** = OverlayCCL enumeration output. It emits *distinct source*
+  at every family site but, on the divergent patterns, reaches
+  baseline's collective schedule (its cost model scores collective
+  structure, not algebra) — measured `strat_ms == baseline_ms`.
 - **sorcar** = Sorcar's family-general rewrite at each site. Every
   rewrite is mathematically exact — same reduction semantics, different
   dispatch/collective structure — so loss must track within fp noise.
