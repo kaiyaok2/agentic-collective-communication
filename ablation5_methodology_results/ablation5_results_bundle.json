@@ -1,0 +1,305 @@
+{
+  "cost": {
+    "full": {
+      "llm_calls": 311,
+      "score_calls": 253,
+      "wall_s": 4309.7,
+      "out_tok": 252569,
+      "total_tok": 2871018,
+      "best_sim_sum": 291036.3,
+      "baseline_sim_sum": Infinity,
+      "missing": 0
+    },
+    "noadv": {
+      "llm_calls": 241,
+      "score_calls": 183,
+      "wall_s": 3637.7,
+      "out_tok": 212552,
+      "total_tok": 1838838,
+      "best_sim_sum": 286278.8,
+      "baseline_sim_sum": Infinity,
+      "missing": 0
+    },
+    "noA": {
+      "llm_calls": 291,
+      "score_calls": 183,
+      "wall_s": 3775.3,
+      "out_tok": 217859,
+      "total_tok": 2170311,
+      "best_sim_sum": 294601.4,
+      "baseline_sim_sum": Infinity,
+      "missing": 0
+    },
+    "noB": {
+      "llm_calls": 250,
+      "score_calls": 97,
+      "wall_s": 3042.7,
+      "out_tok": 177461,
+      "total_tok": 1528652,
+      "best_sim_sum": 376972.1,
+      "baseline_sim_sum": Infinity,
+      "missing": 0
+    },
+    "noC": {
+      "llm_calls": 250,
+      "score_calls": 192,
+      "wall_s": 3824.2,
+      "out_tok": 222628,
+      "total_tok": 2114016,
+      "best_sim_sum": 286629.3,
+      "baseline_sim_sum": Infinity,
+      "missing": 0
+    }
+  },
+  "regressions": {
+    "noadv": [
+      {
+        "problem": "chained_ar_nested_edge_chal",
+        "full_sim": 5161.4,
+        "arm_sim": 5562.8,
+        "full_rt": 0.5333,
+        "arm_rt": 0.2165
+      }
+    ],
+    "noA": [
+      {
+        "problem": "thirtysixinline",
+        "full_sim": 5177.8,
+        "arm_sim": 13059.7,
+        "full_rt": 0.093,
+        "arm_rt": 0.8953
+      },
+      {
+        "problem": "mixmaxmin",
+        "full_sim": 5362.1,
+        "arm_sim": 8198.8,
+        "full_rt": 0.1113,
+        "arm_rt": 0.4601
+      },
+      {
+        "problem": "six_ar_arith_edge_chal",
+        "full_sim": 5167.0,
+        "arm_sim": 6167.0,
+        "full_rt": 0.19,
+        "arm_rt": 0.2567
+      },
+      {
+        "problem": "mixedscaledseq",
+        "full_sim": 5177.8,
+        "arm_sim": 6169.2,
+        "full_rt": 0.1106,
+        "arm_rt": 0.2149
+      },
+      {
+        "problem": "large_N_4ar",
+        "full_sim": 5177.8,
+        "arm_sim": 5910.7,
+        "full_rt": 0.0915,
+        "arm_rt": 0.3055
+      },
+      {
+        "problem": "three_group_dead_verify_chal",
+        "full_sim": 5655.7,
+        "arm_sim": 5910.7,
+        "full_rt": 0.414,
+        "arm_rt": 0.3648
+      },
+      {
+        "problem": "sequential_ar_chain_edge_chal",
+        "full_sim": 5165.4,
+        "arm_sim": 5361.4,
+        "full_rt": 0.2967,
+        "arm_rt": 0.1154
+      }
+    ],
+    "noB": [
+      {
+        "problem": "perslice3dM96",
+        "full_sim": 5417.1,
+        "arm_sim": 24446.1,
+        "full_rt": 0.111,
+        "arm_rt": null
+      },
+      {
+        "problem": "eightyaltsum",
+        "full_sim": 5177.8,
+        "arm_sim": 21960.2,
+        "full_rt": 0.1009,
+        "arm_rt": null
+      },
+      {
+        "problem": "fiftyinline",
+        "full_sim": 5177.8,
+        "arm_sim": 15909.9,
+        "full_rt": 0.1469,
+        "arm_rt": 1.1832
+      },
+      {
+        "problem": "fortyinline",
+        "full_sim": 5177.8,
+        "arm_sim": 13875.3,
+        "full_rt": 0.0984,
+        "arm_rt": 1.0062
+      },
+      {
+        "problem": "perbatchM32",
+        "full_sim": 5308.6,
+        "arm_sim": 11537.6,
+        "full_rt": 0.0764,
+        "arm_rt": 0.5665
+      },
+      {
+        "problem": "perrowM32N8K",
+        "full_sim": 5308.6,
+        "arm_sim": 11537.6,
+        "full_rt": 0.0995,
+        "arm_rt": 0.5364
+      },
+      {
+        "problem": "sixteeninlin",
+        "full_sim": 5177.8,
+        "arm_sim": 8981.7,
+        "full_rt": 0.0933,
+        "arm_rt": 0.5046
+      },
+      {
+        "problem": "perbatchM12",
+        "full_sim": 5188.6,
+        "arm_sim": 7417.6,
+        "full_rt": 0.1342,
+        "arm_rt": 0.4169
+      },
+      {
+        "problem": "nine_ar_same_input_chal",
+        "full_sim": 5166.4,
+        "arm_sim": 6948.3,
+        "full_rt": 0.1047,
+        "arm_rt": 0.281
+      },
+      {
+        "problem": "eightslab",
+        "full_sim": 5162.7,
+        "arm_sim": 6602.6,
+        "full_rt": 0.1754,
+        "arm_rt": 0.5836
+      },
+      {
+        "problem": "six_ar_altsign_edge_chal",
+        "full_sim": 5167.7,
+        "arm_sim": 6167.7,
+        "full_rt": 0.1938,
+        "arm_rt": 0.206
+      },
+      {
+        "problem": "five_ar_scaled_same_input_chal",
+        "full_sim": 5177.8,
+        "arm_sim": 6169.2,
+        "full_rt": 0.0885,
+        "arm_rt": 0.1927
+      },
+      {
+        "problem": "five_ar_indep_sumatend_chal",
+        "full_sim": 5177.1,
+        "arm_sim": 6165.7,
+        "full_rt": 0.3654,
+        "arm_rt": 0.3434
+      },
+      {
+        "problem": "four_ar_indep_large_N_chal",
+        "full_sim": 5200.0,
+        "arm_sim": 6127.8,
+        "full_rt": 0.3973,
+        "arm_rt": 0.3238
+      },
+      {
+        "problem": "five_ar_mixed_sign_edge_chal",
+        "full_sim": 5165.6,
+        "arm_sim": 5965.6,
+        "full_rt": 0.1712,
+        "arm_rt": 0.1701
+      },
+      {
+        "problem": "seq_dep_chain5_edge_chal",
+        "full_sim": 5165.6,
+        "arm_sim": 5965.6,
+        "full_rt": 0.1909,
+        "arm_rt": 0.195
+      },
+      {
+        "problem": "four_ar_same_input_chal",
+        "full_sim": 5177.8,
+        "arm_sim": 5913.5,
+        "full_rt": 0.1134,
+        "arm_rt": 0.1631
+      },
+      {
+        "problem": "four_ar_pow2_edge_chal",
+        "full_sim": 5163.0,
+        "arm_sim": 5764.2,
+        "full_rt": 0.1318,
+        "arm_rt": 0.1725
+      },
+      {
+        "problem": "four_ar_N224_edge_chal",
+        "full_sim": 5164.9,
+        "arm_sim": 5764.9,
+        "full_rt": 0.1342,
+        "arm_rt": 0.1508
+      },
+      {
+        "problem": "seq_dep_chain4_scaled_edge_chal",
+        "full_sim": 5164.9,
+        "arm_sim": 5764.9,
+        "full_rt": 0.1279,
+        "arm_rt": 0.279
+      },
+      {
+        "problem": "sequential_ar_chain_edge_chal",
+        "full_sim": 5165.4,
+        "arm_sim": 5361.4,
+        "full_rt": 0.2967,
+        "arm_rt": 0.1094
+      }
+    ],
+    "noC": [
+      {
+        "problem": "three_group_dead_verify_chal",
+        "full_sim": 5655.7,
+        "arm_sim": 6419.2,
+        "full_rt": 0.414,
+        "arm_rt": 0.3738
+      }
+    ]
+  },
+  "zero_score_calls": {
+    "full": [],
+    "noadv": [],
+    "noA": [
+      "mixmaxmin",
+      "six_ar_arith_edge_chal"
+    ],
+    "noB": [
+      "eightslab",
+      "eightyaltsum",
+      "fiftyinline",
+      "five_ar_indep_sumatend_chal",
+      "five_ar_mixed_sign_edge_chal",
+      "five_ar_scaled_same_input_chal",
+      "fortyinline",
+      "four_ar_N224_edge_chal",
+      "four_ar_indep_large_N_chal",
+      "four_ar_pow2_edge_chal",
+      "four_ar_same_input_chal",
+      "four_ar_sum_zero_chal",
+      "nine_ar_same_input_chal",
+      "perbatchM12",
+      "perbatchM32",
+      "perrowM32N8K",
+      "perslice3dM96",
+      "seq_dep_chain4_scaled_edge_chal",
+      "seq_dep_chain5_edge_chal",
+      "sequential_ar_chain_edge_chal"
+    ],
+    "noC": []
+  }
+}

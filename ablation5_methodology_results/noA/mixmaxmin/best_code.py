@@ -1,0 +1,36 @@
+def mixmaxmin_fn(x, rank, world_size, num_devices,
+                 cores_per_device, xm, torch, num_nodes=1):
+    acc = None
+    a = 0.1 * xm.all_reduce(xm.REDUCE_MAX, x)
+    acc = a if acc is None else acc + a
+    b = 0.05 * xm.all_reduce(xm.REDUCE_MIN, x)
+    acc = acc + b
+    a = 0.2 * xm.all_reduce(xm.REDUCE_MAX, x)
+    acc = a if acc is None else acc + a
+    b = 0.1 * xm.all_reduce(xm.REDUCE_MIN, x)
+    acc = acc + b
+    a = 0.30000000000000004 * xm.all_reduce(xm.REDUCE_MAX, x)
+    acc = a if acc is None else acc + a
+    b = 0.15000000000000002 * xm.all_reduce(xm.REDUCE_MIN, x)
+    acc = acc + b
+    a = 0.4 * xm.all_reduce(xm.REDUCE_MAX, x)
+    acc = a if acc is None else acc + a
+    b = 0.2 * xm.all_reduce(xm.REDUCE_MIN, x)
+    acc = acc + b
+    a = 0.5 * xm.all_reduce(xm.REDUCE_MAX, x)
+    acc = a if acc is None else acc + a
+    b = 0.25 * xm.all_reduce(xm.REDUCE_MIN, x)
+    acc = acc + b
+    a = 0.6000000000000001 * xm.all_reduce(xm.REDUCE_MAX, x)
+    acc = a if acc is None else acc + a
+    b = 0.30000000000000004 * xm.all_reduce(xm.REDUCE_MIN, x)
+    acc = acc + b
+    a = 0.7000000000000001 * xm.all_reduce(xm.REDUCE_MAX, x)
+    acc = a if acc is None else acc + a
+    b = 0.35000000000000003 * xm.all_reduce(xm.REDUCE_MIN, x)
+    acc = acc + b
+    a = 0.8 * xm.all_reduce(xm.REDUCE_MAX, x)
+    acc = a if acc is None else acc + a
+    b = 0.4 * xm.all_reduce(xm.REDUCE_MIN, x)
+    acc = acc + b
+    return acc

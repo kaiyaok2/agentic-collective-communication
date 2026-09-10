@@ -1,0 +1,15 @@
+--- /home/ubuntu/kiss/src/kiss/SYSTEM_FULL.md	2026-09-10 08:41:54.222132641 +0000
++++ /home/ubuntu/kiss/src/kiss/SYSTEM_NOB.md	2026-09-10 08:41:54.222395957 +0000
+@@ -117,11 +117,7 @@
+ 1. read + profile the data / tests / baseline, record baseline metrics
+ 2. web-search for SOTA approaches, papers, repos, issues
+ 3. write ideas and rationale in ./tmp/ideas.md
+-4. Pairwise judge the ideas to find a winner idea.
+-5. Implement -> run real end-to-end evaluation -> log idea, aspect of improvement, and metrics in ./tmp/explored-ideas.md
+-   if better: keep, and try composing with prior winners on different aspects
+-   if worse: mark as failed so it is never retried
+-6. search again for fresh ideas not explored before and based on previous experience and exclude ideas that have been explored in ./tmp/explored-ideas.md; go to step 4
++4-6. (select/iterate loop DISABLED for this arm) Implement your single best idea once; do not pairwise-judge, iterate, compose winners, or maintain ./tmp/explored-ideas.md.
+ 7. stop when the user's metric goal is met, with a
+    held-out / generalization check to prove it is not overfit
+ 

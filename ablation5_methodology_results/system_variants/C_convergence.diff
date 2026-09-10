@@ -1,0 +1,12 @@
+--- /home/ubuntu/kiss/src/kiss/SYSTEM_FULL.md	2026-09-10 08:41:54.222132641 +0000
++++ /home/ubuntu/kiss/src/kiss/SYSTEM_NOC.md	2026-09-10 08:41:54.222446938 +0000
+@@ -122,8 +122,7 @@
+    if better: keep, and try composing with prior winners on different aspects
+    if worse: mark as failed so it is never retried
+ 6. search again for fresh ideas not explored before and based on previous experience and exclude ideas that have been explored in ./tmp/explored-ideas.md; go to step 4
+-7. stop when the user's metric goal is met, with a
+-   held-out / generalization check to prove it is not overfit
++7. (convergence/generalization check DISABLED for this arm) Stop when the search budget is exhausted; do not run a held-out / generalization overfit check.
+ 
+ ## Adversarial testing
+ 

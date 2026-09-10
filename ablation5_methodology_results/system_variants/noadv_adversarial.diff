@@ -1,0 +1,16 @@
+--- /home/ubuntu/kiss/src/kiss/SYSTEM_FULL.md	2026-09-10 08:41:54.222132641 +0000
++++ /home/ubuntu/kiss/src/kiss/SYSTEM_NOADV.md	2026-09-10 08:41:54.222280409 +0000
+@@ -125,13 +125,6 @@
+ 7. stop when the user's metric goal is met, with a
+    held-out / generalization check to prove it is not overfit
+ 
+-## Adversarial testing
+-
+-Use the following technique when the user asks for **adversarial testing**, which makes sure that the software system you developed is correct/efficient under all conditions. Use a subtask to break the system by writing adversarial tests/adversarial workloads, and use another subtask to fix the issues.
+-
+-## Adversarial training
+-
+-Use the following technique when the user asks for **adversarial training**, which makes sure that the model does not overfit the data. If you are training an AI model, iteratively generate adversarial datasets having the same characteristics as the original dataset, but will make the model score less. Then tune the model to handle the discrepancy. Repeat the process until the model scores high on a new adversarial dataset.
+ ## Deep Work
+ 
+ - For tasks involving “align”, “match”, or “make consistent”: read the target state fully before editing. Never edit based on vague recollection.

@@ -1,0 +1,13 @@
+def evolved_p7201(x, y, z, N, rank, world_size, num_devices,
+                 cores_per_device, xm, torch, num_nodes=1):
+    # Single all_reduce for max of x
+    mx_v = xm.all_reduce(xm.REDUCE_MAX, x)
+    
+    # Single all_reduce for sum of y (no division needed)
+    sy_v = xm.all_reduce(xm.REDUCE_SUM, y)
+    
+    # Single all_reduce for min of z
+    mz_v = xm.all_reduce(xm.REDUCE_MIN, z)
+    
+    # Return the sum
+    return mx_v + sy_v + mz_v
