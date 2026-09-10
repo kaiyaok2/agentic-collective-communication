@@ -79,7 +79,7 @@ backends) are held fixed to isolate the family effect.
 - **N_MB scaling isolates F1×F4b**: baseline (and strat) grow ~1.27s per
   added microbatch (a full 304M-element per-tensor sync sweep each);
   sorcar's sync cost is constant in N_MB. 1.61–1.69× at N_MB=4 →
-  1.90–2.02× at N_MB=8 → 2.15–2.46× at N_MB=16 → 2.33–2.65× at N_MB=32.
+  1.90–2.02× at N_MB=8 → 2.15–2.46× at N_MB=16 → 2.33–2.65× at N_MB=32 → 2.76× at N_MB=48 (llama sorcar 22958 / baseline 63424 ms). The ratio is monotone in N_MB and has not yet saturated.
 - **F4b×F5 fusion** (`--fuse`): when ZeRO-1 owns the optimizer, the
   standalone F4b grad all-reduce is dead code — its only consumer is
   the optimizer, so reduce_scatter-ing the RAW accumulated grad directly
