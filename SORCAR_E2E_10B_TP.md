@@ -37,6 +37,8 @@ seed 42 (median warm ms/step):
 |---|---|---|---|---|---|---|
 | **Llama-style + F4b×F5 fuse** | 21905.9 | 22032.5 | 8966.7 | **2.457×** | 2.443× | 1.006× |
 | **GPT-3-class + F4b×F5 fuse** | 21541.3 | 21467.9 | 10006.6 | **2.145×** | 2.153× | 0.997× |
+| **Llama-style + F4b×F5 fuse, N_MB=32** | 42692.6 | 42765.8 | 16122.6 | **2.653×** | 2.648× | 1.002× |
+| **GPT-3-class + F4b×F5 fuse, N_MB=32** | 41820.8 | 41918.9 | 17988.2 | **2.330×** | 2.325× | 1.002× |
 | Llama-style (unfused) | 21864.8 | 21921.0 | 9717.5 | **2.256×** | 2.250× | 1.003× |
 | Llama-style L24 (fused) | 10181.4 | 10156.8 | 3908.5 | **2.599×** | 2.605× | 0.998× |
 
@@ -77,7 +79,7 @@ backends) are held fixed to isolate the family effect.
 - **N_MB scaling isolates F1×F4b**: baseline (and strat) grow ~1.27s per
   added microbatch (a full 304M-element per-tensor sync sweep each);
   sorcar's sync cost is constant in N_MB. 1.61–1.69× at N_MB=4 →
-  1.90–2.02× at N_MB=8 → 2.15–2.46× at N_MB=16.
+  1.90–2.02× at N_MB=8 → 2.15–2.46× at N_MB=16 → 2.33–2.65× at N_MB=32.
 - **F4b×F5 fusion** (`--fuse`): when ZeRO-1 owns the optimizer, the
   standalone F4b grad all-reduce is dead code — its only consumer is
   the optimizer, so reduce_scatter-ing the RAW accumulated grad directly
