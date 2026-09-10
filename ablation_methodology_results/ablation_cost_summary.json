@@ -1,0 +1,32 @@
+{
+  "full": {
+    "llm_calls": 58,
+    "score_calls": 50,
+    "wall_s": 678.2,
+    "in_tok": 730,
+    "out_tok": 42297,
+    "cache_create": 67667,
+    "cache_read": 536919,
+    "total_tok": 647613
+  },
+  "ablated": {
+    "llm_calls": 46,
+    "score_calls": 38,
+    "wall_s": 558.5,
+    "in_tok": 574,
+    "out_tok": 32184,
+    "cache_create": 30882,
+    "cache_read": 329604,
+    "total_tok": 393244
+  },
+  "ablated_over_full": {
+    "llm_calls": 0.7931034482758621,
+    "score_calls": 0.76,
+    "wall_s": 0.8235033913299911,
+    "in_tok": 0.7863013698630137,
+    "out_tok": 0.7609050287254415,
+    "cache_create": 0.45638198826606763,
+    "cache_read": 0.6138803059679393,
+    "total_tok": 0.6072206703694953
+  }
+}
