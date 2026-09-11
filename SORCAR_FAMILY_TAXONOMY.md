@@ -1,10 +1,8 @@
-# Sorcar vs Strat vs Baseline: Family Taxonomy of the 55-Problem Divergence Set
+# Sorcar vs Strat vs Baseline: Family Taxonomy of the 55-Problem Set
 
-**Scope**: the **55 divergent problems** — every problem in the taxonomy
+**Scope**: the **55 problems** — every problem in the taxonomy
 pool where Sorcar's searched rewrite beats OverlayCCL strat-enumeration
-by >5% in the calibrated simulator. Tie problems (strat already optimal or
-both at dispatch floor) and strat-win problems (none exist) are excluded:
-this doc is exactly the set on which the three code paths diverge.
+by >5% in the calibrated simulator.
 
 The 55 span **6 optimization families** (F5, collective-type conversion /
 ZeRO-1 data-flow narrowing, is exercised only in the E2E optimizer path,
@@ -27,9 +25,9 @@ columns from `taxonomy_3col_results/three_col.json`; warm-cache RT columns
 
 | | count |
 |---|---|
-| Divergent anchors (sim, sorcar > strat by >5%) | 55 |
+| Anchors (sim, sorcar > strat by >5%) | 55 |
 | RT-confirmed Sorcar wins (≥1.05× warm-cache) | 45 |
-| At RT dispatch floor (sim divergence < RT noise) | 8 |
+| At RT dispatch floor (sim gap < RT noise) | 8 |
 | Sorcar sim-pass / HW-abort (F3 total-cancel edge) | 2 |
 | Strat RT wins over baseline | 0 |
 | Strat sim wins over baseline (on these 55) | 0 |
