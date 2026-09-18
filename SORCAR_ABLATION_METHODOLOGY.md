@@ -1,6 +1,6 @@
 # Sorcar Methodology Ablation — 5-Arm × 58 Divergent Problems
 
-Controlled single-variable ablation of the Sorcar (kiss `KISSAgent`) search methodology. Same 58 divergent anchor problems, same scorer, same model (`claude-sonnet-4-5`), same budget (`--max-steps 30 --max-budget 5.0`, `--pattern moe`, 7-node sim). Each arm strips exactly one methodology group from the system prompt; everything else is byte-identical. We record BOTH search cost (LLM calls, score calls, tokens, wall) AND warm-cache real-HW runtime (ms/iter, 2-node/64-rank, 100 timed iters after 20 warmup).
+Controlled single-variable ablation of the Sorcar (kiss `KISSAgent`) search methodology. Same 58 divergent problems, same scorer, same model (`claude-sonnet-4-5`), same budget (`--max-steps 30 --max-budget 5.0`, `--pattern moe`, 7-node sim). Each arm strips exactly one methodology group from the system prompt; everything else is byte-identical. We record BOTH search cost (LLM calls, score calls, tokens, wall) AND warm-cache real-HW runtime (ms/iter, 2-node/64-rank, 100 timed iters after 20 warmup).
 
 ## Arms
 
@@ -98,6 +98,6 @@ For each arm, the problems whose emitted code is *worse* than full's (best sim >
 
 - **Group A (research/ideation) matters on the hard many-AR problems**: 7 sim regressions, up to 3×, incl. HW slowdowns ~9× (e.g. `thirtysixinline`).
 
-- **Group C (convergence check) and adversarial (`noadv`) are nearly free to remove on this anchor set** (1 and 1 sim regressions) — they buy robustness/generalization that these single-shot sim+RT metrics don't fully stress.
+- **Group C (convergence check) and adversarial (`noadv`) are nearly free to remove on this problem set** (1 and 1 sim regressions) — they buy robustness/generalization that these single-shot sim+RT metrics don't fully stress.
 
 - The full methodology's extra cost concentrates on the many-collective / large-N problems where naive rewrites are wrong or slow; on simple single-step families all arms converge cheaply.

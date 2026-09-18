@@ -395,8 +395,8 @@ searches):
 
 Combined with the random draw (papersim diverges 5/24, of which 4 are
 `_bcast` local-idiom differences and 1 a local-payload form) and the
-143-problem context (~15 problems in the pool have zero-collective or
-local-idiom-sensitive optima), the honest population statement is:
+broader catalog context (only the zero-collective and
+local-idiom-sensitive problems are affected), the honest population statement is:
 **the sim deltas change the found artifact on roughly 10–20% of
 problems — precisely the zero-collective/local-compute subset — and
 change nothing on the ~80–90% whose optimum keeps a collective. Within

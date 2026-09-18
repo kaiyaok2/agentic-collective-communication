@@ -52,14 +52,14 @@ Loss parity of sorcar vs baseline holds to ≤0.135 on the fused runs
 (reduce_scatter reduction-order noise in early chaotic steps; the
 rewrite is algebraically exact) and ≤0.043 unfused.
 
-## Each family site maps to the 55-problem divergence set
+## Each family site maps to the 55 divergent CCL problems
 
-The E2E step is the 55 micro-anchors instantiated at 10B scale. Every
+The E2E step is the 55 divergent problems instantiated at 10B scale. Every
 Sorcar delta below is one of the six families in
 `SORCAR_FAMILY_TAXONOMY.md`; strat keeps baseline's schedule at each,
-exactly as measured on the corresponding micro-anchors:
+exactly as measured on the corresponding standalone problems:
 
-| Site | Family | baseline / strat schedule | sorcar rewrite | Micro-anchor evidence |
+| Site | Family | baseline / strat schedule | sorcar rewrite | Standalone evidence |
 |---|---|---|---|---|
 | emb-grad microbatch sync | F1 | AR per microbatch | accumulate → 1 AR | `sixtyfourinline` 2.77× RT |
 | per-mb replicated-grad re-sync | F1×F4b | N_MB full sweeps/step | sync once | `eightyaltsum` 3.39× RT |

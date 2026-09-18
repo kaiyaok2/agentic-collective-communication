@@ -9,7 +9,7 @@ tokenized, disjoint per-rank stripes, deterministic batch schedule
 
 ## What this measures
 
-The **55-problem divergence set** (the subset of the 143-problem pool
+The **55 divergent CCL problems** (those
 where Sorcar beats strat by >5% in sim) established per-problem RT wins
 for Sorcar over strat-enumerate across 6 optimization families
 (`SORCAR_FAMILY_TAXONOMY.md`). This experiment embeds **one

@@ -1,8 +1,8 @@
 # Composing Collectives Above a Black-Box Vendor Library
 
 > **Post-submission update (2026-09-10):** For the complete Sorcar vs
-> strat vs baseline results — the **55-problem divergence set** (the
-> subset of the 143-problem pool where sorcar beats strat by >5% in sim)
+> strat vs baseline results — the **55 divergent CCL problems** (those
+> where sorcar beats strat by >5% in sim)
 > organized into 6 optimization families with per-problem three-way
 > warm-cache numbers — see
 > [`SORCAR_FAMILY_TAXONOMY.md`](SORCAR_FAMILY_TAXONOMY.md). End-to-end

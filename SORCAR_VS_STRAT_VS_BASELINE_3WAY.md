@@ -19,17 +19,18 @@ collective schedule** — its cost model scores collective structure, not
 collective algebra, so it never proves the fusions. That is why
 `strat_ms ≈ baseline_ms` everywhere below.
 
-## Anchor set: 55 divergent problems (not the full 143 pool)
+## The 55 divergent CCL problems
 
-Of the 143-problem taxonomy pool, exactly **55** are *divergent* — the
-sorcar rewrite beats strat by >5% in the calibrated simulator. The other
-88 are ties (strat already reaches the optimal schedule, or both sit at
-the dispatch floor) and are excluded from the anchor set. There are
-**zero** problems where strat beats sorcar.
+We study **55** divergent collective-communication problems — those on
+which the sorcar rewrite beats strat by >5% in the calibrated simulator.
+On problems outside this set the two pipelines reach the same schedule
+(strat already reaches the optimal schedule, or both sit at the dispatch
+floor), so we do not report them here. There are **zero** problems where
+strat beats sorcar.
 
 Family distribution of the 55 (see `SORCAR_FAMILY_TAXONOMY.md`):
 
-| Family | Anchors | What diverges |
+| Family | Problems | What diverges |
 |---|---|---|
 | F1 Sequential-AR linearity | 39 | k linearly-combined ARs → 1 |
 | F2 CSE of same-input ARs | 7 | N identical ARs → 1 |
@@ -39,7 +40,7 @@ Family distribution of the 55 (see `SORCAR_FAMILY_TAXONOMY.md`):
 | F7 Slab/chunk payload fusion | 1 | per-slab AR loop → 1 |
 
 (F5, collective-type conversion / ZeRO-1 data-flow narrowing, is
-exercised only in the E2E optimizer path, not as a standalone anchor.)
+exercised only in the E2E optimizer path, not as a standalone problem.)
 
 Warm-cache RT verification of the 55 (`taxonomy_3col_results/RT_THREE_COL_RESULTS.json`):
 **45 RT-confirmed Sorcar wins ≥1.05×**, 8 at the RT dispatch floor
@@ -62,8 +63,8 @@ median warm ms/step:
 | Llama-10B L24 (fused) | 10181.4 | 10156.8 | 3908.5 | **2.599×** | 2.605× | 0.998× |
 
 Both 10B architectures clear **2× over strat**, using multiple divergent
-family sites (F1, F2, F3, F4, F6, F7) drawn from the 55-anchor set in a
-single natural training step (see `SORCAR_E2E_10B_TP.md` for the
+family sites (F1, F2, F3, F4, F6, F7) drawn from the 55 divergent
+problems in a single natural training step (see `SORCAR_E2E_10B_TP.md` for the
 site-by-site family map).
 
 **Loss confirms strat == baseline schedule**: strat's final loss is

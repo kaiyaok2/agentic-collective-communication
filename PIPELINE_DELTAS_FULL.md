@@ -179,8 +179,8 @@ No functional delta. Lowest `sim_time_us` passing 4a/4b is emitted as
 ## 6. Benchmark / problem catalog deltas
 
 The paper evaluates 8 problems (a2av, ua2a, ring-KV, grad-AR, PP,
-TP-MLP, FSDP, LBAR). Post-paper the catalog grew to a 142-problem
-RT-verified pool spanning 7 optimization families — see
+TP-MLP, FSDP, LBAR). Post-paper we study 55 divergent CCL problems
+spanning 6 optimization families — see
 `SORCAR_FAMILY_TAXONOMY.md` for the taxonomy, per-family analysis, and
 complete per-problem 7-node RT numbers (raw sweep logs under
 `session_logs_2026_08_23/` and `session_logs_2026_08_20/`).

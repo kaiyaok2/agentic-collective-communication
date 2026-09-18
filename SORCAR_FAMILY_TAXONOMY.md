@@ -1,12 +1,12 @@
-# Sorcar vs Strat vs Baseline: Family Taxonomy of the 55-Problem Set
+# Sorcar vs Strat vs Baseline: Family Taxonomy of the 55 Divergent CCL Problems
 
-**Scope**: the **55 problems** — every problem in the taxonomy
-pool where Sorcar's searched rewrite beats OverlayCCL strat-enumeration
+**Scope**: the **55 divergent collective-communication problems** — those on
+which Sorcar's searched rewrite beats OverlayCCL strat-enumeration
 by >5% in the calibrated simulator.
 
 The 55 span **6 optimization families** (F5, collective-type conversion /
 ZeRO-1 data-flow narrowing, is exercised only in the E2E optimizer path,
-not as a standalone micro-anchor).
+not as a standalone problem).
 
 **Three columns, three distinct code paths on every problem:**
 - **baseline** — naive textbook-DDP source (one collective per logical op).
@@ -25,7 +25,7 @@ columns from `taxonomy_3col_results/three_col.json`; warm-cache RT columns
 
 | | count |
 |---|---|
-| Anchors (sim, sorcar > strat by >5%) | 55 |
+| Divergent problems (sim, sorcar > strat by >5%) | 55 |
 | RT-confirmed Sorcar wins (≥1.05× warm-cache) | 45 |
 | At RT dispatch floor (sim gap < RT noise) | 8 |
 | Sorcar sim-pass / HW-abort (F3 total-cancel edge) | 2 |
@@ -34,7 +34,7 @@ columns from `taxonomy_3col_results/three_col.json`; warm-cache RT columns
 
 ## Family index
 
-| # | Family | Anchors | Sim ratio range | Best RT (sorcar vs strat) |
+| # | Family | Problems | Sim ratio range | Best RT (sorcar vs strat) |
 |---|---|---|---|---|
 | F1 | Sequential-AR linearity | 39 | 1.07-4.24× | 3.39× |
 | F2 | CSE across redundant ARs of the same input | 7 | 1.14-1.34× | 1.34× |
@@ -43,11 +43,11 @@ columns from `taxonomy_3col_results/three_col.json`; warm-cache RT columns
 | F6 | Mixed-reduction-op extraction | 1 | 1.53-1.53× | 1.28× |
 | F7 | Slab/chunk payload fusion | 1 | 1.28-1.28× | 1.19× |
 
-Total: 55 anchors across 6 families.
+Total: 55 divergent problems across 6 families.
 
 ---
 
-## F1. Sequential-AR linearity (39 anchors)
+## F1. Sequential-AR linearity (39 problems)
 
 **What it is.** A chain of all-reduces combined linearly: y = c1*AR(x1)+...+ck*AR(xk), where each xi is a locally-computable transform of the input. all_reduce(SUM) is a linear operator, so the whole chain folds into ONE AR of a locally pre-combined payload plus scalar post-math. K collectives -> 1.
 
@@ -97,7 +97,7 @@ Total: 55 anchors across 6 families.
 | three_inline_ars_chal | 5657 | 5178 | 1.09× | - | - | - | _floor_ |
 | triple_ar_linear_edge_chal | 5564 | 5163 | 1.08× | - | - | - | _floor_ |
 
-## F2. CSE across redundant ARs of the same input (7 anchors)
+## F2. CSE across redundant ARs of the same input (7 problems)
 
 **What it is.** N syntactically distinct AR(x) calls on the SAME unmodified input, combined arithmetically. The N results are identical; N-1 collectives are pure waste. Sorcar hoists to a single AR(x) and replaces every other call with the hoisted value, collapsing the arithmetic to one scalar multiplier.
 
@@ -115,7 +115,7 @@ Total: 55 anchors across 6 families.
 | five_ar_scaled_same_input_chal | 6169 | 5178 | 1.19× | 5.66 | 6.33 | 5.34 | **1.18×** |
 | four_ar_same_input_chal | 5914 | 5178 | 1.14× | 5.87 | 5.66 | 5.12 | **1.11×** |
 
-## F3. Dead-collective elimination & algebraic zero (2 anchors)
+## F3. Dead-collective elimination & algebraic zero (2 problems)
 
 **What it is.** Collectives whose results are provably unused, mathematically canceled, or reducible to a constant: alternating-sign sums that telescope to zero, gather-then-verify with a dead verify branch. Sorcar proves the cancellation and removes ALL collectives (sim cost -> 0).
 
@@ -128,7 +128,7 @@ Total: 55 anchors across 6 families.
 | sequential_ar_chain_edge_chal | 5361 | 0 | ∞ | - | - | - | _HW-abort_ |
 | three_group_dead_verify_chal | 6419 | 0 | ∞ | - | - | - | _HW-abort_ |
 
-## F4. Per-row/col/batch dispatch collapse (5 anchors)
+## F4. Per-row/col/batch dispatch collapse (5 problems)
 
 **What it is.** A per-row / per-col / per-batch / per-slice loop that issues one AR per slice of a 2D/3D tensor. Sorcar stacks the slices and issues ONE AR over the whole tensor (or a single reshaped AR), collapsing M dispatches to 1.
 
@@ -144,7 +144,7 @@ Total: 55 anchors across 6 families.
 | perbatchM32 | 11538 | 5309 | 2.17× | 9.26 | 9.31 | 6.37 | **1.46×** |
 | perbatchM12 | 7418 | 5189 | 1.43× | 6.52 | 6.11 | 5.02 | **1.22×** |
 
-## F6. Mixed-reduction-op extraction (1 anchors)
+## F6. Mixed-reduction-op extraction (1 problem)
 
 **What it is.** A payload reduced under one op (SUM) alongside the same or related payload reduced under a different op (MAX/MIN), issued as separate collectives. Sorcar extracts the mixed-op structure into the minimum distinct collectives.
 
@@ -156,7 +156,7 @@ Total: 55 anchors across 6 families.
 |---|---|---|---|---|---|---|---|
 | mixmaxmin | 8199 | 5362 | 1.53× | 6.95 | 6.77 | 5.30 | **1.28×** |
 
-## F7. Slab/chunk payload fusion (1 anchors)
+## F7. Slab/chunk payload fusion (1 problem)
 
 **What it is.** A tensor split into slabs/chunks, each all-reduced separately then recombined. Sorcar fuses the slabs into one contiguous payload and issues a single AR.
 
