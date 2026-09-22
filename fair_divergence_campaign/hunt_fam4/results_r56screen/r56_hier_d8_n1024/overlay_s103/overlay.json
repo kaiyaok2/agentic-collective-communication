@@ -1,0 +1,98 @@
+{
+  "pipeline": "overlay",
+  "problem": "r56_hier_d8_n1024",
+  "gate": "fp32",
+  "baseline_sim": 6565.599999999999,
+  "strategies": [
+    {
+      "name": "Naive Sequential Alternating AllReduce",
+      "desc": "Implements 8 sequential all_reduce calls alternating between group-wise (even iterations) and global (odd iterations), applying scalar multipliers a[r] or b[r] before each collective. Dispatch count: 8. Represents the baseline: maximal dispatches, minimal fusion, straightforward correctness."
+    },
+    {
+      "name": "Fused Even-Odd Pair Blocks",
+      "desc": "Fuses each even+odd pair into a single dispatch by concatenating (a[r]*cur, b[r]*cur) along a new dimension, performing both group and global all_reduce via a single all_reduce call on the concatenated tensor, then extracting results. Dispatch count: 4. Trades increased payload size (2x per dispatch) for halved dispatch overhead."
+    },
+    {
+      "name": "Precompute All Coefficients Then Batch",
+      "desc": "Precomputes the 8-deep product of alternating coefficients into a single scaling vector before any collectives, then issues all 8 all_reduce operations back-to-back on pre-scaled intermediate tensors stored in a buffer. Dispatch count: 8. Separates compute from communication to enable potential backend pipelining of consecutive collectives."
+    },
+    {
+      "name": "Hierarchical Group-Global Interleaved Buffering",
+      "desc": "Maintains two buffers for group-wise and global reductions; overlaps computation of next iteration's scaling while previous all_reduce is in flight by issuing async collectives. Dispatch count: 8 but with potential overlap. Exploits the alternating structure to hide latency through double-buffering between group/global domains."
+    },
+    {
+      "name": "Tensorized Multi-Stage Single Dispatch",
+      "desc": "Stacks all 8 intermediate states into shape (8, 1024), applies all scaling coefficients as a (8,) vector multiply, then performs a custom nested reduce-scatter followed by all-gather that emulates the alternating group/global pattern in a single fused kernel. Dispatch count: 1-2. Maximizes fusion at the cost of complex addressing logic and larger single-dispatch payload.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Naive Sequential Alternating AllReduce",
+      "sim": 6565.599999999999,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Even-Odd Pair Blocks",
+      "sim": 6571.8,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Precompute All Coefficients Then Batch",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=853.016968"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Group-Global Interleaved Buffering",
+      "sim": 6565.599999999999,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Tensorized Multi-Stage Single Dispatch",
+      "sim": 6565.599999999999,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "refine:Naive Sequential Alternating AllReduce",
+      "round": 1,
+      "sim": 6565.599999999999
+    },
+    {
+      "stage": "refine:Naive Sequential Alternating AllReduce",
+      "round": 2,
+      "sim": 6582.400000000001
+    },
+    {
+      "stage": "refine:Naive Sequential Alternating AllReduce",
+      "round": 3,
+      "sim": 6585.2
+    },
+    {
+      "stage": "refine:Hierarchical Group-Global Interleaved Buffering",
+      "round": 1,
+      "sim": 6565.599999999999
+    },
+    {
+      "stage": "refine:Hierarchical Group-Global Interleaved Buffering",
+      "round": 2,
+      "sim": 6565.599999999999
+    },
+    {
+      "stage": "refine:Hierarchical Group-Global Interleaved Buffering",
+      "round": 3,
+      "sim": 6565.599999999999
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6565.599999999999,
+  "final_code": "def r56_hier_d8_n1024_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Naive Sequential Alternating AllReduce strategy.\n    \n    Implements 8 sequential all_reduce calls alternating between:\n    - Even iterations (t=0,2,4,6): group-wise all_reduce with scalar a[r]\n    - Odd iterations (t=1,3,5,7): global all_reduce with scalar b[r]\n    \n    This is the baseline implementation with maximal dispatches (8 total),\n    minimal fusion, and straightforward correctness.\n    \"\"\"\n    W = world_size\n    NG = 4  # Number of groups\n    D = 8   # Depth (number of iterations)\n    \n    # Create groups: partition ranks by rank mod 4\n    groups = [[r for r in range(W) if r % NG == j] for j in range(NG)]\n    \n    # Compute rank-specific scalar multipliers\n    a = 1.0 + 0.5 * ((rank * 13) % 5) / 5.0\n    b = 1.0 + 0.25 * ((rank * 7) % 9) / 9.0\n    \n    # Preserve input dtype\n    dtype = x.dtype\n    \n    # Initialize current value\n    cur = x\n    \n    # Execute 8 sequential all_reduce operations\n    for t in range(D):\n        if t % 2 == 0:\n            # Even iteration: group-wise all_reduce with scalar a\n            cur = xm.all_reduce(xm.REDUCE_SUM, a * cur, groups=groups)\n        else:\n            # Odd iteration: global all_reduce with scalar b\n            cur = xm.all_reduce(xm.REDUCE_SUM, b * cur)\n    \n    return cur"
+}

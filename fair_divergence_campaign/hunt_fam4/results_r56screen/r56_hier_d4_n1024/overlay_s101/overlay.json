@@ -1,0 +1,93 @@
+{
+  "pipeline": "overlay",
+  "problem": "r56_hier_d4_n1024",
+  "gate": "fp32",
+  "baseline_sim": 5762.8,
+  "strategies": [
+    {
+      "name": "Sequential four-stage alternating all-reduce",
+      "desc": "Direct implementation with 4 separate all-reduce dispatches alternating between group-wise (even stages) and global (odd stages), applying rank-dependent coefficients a and b before each corresponding reduction. 4 total dispatches with no fusion; straightforward but maximum dispatch overhead."
+    },
+    {
+      "name": "Fused coefficient precomputation with sequential collectives",
+      "desc": "Precompute all coefficient products (a, b, a*b, b*a*b, etc.) locally before any communication, then execute 4 all-reduce dispatches on appropriately pre-scaled tensors. Still 4 dispatches but eliminates redundant arithmetic between collectives; trades compute hoisting for same communication cost."
+    },
+    {
+      "name": "Interleaved group-global with stacked tensor payload",
+      "desc": "Stack or concatenate multiple intermediate results into a single tensor, dispatch fewer collectives on larger payloads by combining compatible stages (e.g., both group all-reduces in one call with reshaped groups structure). Targets 2-3 dispatches with 2-4x payload size; reduces launch overhead at cost of larger message sizes."
+    },
+    {
+      "name": "Pipelined depth-unrolled with coefficient folding",
+      "desc": "Fully unroll the 4-stage loop, inline all coefficient multiplications, and express as a single computation graph that the XLA compiler can potentially fuse into 2-3 optimized collective kernels. Relies on compiler optimization to merge consecutive all-reduce operations; minimal explicit dispatches (2-4) with compiler-dependent fusion."
+    },
+    {
+      "name": "Two-phase hierarchical with buffered intermediates",
+      "desc": "Execute group all-reduces (stages 0 and 2) as one collective dispatch on a 2-element stacked buffer, then global all-reduces (stages 1 and 3) as a second dispatch on another buffer, with local coefficient application and buffer swaps between phases. 2 total dispatches by batching same-type collectives; maximizes dispatch reduction but requires careful intermediate state management.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential four-stage alternating all-reduce",
+      "sim": 5762.8,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused coefficient precomputation with sequential collectives",
+      "sim": 5762.8,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Interleaved group-global with stacked tensor payload",
+      "sim": 5762.8,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined depth-unrolled with coefficient folding",
+      "sim": 5762.8,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Two-phase hierarchical with buffered intermediates",
+      "sim": 5765.8,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "refine:Sequential four-stage alternating all-reduce",
+      "round": 1,
+      "sim": 5771.2
+    },
+    {
+      "stage": "refine:Sequential four-stage alternating all-reduce",
+      "round": 2,
+      "sim": 5762.8
+    },
+    {
+      "stage": "refine:Fused coefficient precomputation with sequential collectives",
+      "round": 1,
+      "sim": 5762.8
+    },
+    {
+      "stage": "refine:Fused coefficient precomputation with sequential collectives",
+      "round": 2,
+      "sim": 5763.499999999999
+    },
+    {
+      "stage": "refine:Fused coefficient precomputation with sequential collectives",
+      "round": 3,
+      "sim": 5766.3
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 5762.8,
+  "final_code": "def r56_hier_d4_n1024_fn(x, rank, world_size, num_devices,\n                         cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Sequential four-stage alternating all-reduce.\n    \n    Implements 4 stages alternating between:\n    - Even stages (t=0,2): group-wise all-reduce with coefficient a\n    - Odd stages (t=1,3): global all-reduce with coefficient b\n    \"\"\"\n    W = world_size\n    NG = 4  # Number of groups\n    D = 4   # Depth (number of stages)\n    \n    # Create groups: partition ranks by rank mod 4\n    groups = [[r for r in range(W) if r % NG == j] for j in range(NG)]\n    \n    # Compute rank-dependent coefficients\n    a = 1.0 + 0.5 * ((rank * 13) % 5) / 5.0\n    b = 1.0 + 0.25 * ((rank * 7) % 9) / 9.0\n    \n    # Start with input\n    cur = x\n    \n    # Execute 4 stages\n    for t in range(D):\n        if t % 2 == 0:\n            # Even stage: group-wise all-reduce with coefficient a\n            cur = xm.all_reduce(xm.REDUCE_SUM, a * cur, groups=groups)\n        else:\n            # Odd stage: global all-reduce with coefficient b\n            cur = xm.all_reduce(xm.REDUCE_SUM, b * cur)\n    \n    return cur"
+}

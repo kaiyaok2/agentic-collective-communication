@@ -1,0 +1,83 @@
+{
+  "pipeline": "overlay",
+  "problem": "r56_hier_d4_n1024",
+  "gate": "fp32",
+  "baseline_sim": 5762.8,
+  "strategies": [
+    {
+      "name": "Naive Sequential Four-Stage Dispatch",
+      "desc": "Directly implements the four alternating all_reduce stages with four separate xm.all_reduce calls (group, global, group, global), scaling by a[r] or b[r] before each dispatch. Results in 4 total dispatches with minimal tensor overhead but no fusion opportunity, representing the baseline reference pattern with straightforward correctness."
+    },
+    {
+      "name": "Coefficient Pre-Multiplication Fusion",
+      "desc": "Pre-computes combined coefficients for each stage path (a*b*a*b accumulation) and reduces dispatch count by fusing scalar multiplications outside collective calls where algebraically permissible. Achieves 4 dispatches but reduces local compute overhead by batching coefficient arithmetic, trading algebraic complexity for fewer element-wise ops between collectives."
+    },
+    {
+      "name": "Tensor Stacking Multi-Stage Batch",
+      "desc": "Stacks multiple scaled versions of x into a larger tensor (e.g., shape [4, 1024] holding a*x, b*a*x prefixes) and dispatches fewer collectives on the concatenated payload, then slices results. Reduces dispatch count to 2-3 by batching communication at the cost of 4\u00d7 memory footprint and strided access patterns post-reduction."
+    },
+    {
+      "name": "Interleaved Group-Global Pipelining",
+      "desc": "Overlaps group and global all_reduce by splitting the 1024-element tensor into chunks (e.g., 2\u00d7512 or 4\u00d7256) and pipelining group reduce on chunk_i while global reduce processes chunk_{i-1}. Maintains 4 logical stages but increases total dispatches to 8-16 to enable communication-computation overlap, trading dispatch count for potential latency hiding."
+    },
+    {
+      "name": "Algebraic Reordering with Delayed Scaling",
+      "desc": "Exploits commutativity of scalar multiplication and SUM reduction by reordering operations: perform all four all_reduce(SUM) on unscaled x, then apply the cumulative coefficient product (a*b*a*b) once at the end. Reduces to 4 dispatches but changes numerical accumulation order, which may differ in floating-point semantics but structurally minimizes pre-reduction scaling overhead.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Naive Sequential Four-Stage Dispatch",
+      "sim": 5762.8,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Coefficient Pre-Multiplication Fusion",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.335016"
+    },
+    {
+      "stage": "impl",
+      "name": "Tensor Stacking Multi-Stage Batch",
+      "sim": 6194.599999999999,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Interleaved Group-Global Pipelining",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: shape (256,) != (1024,)"
+    },
+    {
+      "stage": "impl",
+      "name": "Algebraic Reordering with Delayed Scaling",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.335016"
+    },
+    {
+      "stage": "refine:Tensor Stacking Multi-Stage Batch",
+      "round": 1,
+      "sim": 5764.500000000001
+    },
+    {
+      "stage": "refine:Tensor Stacking Multi-Stage Batch",
+      "round": 2,
+      "sim": 5762.8
+    },
+    {
+      "stage": "refine:Tensor Stacking Multi-Stage Batch",
+      "round": 3,
+      "sim": 5762.8
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 5762.8,
+  "final_code": "def r56_hier_d4_n1024_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size\n    NG = 4\n    D = 4\n    \n    # Create groups: partition ranks by rank mod 4\n    groups = [[r for r in range(W) if r % NG == j] for j in range(NG)]\n    \n    # Compute rank-specific scaling factors\n    a = 1.0 + 0.5 * ((rank * 13) % 5) / 5.0\n    b = 1.0 + 0.25 * ((rank * 7) % 9) / 9.0\n    \n    # Preserve input dtype\n    dtype = x.dtype\n    \n    # Initialize current tensor\n    cur = x\n    \n    # Four-stage alternating dispatch\n    # Stage 0 (t=0, even): group-wise all_reduce with a[r] scaling\n    cur = xm.all_reduce(xm.REDUCE_SUM, a * cur, groups=groups)\n    \n    # Stage 1 (t=1, odd): global all_reduce with b[r] scaling\n    cur = xm.all_reduce(xm.REDUCE_SUM, b * cur)\n    \n    # Stage 2 (t=2, even): group-wise all_reduce with a[r] scaling\n    cur = xm.all_reduce(xm.REDUCE_SUM, a * cur, groups=groups)\n    \n    # Stage 3 (t=3, odd): global all_reduce with b[r] scaling\n    cur = xm.all_reduce(xm.REDUCE_SUM, b * cur)\n    \n    return cur"
+}

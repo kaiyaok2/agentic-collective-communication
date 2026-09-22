@@ -1,0 +1,93 @@
+{
+  "pipeline": "overlay",
+  "problem": "r56_hier_d6_n1024",
+  "gate": "fp32",
+  "baseline_sim": 6164.2,
+  "strategies": [
+    {
+      "name": "Sequential Six-Stage Dispatch",
+      "desc": "Directly implements the spec with 6 separate xm.all_reduce calls alternating between group and global scopes, applying scalar multipliers a[r] or b[r] before each dispatch. Total 6 dispatches. Represents the baseline: simplest logic, no fusion, highest dispatch overhead but clearest correspondence to problem structure."
+    },
+    {
+      "name": "Fused Odd-Even Coefficient Precompute",
+      "desc": "Precompute compound coefficients for alternating stages (e.g., a*b for stages 0-1, then (a*b)*a for stages 0-2, etc.) and issue 6 dispatches with pre-scaled inputs to eliminate redundant scalar multiplies between collectives. Still 6 dispatches but reduces per-stage arithmetic overhead by front-loading coefficient composition into a single local multiply chain."
+    },
+    {
+      "name": "Group-Global Interleaved Pipeline",
+      "desc": "Explicitly split the tensor into two halves (or use views) and overlap group all_reduce on one half with global all_reduce on the other half by issuing operations in a staggered pattern (launch stage t+1 on partition B while stage t on partition A is in flight). Requires 12 dispatches (6 stages \u00d7 2 partitions) but exploits potential hardware pipeline parallelism between group and global communication fabrics."
+    },
+    {
+      "name": "Coefficient-Vectorized Batch Dispatch",
+      "desc": "Stack 6 copies of the input tensor into shape (6, 1024), apply all stage-specific coefficients as a batched element-wise multiply, then issue a single batched all_reduce per scope type (one for all odd stages with groups, one for all even stages globally) with custom reduction logic or manual staging. Reduces to 2-3 dispatches by batching homogeneous collective types, trading increased memory footprint (6\u00d7 buffer) for fewer kernel launches."
+    },
+    {
+      "name": "Recursive Halving with Scope Toggle",
+      "desc": "Decompose each all_reduce (both group and global) into log\u2082(group_size) send-recv or reduce-scatter/all-gather pairs, manually cycling between group and global participant sets every stage. Issues ~6\u00d7log\u2082(56 or 224) lower-level point-to-point or sub-collective dispatches. Trades dispatch count for finer control over bandwidth utilization and potential for custom reduction trees that merge local coefficient application into reduction operators.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential Six-Stage Dispatch",
+      "sim": 6164.2,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Odd-Even Coefficient Precompute",
+      "sim": 6164.2,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Group-Global Interleaved Pipeline",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=149.482071"
+    },
+    {
+      "stage": "impl",
+      "name": "Coefficient-Vectorized Batch Dispatch",
+      "sim": 6193.2,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Recursive Halving with Scope Toggle",
+      "sim": 6164.2,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "refine:Sequential Six-Stage Dispatch",
+      "round": 1,
+      "sim": 6164.2
+    },
+    {
+      "stage": "refine:Sequential Six-Stage Dispatch",
+      "round": 2,
+      "sim": 6164.2
+    },
+    {
+      "stage": "refine:Sequential Six-Stage Dispatch",
+      "round": 3,
+      "sim": 6164.2
+    },
+    {
+      "stage": "refine:Fused Odd-Even Coefficient Precompute",
+      "round": 1,
+      "sim": 6164.2
+    },
+    {
+      "stage": "refine:Fused Odd-Even Coefficient Precompute",
+      "round": 3,
+      "sim": 6173.299999999999
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6164.2,
+  "final_code": "def r56_hier_d6_n1024_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Sequential Six-Stage Dispatch Strategy\n    \n    Directly implements the spec with 6 separate xm.all_reduce calls alternating \n    between group and global scopes, applying scalar multipliers a[r] or b[r] \n    before each dispatch.\n    \n    - Even stages (0, 2, 4): group-wise all_reduce with a[r] multiplier\n    - Odd stages (1, 3, 5): global all_reduce with b[r] multiplier\n    \"\"\"\n    W = world_size\n    NG = 4  # Number of groups\n    D = 6   # Depth\n    \n    # Compute rank-specific scalars\n    a = 1.0 + 0.5 * ((rank * 13) % 5) / 5.0\n    b = 1.0 + 0.25 * ((rank * 7) % 9) / 9.0\n    \n    # Define groups: partition ranks by rank mod 4\n    groups = [[r for r in range(W) if r % NG == j] for j in range(NG)]\n    \n    # Start with input\n    cur = x\n    \n    # Execute 6 stages sequentially\n    for t in range(D):\n        if t % 2 == 0:\n            # Even stage: group-wise all_reduce with a multiplier\n            cur = xm.all_reduce(xm.REDUCE_SUM, a * cur, groups=groups)\n        else:\n            # Odd stage: global all_reduce with b multiplier\n            cur = xm.all_reduce(xm.REDUCE_SUM, b * cur)\n    \n    return cur"
+}

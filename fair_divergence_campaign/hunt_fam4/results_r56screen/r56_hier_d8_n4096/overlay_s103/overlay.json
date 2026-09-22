@@ -1,0 +1,83 @@
+{
+  "pipeline": "overlay",
+  "problem": "r56_hier_d8_n4096",
+  "gate": "fp32",
+  "baseline_sim": 6571.314285714286,
+  "strategies": [
+    {
+      "name": "Sequential alternating collectives",
+      "desc": "Direct translation of the reference: 8 sequential xm.all_reduce dispatches alternating between group-scoped (even t) and global (odd t), each with scalar-multiplied input. 8 total dispatches. Baseline: maximizes dispatch overhead but simplest logic, no fusion opportunity."
+    },
+    {
+      "name": "Pre-fused scalar multiplication batching",
+      "desc": "Compute all 8 scalar coefficients (a, b applied at each stage) up-front and fuse consecutive same-scope multiplications into the input preparation, reducing to 8 all_reduce dispatches but with coefficient pre-accumulation logic that may enable compiler fusion of local ops. Same dispatch count but better arithmetic intensity per launch."
+    },
+    {
+      "name": "Pairwise stage fusion strategy",
+      "desc": "Fuse adjacent (group, global) pairs into 4 macro-iterations where each iteration performs group all_reduce, applies b-coefficient, then global all_reduce in immediate succession. 8 dispatches remain but tighter data locality and potential for back-to-back collective pipelining within each of 4 super-steps."
+    },
+    {
+      "name": "Coefficient tensor pre-multiplication chain",
+      "desc": "Pre-compute the cumulative effect of alternating a/b multipliers across all 8 stages as a single effective scaling factor, then structure as: scale input once, perform 4 group all_reduces interleaved with 4 global all_reduces but with modified API usage (groups list cycling). Reduces local ops but still 8 dispatches; trades arithmetic for simpler dispatch pattern."
+    },
+    {
+      "name": "Two-phase grouped dispatch reduction",
+      "desc": "Partition the 8 stages into two phases of 4: execute all 4 group-scoped reductions first (stages 0,2,4,6 with accumulated coefficients), then all 4 global reductions (stages 1,3,5,7 with their coefficients), reordering operations to batch by collective scope. 8 dispatches but different synchronization profile and potential hardware-level batching at group boundaries.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential alternating collectives",
+      "sim": 6571.314285714286,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pre-fused scalar multiplication batching",
+      "sim": 6571.314285714286,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pairwise stage fusion strategy",
+      "sim": 6571.314285714286,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Coefficient tensor pre-multiplication chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=392.043579"
+    },
+    {
+      "stage": "impl",
+      "name": "Two-phase grouped dispatch reduction",
+      "sim": 6571.314285714286,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "refine:Sequential alternating collectives",
+      "round": 3,
+      "sim": 6571.314285714286
+    },
+    {
+      "stage": "refine:Pre-fused scalar multiplication batching",
+      "round": 1,
+      "sim": 6627.314285714286
+    },
+    {
+      "stage": "refine:Pre-fused scalar multiplication batching",
+      "round": 3,
+      "sim": 6571.314285714286
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6571.314285714286,
+  "final_code": "def r56_hier_d8_n4096_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size\n    NG = 4\n    D = 8\n    \n    # Create groups: partition ranks by rank mod 4\n    groups = [[r for r in range(W) if r % NG == j] for j in range(NG)]\n    \n    # Compute rank-specific scalars\n    a = 1.0 + 0.5 * ((rank * 13) % 5) / 5.0\n    b = 1.0 + 0.25 * ((rank * 7) % 9) / 9.0\n    \n    # Preserve input dtype\n    dtype = x.dtype\n    \n    # Initialize current tensor\n    cur = x\n    \n    # Sequential alternating collectives: 8 stages\n    for t in range(D):\n        if t % 2 == 0:\n            # Even stages: group-scoped all_reduce with scalar a\n            cur = xm.all_reduce(xm.REDUCE_SUM, a * cur, groups=groups)\n        else:\n            # Odd stages: global all_reduce with scalar b\n            cur = xm.all_reduce(xm.REDUCE_SUM, b * cur)\n    \n    return cur"
+}

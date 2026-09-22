@@ -1,0 +1,73 @@
+{
+  "pipeline": "overlay",
+  "problem": "r56_hier_d4_n1024",
+  "gate": "fp32",
+  "baseline_sim": 5762.8,
+  "strategies": [
+    {
+      "name": "Sequential alternating collectives baseline",
+      "desc": "Four sequential xm.all_reduce calls alternating between group-scoped (even t) and global (odd t), with scalar-multiply before each dispatch. Exactly 4 dispatches. Represents the straightforward translation with no fusion, maximizing code clarity at the cost of dispatch overhead."
+    },
+    {
+      "name": "Fused scalar pre-multiplication chain",
+      "desc": "Pre-compute all four scalar coefficients (a, a*b, a*a*b, a*a*b*b) and apply cumulatively, then dispatch all four all_reduce operations back-to-back on pre-scaled tensors. Still 4 dispatches but eliminates interleaved scalar ops between collectives, potentially improving pipeline utilization."
+    },
+    {
+      "name": "Two-stage grouped then global",
+      "desc": "Merge the two group all_reduce stages (t=0, t=2) into a single collective by pre-multiplying by a*a, then merge the two global all_reduce stages (t=1, t=3) into one by pre-multiplying by b*b. Reduces to 2 dispatches by exploiting commutativity of SUM reduction and scalar multiplication."
+    },
+    {
+      "name": "Tensor stacking with single collective",
+      "desc": "Stack four copies of x (scaled by a, a*b, a*a*b, a*a*b*b respectively) along a new dimension into shape (4, 1024), dispatch appropriate collectives per slice (alternating groups/global), then extract final slice. Potentially 1-2 dispatches if backend supports heterogeneous group specification per tensor slice, otherwise 4."
+    },
+    {
+      "name": "Interleaved buffer double-buffering",
+      "desc": "Allocate two buffers and ping-pong between them: buffer_A holds current result, buffer_B accumulates next stage's pre-scaled input while buffer_A's collective is in-flight. Overlaps computation (scalar multiply) with communication (all_reduce). Still 4 dispatches but reduces wall-clock time through async pipelining.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential alternating collectives baseline",
+      "sim": 5762.8,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused scalar pre-multiplication chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: UnboundLocalError: cannot access local variab"
+    },
+    {
+      "stage": "impl",
+      "name": "Two-stage grouped then global",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=22.305843"
+    },
+    {
+      "stage": "impl",
+      "name": "Tensor stacking with single collective",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=22.305843"
+    },
+    {
+      "stage": "impl",
+      "name": "Interleaved buffer double-buffering",
+      "sim": 5762.8,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "refine:Interleaved buffer double-buffering",
+      "round": 3,
+      "sim": 5771.2
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 5762.8,
+  "final_code": "def r56_hier_d4_n1024_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Sequential alternating collectives baseline.\n    Four sequential xm.all_reduce calls alternating between group-scoped (even t) \n    and global (odd t), with scalar-multiply before each dispatch.\n    \"\"\"\n    W = world_size\n    NG = 4\n    D = 4\n    \n    # Build groups: partition ranks by rank mod 4\n    groups = [[r for r in range(W) if r % NG == j] for j in range(NG)]\n    \n    # Compute rank-specific scalars\n    a = 1.0 + 0.5 * ((rank * 13) % 5) / 5.0\n    b = 1.0 + 0.25 * ((rank * 7) % 9) / 9.0\n    \n    # Start with input\n    cur = x\n    \n    # Four sequential dispatches, alternating between group and global\n    for t in range(D):\n        if t % 2 == 0:\n            # Even stages: group-scoped all_reduce with scalar a\n            cur = xm.all_reduce(xm.REDUCE_SUM, a * cur, groups=groups)\n        else:\n            # Odd stages: global all_reduce with scalar b\n            cur = xm.all_reduce(xm.REDUCE_SUM, b * cur)\n    \n    return cur"
+}

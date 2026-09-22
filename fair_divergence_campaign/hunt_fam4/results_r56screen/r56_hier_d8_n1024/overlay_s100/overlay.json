@@ -1,0 +1,98 @@
+{
+  "pipeline": "overlay",
+  "problem": "r56_hier_d8_n1024",
+  "gate": "fp32",
+  "baseline_sim": 6565.599999999999,
+  "strategies": [
+    {
+      "name": "Naive Sequential Eight-Stage Loop",
+      "desc": "Direct translation of reference: 8 sequential xm.all_reduce dispatches alternating between group-wise (even stages) and global (odd stages), applying scalar multipliers a or b before each collective. Total 8 dispatches, no fusion. Represents baseline maximum-dispatch approach with minimal local compute batching."
+    },
+    {
+      "name": "Fused Odd-Even Scalar Precomputation",
+      "desc": "Precompute all scalar multipliers (a^4 for group stages, b^4 for global stages) by local multiplications, then execute 8 collectives on progressively scaled tensors. Still 8 dispatches but reduces per-stage arithmetic overhead by hoisting power computations outside the alternating loop, trading local compute for simpler dispatch payload."
+    },
+    {
+      "name": "Two-Phase Group-Then-Global Reordering",
+      "desc": "Reorder operations to batch all 4 group-wise all_reduces together, then all 4 global all_reduces, exploiting potential runtime batching of same-topology collectives. Requires careful algebraic rewrite to preserve commutative sum semantics across reordered scales. 8 dispatches but improved cache locality and potential NCCL kernel fusion within homogeneous phases."
+    },
+    {
+      "name": "Hierarchical Reduce-Scatter Gather Pattern",
+      "desc": "Decompose each all_reduce into reduce_scatter followed by all_gather, enabling 16 smaller-payload dispatches (2 per stage) that pipeline better on interconnect. Each reduce_scatter operates on 1024/224 \u2248 5-element chunks, trades dispatch count for reduced per-rank bandwidth and potential overlap of computation with communication on partitioned data."
+    },
+    {
+      "name": "Manual Loop Unroll Eight Inline Calls",
+      "desc": "Fully unroll the depth-8 loop into 8 explicit consecutive xm.all_reduce calls with hardcoded a/b coefficients and group/global arguments, enabling compiler/XLA to perform cross-call optimizations (dead code elimination, constant folding of group lists). Still 8 dispatches but maximizes JIT fusion opportunities by exposing static structure.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Naive Sequential Eight-Stage Loop",
+      "sim": 6565.599999999999,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Odd-Even Scalar Precomputation",
+      "sim": 6565.599999999999,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Two-Phase Group-Then-Global Reordering",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=853.016968"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Reduce-Scatter Gather Pattern",
+      "sim": null,
+      "ok": false,
+      "err": "  unsupported_primitives=unsupported)\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/acc_verify/search"
+    },
+    {
+      "stage": "impl",
+      "name": "Manual Loop Unroll Eight Inline Calls",
+      "sim": 6565.599999999999,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "refine:Naive Sequential Eight-Stage Loop",
+      "round": 1,
+      "sim": 6565.599999999999
+    },
+    {
+      "stage": "refine:Naive Sequential Eight-Stage Loop",
+      "round": 2,
+      "sim": 6565.599999999999
+    },
+    {
+      "stage": "refine:Naive Sequential Eight-Stage Loop",
+      "round": 3,
+      "sim": 6599.2
+    },
+    {
+      "stage": "refine:Fused Odd-Even Scalar Precomputation",
+      "round": 1,
+      "sim": 6565.599999999999
+    },
+    {
+      "stage": "refine:Fused Odd-Even Scalar Precomputation",
+      "round": 2,
+      "sim": 6565.599999999999
+    },
+    {
+      "stage": "refine:Fused Odd-Even Scalar Precomputation",
+      "round": 3,
+      "sim": 6565.599999999999
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6565.599999999999,
+  "final_code": "def r56_hier_d8_n1024_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Naive Sequential Eight-Stage Loop implementation.\n    \n    Direct translation of reference: 8 sequential xm.all_reduce dispatches \n    alternating between group-wise (even stages) and global (odd stages), \n    applying scalar multipliers a or b before each collective.\n    \n    - Even stages (t=0,2,4,6): group-wise all_reduce with multiplier a\n    - Odd stages (t=1,3,5,7): global all_reduce with multiplier b\n    \"\"\"\n    W = world_size\n    NG = 4  # Number of groups\n    D = 8   # Depth/number of stages\n    \n    # Create groups: partition ranks by rank mod 4\n    groups = [[r for r in range(W) if r % NG == j] for j in range(NG)]\n    \n    # Compute rank-specific scalar multipliers\n    a = 1.0 + 0.5 * ((rank * 13) % 5) / 5.0\n    b = 1.0 + 0.25 * ((rank * 7) % 9) / 9.0\n    \n    # Initialize current result with input\n    cur = x\n    \n    # Execute 8 sequential stages\n    for t in range(D):\n        if t % 2 == 0:\n            # Even stage: group-wise all_reduce with multiplier a\n            cur = xm.all_reduce(xm.REDUCE_SUM, a * cur, groups=groups)\n        else:\n            # Odd stage: global all_reduce with multiplier b\n            cur = xm.all_reduce(xm.REDUCE_SUM, b * cur)\n    \n    return cur"
+}

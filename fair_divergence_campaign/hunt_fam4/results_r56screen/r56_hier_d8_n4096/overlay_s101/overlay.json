@@ -1,0 +1,88 @@
+{
+  "pipeline": "overlay",
+  "problem": "r56_hier_d8_n4096",
+  "gate": "fp32",
+  "baseline_sim": 6571.314285714286,
+  "strategies": [
+    {
+      "name": "Sequential alternating all-reduce dispatch",
+      "desc": "Direct translation of the reference: 8 separate xm.all_reduce calls alternating between group-scoped (even t) and global (odd t), each applying scalar multiplication inline. 8 total dispatches. Baseline strategy with no optimization, maximum dispatch overhead but simplest control flow."
+    },
+    {
+      "name": "Pre-fused scalar coefficient application",
+      "desc": "Pre-compute the compound scalar coefficient (product of all a's and b's applied across 8 stages) and apply once before or after a sequence of unscaled all-reduces, or compute stage-wise products to reduce arithmetic ops inside the loop. Still 8 dispatches but reduces per-stage multiplication overhead by fusing scalar ops outside collectives."
+    },
+    {
+      "name": "Pipelined dual-buffer odd-even split",
+      "desc": "Split computation into two interleaved pipelines: one buffer accumulates even-stage (group) results, another accumulates odd-stage (global) results, with final merge. Exploits potential async dispatch overlap between group and global collectives. Approximately 8-10 dispatches but enables latency hiding if runtime supports concurrent group/global operations."
+    },
+    {
+      "name": "Depth-collapsed coefficient batching",
+      "desc": "Recognize that 8 alternating all-reduces can be restructured by pre-scaling with cumulative coefficients at strategic points (e.g., apply a^4 before 4 group ops, b^4 before 4 global ops) and reorder/merge compatible operations. Reduces to 4-6 dispatches by batching compatible reduction scopes, trading arithmetic complexity for fewer kernel launches."
+    },
+    {
+      "name": "Two-phase group-then-global coalescing",
+      "desc": "Decompose the 8-stage hierarchy into two macro-phases: (1) perform all 4 group-scoped reductions with accumulated group coefficients, (2) perform all 4 global reductions with accumulated global coefficients, applying cross-phase compensation factors. Reduces to 2 dispatches (one multi-round group reduce, one multi-round global reduce) at cost of complex coefficient algebra and potential numerical drift.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential alternating all-reduce dispatch",
+      "sim": 6571.314285714286,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pre-fused scalar coefficient application",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=392.043579"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined dual-buffer odd-even split",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=169.214203"
+    },
+    {
+      "stage": "impl",
+      "name": "Depth-collapsed coefficient batching",
+      "sim": 6571.314285714286,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Two-phase group-then-global coalescing",
+      "sim": 6571.314285714286,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "refine:Sequential alternating all-reduce dispatch",
+      "round": 1,
+      "sim": 6571.314285714286
+    },
+    {
+      "stage": "refine:Depth-collapsed coefficient batching",
+      "round": 1,
+      "sim": 6571.314285714286
+    },
+    {
+      "stage": "refine:Depth-collapsed coefficient batching",
+      "round": 2,
+      "sim": 6571.314285714286
+    },
+    {
+      "stage": "refine:Depth-collapsed coefficient batching",
+      "round": 3,
+      "sim": 6571.314285714286
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6571.314285714286,
+  "final_code": "def r56_hier_d8_n4096_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size\n    NG = 4\n    D = 8\n    \n    # Build groups: partition ranks by rank % 4\n    groups = [[r for r in range(W) if r % NG == j] for j in range(NG)]\n    \n    # Compute rank-dependent scalars\n    a = 1.0 + 0.5 * ((rank * 13) % 5) / 5.0\n    b = 1.0 + 0.25 * ((rank * 7) % 9) / 9.0\n    \n    # Initialize current result\n    cur = x\n    \n    # 8 alternating all-reduce stages\n    for t in range(D):\n        if t % 2 == 0:\n            # Even stages: group-scoped all_reduce with scalar a\n            cur = xm.all_reduce(xm.REDUCE_SUM, a * cur, groups=groups)\n        else:\n            # Odd stages: global all_reduce with scalar b\n            cur = xm.all_reduce(xm.REDUCE_SUM, b * cur)\n    \n    return cur"
+}

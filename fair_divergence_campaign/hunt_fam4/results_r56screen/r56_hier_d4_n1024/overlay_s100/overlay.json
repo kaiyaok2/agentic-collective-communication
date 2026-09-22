@@ -1,0 +1,93 @@
+{
+  "pipeline": "overlay",
+  "problem": "r56_hier_d4_n1024",
+  "gate": "fp32",
+  "baseline_sim": 5762.8,
+  "strategies": [
+    {
+      "name": "Sequential Four-Stage Dispatch",
+      "desc": "Direct translation of the reference: 4 separate xm.all_reduce calls alternating between group-wise (with scalar a) and global (with scalar b) reductions. Dispatch count = 4. Represents the baseline with maximum clarity but no fusion opportunities; each stage waits for the previous to complete."
+    },
+    {
+      "name": "Fused Scalar Pre-Multiplication Chain",
+      "desc": "Pre-compute combined scaling factors (a*b*a*b for the full depth-4 pipeline) and fuse consecutive scalar multiplications where possible, then issue collectives on pre-scaled tensors. Dispatch count = 4 (collectives unchanged), but reduces local arithmetic overhead by collapsing scalar ops before first collective and between stages where the result is immediately consumed."
+    },
+    {
+      "name": "Two-Stage Grouped Mega-Reduction",
+      "desc": "Fuse odd stages (both group-wise reductions) into a single call by pre-multiplying x by (a * b * a) and using the group structure once, then fuse even stages into one global reduction with pre-factor b. Dispatch count = 2. Trades correctness of interleaving for fewer dispatches; only viable if mathematical re-ordering of sum(a*sum(b*sum(a*sum(...)))) allows grouping same-topology reductions."
+    },
+    {
+      "name": "Pipelined Rank-Conditional Broadcast-Reduce",
+      "desc": "Decompose each all_reduce into reduce_scatter + all_gather pairs, allowing overlap of the scatter phase of stage t+1 with the gather phase of stage t. Dispatch count = 8 (2 per original all_reduce). Increases dispatch count but exposes pipeline parallelism and may reduce per-dispatch payload size by ~1/group_size, benefiting bandwidth-limited scenarios."
+    },
+    {
+      "name": "Hierarchical Group-Global Interleave Fusion",
+      "desc": "Recognize that group-wise operations (odd stages) touch disjoint rank subsets; issue all group operations as a single batched collective using groups= parameter with both depth-1 and depth-3 group patterns combined, then interleave the two global operations. Dispatch count = 3 (one batched group call covering both odd stages, two separate global calls). Exploits structural independence of groups to reduce synchronization points.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential Four-Stage Dispatch",
+      "sim": 5762.8,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Scalar Pre-Multiplication Chain",
+      "sim": 5762.8,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Two-Stage Grouped Mega-Reduction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=22.305843"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Rank-Conditional Broadcast-Reduce",
+      "sim": null,
+      "ok": false,
+      "err": "  unsupported_primitives=unsupported)\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/acc_verify/search"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Group-Global Interleave Fusion",
+      "sim": 5762.8,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "refine:Sequential Four-Stage Dispatch",
+      "round": 1,
+      "sim": 5762.8
+    },
+    {
+      "stage": "refine:Sequential Four-Stage Dispatch",
+      "round": 2,
+      "sim": 5762.8
+    },
+    {
+      "stage": "refine:Sequential Four-Stage Dispatch",
+      "round": 3,
+      "sim": 5762.8
+    },
+    {
+      "stage": "refine:Fused Scalar Pre-Multiplication Chain",
+      "round": 1,
+      "sim": 5769.1
+    },
+    {
+      "stage": "refine:Fused Scalar Pre-Multiplication Chain",
+      "round": 2,
+      "sim": 5774.0
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 5762.8,
+  "final_code": "def r56_hier_d4_n1024_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Sequential Four-Stage Dispatch strategy.\n    \n    Performs 4 alternating all_reduce operations:\n    - Even stages (0, 2): group-wise all_reduce with scalar a\n    - Odd stages (1, 3): global all_reduce with scalar b\n    \n    This is a direct translation of the reference implementation,\n    using 4 separate xm.all_reduce calls for maximum clarity.\n    \"\"\"\n    W = world_size\n    NG = 4  # Number of groups\n    D = 4   # Depth (number of stages)\n    \n    # Create groups: partition ranks by rank mod 4\n    groups = [[r for r in range(W) if r % NG == j] for j in range(NG)]\n    \n    # Compute rank-specific scalars\n    a = 1.0 + 0.5 * ((rank * 13) % 5) / 5.0\n    b = 1.0 + 0.25 * ((rank * 7) % 9) / 9.0\n    \n    # Initialize current result\n    cur = x\n    \n    # Execute 4 stages sequentially\n    for t in range(D):\n        if t % 2 == 0:\n            # Even stages: group-wise all_reduce with scalar a\n            cur = xm.all_reduce(xm.REDUCE_SUM, a * cur, groups=groups)\n        else:\n            # Odd stages: global all_reduce with scalar b\n            cur = xm.all_reduce(xm.REDUCE_SUM, b * cur)\n    \n    return cur"
+}

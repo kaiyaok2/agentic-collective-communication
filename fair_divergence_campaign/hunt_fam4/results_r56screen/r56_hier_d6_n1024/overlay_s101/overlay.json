@@ -1,0 +1,83 @@
+{
+  "pipeline": "overlay",
+  "problem": "r56_hier_d6_n1024",
+  "gate": "fp32",
+  "baseline_sim": 6164.2,
+  "strategies": [
+    {
+      "name": "Sequential six-stage dispatch",
+      "desc": "Direct transcription of the reference: 6 separate xm.all_reduce calls alternating between group-scoped (with pre-multiply by a[r]) and global (with pre-multiply by b[r]). Dispatch count = 6. Represents the baseline: straightforward correctness with no fusion, maximum readability, but highest dispatch overhead."
+    },
+    {
+      "name": "Fused odd-stage group reductions",
+      "desc": "Pre-compute the product of all three odd-stage a-coefficients (a^3) and apply once, then perform three group all_reduce calls back-to-back, interleaved with three separate global all_reduce calls (each with its b-coefficient). Dispatch count = 6 but enables potential XLA fusion of the three group operations and three global operations into two kernel launches if the runtime recognizes the repeated group topology. Trades algebraic pre-work for potential dispatch reduction."
+    },
+    {
+      "name": "Fused even-stage global reductions",
+      "desc": "Pre-compute the product of all three even-stage b-coefficients (b^3) and apply once, then perform three global all_reduce calls back-to-back, while interleaving three separate group all_reduce calls (each with its a-coefficient). Dispatch count = 6 but groups the global collectives together to maximize single-topology reuse and potential backend batching. Similar tradeoff to Strategy 2 but prioritizes global over group collectives."
+    },
+    {
+      "name": "Two-phase with intermediate accumulation",
+      "desc": "Split depth-6 into two depth-3 sub-problems: compute result after stages 0-2 into an intermediate buffer, then use that as input for stages 3-5. Each phase uses 3 dispatches (alternating group/global/group or global/group/global). Dispatch count = 6, but explicit intermediate materialization may enable better memory locality and prefetching, trading off an extra buffer allocation for potential cache-friendliness."
+    },
+    {
+      "name": "Coefficient-fused single-pass per stage",
+      "desc": "For each of the 6 stages, fuse the scalar multiply (a[r] or b[r]) with the all_reduce payload preparation in a single torch operation before dispatch, ensuring the multiply is part of the collective's input expression rather than a separate kernel. Dispatch count = 6 but each dispatch is preceded by a fused local scalar-multiply that XLA can inline, reducing total kernel launches from 12 (6 multiplies + 6 collectives) to 6. Represents kernel-fusion at the expression level.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential six-stage dispatch",
+      "sim": 6164.2,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused odd-stage group reductions",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=39.642105"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused even-stage global reductions",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=72.780426"
+    },
+    {
+      "stage": "impl",
+      "name": "Two-phase with intermediate accumulation",
+      "sim": 6164.2,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Coefficient-fused single-pass per stage",
+      "sim": 6222.2,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "refine:Sequential six-stage dispatch",
+      "round": 1,
+      "sim": 6164.2
+    },
+    {
+      "stage": "refine:Sequential six-stage dispatch",
+      "round": 2,
+      "sim": 6181.0
+    },
+    {
+      "stage": "refine:Sequential six-stage dispatch",
+      "round": 3,
+      "sim": 6169.799999999999
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6164.2,
+  "final_code": "def r56_hier_d6_n1024_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Sequential six-stage dispatch strategy.\n    \n    Implements 6 separate xm.all_reduce calls alternating between:\n    - Even stages (0, 2, 4): group-scoped all_reduce with pre-multiply by a[r]\n    - Odd stages (1, 3, 5): global all_reduce with pre-multiply by b[r]\n    \n    This is the baseline implementation with maximum readability and correctness,\n    but highest dispatch overhead (6 dispatches total).\n    \"\"\"\n    W = world_size\n    NG = 4  # Number of groups\n    D = 6   # Depth (number of stages)\n    \n    # Construct groups: partition ranks by rank mod 4\n    groups = [[r for r in range(W) if r % NG == j] for j in range(NG)]\n    \n    # Compute rank-specific coefficients\n    a = 1.0 + 0.5 * ((rank * 13) % 5) / 5.0\n    b = 1.0 + 0.25 * ((rank * 7) % 9) / 9.0\n    \n    # Initialize current result with input\n    cur = x\n    \n    # Execute 6 stages sequentially\n    for t in range(D):\n        if t % 2 == 0:\n            # Even stage: group-scoped all_reduce with coefficient a\n            cur = xm.all_reduce(xm.REDUCE_SUM, a * cur, groups=groups)\n        else:\n            # Odd stage: global all_reduce with coefficient b\n            cur = xm.all_reduce(xm.REDUCE_SUM, b * cur)\n    \n    return cur"
+}
