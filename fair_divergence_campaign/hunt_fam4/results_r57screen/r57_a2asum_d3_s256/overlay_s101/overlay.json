@@ -1,0 +1,88 @@
+{
+  "pipeline": "overlay",
+  "problem": "r57_a2asum_d3_s256",
+  "gate": "fp32",
+  "baseline_sim": 6241.764732142857,
+  "strategies": [
+    {
+      "name": "Baseline Three-Stage Sequential",
+      "desc": "Exactly mirrors the reference: 3 iterations of (scale, all_to_all, reshape+sum, all_gather, divide). Dispatches 9 collectives (3\u00d7all_to_all + 3\u00d7all_gather) plus local ops. Simplest to verify but no opportunity for overlap or fusion across stages."
+    },
+    {
+      "name": "Fused Local-Ops Per Stage",
+      "desc": "Merge scale, reshape, sum, and divide into single torch ops between collectives to reduce kernel launches. Still 6 collective dispatches (3\u00d7all_to_all + 3\u00d7all_gather) but ~3 local kernels instead of ~12. Trades extra temporary allocation for fewer host-device round-trips and better instruction cache locality."
+    },
+    {
+      "name": "All-Reduce Equivalence Transformation",
+      "desc": "Recognize that all_to_all + sum-shards + all_gather is mathematically an all_reduce with non-uniform input scaling. Replace each stage with a single all_reduce of (a*cur), then divide once at the end. Reduces to 3 collective dispatches with simpler payload layout but loses explicit control over intermediate shard boundaries."
+    },
+    {
+      "name": "Pipelined Two-Phase Per Stage",
+      "desc": "Split each stage into async all_to_all dispatch immediately followed by all_gather setup, overlapping communication with local sum computation on received chunks. Requires 6 dispatches but allows tensor-parallel hiding of reduction work during all_gather's ring phases. Increases complexity but can hide O(S) arithmetic behind network."
+    },
+    {
+      "name": "Depth-Unrolled Single-Pass Collectives",
+      "desc": "Unroll all 3 stages and batch the communication: issue all 3 all_to_all operations with different tags/buffers, perform all 3 local reductions concurrently on arriving data, then batch all 3 all_gather calls. Requires careful buffer management (3\u00d7 memory) but amortizes collective dispatch overhead and may enable backend batching optimizations for 9 total ops issued in 2-3 waves.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Baseline Three-Stage Sequential",
+      "sim": 6241.764732142857,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Local-Ops Per Stage",
+      "sim": 6241.764732142857,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "All-Reduce Equivalence Transformation",
+      "sim": 5638.128571428571,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Two-Phase Per Stage",
+      "sim": 6244.764732142857,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Depth-Unrolled Single-Pass Collectives",
+      "sim": 6241.764732142857,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "refine:All-Reduce Equivalence Transformation",
+      "round": 1,
+      "sim": 5636.728571428571
+    },
+    {
+      "stage": "refine:All-Reduce Equivalence Transformation",
+      "round": 2,
+      "sim": 5636.728571428571
+    },
+    {
+      "stage": "refine:All-Reduce Equivalence Transformation",
+      "round": 3,
+      "sim": 5636.728571428571
+    },
+    {
+      "stage": "refine:Baseline Three-Stage Sequential",
+      "round": 1,
+      "sim": 6239.664732142857
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 5636.728571428571,
+  "final_code": "def r57_a2asum_d3_s256_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256\n    W = world_size\n    D = 3\n    dtype = x.dtype\n    \n    # Compute scaling factors\n    a = 1.0 + 0.5 * ((rank * 11) % 7) / 7.0\n    A_tot = sum(1.0 + 0.5 * ((k * 11) % 7) / 7.0 for k in range(W))\n    u = 0.9 * A_tot\n    \n    # Pre-compute the scaling factor to reduce operations\n    scale_factor = a / u\n    \n    cur = x.to(dtype)\n    \n    # Fuse the scaling with the initial value to reduce one operation\n    cur = cur * a\n    \n    for _t in range(D):\n        # All-reduce with SUM operation\n        cur = xm.all_reduce(xm.REDUCE_SUM, cur)\n        \n        # Apply scaling for next iteration (or final result)\n        # For iterations 0 to D-2, we scale by (a/u) for the next iteration\n        # For iteration D-1, we just divide by u for the final result\n        if _t < D - 1:\n            cur = cur * scale_factor\n        else:\n            cur = cur / u\n    \n    return cur"
+}

@@ -1,0 +1,83 @@
+{
+  "pipeline": "overlay",
+  "problem": "r57_a2asum_d3_s256",
+  "gate": "fp32",
+  "baseline_sim": 6241.764732142857,
+  "strategies": [
+    {
+      "name": "Sequential three-stage baseline",
+      "desc": "Direct translation of reference: 3 iterations, each with all_to_all, reshape+sum, all_gather, scale ops. Total 9 collective dispatches (3\u00d7all_to_all + 3\u00d7all_gather). Maximizes clarity but no fusion;\u6bcf stage pays full dispatch overhead."
+    },
+    {
+      "name": "Fused scale-communicate chain",
+      "desc": "Pre-multiply 'a' into the initial tensor once, merge all pointwise scales (a, 1/u) with adjacent reshapes into single kernels between collectives. Still 9 collective dispatches but reduces elementwise kernel launches from ~9 to ~4 by fusing scale/divide operations with reshape or as post-collective in-place ops."
+    },
+    {
+      "name": "Pipelined collective batching",
+      "desc": "Overlap communication by issuing all 3 all_to_all calls consecutively (with split_dimension adjusted per iteration via views), then process received data, then batch all 3 all_gather calls. Reduces dispatch clustering from 3\u00d7(A2A+local+AG) to (3\u00d7A2A)+(3\u00d7local)+(3\u00d7AG), potentially improving collective scheduler efficiency at same 9 total dispatches."
+    },
+    {
+      "name": "Pre-allocated intermediate buffer reuse",
+      "desc": "Allocate two W\u00d7S buffers upfront, alternate between them across stages to avoid repeated allocation overhead. Combine scaling constants (a, 1/u) into per-stage scalar coefficient, apply once per stage. 9 collective dispatches but eliminates 2\u00d7D tensor allocations and improves cache locality by reusing memory."
+    },
+    {
+      "name": "Vectorized multi-stage all_to_all",
+      "desc": "Reshape input to (D, W, S), stack all 3 stages' scaling coefficients, broadcast-multiply along stage dimension, then issue single batched all_to_all on flattened (D\u00d7W\u00d7S) tensor with split_count=W. Perform 3D reshape+sum over (stage, world, shard) axes, single all_gather of (D\u00d7S) result. Reduces to ~3 collectives (1\u00d7A2A + 1\u00d7AG + bookkeeping) but increases per-call payload 3\u00d7 and requires complex tensor choreography.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential three-stage baseline",
+      "sim": 6241.764732142857,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused scale-communicate chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.334396"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined collective batching",
+      "sim": 6241.764732142857,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pre-allocated intermediate buffer reuse",
+      "sim": 6303.664732142857,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Vectorized multi-stage all_to_all",
+      "sim": 6654.071132142857,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "refine:Sequential three-stage baseline",
+      "round": 2,
+      "sim": 7590.000892857143
+    },
+    {
+      "stage": "refine:Sequential three-stage baseline",
+      "round": 3,
+      "sim": 6256.4647321428565
+    },
+    {
+      "stage": "refine:Pipelined collective batching",
+      "round": 2,
+      "sim": 6442.976785714286
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6241.764732142857,
+  "final_code": "def r57_a2asum_d3_s256_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Sequential three-stage baseline: Direct translation of reference with 3 iterations.\n    Each iteration: all_to_all, reshape+sum, all_gather, scale.\n    Total 9 collective dispatches (3\u00d7all_to_all + 3\u00d7all_gather).\n    \"\"\"\n    S = 256\n    W = world_size\n    D = 3\n    \n    # Compute scaling factor for this rank\n    a = 1.0 + 0.5 * ((rank * 11) % 7) / 7.0\n    \n    # Compute total sum of all ranks' scaling factors\n    A_tot = sum(1.0 + 0.5 * ((k * 11) % 7) / 7.0 for k in range(W))\n    u = 0.9 * A_tot\n    \n    # Preserve input dtype\n    dtype = x.dtype\n    \n    # Start with input\n    cur = x\n    \n    # Execute D iterations\n    for _t in range(D):\n        # Stage 1: Scale by a and perform all_to_all\n        # Split input into W chunks of size S, transpose across ranks\n        y = xm.all_to_all(a * cur, split_dimension=0, concat_dimension=0,\n                          split_count=W)\n        \n        # Stage 2: Local reduction - reshape to (W, S) and sum along dimension 0\n        z = torch.sum(y.reshape(W, S), dim=0)\n        \n        # Stage 3: All-gather the reduced shard and scale by 1/u\n        cur = xm.all_gather(z, dim=0) / u\n    \n    return cur"
+}

@@ -1,0 +1,18 @@
+[_sso_creds] no live SSO at import; AWS calls will fail if attempted (Command '['aws', 'configure', 'export-credentials', '--profile', 'default', '--format', 'process']' returned non-zero exit status 255.)
+{
+  "pipeline": "overlay",
+  "problem": "r57_a2asum_d3_s256",
+  "gate": "fp32",
+  "baseline": 6241.764732142857,
+  "n_strategies": 5,
+  "n_llm_calls": 12,
+  "impl_sims": [
+    6241.764732142857,
+    6240.364732142857,
+    6241.764732142857,
+    7586.464732142857,
+    6238.764732142858
+  ],
+  "final_sim": 6238.764732142858,
+  "fell_back": false
+}

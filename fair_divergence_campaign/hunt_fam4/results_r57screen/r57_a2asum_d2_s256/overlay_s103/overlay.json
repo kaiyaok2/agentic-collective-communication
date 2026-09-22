@@ -1,0 +1,88 @@
+{
+  "pipeline": "overlay",
+  "problem": "r57_a2asum_d2_s256",
+  "gate": "fp32",
+  "baseline_sim": 5799.2642857142855,
+  "strategies": [
+    {
+      "name": "Two-stage baseline with six dispatches",
+      "desc": "Directly implements the reference: scale, all_to_all, local reshape+sum, all_gather, divide\u2014twice. Six total collective dispatches (2 all_to_all + 2 all_gather per stage). Minimizes complexity but pays full dispatch overhead with no fusion opportunities."
+    },
+    {
+      "name": "Fused scale-and-all_to_all single payload",
+      "desc": "Pre-multiply the scaling factor 'a' into the tensor before each all_to_all so the collective sees already-scaled data, eliminating separate element-wise ops. Four collective dispatches (2 all_to_all + 2 all_gather). Trades explicit local compute for implicit payload preparation, reducing dispatch count by eliminating standalone scaling steps."
+    },
+    {
+      "name": "Concatenated stage-1/stage-2 all_to_all pipelining",
+      "desc": "After stage-1 all_gather completes, immediately launch stage-2 all_to_all without intermediate synchronization barriers, allowing hardware to overlap communication with trailing localsum operations. Still four dispatches but reorders ops to hide latency; trades strict sequential execution for pipeline parallelism at the cost of more complex buffer management."
+    },
+    {
+      "name": "Batched all_to_all with split_count=W\u00b2",
+      "desc": "Combine both depth stages into a single all_to_all with a 2D block layout (W\u00d7W blocks of size 256), transpose both stages' communication in one collective, then perform two local sum-and-divide passes. Two collective dispatches (1 all_to_all + 1 all_gather) but requires careful 3D tensor reshaping and larger single-dispatch payload (W\u00d7W\u00d7256 instead of W\u00d7256)."
+    },
+    {
+      "name": "Hierarchical reduce_scatter plus all_gather broadcast",
+      "desc": "Replace all_to_all+sum with reduce_scatter (using SUM reduction) to directly compute per-rank shards, then all_gather to broadcast. Four dispatches (2 reduce_scatter + 2 all_gather) but leverages hardware sum acceleration in the collective primitive itself rather than separate local sum ops, trading all_to_all flexibility for built-in reduction semantics.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Two-stage baseline with six dispatches",
+      "sim": 5799.2642857142855,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused scale-and-all_to_all single payload",
+      "sim": 5799.2642857142855,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Concatenated stage-1/stage-2 all_to_all pipelining",
+      "sim": 5799.2642857142855,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Batched all_to_all with split_count=W\u00b2",
+      "sim": 5803.264285714286,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical reduce_scatter plus all_gather broadcast",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: shape (4, 256) != (1024,)"
+    },
+    {
+      "stage": "refine:Two-stage baseline with six dispatches",
+      "round": 2,
+      "sim": 5397.085714285714
+    },
+    {
+      "stage": "refine:Two-stage baseline with six dispatches",
+      "round": 3,
+      "sim": 5401.285714285715
+    },
+    {
+      "stage": "refine:Fused scale-and-all_to_all single payload",
+      "round": 1,
+      "sim": 5801.264285714286
+    },
+    {
+      "stage": "refine:Fused scale-and-all_to_all single payload",
+      "round": 2,
+      "sim": 5799.2642857142855
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 5397.085714285714,
+  "final_code": "def r57_a2asum_d2_s256_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Optimized implementation using all_reduce to minimize collective dispatches.\n    \n    Replaces all_to_all + local sum + all_gather with a single all_reduce,\n    reducing from 2 collective dispatches per stage to 1.\n    \"\"\"\n    S = 256\n    W = world_size\n    D = 2\n    \n    # Compute scaling factor for this rank\n    a = 1.0 + 0.5 * ((rank * 11) % 7) / 7.0\n    \n    # Compute total scaling sum across all ranks\n    A_tot = sum(1.0 + 0.5 * ((k * 11) % 7) / 7.0 for k in range(W))\n    u = 0.9 * A_tot\n    \n    # Preserve input dtype\n    dtype = x.dtype\n    \n    cur = x\n    \n    # Two stages (depth = 2)\n    for _t in range(D):\n        # Stage operations:\n        # 1. Scale by rank-specific factor\n        y = a * cur\n        \n        # 2. All-reduce with SUM operation (single dispatch replaces all_to_all + all_gather)\n        #    This sums contributions from all ranks and replicates the result\n        cur = xm.all_reduce(xm.REDUCE_SUM, y)\n        \n        # 3. Divide by normalization factor\n        cur = cur / u\n    \n    return cur"
+}

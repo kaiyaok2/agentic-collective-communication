@@ -1,0 +1,83 @@
+{
+  "pipeline": "overlay",
+  "problem": "r57_a2asum_d3_s256",
+  "gate": "fp32",
+  "baseline_sim": 6241.764732142857,
+  "strategies": [
+    {
+      "name": "Naive Three-Loop Sequential",
+      "desc": "Three sequential iterations of (scale + all_to_all + reshape/sum + all_gather + divide). Each iteration dispatches 2 collectives (all_to_all, all_gather) with local ops in between, totaling 6 collective dispatches. Baseline approach with no fusion or overlap, simple correctness-first strategy trading minimal code complexity for maximum dispatch overhead."
+    },
+    {
+      "name": "Fused Scale-and-Collective per Stage",
+      "desc": "Pre-fuse the rank-specific scaling `a * cur` into the all_to_all payload preparation, and post-fuse the division `/u` into the all_gather result consumption within each stage. Still 6 collective dispatches (3 \u00d7 all_to_all + 3 \u00d7 all_gather) but eliminates 6 separate element-wise ops, reducing memory traffic and kernel launch overhead while maintaining stage boundaries."
+    },
+    {
+      "name": "Depth-Unrolled Single-Dispatch Chain",
+      "desc": "Unroll all 3 stages into a single computational graph with 6 back-to-back collective calls (a2a, ag, a2a, ag, a2a, ag) where local ops (scale, reshape, sum, divide) are graph nodes between collectives. Enables XLA compiler to potentially pipeline collective launches and overlap communication with computation across stage boundaries, trading compile-time complexity for runtime overlap opportunities."
+    },
+    {
+      "name": "Pre-Allocated Buffer Ping-Pong",
+      "desc": "Allocate two persistent buffers and alternate reads/writes across stages to eliminate intermediate tensor allocations. Each stage reads from buffer[i%2] and writes to buffer[(i+1)%2], with in-place local operations where safe. Still 6 collectives but reduces memory allocator pressure and potential fragmentation, trading memory footprint (2\u00d7 working set) for allocation-free fast path."
+    },
+    {
+      "name": "Batched All-to-All with Metadata Views",
+      "desc": "Reshape input to (D, W, S) with duplicated/scaled copies across depth dimension, issue a single high-dimensional all_to_all that logically represents all 3 stages' communication patterns, then use view/reshape/slice operations to extract per-stage results and apply sums. Reduces to 1-3 collective dispatches (depending on whether AG can also be batched) but increases single-dispatch payload 3\u00d7 and requires complex indexing logic.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Naive Three-Loop Sequential",
+      "sim": 6241.764732142857,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Scale-and-Collective per Stage",
+      "sim": 6241.764732142857,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Depth-Unrolled Single-Dispatch Chain",
+      "sim": 6241.764732142857,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pre-Allocated Buffer Ping-Pong",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'TrackedTensor' object has no"
+    },
+    {
+      "stage": "impl",
+      "name": "Batched All-to-All with Metadata Views",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: shape (4, 256) != (1024,)"
+    },
+    {
+      "stage": "refine:Naive Three-Loop Sequential",
+      "round": 1,
+      "sim": 6241.764732142857
+    },
+    {
+      "stage": "refine:Naive Three-Loop Sequential",
+      "round": 2,
+      "sim": 6252.264732142858
+    },
+    {
+      "stage": "refine:Fused Scale-and-Collective per Stage",
+      "round": 3,
+      "sim": 5638.128571428571
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 5638.128571428571,
+  "final_code": "def r57_a2asum_d3_s256_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256\n    W = world_size\n    D = 3\n    dtype = x.dtype\n    \n    # Compute rank-specific scale factor\n    a = 1.0 + 0.5 * ((rank * 11) % 7) / 7.0\n    \n    # Compute normalization factor\n    A_tot = sum(1.0 + 0.5 * ((k * 11) % 7) / 7.0 for k in range(W))\n    u = 0.9 * A_tot\n    \n    cur = x\n    \n    for _t in range(D):\n        # Scale locally\n        scaled_cur = a * cur\n        \n        # Use all_reduce (SUM) instead of all_to_all + sum + all_gather\n        # This replaces 2 collectives with 1\n        reduced = xm.all_reduce(xm.REDUCE_SUM, scaled_cur)\n        \n        # Normalize\n        cur = reduced / u\n    \n    return cur"
+}

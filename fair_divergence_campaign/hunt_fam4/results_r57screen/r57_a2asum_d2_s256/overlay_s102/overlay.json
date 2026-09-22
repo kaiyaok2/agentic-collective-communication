@@ -1,0 +1,98 @@
+{
+  "pipeline": "overlay",
+  "problem": "r57_a2asum_d2_s256",
+  "gate": "fp32",
+  "baseline_sim": 5799.2642857142855,
+  "strategies": [
+    {
+      "name": "Staged all-to-all with separate collectives",
+      "desc": "Direct translation of reference: 2 iterations, each with one all_to_all (W blocks of 256), local sum+scale ops, then all_gather (256 elements per rank). Total 4 collective dispatches (2 all_to_all + 2 all_gather). Maximizes readability but highest dispatch overhead; no fusion opportunities."
+    },
+    {
+      "name": "Fused scaling into all_gather payload",
+      "desc": "Pre-multiply the scaling factor 'a' before all_to_all, perform all_to_all + local sum, then fuse the division by 'u' with preparation for next stage's all_to_all (or final output). Still 4 collective dispatches but reduces intermediate tensor allocations by ~2x through in-place operations on reshaped views."
+    },
+    {
+      "name": "Single-dispatch depth-unrolled two-stage pipeline",
+      "desc": "Unroll both depth=2 iterations explicitly: compute stage-0 (a*x, all_to_all, sum, all_gather/u), then immediately chain stage-1 with same pattern. Manually inline all local ops between collectives to create 4 back-to-back collective calls with minimal Python overhead. Same 4 dispatches but tighter loop removes interpreter overhead for 2-iteration case."
+    },
+    {
+      "name": "Concatenated payload multi-stage all_to_all",
+      "desc": "Reshape to treat both stages as a single \"super-tensor\" operation: concatenate the conceptual two-stage dataflow, issue fewer but larger collectives by batching metadata. Trade per-element arithmetic complexity for reduced dispatch: attempt 2 collectives (one mega all_to_all encoding both transpose patterns, one mega all_gather) with interleaved local compute. Requires careful 3D reshaping of (stage, rank, shard)."
+    },
+    {
+      "name": "Reduce-scatter + all_gather decomposition",
+      "desc": "Replace all_to_all+sum with reduce_scatter (implicit sum during scatter), then all_gather to broadcast. Each stage becomes reduce_scatter (summing W blocks into 256-element shard) + all_gather. Still 4 total dispatches (2 RS + 2 AG) but reduce_scatter may have better hardware utilization than all_to_all+explicit-sum for large world_size=224 by overlapping communication and reduction.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Staged all-to-all with separate collectives",
+      "sim": 5799.2642857142855,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused scaling into all_gather payload",
+      "sim": 6245.2642857142855,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Single-dispatch depth-unrolled two-stage pipeline",
+      "sim": 5799.2642857142855,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Concatenated payload multi-stage all_to_all",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.025705"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-scatter + all_gather decomposition",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: shape (4, 256) != (1024,)"
+    },
+    {
+      "stage": "refine:Staged all-to-all with separate collectives",
+      "round": 1,
+      "sim": 5807.664285714286
+    },
+    {
+      "stage": "refine:Staged all-to-all with separate collectives",
+      "round": 2,
+      "sim": 5807.664285714286
+    },
+    {
+      "stage": "refine:Staged all-to-all with separate collectives",
+      "round": 3,
+      "sim": 5799.964285714285
+    },
+    {
+      "stage": "refine:Single-dispatch depth-unrolled two-stage pipeline",
+      "round": 1,
+      "sim": 5397.085714285714
+    },
+    {
+      "stage": "refine:Single-dispatch depth-unrolled two-stage pipeline",
+      "round": 2,
+      "sim": 5396.385714285714
+    },
+    {
+      "stage": "refine:Single-dispatch depth-unrolled two-stage pipeline",
+      "round": 3,
+      "sim": 5396.385714285714
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 5396.385714285714,
+  "final_code": "def r57_a2asum_d2_s256_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256\n    W = world_size\n    dtype = x.dtype\n    \n    # Precompute all scaling constants\n    a = 1.0 + 0.5 * ((rank * 11) % 7) / 7.0\n    A_tot = sum(1.0 + 0.5 * ((k * 11) % 7) / 7.0 for k in range(W))\n    u = 0.9 * A_tot\n    \n    # Precompute combined scaling factor\n    scale_factor = a / u\n    \n    # Stage 0: First iteration\n    # Fuse initial scaling with first all_reduce\n    y0 = a * x\n    z0 = xm.all_reduce(xm.REDUCE_SUM, y0)\n    \n    # Stage 1: Second iteration  \n    # Fuse the division and multiplication: (z0 / u) * a = z0 * (a / u)\n    y1 = scale_factor * z0\n    z1 = xm.all_reduce(xm.REDUCE_SUM, y1)\n    \n    # Final scaling\n    result = z1 / u\n    \n    return result"
+}

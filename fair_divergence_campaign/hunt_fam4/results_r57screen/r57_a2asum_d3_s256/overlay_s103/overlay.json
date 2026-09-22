@@ -1,0 +1,78 @@
+{
+  "pipeline": "overlay",
+  "problem": "r57_a2asum_d3_s256",
+  "gate": "fp32",
+  "baseline_sim": 6241.764732142857,
+  "strategies": [
+    {
+      "name": "Baseline three-stage loop",
+      "desc": "Exactly mirrors the reference: 3 iterations each performing all_to_all (scatter), local reshape+sum, all_gather, and scalar divide. Total 9 collective dispatches (3\u00d7all_to_all + 3\u00d7all_gather). Straightforward but maximal dispatch overhead; no fusion opportunities exploited."
+    },
+    {
+      "name": "Fused scale-and-transpose per stage",
+      "desc": "Pre-multiply the scaling factor `a` into the input tensor before each all_to_all, but merge the post-all_gather division by `u` with the next stage's `a` multiplication into a single scalar op (a/u). Reduces 6 separate scalar ops to 3, keeping 9 collective dispatches but slightly better compute efficiency."
+    },
+    {
+      "name": "Unrolled three-stage with view reuse",
+      "desc": "Fully unroll the loop into 3 explicit stage blocks, allowing the compiler to see all 9 collectives at once for potential batching/pipelining. Reuse pre-allocated reshape views across stages to avoid repeated .reshape() calls. Still 9 dispatches but better memory locality and potential XLA graph optimization."
+    },
+    {
+      "name": "Batched collective via concatenation",
+      "desc": "Stack all 3 stages' all_to_all operations into a single dispatch by concatenating inputs along a batch dimension, then slice outputs; similarly batch the 3 all_gathers. Reduces to ~6 dispatches (1 batched all_to_all, 1 batched all_gather, repeated in nested fashion or 2 mega-batched collectives). Larger payload per dispatch but fewer kernel launches."
+    },
+    {
+      "name": "Reduce-scatter + all-gather decomposition",
+      "desc": "Replace the all_to_all + sum + all_gather pattern with reduce_scatter (which fuses the scatter and sum) followed by all_gather, yielding 2 collectives per stage instead of 3. Total 6 dispatches. Trades all_to_all's flexible transpose for reduce_scatter's built-in reduction, saving 3 dispatches at cost of less control over intermediate layout.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Baseline three-stage loop",
+      "sim": 6241.764732142857,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused scale-and-transpose per stage",
+      "sim": 6240.364732142857,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Unrolled three-stage with view reuse",
+      "sim": 6241.764732142857,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Batched collective via concatenation",
+      "sim": 7586.464732142857,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-scatter + all-gather decomposition",
+      "sim": 6238.764732142858,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "refine:Fused scale-and-transpose per stage",
+      "round": 1,
+      "sim": 6250.864732142857
+    },
+    {
+      "stage": "refine:Fused scale-and-transpose per stage",
+      "round": 2,
+      "sim": 6240.364732142857
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6238.764732142858,
+  "final_code": "def r57_a2asum_d3_s256_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256\n    W = world_size\n    D = 3\n    \n    # Compute rank's scaling factor\n    a = 1.0 + 0.5 * ((rank * 11) % 7) / 7.0\n    \n    # Compute total sum for normalization\n    A_tot = sum(1.0 + 0.5 * ((k * 11) % 7) / 7.0 for k in range(W))\n    u = 0.9 * A_tot\n    \n    dtype = x.dtype\n    cur = x\n    \n    for _t in range(D):\n        # Scale by rank's factor\n        scaled = a * cur\n        \n        # Reduce-scatter: each rank gets sum of its corresponding block from all ranks\n        # reduce_scatter divides input into W equal chunks, reduces corresponding chunks\n        # across all ranks (with sum operation), and scatters results so each rank gets one\n        # Input: (W*S,) tensor with W blocks of size S\n        # Output: (S,) tensor - the sum of this rank's block from all ranks\n        z = xm.reduce_scatter(\n            xm.REDUCE_SUM,\n            scaled,\n            scale=1.0,\n            scatter_dim=0,\n            shard_count=W,\n            groups=[]\n        )\n        \n        # All-gather: collect all shards from all ranks\n        # Input: (S,) tensor\n        # Output: (W*S,) tensor\n        gathered = xm.all_gather(z, dim=0)\n        \n        # Normalize\n        cur = gathered / u\n    \n    return cur"
+}

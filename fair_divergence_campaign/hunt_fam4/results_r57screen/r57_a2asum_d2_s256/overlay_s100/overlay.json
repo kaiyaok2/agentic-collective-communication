@@ -1,0 +1,98 @@
+{
+  "pipeline": "overlay",
+  "problem": "r57_a2asum_d2_s256",
+  "gate": "fp32",
+  "baseline_sim": 5799.2642857142855,
+  "strategies": [
+    {
+      "name": "Sequential two-stage dispatch-per-stage",
+      "desc": "Implements the two depth stages as written: each stage performs one all_to_all dispatch, local scalar-multiply + reshape + sum, one all_gather dispatch, then local divide. Total 4 collective dispatches (2 all_to_all + 2 all_gather). Represents the baseline reference with minimal code complexity but maximum dispatch overhead."
+    },
+    {
+      "name": "Fused scale-transpose with single-buffer all_to_all",
+      "desc": "Pre-multiply the scaling factor 'a' into the input tensor before each all_to_all, allowing the collective to operate on already-scaled data without separate element-wise ops. Reshape and sum operations remain between collectives. Still 4 dispatches but eliminates separate scaling ops, reducing memory traffic and potential kernel launches between collectives."
+    },
+    {
+      "name": "Batched two-stage all_to_all with interleaved metadata",
+      "desc": "Concatenate both stages' inputs along a new dimension and issue a single batched all_to_all covering both depth iterations, then perform local reshape+sum+divide operations on both results. Reduces to 2 all_to_all + 2 all_gather dispatches but requires careful tensor layout management and larger intermediate buffers (2x payload per collective)."
+    },
+    {
+      "name": "All-reduce equivalence via reduce-scatter then all-gather",
+      "desc": "Recognize that all_to_all + local sum + all_gather is structurally equivalent to a reduce-scatter followed by all-gather (which equals all-reduce). Replace each stage with a single all_reduce collective operating on appropriately reshaped/scaled data. Reduces to 2 all_reduce dispatches total, trading tensor manipulation complexity for fewer collective calls."
+    },
+    {
+      "name": "Pipelined overlapped collectives with async dispatch",
+      "desc": "Decompose the tensor into independent sub-blocks and issue the second stage's all_to_all on already-processed sub-blocks while the first stage's all_gather is still completing on other sub-blocks. Exploits potential hardware overlap between independent collective operations. Same nominal dispatch count (4+) but amortizes latency through pipeline parallelism at the cost of complex synchronization logic.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential two-stage dispatch-per-stage",
+      "sim": 5799.2642857142855,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused scale-transpose with single-buffer all_to_all",
+      "sim": 6247.264285714286,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Batched two-stage all_to_all with interleaved metadata",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.766897"
+    },
+    {
+      "stage": "impl",
+      "name": "All-reduce equivalence via reduce-scatter then all-gather",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: shape (4, 256) != (1024,)"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined overlapped collectives with async dispatch",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=1.220568"
+    },
+    {
+      "stage": "refine:Sequential two-stage dispatch-per-stage",
+      "round": 1,
+      "sim": 5397.085714285714
+    },
+    {
+      "stage": "refine:Sequential two-stage dispatch-per-stage",
+      "round": 2,
+      "sim": 5404.085714285714
+    },
+    {
+      "stage": "refine:Sequential two-stage dispatch-per-stage",
+      "round": 3,
+      "sim": 5402.685714285714
+    },
+    {
+      "stage": "refine:Fused scale-transpose with single-buffer all_to_all",
+      "round": 1,
+      "sim": 5803.264285714286
+    },
+    {
+      "stage": "refine:Fused scale-transpose with single-buffer all_to_all",
+      "round": 2,
+      "sim": 5401.085714285714
+    },
+    {
+      "stage": "refine:Fused scale-transpose with single-buffer all_to_all",
+      "round": 3,
+      "sim": 5408.085714285714
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 5397.085714285714,
+  "final_code": "def r57_a2asum_d2_s256_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Optimized two-stage implementation using all_reduce.\n    Each stage performs: scale -> all_reduce -> divide.\n    Total 2 collective dispatches (2 all_reduce), reduced from 4.\n    \"\"\"\n    S = 256\n    W = world_size\n    D = 2\n    \n    dtype = x.dtype\n    \n    # Compute local scaling factor a[rank]\n    a = 1.0 + 0.5 * ((rank * 11) % 7) / 7.0\n    \n    # Compute total sum of all a[k] for normalization\n    A_tot = sum(1.0 + 0.5 * ((k * 11) % 7) / 7.0 for k in range(W))\n    u = 0.9 * A_tot\n    \n    cur = x\n    \n    # Execute D=2 stages sequentially\n    for stage in range(D):\n        # Stage step 1: Scale by a\n        scaled = a * cur\n        \n        # Stage step 2: All-reduce with SUM to aggregate across all ranks\n        # This replaces: all_to_all -> local sum -> all_gather\n        # The all_reduce with SUM operation effectively computes the sum\n        # of all scaled values across all ranks and replicates the result\n        summed = xm.all_reduce(xm.REDUCE_SUM, scaled)\n        \n        # Stage step 3: Divide by normalization factor\n        cur = summed / u\n    \n    return cur"
+}

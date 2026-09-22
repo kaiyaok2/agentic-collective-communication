@@ -1,0 +1,78 @@
+{
+  "pipeline": "overlay",
+  "problem": "r57_a2asum_d2_s256",
+  "gate": "fp32",
+  "baseline_sim": 5799.2642857142855,
+  "strategies": [
+    {
+      "name": "Sequential Two-Stage Baseline",
+      "desc": "Implements the two depth stages sequentially with six collectives (all_to_all, all_gather per stage). Each stage: scale input, all_to_all (1 dispatch), local reshape+sum (fused), all_gather (1 dispatch), scale by 1/u. Total 4 collective dispatches. Straightforward translation with no fusion across stages."
+    },
+    {
+      "name": "Fused-Scale Two-Stage Pipeline",
+      "desc": "Merges the division by u at stage-1 end with the multiplication by a at stage-2 start into a single scale factor (a/u), reducing local operations. Still 4 collective dispatches (2 all_to_all, 2 all_gather) but eliminates one redundant scale pass. Trades arithmetic precision for fewer memory passes over intermediate tensors."
+    },
+    {
+      "name": "Pre-Reshaped Persistent Layout",
+      "desc": "Reshapes input to (W, S) before any collectives, then performs all_to_all with explicit split/concat on the reshaped tensor. Keeps (W, S) layout through both stages, potentially enabling compiler to fuse reshape+sum with collective outputs. Still 4 dispatches but changes memory access patterns to favor cache reuse during local sums."
+    },
+    {
+      "name": "Batched Two-Depth Single-Dispatch Emulation",
+      "desc": "Attempts to encode both depth stages into a single enlarged all_to_all by concatenating stage-1 output preparation with stage-2 input in a (2*W*S,) tensor, then using a single large all_to_all followed by local computation to extract both stages' results. Reduces to 2-3 collective dispatches by trading off much larger payload size and complex local indexing logic."
+    },
+    {
+      "name": "All-Reduce Decomposition Alternative",
+      "desc": "Observes that all_to_all + sum + all_gather is structurally similar to reduce_scatter + all_gather = all_reduce. Replaces each stage's three-op chain with reduce_scatter (performs the sum during scatter) then all_gather. Uses 4 collective dispatches (2\u00d7reduce_scatter, 2\u00d7all_gather) but different primitive, potentially leveraging hardware-optimized all_reduce paths if reduce_scatter+all_gather fusion is available.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential Two-Stage Baseline",
+      "sim": 6245.2642857142855,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused-Scale Two-Stage Pipeline",
+      "sim": 5801.864285714286,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pre-Reshaped Persistent Layout",
+      "sim": 5803.264285714286,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Batched Two-Depth Single-Dispatch Emulation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.278814"
+    },
+    {
+      "stage": "impl",
+      "name": "All-Reduce Decomposition Alternative",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: shape (4, 256) != (1024,)"
+    },
+    {
+      "stage": "refine:Fused-Scale Two-Stage Pipeline",
+      "round": 1,
+      "sim": 5946.82857142857
+    },
+    {
+      "stage": "refine:Fused-Scale Two-Stage Pipeline",
+      "round": 2,
+      "sim": 5395.685714285714
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 5395.685714285714,
+  "final_code": "def r57_a2asum_d2_s256_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256\n    W = world_size\n    D = 2\n    \n    # Compute scale factor a for this rank\n    a = 1.0 + 0.5 * ((rank * 11) % 7) / 7.0\n    \n    # Compute normalization factor u\n    A_tot = sum(1.0 + 0.5 * ((k * 11) % 7) / 7.0 for k in range(W))\n    u = 0.9 * A_tot\n    \n    # Fused scale factor: a/u\n    fused_scale = a / u\n    \n    # Preserve input dtype\n    dtype = x.dtype\n    \n    cur = x\n    \n    for stage in range(D):\n        # Apply fused scale factor (a/u) at the beginning of each stage\n        scaled_cur = fused_scale * cur\n        \n        # Replace the all-to-all + sum + all-gather pattern with a single all_reduce\n        # The all-to-all pattern was:\n        # 1. Reshape into blocks\n        # 2. Gather all blocks\n        # 3. Extract relevant blocks and sum\n        # 4. All-gather the result\n        # \n        # This is equivalent to: all_reduce with SUM operation\n        # Each rank contributes its scaled_cur, and all ranks get the sum\n        cur = xm.all_reduce(xm.REDUCE_SUM, scaled_cur)\n    \n    return cur"
+}

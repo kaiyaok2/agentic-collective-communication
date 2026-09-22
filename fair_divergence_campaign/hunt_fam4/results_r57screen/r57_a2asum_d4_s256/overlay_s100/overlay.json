@@ -1,0 +1,83 @@
+{
+  "pipeline": "overlay",
+  "problem": "r57_a2asum_d4_s256",
+  "gate": "fp32",
+  "baseline_sim": 6691.876785714287,
+  "strategies": [
+    {
+      "name": "Sequential all-to-all four-stage baseline",
+      "desc": "Executes four sequential stages, each performing all_to_all, local reshape+sum, then all_gather (12 collective dispatches total). Matches the reference implementation structure with no fusion. Represents the straightforward \"dispatch-per-primitive\" approach with maximum clarity but highest dispatch overhead."
+    },
+    {
+      "name": "Fused all-to-all with precomputed scaling",
+      "desc": "Precomputes the rank-specific scaling factor once, then fuses the multiplication into the all_to_all input preparation for all four stages (4 all_to_all + 4 all_gather = 8 dispatches, eliminating separate scaling ops). Reduces per-stage arithmetic overhead by absorbing scaling into buffer preparation, trading slightly larger intermediate buffers for fewer dispatches."
+    },
+    {
+      "name": "Batched two-phase collective reduction",
+      "desc": "Groups stages 1-2 and 3-4 into two macro-phases, where each phase concatenates two all_to_all outputs before performing combined reduction and all_gather (potentially 6-8 dispatches if collectives support batched payloads). Reduces dispatch count by amortizing collective launch overhead across paired stages, but increases peak memory footprint."
+    },
+    {
+      "name": "All-to-all with split-dimension transposition",
+      "desc": "Exploits all_to_all's inherent transpose semantics by carefully reshaping input to (W, W, S) layout before each stage, allowing split_count=W to naturally distribute blocks while combining the transpose with collective communication (4 all_to_all + 4 all_gather = 8 dispatches). Minimizes explicit local data movement by leveraging collective's built-in scatter-gather addressing."
+    },
+    {
+      "name": "Reduce-scatter plus all-gather decomposition",
+      "desc": "Replaces all_to_all+sum+all_gather with equivalent reduce_scatter then all_gather per stage (4 reduce_scatter + 4 all_gather = 8 dispatches). Fuses the summation into reduce_scatter's reduction operator, eliminating explicit local sum operations and potentially enabling better NIC-level aggregation at the cost of less flexibility in scaling factor application.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-to-all four-stage baseline",
+      "sim": 6695.876785714285,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused all-to-all with precomputed scaling",
+      "sim": 6699.876785714286,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Batched two-phase collective reduction",
+      "sim": Infinity,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "All-to-all with split-dimension transposition",
+      "sim": 6695.876785714285,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-scatter plus all-gather decomposition",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: shape (4, 256) != (1024,)"
+    },
+    {
+      "stage": "refine:Sequential all-to-all four-stage baseline",
+      "round": 1,
+      "sim": 6695.876785714285
+    },
+    {
+      "stage": "refine:Sequential all-to-all four-stage baseline",
+      "round": 3,
+      "sim": 6695.876785714285
+    },
+    {
+      "stage": "refine:All-to-all with split-dimension transposition",
+      "round": 1,
+      "sim": 185220.32857142857
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6695.876785714285,
+  "final_code": "def r57_a2asum_d4_s256_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Sequential all-to-all four-stage baseline implementation.\n    \n    Executes four sequential stages, each performing:\n    1. all_to_all (simulated via all_gather + local operations)\n    2. local reshape + sum\n    3. all_gather\n    \n    This uses 12 collective dispatches total (3 per stage \u00d7 4 stages).\n    \"\"\"\n    S = 256\n    W = world_size\n    D = 4\n    dtype = x.dtype\n    \n    # Compute scaling factor for this rank\n    a = 1.0 + 0.5 * ((rank * 11) % 7) / 7.0\n    \n    # Compute total sum of all scaling factors\n    A_tot = sum(1.0 + 0.5 * ((k * 11) % 7) / 7.0 for k in range(W))\n    u = 0.9 * A_tot\n    \n    cur = x\n    \n    for _t in range(D):\n        # Stage 1: Simulate all_to_all using all_gather + local operations\n        # First, scale the current tensor by this rank's factor\n        scaled = a * cur\n        \n        # all_to_all: each rank sends block i to rank i\n        # Simulate by gathering all data, then extracting the relevant blocks\n        gathered = xm.all_gather(scaled, dim=0)  # Shape: (W * W * S,)\n        \n        # Reshape to (W, W, S) where gathered[src, dst, :] is block dst from rank src\n        gathered = gathered.reshape(W, W, S)\n        \n        # Extract blocks destined for this rank (block rank from each source)\n        # y[src, :] should be the block that rank src sends to this rank\n        y = gathered[:, rank, :]  # Shape: (W, S)\n        \n        # Stage 2: Local sum across the W received blocks\n        z = torch.sum(y, dim=0)  # Shape: (S,)\n        \n        # Stage 3: All-gather the summed shards\n        gathered_z = xm.all_gather(z, dim=0)  # Shape: (W * S,)\n        \n        # Divide by normalization factor\n        cur = gathered_z / u\n    \n    return cur"
+}

@@ -1,0 +1,78 @@
+{
+  "pipeline": "overlay",
+  "problem": "r57_a2asum_d4_s256",
+  "gate": "fp32",
+  "baseline_sim": 6691.876785714287,
+  "strategies": [
+    {
+      "name": "Staged all-to-all with interleaved scaling",
+      "desc": "Perform 4 sequential stages, each with all_to_all, reshape+sum, all_gather, and division as separate dispatches. Scale input by a[r] before each all_to_all, divide by u after each all_gather. Total ~16 dispatches (4 stages \u00d7 4 ops). Follows reference implementation directly, prioritizing correctness and readability over dispatch minimization."
+    },
+    {
+      "name": "Fused scale-transpose per stage",
+      "desc": "Merge the scalar multiplication (a * cur) into a single fused tensor operation before all_to_all within each stage, then chain all_to_all \u2192 local sum \u2192 all_gather \u2192 scale by 1/u. Reduces to ~12 dispatches (4 stages \u00d7 3 collective ops) by fusing local arithmetic into minimal pre/post-processing. Trades slightly increased per-dispatch arithmetic for fewer kernel launches."
+    },
+    {
+      "name": "Batched multi-stage collective with view-only reshapes",
+      "desc": "Recognize that reshape operations are metadata-only views; eliminate explicit sum dispatch by using torch tensor indexing/slicing to accumulate W blocks in-place after all_to_all. Each stage: all_to_all, in-place sum via views, all_gather with pre-scaled input. Achieves ~8 dispatches (4 stages \u00d7 2 collectives) by hiding local reductions in view operations and fused scaling."
+    },
+    {
+      "name": "Loop-unrolled four-stage pipeline",
+      "desc": "Fully unroll the 4-iteration loop into 4 sequential code blocks, allowing compile-time optimization of tensor shapes and enabling aggressive fusion of scaling constants (multiply a once, divide by u^4 at end, or fuse all scalars). Dispatch count ~8-12 depending on fusion; emphasizes compiler visibility and constant propagation over dynamic loop dispatch overhead."
+    },
+    {
+      "name": "Reduce-scatter + all-gather decomposition per stage",
+      "desc": "Reinterpret all_to_all followed by local sum as a reduce_scatter operation (if supported), then all_gather to broadcast. Each stage becomes reduce_scatter(op=SUM with pre-scaling by a) \u2192 all_gather \u2192 post-scale by 1/u. Potentially ~8 dispatches (4 stages \u00d7 2 ops) if reduce_scatter is available, trading all_to_all semantics for reduction-aware collectives that may have optimized implementations.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Staged all-to-all with interleaved scaling",
+      "sim": Infinity,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused scale-transpose per stage",
+      "sim": 6687.876785714286,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Batched multi-stage collective with view-only reshapes",
+      "sim": 7316.276785714282,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Loop-unrolled four-stage pipeline",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.516258"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-scatter + all-gather decomposition per stage",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: shape (4, 256) != (1024,)"
+    },
+    {
+      "stage": "refine:Fused scale-transpose per stage",
+      "round": 2,
+      "sim": 6687.876785714286
+    },
+    {
+      "stage": "refine:Batched multi-stage collective with view-only reshapes",
+      "round": 1,
+      "sim": 6689.0767857142855
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6687.876785714286,
+  "final_code": "def r57_a2asum_d4_s256_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256\n    W = world_size\n    D = 4\n    \n    # Compute scaling factors\n    a = 1.0 + 0.5 * ((rank * 11) % 7) / 7.0\n    A_tot = sum(1.0 + 0.5 * ((k * 11) % 7) / 7.0 for k in range(W))\n    u = 0.9 * A_tot\n    \n    # Preserve input dtype\n    dtype = x.dtype\n    \n    cur = x\n    \n    for _t in range(D):\n        # Fused scale operation\n        scaled = a * cur\n        \n        # reduce_scatter: each rank gets sum of its corresponding S-sized block from all ranks\n        # Input: (W*S,) scaled tensor\n        # Output: (S,) tensor (sum of S-sized blocks from all ranks)\n        z = xm.reduce_scatter(\n            xm.REDUCE_SUM,\n            scaled,\n            scale=1.0,\n            scatter_dim=0,\n            shard_count=W,\n            groups=None\n        )\n        \n        # all_gather: gather all shards to reconstruct full tensor\n        cur = xm.all_gather(z, dim=0)\n        \n        # Scale by 1/u\n        cur = cur / u\n    \n    return cur"
+}

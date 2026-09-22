@@ -1,0 +1,73 @@
+{
+  "pipeline": "overlay",
+  "problem": "r57_a2asum_d4_s256",
+  "gate": "fp32",
+  "baseline_sim": 6691.876785714287,
+  "strategies": [
+    {
+      "name": "Sequential per-stage collectives",
+      "desc": "Implements the reference pattern directly: 4 stages, each with all_to_all, local reshape+sum, all_gather, then scale. Total 12 collective dispatches (3 per stage \u00d7 4 stages). Represents the baseline with maximum dispatch overhead but simplest correctness path and minimal local memory pressure."
+    },
+    {
+      "name": "Fused scale-communicate per stage",
+      "desc": "Pre-multiply scaling factor 'a' into input, then combine all_to_all output processing (reshape+sum) with the division by 'u' before all_gather, reducing intermediate tensors. Still 12 dispatches but fuses local arithmetic into fewer memory passes. Trades off readability for reduced local bandwidth."
+    },
+    {
+      "name": "Batched all_to_all across stages",
+      "desc": "Concatenate or stack multiple stages' worth of data, issue fewer but larger all_to_all operations (e.g., 2 stages per collective call by doubling split_count or payload dimension). Reduces dispatch count to ~8 collectives by batching communication. Trades increased per-message size and local buffering for fewer kernel launches."
+    },
+    {
+      "name": "All_reduce alternative with masking",
+      "desc": "Replace the all_to_all + sum + all_gather triplet with a single all_reduce_sum per stage, using appropriate view manipulation and padding/masking to simulate block transposition semantics. Reduces to 4 collective dispatches (1 per stage). Trades communication pattern optimality (all_reduce may be less efficient than specialized sequence) for minimal dispatch count."
+    },
+    {
+      "name": "Pipelined stage overlapping",
+      "desc": "Initiate stage t+1's all_to_all before stage t's all_gather completes by splitting tensor into independent chunks; async dispatch allows network/compute overlap across stage boundaries. Maintains 12 dispatches but overlaps them, trading increased code complexity and buffer management for reduced end-to-end latency via pipelining.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential per-stage collectives",
+      "sim": 6691.876785714287,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused scale-communicate per stage",
+      "sim": 6687.876785714286,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Batched all_to_all across stages",
+      "sim": 6808.176785714286,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "All_reduce alternative with masking",
+      "sim": 5895.028571428571,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined stage overlapping",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.304546"
+    },
+    {
+      "stage": "refine:All_reduce alternative with masking",
+      "round": 2,
+      "sim": 5886.228571428572
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 5886.228571428572,
+  "final_code": "def r57_a2asum_d4_s256_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256\n    W = world_size\n    D = 4\n    \n    # Compute scaling factor for this rank\n    a = 1.0 + 0.5 * ((rank * 11) % 7) / 7.0\n    \n    # Compute normalization constant\n    A_tot = sum(1.0 + 0.5 * ((k * 11) % 7) / 7.0 for k in range(W))\n    u = 0.9 * A_tot\n    \n    # Pre-compute the combined scaling factor\n    scale_factor = a / u\n    \n    # Reshape once at the beginning\n    cur = x.reshape(W, S)\n    \n    for _t in range(D):\n        # Scale and all-reduce in one conceptual step\n        # First scale locally\n        cur = scale_factor * cur\n        \n        # All-reduce sums across ranks element-wise\n        cur = xm.all_reduce(xm.REDUCE_SUM, cur)\n    \n    # Flatten back to (W*S,) at the end\n    return cur.reshape(W * S)"
+}
