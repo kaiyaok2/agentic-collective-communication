@@ -1,0 +1,68 @@
+{
+  "pipeline": "overlay",
+  "problem": "r43_route_B10_p384_count8",
+  "gate": "fp32",
+  "baseline_sim": 6687.999999999999,
+  "strategies": [
+    {
+      "name": "Fused mask precomputation with loop",
+      "desc": "Precompute the keep-set once and reuse across all 8 iterations, then loop over the 7 mask-allreduce-normalize triplets with in-place updates. Total 8 all_reduce dispatches (1 initial + 7 routed). Trades code simplicity for identical dispatch count to reference; no algorithmic improvement but cleaner maintenance."
+    },
+    {
+      "name": "Hierarchical two-level routing aggregation",
+      "desc": "Group the 8 dependent all_reduces into 2 or 4 stages where intermediate results are accumulated locally before dispatching. For example, compute 2-4 routing iterations' worth of masking logic in a single fused kernel, then all_reduce, achieving 3-5 total dispatches instead of 8. Trades increased local compute and memory for fewer network round-trips."
+    },
+    {
+      "name": "Block-wise pipelined reduce-scatter gather",
+      "desc": "Replace each mask+all_reduce with a reduce_scatter on kept blocks followed by all_gather, allowing ranks to work on disjoint block subsets in parallel per iteration. Requires 2\u00d77=14 dispatches (vs 8) but each operates on ~30% of data (L/B fraction). Trades dispatch count for smaller per-dispatch payload and better bandwidth utilization."
+    },
+    {
+      "name": "Transposed iteration over blocks",
+      "desc": "Invert the loop structure to iterate over the 10 blocks in the outer loop and compute which of the 7 routing stages affect each block in the inner loop, accumulating per-block results before a single final all_reduce. Achieves 1-2 total dispatches by fusing all routing logic into local computation. Trades increased local memory traffic and algorithmic complexity for minimal network dispatches."
+    },
+    {
+      "name": "Sparse communication with send-recv pairs",
+      "desc": "Since each rank's window covers only 3 of 10 blocks, use point-to-point send/recv to exchange only relevant blocks between ranks whose windows overlap, followed by local aggregation and one final all_reduce for normalization. Requires O(world_size) send/recv pairs plus 1-2 all_reduces. Trades collective simplicity for potentially lower data movement when world_size * L/B < 1.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Fused mask precomputation with loop",
+      "sim": 6687.999999999999,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-level routing aggregation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.714571"
+    },
+    {
+      "stage": "impl",
+      "name": "Block-wise pipelined reduce-scatter gather",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=425.489288"
+    },
+    {
+      "stage": "impl",
+      "name": "Transposed iteration over blocks",
+      "sim": 6695.0,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Sparse communication with send-recv pairs",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.845795"
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6687.999999999999,
+  "final_code": "def r43_route_B10_p384_count8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 384\n    B = 10\n    W = world_size\n    L = 3\n    OFF = 2\n    STR = 1\n    \n    # Initial all_reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Precompute per-block overlap count c[b] = #ranks whose window covers block b\n    c = [0] * B\n    for r in range(W):\n        st = (r + OFF) % B\n        for j in range(L):\n            c[(st + STR * j) % B] += 1\n    \n    # Precompute the keep-set once (rank-indexed routing: THIS rank masks its own length-L window)\n    start = (rank + OFF) % B\n    keep = set((start + STR * j) % B for j in range(L))\n    \n    # Loop over 7 mask-allreduce-normalize triplets with in-place updates\n    for iteration in range(7):\n        # Mask: keep only blocks in the window\n        buf = torch.zeros_like(s)\n        for b in range(B):\n            if b in keep:\n                buf[b * S:(b + 1) * S] = s[b * S:(b + 1) * S]\n        \n        # All-reduce\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n        \n        # Normalize by overlap count (skip on last iteration)\n        if iteration < 6:\n            for b in range(B):\n                acc[b * S:(b + 1) * S] = acc[b * S:(b + 1) * S] / c[b]\n        \n        s = acc\n    \n    return s"
+}

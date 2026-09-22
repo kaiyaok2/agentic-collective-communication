@@ -1,0 +1,15 @@
+[shim] kiss AnthropicModel._create_message patched -> /tmp/tokens.jsonl
+[shim] kiss client -> AnthropicBedrock (us-east-1)
+[kiss] baseline r40_route_d8_L3_count8: {'ok': True, 'sim_time_us': 6662.599999999999, 'num_ops': 125, 'num_all_gather': 0, 'num_all_reduce': 8, 'num_collective_permute': 0, 'num_reduce_scatter': 0}
+[kiss] agent error: KISS Error: Agent fair-r40_route_d8_L3_count8 budget exceeded.
+{
+  "pipeline": "sorcar",
+  "problem": "r40_route_d8_L3_count8",
+  "gate": "fp32",
+  "wall_seconds": 304.3926730155945,
+  "baseline_sim_time_us": 6662.599999999999,
+  "best_sim_time_us": 5360.999999999999,
+  "best_name": "kiss_19",
+  "n_score_calls": 20,
+  "n_ok": 16
+}

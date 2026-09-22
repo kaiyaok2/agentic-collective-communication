@@ -1,0 +1,68 @@
+{
+  "pipeline": "overlay",
+  "problem": "r43_route_B11_d8_L3_count8",
+  "gate": "fp32",
+  "baseline_sim": 6695.342857142857,
+  "strategies": [
+    {
+      "name": "Precompute window mask once",
+      "desc": "Moves the mask computation (keep set) outside the loop and reuses the same mask for all 8 iterations. Same 9 total all_reduce dispatches (1 initial + 8 masked), but eliminates redundant mask recomputation. Trades identical communication pattern for reduced local compute overhead."
+    },
+    {
+      "name": "Fuse division with masking",
+      "desc": "Instead of dividing by c[b] after each all_reduce, accumulate a running product of division factors and apply once at the end. Requires 9 all_reduce dispatches but replaces 7*11 division ops with 11 multiplications and 11 final divisions. Reduces memory bandwidth for intermediate scaling operations."
+    },
+    {
+      "name": "Hierarchical two-phase all_reduce",
+      "desc": "Split 224 ranks into groups, perform intra-group all_reduce for the initial sum, then inter-group all_reduce, followed by the 8 masked iterations only at global scope. Reduces the initial all_reduce latency by exploiting multi-level topology (e.g., 32 nodes \u00d7 7 devices). Total dispatches: 10-11 depending on grouping."
+    },
+    {
+      "name": "Batched multi-block all_reduce",
+      "desc": "Instead of 8 sequential masked all_reduce operations, batch multiple iterations by concatenating buffers along a new dimension or interleaving blocks, dispatch fewer all_reduce calls with larger payloads. Trades 8 dispatches for 2-4 larger ones (e.g., batch 4+4 or 2+2+2+2), amortizing latency over increased message size."
+    },
+    {
+      "name": "Reduce-scatter then all-gather pattern",
+      "desc": "Replace the 8 identical masked all_reduce operations with a reduce-scatter (each rank holds a partition) followed by all-gather to reconstruct. Exploits the fact that all ranks use the same mask: 1 initial all_reduce + 8\u00d7(reduce-scatter + all-gather) = 17 dispatches but potentially better bandwidth utilization if RS/AG are optimized for 224-way.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Precompute window mask once",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=6.153049"
+    },
+    {
+      "stage": "impl",
+      "name": "Fuse division with masking",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=6.153049"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-phase all_reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=6.153049"
+    },
+    {
+      "stage": "impl",
+      "name": "Batched multi-block all_reduce",
+      "sim": 6435.007142857143,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-scatter then all-gather pattern",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: TypeError: MockXM.all_gather() got an unexpec"
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 6435.007142857143,
+  "final_code": "def r43_route_B11_d8_L3_count8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256\n    B = 11\n    W = world_size\n    L = 3\n    OFF = 2\n    STR = 1\n    \n    # Initial all_reduce to get sum across all ranks\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Compute per-block overlap count c[b] = #ranks whose window covers block b\n    c = [0] * B\n    for r in range(W):\n        st = (r + OFF) % B\n        for j in range(L):\n            c[(st + STR * j) % B] += 1\n    \n    # Determine which blocks this rank's window covers\n    start = (rank + OFF) % B\n    keep = set((start + STR * j) % B for j in range(L))\n    \n    # Batched strategy: batch the 8 iterations into 4 pairs\n    # Each pair performs two mask-reduce-scale operations batched together\n    # We'll stack two iterations' buffers and dispatch a single all_reduce\n    \n    for batch_idx in range(4):\n        # Each batch processes 2 iterations\n        # Create a buffer that holds 2 copies of the data\n        batched_buf = torch.zeros(2 * B * S, dtype=x.dtype)\n        \n        # First iteration in batch\n        for b in range(B):\n            if b in keep:\n                batched_buf[b * S:(b + 1) * S] = s[b * S:(b + 1) * S]\n        \n        # Second iteration in batch (if not the last batch which has only 1 more)\n        if batch_idx < 3:  # batches 0,1,2 have 2 iterations each\n            for b in range(B):\n                if b in keep:\n                    batched_buf[B * S + b * S:B * S + (b + 1) * S] = s[b * S:(b + 1) * S]\n        \n        # Single all_reduce for the batched buffer\n        acc_batched = xm.all_reduce(xm.REDUCE_SUM, batched_buf)\n        \n        # Process first iteration result\n        for b in range(B):\n            s[b * S:(b + 1) * S] = acc_batched[b * S:(b + 1) * S] / c[b]\n        \n        # Process second iteration result (if applicable)\n        if batch_idx < 3:\n            for b in range(B):\n                s[b * S:(b + 1) * S] = acc_batched[B * S + b * S:B * S + (b + 1) * S] / c[b]\n    \n    # Handle the last (8th) iteration separately\n    buf = torch.zeros_like(s)\n    for b in range(B):\n        if b in keep:\n            buf[b * S:(b + 1) * S] = s[b * S:(b + 1) * S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    s = acc\n    \n    return s"
+}
