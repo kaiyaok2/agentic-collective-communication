@@ -1,0 +1,73 @@
+{
+  "pipeline": "overlay",
+  "problem": "r47_dd_meanabs_d7",
+  "gate": "fp32",
+  "baseline_sim": 6558.299999999999,
+  "strategies": [
+    {
+      "name": "Sequential All-Reduce with Iteration Unrolling",
+      "desc": "Executes 7 all-reduce operations sequentially (1 initial sum + 6 iterative refinements), each followed by local per-block mean computation and scaling. Uses exactly 7 collective dispatches with full 2048-element payloads. Represents the baseline reference pattern with no fusion or structural change\u2014maximizes clarity, minimizes local compute complexity."
+    },
+    {
+      "name": "Fused Mean Broadcast via Reduce-Scatter + All-Gather",
+      "desc": "After initial all-reduce, computes block means locally, uses reduce-scatter to aggregate only the 8 means (tiny payload), then all-gather to broadcast aggregated means back. Replaces 6 large all-reduces with 12 smaller collectives (6 pairs of RS+AG). Trades fewer bytes communicated per iteration against doubled collective dispatch count\u2014wins if network bandwidth is the bottleneck."
+    },
+    {
+      "name": "Block-Parallel Independent All-Reduce Streams",
+      "desc": "Splits the 8 blocks into independent communication streams, issuing 8 separate all-reduce operations per iteration (each on 256-element slices) instead of one monolithic 2048-element all-reduce. Total 1 + 6\u00d78 = 49 dispatches. Exploits potential hardware parallelism in collective scheduling and may overlap with local compute, but dramatically increases dispatch overhead."
+    },
+    {
+      "name": "Two-Level Hierarchical All-Reduce (Intra+Inter Node)",
+      "desc": "Decomposes each all-reduce into node-local reduction followed by cross-node reduction, leveraging num_nodes topology when >1. For 224 ranks, assumes multi-node deployment; performs local all-reduce within each node, then leader-based inter-node reduction, then broadcast back. Reduces cross-node traffic by factor of ranks-per-node but adds 2\u00d7 dispatch overhead and leader serialization cost."
+    },
+    {
+      "name": "Pipelined Overlapped All-Reduce with Double Buffering",
+      "desc": "Maintains two buffers and issues iteration i+1's all-reduce while performing iteration i's local mean/scale computation. Requires 7 all-reduce dispatches but overlaps communication with compute via asynchronous dispatch and explicit mark_step placement. Hides local arithmetic latency behind network time\u2014effective when compute and communication have similar duration.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential All-Reduce with Iteration Unrolling",
+      "sim": 6558.299999999999,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Mean Broadcast via Reduce-Scatter + All-Gather",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.385053"
+    },
+    {
+      "stage": "impl",
+      "name": "Block-Parallel Independent All-Reduce Streams",
+      "sim": 17982.8,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Two-Level Hierarchical All-Reduce (Intra+Inter Node)",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Overlapped All-Reduce with Double Buffering",
+      "sim": 6558.299999999999,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "refine:Sequential All-Reduce with Iteration Unrolling",
+      "round": 2,
+      "sim": 6390.4
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6390.4,
+  "final_code": "def r47_dd_meanabs_d7_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256\n    B = 8\n    dtype = x.dtype\n    \n    # Initial all-reduce: sum x across all ranks\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Vectorized iteration function to increase local ops\n    def do_iteration(s, final_iter=False):\n        # Reshape for vectorized operations\n        s_reshaped = s.view(B, S)\n        \n        # Compute all factors at once (vectorized)\n        f = 1.0 + s_reshaped.mean(dim=1).abs()\n        \n        # Apply factors (vectorized multiplication)\n        buf = s_reshaped * f.unsqueeze(1)\n        buf = buf.view(-1)\n        \n        # All-reduce\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n        \n        if not final_iter:\n            # Reshape and divide (vectorized)\n            acc_reshaped = acc.view(B, S)\n            acc_reshaped = acc_reshaped / (world_size * f.unsqueeze(1))\n            acc = acc_reshaped.view(-1)\n        else:\n            acc = acc / world_size\n        \n        return acc\n    \n    # Iterations 1-5\n    for i in range(5):\n        s = do_iteration(s, final_iter=False)\n    \n    # Iteration 6 (final)\n    s = do_iteration(s, final_iter=True)\n    \n    return s"
+}

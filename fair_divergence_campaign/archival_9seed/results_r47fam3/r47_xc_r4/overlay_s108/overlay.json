@@ -1,0 +1,68 @@
+{
+  "pipeline": "overlay",
+  "problem": "r47_xc_r4",
+  "gate": "fp32",
+  "baseline_sim": 6562.799999999999,
+  "strategies": [
+    {
+      "name": "Sequential reduce-scatter all-gather chain",
+      "desc": "Four back-to-back reduce_scatter + all_gather pairs operating on the full tensor at world_size 224, with a final scaling operation by world_size^3. This is the baseline reference pattern with 8 collective dispatches total. Represents the straightforward interpretation with no optimization, maximum dispatch count but simplest control flow."
+    },
+    {
+      "name": "Fused scaling into reduce-scatter operations",
+      "desc": "Same 4 rounds of reduce_scatter + all_gather, but integrate the world_size^3 scaling incrementally by using the scale parameter in reduce_scatter calls (scale=world_size per round for cubic total). Reduces to 8 collective dispatches but eliminates separate scaling overhead and potentially enables backend fusion of scale into the reduction kernel."
+    },
+    {
+      "name": "Hierarchical two-level collective decomposition",
+      "desc": "Exploit the 224 = 32 nodes \u00d7 7 devices structure by decomposing each reduce_scatter and all_gather into intra-node followed by inter-node phases (or vice versa). Each of 4 rounds becomes 4 sub-collectives (intra-RS, inter-RS, inter-AG, intra-AG), totaling 16 dispatches but with smaller per-dispatch message sizes that may better utilize interconnect bandwidth hierarchies."
+    },
+    {
+      "name": "Replicate-reduce-broadcast pattern with allreduce substitution",
+      "desc": "Replace each reduce_scatter + all_gather pair with an allreduce operation (functionally equivalent: RS aggregates and shards, AG reconstructs full tensor). Reduces to 4 allreduce dispatches total. Trades potential pipelining opportunities for half the dispatch count, betting that allreduce's optimized ring/tree algorithms offset the loss of granular control."
+    },
+    {
+      "name": "Batched multi-round collective with tensor concatenation",
+      "desc": "Concatenate intermediate states across rounds into a larger tensor and issue reduce_scatter/all_gather on the batched payload, then slice results. For example, stack 4 logical rounds into 2 physical rounds operating on 2\u00d7 or 4\u00d7 sized tensors. Achieves 4-6 dispatches depending on batching factor, trading increased per-message payload and memory footprint for reduced dispatch overhead.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential reduce-scatter all-gather chain",
+      "sim": 6560.0,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused scaling into reduce-scatter operations",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=7588.671875"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-level collective decomposition",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: shape (224,) != (256,)"
+    },
+    {
+      "stage": "impl",
+      "name": "Replicate-reduce-broadcast pattern with allreduce substitution",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: TypeError: MockXM.all_reduce() got an unexpec"
+    },
+    {
+      "stage": "impl",
+      "name": "Batched multi-round collective with tensor concatenation",
+      "sim": 6560.0,
+      "ok": true,
+      "err": null
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6560.0,
+  "final_code": "def r47_xc_r4_fn(x, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Sequential reduce-scatter all-gather chain.\n    Four back-to-back reduce_scatter + all_gather pairs operating on the full tensor.\n    \"\"\"\n    s = x\n    \n    # Round 1: reduce_scatter + all_gather\n    rs = xm.reduce_scatter(xm.REDUCE_SUM, s, scale=1.0, scatter_dim=0, shard_count=world_size)\n    s = xm.all_gather(rs, dim=0)\n    \n    # Round 2: reduce_scatter + all_gather\n    rs = xm.reduce_scatter(xm.REDUCE_SUM, s, scale=1.0, scatter_dim=0, shard_count=world_size)\n    s = xm.all_gather(rs, dim=0)\n    \n    # Round 3: reduce_scatter + all_gather\n    rs = xm.reduce_scatter(xm.REDUCE_SUM, s, scale=1.0, scatter_dim=0, shard_count=world_size)\n    s = xm.all_gather(rs, dim=0)\n    \n    # Round 4: reduce_scatter + all_gather\n    rs = xm.reduce_scatter(xm.REDUCE_SUM, s, scale=1.0, scatter_dim=0, shard_count=world_size)\n    s = xm.all_gather(rs, dim=0)\n    \n    return s"
+}

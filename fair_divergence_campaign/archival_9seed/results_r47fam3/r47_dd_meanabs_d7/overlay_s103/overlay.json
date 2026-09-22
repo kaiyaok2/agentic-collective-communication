@@ -1,0 +1,68 @@
+{
+  "pipeline": "overlay",
+  "problem": "r47_dd_meanabs_d7",
+  "gate": "fp32",
+  "baseline_sim": 6558.299999999999,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with local block-wise scaling",
+      "desc": "Performs 7 sequential all-reduce operations (one initial sum, then 6 iterative refinements where each computes scaled values and aggregates them). Each all-reduce operates on the full 2048-element vector. Total 7 all-reduce dispatches. Trades simplicity and readability for no overlap opportunity; this is the reference baseline with highest latency but simplest structure."
+    },
+    {
+      "name": "Fused buffer preparation with batched all-reduce",
+      "desc": "Pre-computes all 6 iteration buffers locally (computing scaling factors and applying them), then dispatches all 7 all-reduces in quick succession to allow hardware/runtime batching and potential pipelining. Still 7 dispatches but minimal CPU overhead between them. Trades memory (6 temporary buffers) for potential collective coalescing and reduced host-device round-trip latency."
+    },
+    {
+      "name": "Block-level reduce-scatter then all-gather pattern",
+      "desc": "Instead of full all-reduce per iteration, use reduce-scatter to distribute 8 blocks across ranks (each rank owns 1/world_size fraction per block), compute scaling factors on owned slices, then all-gather to broadcast results. Converts 7 all-reduces into 7 reduce-scatter + 7 all-gather = 14 dispatches, but each moves less data (reduce-scatter aggregates incrementally, all-gather is bandwidth-bound but can pipeline)."
+    },
+    {
+      "name": "Hierarchical two-level reduction per iteration",
+      "desc": "Exploit multi-node structure by splitting each all-reduce into intra-node + inter-node phases (assuming num_nodes > 1). For 224 ranks, if distributed across multiple nodes, perform node-local reductions first, then cross-node reductions, then broadcast back. Each of 7 iterations becomes 3 collectives (reduce within node, reduce across node leaders, broadcast within node) = 21 dispatches but smaller per-collective data volumes and better NIC/link utilization."
+    },
+    {
+      "name": "Mean-only micro all-reduce with delta correction",
+      "desc": "Instead of all-reducing the full 2048-element buffer 7 times, all-reduce only the 8 block means (64 bytes) per iteration to compute scaling factors, then perform a single final all-reduce of the scaled full buffer at the end. Changes structure to 1 initial full all-reduce + 6 tiny (8-element) all-reduces + 6 local scaling ops + 1 final correction all-reduce = 8 dispatches total. Trades algorithmic equivalence verification for dramatically reduced bandwidth (6 iterations move 64 bytes instead of 8KB).\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with local block-wise scaling",
+      "sim": 6793.5,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused buffer preparation with batched all-reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.225000"
+    },
+    {
+      "stage": "impl",
+      "name": "Block-level reduce-scatter then all-gather pattern",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.385053"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-level reduction per iteration",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Mean-only micro all-reduce with delta correction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=3.631124"
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 6793.5,
+  "final_code": "def r47_dd_meanabs_d7_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Sequential all-reduce with local block-wise scaling.\n    \n    Performs 7 sequential all-reduce operations:\n    1. Initial sum across all ranks\n    2-7. Six iterative refinements where each computes scaled values and aggregates them\n    \n    Each all-reduce operates on the full 2048-element vector.\n    Total: 7 all-reduce dispatches.\n    \"\"\"\n    S = 256  # block size\n    B = 8    # number of blocks\n    dtype = x.dtype\n    \n    # Step 1: Initial all-reduce sum\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Steps 2-7: Six iterative refinements\n    for iteration in range(6):\n        # Compute scaling factors for each block\n        f = []\n        for b in range(B):\n            block = s[b*S:(b+1)*S]\n            mean_abs = block.mean().abs()\n            f.append(1.0 + mean_abs)\n        \n        # Scale each block by its factor\n        buf = s.clone()\n        for b in range(B):\n            buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n        \n        # All-reduce the scaled buffer\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n        \n        # Unscale each block (divide by world_size * f[b])\n        for b in range(B):\n            acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n        \n        # Update s for next iteration\n        s = acc\n    \n    # Final step: compute scaling factors and apply them\n    f = []\n    for b in range(B):\n        block = s[b*S:(b+1)*S]\n        mean_abs = block.mean().abs()\n        f.append(1.0 + mean_abs)\n    \n    # Scale each block by its factor\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    \n    # Final all-reduce\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    \n    # Divide by world_size only (no per-block unscaling)\n    acc = acc / world_size\n    \n    return acc"
+}

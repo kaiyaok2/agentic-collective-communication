@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r47_dd_relu_d8",
+  "gate": "fp32",
+  "baseline_sim": 6793.5,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with scalar normalization",
+      "desc": "Performs 8 sequential all_reduce operations as in the reference, each dispatching one collective (8 total dispatches). Uses multiply-then-divide pattern for weighted averaging, with local scalar computations (mean, ReLU) between collectives. Baseline approach with no fusion or buffering optimizations."
+    },
+    {
+      "name": "Fused buffer preparation multi-dispatch",
+      "desc": "Pre-computes all scaling factors locally after the first all_reduce, then prepares 7 weighted buffers in parallel before issuing the remaining 7 all_reduce operations. Reduces local compute overhead between dispatches (still 8 dispatches total) but increases memory footprint by maintaining multiple intermediate buffers simultaneously."
+    },
+    {
+      "name": "Hierarchical two-stage reduction pattern",
+      "desc": "Splits the 8 iterations into two hierarchical levels: first performs 4 \"coarse\" iterations with reduced precision or approximated scaling, then refines with 4 \"fine\" iterations. Exploits potential for batching or pipelining at level boundaries. Still 8 dispatches but different dataflow dependencies enable better overlap of computation and communication."
+    },
+    {
+      "name": "Block-interleaved pipelined all-reduce",
+      "desc": "Reorders operations to process blocks in a round-robin pattern across iterations rather than completing all blocks per iteration. Issues 8 all_reduce operations but each processes a rotated or permuted view of blocks, enabling producer-consumer pipelining where iteration i+1's local compute overlaps with iteration i's collective. Same 8 dispatches but improved latency hiding."
+    },
+    {
+      "name": "Vectorized multi-block concurrent dispatch",
+      "desc": "Concatenates multiple iteration buffers into a single larger tensor and issues fewer all_reduce calls (e.g., 2-4 dispatches) each handling multiple logical iterations' worth of data. Requires careful index management to apply per-block scaling factors correctly across concatenated payloads. Trades increased per-dispatch payload size for reduced dispatch overhead and better amortization of communication startup costs.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with scalar normalization",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.279368"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused buffer preparation multi-dispatch",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.279368"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-stage reduction pattern",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.279368"
+    },
+    {
+      "stage": "impl",
+      "name": "Block-interleaved pipelined all-reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    },
+    {
+      "stage": "impl",
+      "name": "Vectorized multi-block concurrent dispatch",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 6793.5,
+  "final_code": "def r47_dd_relu_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256; B = 8\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    f = []\n    for b in range(B):\n        mb = s[b*S:(b+1)*S].mean()\n        f.append(1.0 + (mb if mb > 0 else mb*0.0))\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    f = []\n    for b in range(B):\n        mb = s[b*S:(b+1)*S].mean()\n        f.append(1.0 + (mb if mb > 0 else mb*0.0))\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    f = []\n    for b in range(B):\n        mb = s[b*S:(b+1)*S].mean()\n        f.append(1.0 + (mb if mb > 0 else mb*0.0))\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    f = []\n    for b in range(B):\n        mb = s[b*S:(b+1)*S].mean()\n        f.append(1.0 + (mb if mb > 0 else mb*0.0))\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    f = []\n    for b in range(B):\n        mb = s[b*S:(b+1)*S].mean()\n        f.append(1.0 + (mb if mb > 0 else mb*0.0))\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    f = []\n    for b in range(B):\n        mb = s[b*S:(b+1)*S].mean()\n        f.append(1.0 + (mb if mb > 0 else mb*0.0))\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    f = []\n    for b in range(B):\n        mb = s[b*S:(b+1)*S].mean()\n        f.append(1.0 + (mb if mb > 0 else mb*0.0))\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / world_size\n    s = acc\n    return s\n",
+  "fell_back_to_baseline": true
+}

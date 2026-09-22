@@ -1,0 +1,68 @@
+{
+  "pipeline": "overlay",
+  "problem": "r47_dd_meanabs_d8",
+  "gate": "fp32",
+  "baseline_sim": 6793.5,
+  "strategies": [
+    {
+      "name": "Sequential All-Reduce with In-Place Scaling",
+      "desc": "Performs 8 sequential all-reduce operations where each iteration computes block means from the previous result, scales blocks, all-reduces, then undoes scaling. Uses 8 all-reduce dispatches with full 2048-element payload each time. Represents the baseline reference pattern with maximum simplicity but no overlap opportunity."
+    },
+    {
+      "name": "Fused Scale-Reduce with Single Buffer",
+      "desc": "Precomputes all scaling factors locally after the first all-reduce, applies all 7 remaining transformations as fused multiply-add operations in a single buffer, then performs remaining all-reduces on progressively refined estimates. Uses 8 all-reduce dispatches but reduces local compute fragmentation by batching scale/unscale operations between collectives."
+    },
+    {
+      "name": "Block-Parallel Reduce-Scatter then All-Gather",
+      "desc": "After initial all-reduce, use reduce-scatter to partition the 8 blocks across a subset of ranks (e.g., 8-way groups), each rank iterates its assigned block through dependent operations locally, then all-gather reconstructs full result. Trades 1 all-reduce + 7*(reduce-scatter + all-gather) = 15 collectives but with smaller per-rank payloads (256 elements) and potential for inter-group parallelism."
+    },
+    {
+      "name": "Pipelined Two-Stage Hierarchical Reduction",
+      "desc": "Split 8 iterations into two groups of 4, perform 4 dependent all-reduces on first stage, then broadcast intermediate scaling factors as metadata (8 scalars via all-reduce of tiny buffer), allowing second stage to pipeline computation and communication overlap. Uses 8 full all-reduces + 1 small (64-byte) all-reduce for factor exchange, trading one extra dispatch for potential async overlap."
+    },
+    {
+      "name": "Vectorized Mean Computation with Batched Collectives",
+      "desc": "Restructure to compute all 8 block means simultaneously after each all-reduce by concatenating means into a 8-element vector, all-reduce the mean vector separately (8 floats = 32 bytes), then apply all scaling operations in vectorized form before next data all-reduce. Uses 8 data all-reduces (2048 elements) + 7 mean all-reduces (8 elements), totaling 15 dispatches but with 7 being tiny metadata exchanges that may hide in latency.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential All-Reduce with In-Place Scaling",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.385053"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Scale-Reduce with Single Buffer",
+      "sim": 6793.5,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Block-Parallel Reduce-Scatter then All-Gather",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.385053"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Two-Stage Hierarchical Reduction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.385053"
+    },
+    {
+      "stage": "impl",
+      "name": "Vectorized Mean Computation with Batched Collectives",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.385053"
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 6793.5,
+  "final_code": "def r47_dd_meanabs_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256\n    B = 8\n    dtype = x.dtype\n    \n    # First all-reduce: sum input x across all ranks\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Precompute all 7 scaling factors after first all-reduce\n    # (We'll compute them iteratively as we refine)\n    \n    # Iteration 1\n    f = []\n    for b in range(B):\n        f.append(1.0 + s[b*S:(b+1)*S].mean().abs())\n    \n    # Apply scaling: buf = s * f (per block)\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    \n    # All-reduce 2\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    \n    # Unscale: divide by (world_size * f)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    \n    # Iteration 2\n    f = []\n    for b in range(B):\n        f.append(1.0 + s[b*S:(b+1)*S].mean().abs())\n    \n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    \n    # All-reduce 3\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    \n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    \n    # Iteration 3\n    f = []\n    for b in range(B):\n        f.append(1.0 + s[b*S:(b+1)*S].mean().abs())\n    \n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    \n    # All-reduce 4\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    \n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    \n    # Iteration 4\n    f = []\n    for b in range(B):\n        f.append(1.0 + s[b*S:(b+1)*S].mean().abs())\n    \n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    \n    # All-reduce 5\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    \n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    \n    # Iteration 5\n    f = []\n    for b in range(B):\n        f.append(1.0 + s[b*S:(b+1)*S].mean().abs())\n    \n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    \n    # All-reduce 6\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    \n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    \n    # Iteration 6\n    f = []\n    for b in range(B):\n        f.append(1.0 + s[b*S:(b+1)*S].mean().abs())\n    \n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    \n    # All-reduce 7\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    \n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    \n    # Iteration 7 (final)\n    f = []\n    for b in range(B):\n        f.append(1.0 + s[b*S:(b+1)*S].mean().abs())\n    \n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    \n    # All-reduce 8 (final)\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / world_size\n    \n    return acc"
+}

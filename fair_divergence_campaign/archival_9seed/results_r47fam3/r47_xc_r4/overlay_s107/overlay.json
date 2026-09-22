@@ -1,0 +1,73 @@
+{
+  "pipeline": "overlay",
+  "problem": "r47_xc_r4",
+  "gate": "fp32",
+  "baseline_sim": 6562.799999999999,
+  "strategies": [
+    {
+      "name": "Sequential reduce-scatter all-gather chain",
+      "desc": "Four consecutive reduce_scatter+all_gather pairs with no fusion, exactly as shown in the seed implementation. Eight total dispatches (4 RS + 4 AG). Represents the baseline: simplest structure with maximum dispatch overhead but clearest semantics and no optimization attempts."
+    },
+    {
+      "name": "Fused reduce-scatter then fused all-gather",
+      "desc": "Group all four reduce_scatter operations together (performing local multiplication between each), then group all four all_gather operations. Still eight dispatches but different ordering may enable better pipelining or memory locality. Trades potential for overlapping RS/AG pairs for batching similar operations together."
+    },
+    {
+      "name": "All-reduce equivalent decomposition with scale",
+      "desc": "Recognize that RS followed by AG over the same dimension is equivalent to all-reduce. Replace each RS+AG pair with a single all_reduce call, resulting in four all_reduce dispatches instead of eight separate operations. Halves dispatch count at the cost of potentially less fine-grained control over intermediate buffer sizes."
+    },
+    {
+      "name": "Manual chunking with multiple reduce-scatter groups",
+      "desc": "Manually partition the input tensor along the data dimension into chunks, apply reduce_scatter rounds to different chunks with different shard_counts or group subsets, then reassemble. Enables hierarchical reduction patterns (e.g., intra-node then inter-node) that may better match network topology at world_size=224, trading implementation complexity for topology awareness."
+    },
+    {
+      "name": "Reduce-scatter chain with deferred all-gather",
+      "desc": "Perform all four reduce_scatter operations sequentially on progressively smaller tensors (each reduces by world_size factor), accumulating the scaling, then perform all four all_gather operations to restore full size. Four RS + four AG dispatches but with different intermediate tensor sizes that may reduce total communication volume in early stages.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential reduce-scatter all-gather chain",
+      "sim": 6562.799999999999,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused reduce-scatter then fused all-gather",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=120.838570"
+    },
+    {
+      "stage": "impl",
+      "name": "All-reduce equivalent decomposition with scale",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: TypeError: MockXM.all_reduce() got an unexpec"
+    },
+    {
+      "stage": "impl",
+      "name": "Manual chunking with multiple reduce-scatter groups",
+      "sim": null,
+      "ok": false,
+      "err": "   unsupported_primitives=unsupported)\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/acc_verify/searc"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-scatter chain with deferred all-gather",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=981.203552"
+    },
+    {
+      "stage": "refine:Sequential reduce-scatter all-gather chain",
+      "round": 2,
+      "sim": 6576.8
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 6562.799999999999,
+  "final_code": "def r47_xc_r4_fn(x, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Sequential reduce-scatter all-gather chain strategy.\n    \n    Performs 4 consecutive reduce_scatter+all_gather pairs with no fusion.\n    This is the baseline implementation with 8 total dispatches (4 RS + 4 AG).\n    \n    Each round:\n    1. reduce_scatter: sum-reduces and scatters across world_size\n    2. all_gather: gathers the scattered results back to full size\n    \n    The final result is the elementwise sum of x across all ranks, scaled by world_size^3.\n    \"\"\"\n    s = x\n    \n    # Round 1: reduce_scatter + all_gather\n    rs = xm.reduce_scatter(xm.REDUCE_SUM, s, scale=1.0, scatter_dim=0, shard_count=world_size)\n    rs = rs * 1.0\n    s = xm.all_gather(rs, dim=0)\n    \n    # Round 2: reduce_scatter + all_gather\n    rs = xm.reduce_scatter(xm.REDUCE_SUM, s, scale=1.0, scatter_dim=0, shard_count=world_size)\n    rs = rs * 1.0\n    s = xm.all_gather(rs, dim=0)\n    \n    # Round 3: reduce_scatter + all_gather\n    rs = xm.reduce_scatter(xm.REDUCE_SUM, s, scale=1.0, scatter_dim=0, shard_count=world_size)\n    rs = rs * 1.0\n    s = xm.all_gather(rs, dim=0)\n    \n    # Round 4: reduce_scatter + all_gather\n    rs = xm.reduce_scatter(xm.REDUCE_SUM, s, scale=1.0, scatter_dim=0, shard_count=world_size)\n    rs = rs * 1.0\n    s = xm.all_gather(rs, dim=0)\n    \n    return s"
+}
