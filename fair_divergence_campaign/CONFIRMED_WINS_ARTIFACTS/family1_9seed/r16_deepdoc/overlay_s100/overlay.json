@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r16_deepdoc",
+  "gate": "fp32",
+  "baseline_sim": 12919.428571428683,
+  "strategies": [
+    {
+      "name": "Sequential All-Reduce with Fused Local Ops",
+      "desc": "Performs 8 consecutive all-reduce calls (one per stage), but fuses all local element-wise operations (scale, divide, clone, multiply) between consecutive all-reduces into single kernel dispatches using in-place operations where possible. Expected ~8 all-reduce dispatches + ~8 fused local-op dispatches = 16 total. Trades single-dispatch elegance for straightforward correctness and moderate dispatch count."
+    },
+    {
+      "name": "Precompute Scale Tensors, Vectorized Local Ops",
+      "desc": "Precomputes all per-rank scale factors as full-size tensors (shape world*256) once, then performs 8 all-reduces with vectorized multiply/divide operations that avoid per-shard loops by broadcasting scale tensors. Expected ~8 all-reduce dispatches + ~2 precompute dispatches + ~8 vectorized scale dispatches = 18 total. Trades slightly more dispatches for eliminating inner loops and enabling better compiler vectorization."
+    },
+    {
+      "name": "Reduce-Scatter / All-Gather Decomposition per Stage",
+      "desc": "Replaces each all-reduce with a reduce-scatter followed by all-gather, allowing local computation to happen on smaller per-rank shards (size 256) between the two phases, then all-gather broadcasts the scaled result. Expected ~8 stages \u00d7 2 collectives = 16 collective dispatches + ~8 local-op dispatches = 24 total. Trades more collectives for smaller intermediate working sets and potential memory bandwidth savings."
+    },
+    {
+      "name": "Pipelined Two-Phase with Overlap",
+      "desc": "Groups the 8 stages into two phases of 4 stages each; pipeline the first 4 all-reduces by issuing them asynchronously with overlapping local computation, then barrier and repeat for second phase. Expected ~8 all-reduce dispatches + ~8 async local-op dispatches = 16 total, but with potential latency hiding. Trades complexity and synchronization overhead for communication-computation overlap."
+    },
+    {
+      "name": "Mega-Fused Single All-Reduce with Staged Metadata",
+      "desc": "Concatenates all 8 stage computations into a single massive buffer (8\u00d7 world*256), performs one giant all-reduce on the concatenated data, then post-processes locally to extract and combine stage results using tensor views and reshapes. Expected ~1 all-reduce dispatch + ~10 local reshape/view/combine dispatches = 11 total. Trades memory footprint (8\u00d7 larger) and complex post-processing for minimal collective count.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential All-Reduce with Fused Local Ops",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    },
+    {
+      "stage": "impl",
+      "name": "Precompute Scale Tensors, Vectorized Local Ops",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.032979"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-Scatter / All-Gather Decomposition per Stage",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.032979"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Two-Phase with Overlap",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockXM' object has no attrib"
+    },
+    {
+      "stage": "impl",
+      "name": "Mega-Fused Single All-Reduce with Staged Metadata",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 12919.428571428683,
+  "final_code": "def r16_deepdoc_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256; W = world_size\n    a = [1.0 + 0.5*(r % 3) for r in range(W)]\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    return s\n",
+  "fell_back_to_baseline": true
+}

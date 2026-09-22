@@ -1,0 +1,73 @@
+{
+  "pipeline": "overlay",
+  "problem": "r1_fold_s256",
+  "gate": "fp32",
+  "baseline_sim": 7089.928571428564,
+  "strategies": [
+    {
+      "name": "Baseline Three-Stage All-Reduce",
+      "desc": "Uses three sequential xm.all_reduce calls with local scaling operations between them, totaling 3 collective dispatches. This is the direct reference implementation with straightforward cost: 3\u00d7 all-reduce latency plus local compute for per-shard scaling, optimizing for simplicity over dispatch count."
+    },
+    {
+      "name": "Fused Local-Ops Single-Buffer",
+      "desc": "Pre-fuses all local scaling operations into larger vectorized kernels that operate on the full buffer before/after each all-reduce, reducing host-device synchronization points. Still 3 all-reduce dispatches but amortizes local-op overhead by batching all W shard operations into single torch operations with reshaped views, trading memory bandwidth for reduced launch overhead."
+    },
+    {
+      "name": "Reduce-Scatter + All-Gather Decomposition",
+      "desc": "Replaces first all-reduce with reduce-scatter (to compute partial sums locally), applies all three scaling stages on the local 1/W slice (size 256), then uses all-gather twice to broadcast intermediate and final results. Totals 4 dispatches (1 RS + 2 AG + 1 AR or similar) but reduces payload size for middle operations, trading dispatch count for smaller intermediate message sizes."
+    },
+    {
+      "name": "Pipelined Chunked All-Reduce Ring",
+      "desc": "Manually implements a ring-based all-reduce by decomposing the buffer into chunks and overlapping send/recv operations, allowing per-chunk scaling to be pipelined within the collective itself. Uses point-to-point primitives (if available) or multiple smaller all-reduces on sub-groups, potentially 5-10 dispatches but exposes parallelism between communication and computation phases."
+    },
+    {
+      "name": "Hierarchical Two-Level Collectives",
+      "desc": "Exploits multi-node topology (num_nodes parameter) by performing intra-node all-reduce first, applying scaling, then inter-node all-reduce, then final intra-node reduction. Uses 6-9 dispatches (3 stages \u00d7 2-3 levels) but reduces cross-node bandwidth requirements by pre-aggregating within nodes, optimizing for hierarchical network topology at world_size=224.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Baseline Three-Stage All-Reduce",
+      "sim": 7089.928571428564,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Local-Ops Single-Buffer",
+      "sim": 5665.328571428571,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-Scatter + All-Gather Decomposition",
+      "sim": 6036.452678571429,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Chunked All-Reduce Ring",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.621754"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level Collectives",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "refine:Reduce-Scatter + All-Gather Decomposition",
+      "round": 3,
+      "sim": 6066.852678571428
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 5665.328571428571,
+  "final_code": "def r1_fold_s256_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256\n    W = world_size\n    dtype = x.dtype\n    \n    # Pre-compute scaling coefficients\n    a = [1.0 + 0.5*(r % 3) for r in range(W)]\n    \n    # Stage 1: First all-reduce\n    s1 = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Fused local operation 1: Apply per-shard scaling (a[r] / W) in one pass\n    # Create a scaling tensor that covers all shards at once\n    scale1 = torch.cat([torch.full((S,), a[r] / W, dtype=dtype, device=x.device) \n                        for r in range(W)])\n    buf0 = s1 * scale1\n    \n    # Stage 2: Second all-reduce\n    s2 = xm.all_reduce(xm.REDUCE_SUM, buf0)\n    \n    # Fused local operation 2: Apply inverse scaling (1 / a[r]) in one pass\n    scale2 = torch.cat([torch.full((S,), 1.0 / max(a[r], 1e-9), dtype=dtype, device=x.device) \n                        for r in range(W)])\n    s2_scaled = s2 * scale2\n    \n    # Fused local operation 3: Apply per-shard scaling (a[r] / W) again in one pass\n    scale3 = torch.cat([torch.full((S,), a[r] / W, dtype=dtype, device=x.device) \n                        for r in range(W)])\n    bufN = s2_scaled * scale3\n    \n    # Stage 3: Final all-reduce\n    out = xm.all_reduce(xm.REDUCE_SUM, bufN)\n    \n    return out"
+}

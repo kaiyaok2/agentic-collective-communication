@@ -1,0 +1,15 @@
+[shim] kiss AnthropicModel._create_message patched -> /tmp/tokens.jsonl
+[shim] kiss client -> AnthropicBedrock (us-east-1)
+[kiss] baseline r26_perm_count8: {'ok': True, 'sim_time_us': 12919.428571428683, 'num_ops': 7400, 'num_all_gather': 0, 'num_all_reduce': 8, 'num_collective_permute': 0, 'num_reduce_scatter': 0}
+[kiss] agent error: KISS Error: Agent fair-r26_perm_count8 budget exceeded.
+{
+  "pipeline": "sorcar",
+  "problem": "r26_perm_count8",
+  "gate": "fp32",
+  "wall_seconds": 238.95960092544556,
+  "baseline_sim_time_us": 12919.428571428683,
+  "best_sim_time_us": 5394.985714285714,
+  "best_name": "kiss_22",
+  "n_score_calls": 28,
+  "n_ok": 21
+}

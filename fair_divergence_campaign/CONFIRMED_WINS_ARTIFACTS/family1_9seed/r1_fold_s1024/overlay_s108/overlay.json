@@ -1,0 +1,73 @@
+{
+  "pipeline": "overlay",
+  "problem": "r1_fold_s1024",
+  "gate": "fp32",
+  "baseline_sim": 7517.428571428563,
+  "strategies": [
+    {
+      "name": "Baseline Three Sequential AllReduces",
+      "desc": "Three xm.all_reduce(REDUCE_SUM) calls with clone and elementwise scale/divide between them. Dispatch count is 3 (one per AR). Represents the direct translation with no optimization\u2014highest latency due to sequential dependencies but simplest correctness path."
+    },
+    {
+      "name": "Fused Local-Ops Single-Buffer Inplace",
+      "desc": "Eliminate intermediate clones by reusing a single buffer, applying all local element-wise operations (multiply, divide by scaling factors) in-place between the three all-reduce dispatches. Dispatch count remains 3 but reduces memory footprint and potential memcpy overhead. Trades code clarity for memory efficiency."
+    },
+    {
+      "name": "AllGather-LocalCompute-ReduceScatter Chain",
+      "desc": "Replace first all-reduce with all-gather to replicate full input, perform all per-shard scaling computations locally on replicated data, then use reduce-scatter to distribute results. Dispatch count is 2-3 depending on whether middle AR can be folded into RS. Changes communication pattern to potentially leverage different bandwidth characteristics."
+    },
+    {
+      "name": "Hierarchical Two-Level Reduction (Intra+Inter Node)",
+      "desc": "Exploit num_nodes topology by splitting each all-reduce into intra-node reduce followed by inter-node all-reduce and intra-node broadcast. With 224 ranks across multiple nodes, this yields 6 dispatches (2\u00d73 levels) but smaller per-dispatch payloads and potential for NVLink/local-fabric acceleration on intra-node phases."
+    },
+    {
+      "name": "Pipelined Chunk-Wise Ring AllReduce",
+      "desc": "Manually implement ring all-reduce by partitioning the (world*1024) tensor into chunks and pipelining send/recv operations, interleaving the three logical reduction stages. Uses point-to-point primitives (send/recv) instead of collectives, yielding O(world) dispatches but overlapping communication with local scaling computation to hide latency.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Baseline Three Sequential AllReduces",
+      "sim": 7517.428571428563,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Local-Ops Single-Buffer Inplace",
+      "sim": 7293.428571428563,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "AllGather-LocalCompute-ReduceScatter Chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: shape (16384,) != (4096,)"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level Reduction (Intra+Inter Node)",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Chunk-Wise Ring AllReduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'TrackedTensor' object has no"
+    },
+    {
+      "stage": "refine:Fused Local-Ops Single-Buffer Inplace",
+      "round": 1,
+      "sim": 6143.228571428571
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6143.228571428571,
+  "final_code": "def r1_fold_s1024_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 1024\n    W = world_size\n    dtype = x.dtype\n    \n    # Precompute scaling factors as a tensor for vectorized operations\n    a_list = [1.0 + 0.5 * (r % 3) for r in range(W)]\n    a_tensor = torch.tensor(a_list, dtype=dtype, device=x.device).repeat_interleave(S)\n    \n    # First all-reduce\n    buf = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Vectorized first transformation: buf[r*S:(r+1)*S] = a[r] * buf[r*S:(r+1)*S] / W\n    buf = a_tensor * buf / W\n    \n    # Second all-reduce\n    buf = xm.all_reduce(xm.REDUCE_SUM, buf)\n    \n    # Vectorized fused transformation: combine division by a[r] and multiplication by a[r]/W\n    # buf[r*S:(r+1)*S] = (buf[r*S:(r+1)*S] / max(a[r], 1e-9)) * a[r] / W\n    # This simplifies to: buf / W (since a[r] cancels out in numerator and denominator)\n    a_tensor_safe = torch.clamp(a_tensor, min=1e-9)\n    buf = (buf / a_tensor_safe) * a_tensor / W\n    \n    # Third all-reduce\n    out = xm.all_reduce(xm.REDUCE_SUM, buf)\n    \n    return out"
+}

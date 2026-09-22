@@ -1,0 +1,68 @@
+{
+  "pipeline": "overlay",
+  "problem": "r47_dd_meanabs_d7",
+  "gate": "fp32",
+  "baseline_sim": 6558.299999999999,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with per-block scaling",
+      "desc": "Uses 7 all-reduce operations exactly as in the reference, performing one initial sum then 6 iterations of scale-reduce-unscale. Each iteration computes block means locally, scales blocks by (1 + |mean|), all-reduces, then unscales. 7 total dispatches with full 2048-element payload each time. Represents the baseline: simple structure, no optimization."
+    },
+    {
+      "name": "Fused buffer preparation between all-reduces",
+      "desc": "Merges all local computations (mean, abs, scaling, clone) into single kernels between consecutive all-reduce calls to minimize graph fragmentation. Still 7 all-reduce dispatches but reduces intermediate tensor allocations and potentially allows XLA to fuse element-wise operations. Trades code complexity for better memory locality and fewer small kernel launches."
+    },
+    {
+      "name": "Block-parallel with reduced-size all-reduces",
+      "desc": "Computes the 8 block means (256\u21921 reduction per block) locally after the first all-reduce, then uses all-reduce on just the 8 mean values instead of full 2048 elements for iterations 2-7. Requires 1 full all-reduce + 6 all-reduces of size 8 + local scatter operations. Dramatically reduces communication volume (6\u00d7256 reduction) at cost of additional local computation to broadcast means back to blocks."
+    },
+    {
+      "name": "Two-stage hierarchical with mean caching",
+      "desc": "After initial all-reduce, compute all 6 sets of scaling factors through a predictive local iteration (assuming convergence/stability), then apply all 6 scales in a single fused operation before doing just 1 or 2 additional all-reduces for correction. Risky strategy that bets on factor stability; could reduce to 2-3 dispatches total but may sacrifice numerical accuracy if scaling factors change significantly between iterations."
+    },
+    {
+      "name": "Pipelined overlapping computation and communication",
+      "desc": "Split the 8 blocks into groups (e.g., 2 groups of 4 blocks each) and initiate non-blocking all-reduce on one group while computing means and scaling for another group. Requires support for async collectives or manual graph scheduling to overlap operations. Maintains 7 all-reduce operations but pipelines them with local computation to hide latency, though XLA graph model may limit actual overlap benefit on Trainium.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with per-block scaling",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.225000"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused buffer preparation between all-reduces",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    },
+    {
+      "stage": "impl",
+      "name": "Block-parallel with reduced-size all-reduces",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.046103"
+    },
+    {
+      "stage": "impl",
+      "name": "Two-stage hierarchical with mean caching",
+      "sim": 6956.7,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined overlapping computation and communication",
+      "sim": 6793.5,
+      "ok": true,
+      "err": null
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6793.5,
+  "final_code": "def r47_dd_meanabs_d7_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256\n    B = 8\n    dtype = x.dtype\n    \n    # Initial all-reduce to sum x across all ranks\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Perform 6 iterations of the dependent computation\n    for iteration in range(6):\n        # Compute mean absolute values for all 8 blocks\n        f = []\n        for b in range(B):\n            f.append(1.0 + s[b*S:(b+1)*S].mean().abs())\n        \n        # Scale each block by its factor\n        buf = s.clone()\n        for b in range(B):\n            buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n        \n        # All-reduce the scaled buffer\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n        \n        # Divide by (world_size * f[b]) for each block\n        for b in range(B):\n            acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n        \n        s = acc\n    \n    # Final iteration (7th): compute factors, scale, all-reduce, but only divide by world_size\n    f = []\n    for b in range(B):\n        f.append(1.0 + s[b*S:(b+1)*S].mean().abs())\n    \n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    \n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / world_size\n    \n    return acc"
+}

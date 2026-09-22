@@ -1,0 +1,78 @@
+{
+  "pipeline": "overlay",
+  "problem": "r47_dd_relu_d8",
+  "gate": "fp32",
+  "baseline_sim": 6793.5,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with per-iteration scaling",
+      "desc": "Performs 8 sequential all-reduce operations (one per iteration) where each all-reduce communicates the full 2048-element vector. Each iteration computes block means, applies ReLU scaling factors, and normalizes. This is the reference approach with 8 all-reduce dispatches and maximum dependency serialization, trading latency for simplicity."
+    },
+    {
+      "name": "Fused buffer preparation with batched all-reduce",
+      "desc": "Pre-compute all 8 scaling transformations locally (speculative computation assuming convergence), then issue all 8 all-reduce operations back-to-back without waiting for results. Use a single synchronization point at the end to apply corrections. This reduces effective dispatch overhead through better pipelining but increases memory footprint (8 buffers) and may require iterative refinement if speculation fails."
+    },
+    {
+      "name": "Block-wise reduce-scatter then all-gather chain",
+      "desc": "Decompose the problem into 8 independent block computations using reduce-scatter (each rank owns 1/world_size of each block), compute local scaling factors, then all-gather results. This uses 16 collective dispatches (8 reduce-scatter + 8 all-gather) but allows smaller per-operation payloads (256 elements) and potential parallelism across blocks."
+    },
+    {
+      "name": "Hierarchical two-level reduction with iteration fusion",
+      "desc": "Group the 8 iterations into 2 phases of 4 iterations each. Within each phase, fuse all buffer transformations into a single prepare step, dispatch 4 all-reduces with minimal synchronization, then batch-normalize. This yields ~10 dispatches (1 initial + 4 phase-1 + 1 sync + 4 phase-2) balancing pipeline depth with dependency resolution."
+    },
+    {
+      "name": "Single all-reduce with metadata-only iterations",
+      "desc": "Perform the first all-reduce to get the global sum, then execute the remaining 7 iterations using all-reduce on a metadata vector of size 8 (just the block means or scaling factors), reconstructing full vectors locally. This uses 1 full all-reduce (2048 elements) + 7 tiny all-reduces (8 elements each), trading compute for dramatically reduced communication volume.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with per-iteration scaling",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.279368"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused buffer preparation with batched all-reduce",
+      "sim": 7129.5142857142855,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Block-wise reduce-scatter then all-gather chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: TypeError: MockXM.all_gather() got an unexpec"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-level reduction with iteration fusion",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    },
+    {
+      "stage": "impl",
+      "name": "Single all-reduce with metadata-only iterations",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.279368"
+    },
+    {
+      "stage": "refine:Fused buffer preparation with batched all-reduce",
+      "round": 1,
+      "sim": 5732.614285714286
+    },
+    {
+      "stage": "refine:Fused buffer preparation with batched all-reduce",
+      "round": 2,
+      "sim": 5737.714285714285
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 5732.614285714286,
+  "final_code": "def r47_dd_relu_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256\n    B = 8\n    dtype = x.dtype\n    \n    # Initial all-reduce to get global sum\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Strategy: Batch all 8 iterations into a single all-reduce\n    # Prepare all buffers for iterations 1-7\n    buffers = []\n    current = s\n    factors_list = []\n    \n    for iter_idx in range(7):\n        # Compute scaling factors for current state\n        f = []\n        for b in range(B):\n            mb = current[b*S:(b+1)*S].mean()\n            f.append(1.0 + (mb if mb > 0 else mb*0.0))\n        \n        factors_list.append(f)\n        \n        # Create scaled buffer\n        buf = current.clone()\n        for b in range(B):\n            buf[b*S:(b+1)*S] = current[b*S:(b+1)*S] * f[b]\n        \n        buffers.append(buf)\n        \n        # Speculatively compute next state\n        acc = buf.clone()\n        for b in range(B):\n            acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / f[b]\n        current = acc\n    \n    # Compute final iteration buffer\n    f_final = []\n    for b in range(B):\n        mb = current[b*S:(b+1)*S].mean()\n        f_final.append(1.0 + (mb if mb > 0 else mb*0.0))\n    buf_final = current.clone()\n    for b in range(B):\n        buf_final[b*S:(b+1)*S] = current[b*S:(b+1)*S] * f_final[b]\n    buffers.append(buf_final)\n    \n    # Concatenate all 8 buffers and do single all-reduce\n    mega_buffer = torch.cat(buffers, dim=0)\n    mega_result = xm.all_reduce(xm.REDUCE_SUM, mega_buffer)\n    \n    # Split results back\n    tensor_size = x.shape[0]\n    results = [mega_result[i*tensor_size:(i+1)*tensor_size] for i in range(8)]\n    \n    # Process results iteratively\n    s = s\n    for idx in range(7):\n        acc = results[idx]\n        f = factors_list[idx]\n        for b in range(B):\n            acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n        s = acc\n    \n    # Final result (8th iteration)\n    acc = results[7]\n    acc = acc / world_size\n    \n    return acc"
+}

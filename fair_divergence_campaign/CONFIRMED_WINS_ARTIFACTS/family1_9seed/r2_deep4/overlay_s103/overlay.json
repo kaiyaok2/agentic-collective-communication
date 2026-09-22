@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r2_deep4",
+  "gate": "fp32",
+  "baseline_sim": 8255.828571428561,
+  "strategies": [
+    {
+      "name": "Single fused all-reduce",
+      "desc": "Pre-compute all local scale/unscale coefficients analytically (a[r]^4 / W^4 net effect per shard), apply once to local shard, perform single all-reduce. 1 dispatch total. Trades mathematical derivation complexity for minimal communication overhead\u2014best latency but requires closed-form fusion of the 4-stage recurrence."
+    },
+    {
+      "name": "Two-stage batched all-reduce",
+      "desc": "Fuse stages 1-2 into one all-reduce (apply a[r]/W twice locally = a[r]^2/W^2 per shard) and stages 3-4 into another (same pattern). 2 dispatches total. Balances fusion complexity with communication: each AR sees intermediate results that partially resemble the 4-stage structure, reducing analytical complexity versus full fusion."
+    },
+    {
+      "name": "Interleaved scale-reduce per pair",
+      "desc": "Process stages in pairs but keep scale/unscale separated: AR1, local scale/unscale, AR2, local scale/unscale, AR3, local scale/unscale, AR4. 4 dispatches but with tighter fusion of local ops between collectives. Same dispatch count as baseline but local ops are fused within each pair, reducing host overhead and intermediate buffer allocations."
+    },
+    {
+      "name": "Rank-pipelined staged accumulation",
+      "desc": "Decompose the 4 ARs into 4 reduce-scatter + 4 all-gather pairs (8 collectives total), overlap local scaling ops during the RS\u2192AG transition windows. 8 dispatches but smaller per-collective payload (factor of W reduction per RS/AG). Trades latency for potential bandwidth efficiency on large world_size by splitting vector into smaller chunks."
+    },
+    {
+      "name": "Hierarchical two-level reduction",
+      "desc": "Exploit num_nodes structure (if >1) or artificial grouping: perform intra-group 4-stage AR on subsets, then inter-group reconciliation AR, then broadcast corrected shards. Approximately 5-6 dispatches (4 local + 1-2 cross-group). Trades additional dispatches for reduced per-dispatch participant count, beneficial when cross-node bandwidth differs from intra-node.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Single fused all-reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.843992"
+    },
+    {
+      "stage": "impl",
+      "name": "Two-stage batched all-reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.954338"
+    },
+    {
+      "stage": "impl",
+      "name": "Interleaved scale-reduce per pair",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    },
+    {
+      "stage": "impl",
+      "name": "Rank-pipelined staged accumulation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.032979"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-level reduction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 8255.828571428561,
+  "final_code": "def r2_deep4_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256; W = world_size\n    a = [1.0 + 0.5*(r % 3) for r in range(W)]\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    return s\n",
+  "fell_back_to_baseline": true
+}

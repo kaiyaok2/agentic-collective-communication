@@ -1,0 +1,73 @@
+{
+  "pipeline": "overlay",
+  "problem": "r47_dd_meanabs_d7",
+  "gate": "fp32",
+  "baseline_sim": 6558.299999999999,
+  "strategies": [
+    {
+      "name": "Baseline sequential all-reduce chain",
+      "desc": "Performs 7 sequential all-reduce operations (1 initial sum + 6 dependent iterations) where each all-reduce operates on the full 2048-element vector. Each iteration computes block means, scales, then all-reduces. 7 collective dispatches with 2048 elements each. High latency from sequential dependencies but simple structure."
+    },
+    {
+      "name": "Block-wise parallel reduce-scatter gather",
+      "desc": "Exploits block independence by using reduce-scatter to distribute 8 blocks across ranks (28 ranks per block at world_size=224), compute local mean-scaling transformations in parallel, then all-gather results. Reduces collective payload by factor of 8 in scatter phase. Approximately 14 dispatches (7 iterations \u00d7 2 collectives) but with smaller per-dispatch payload and exposed parallelism."
+    },
+    {
+      "name": "Fused mean computation via single-scalar all-reduce",
+      "desc": "After initial sum, extract only the 8 block means (scalars) and all-reduce a compact 8-element vector instead of the full 2048 elements for dependent iterations. Apply scaling locally using broadcast means. 1 large all-reduce (2048 elements) + 6 small all-reduces (8 elements) = 7 dispatches but drastically reduced bandwidth for iterations 2-7."
+    },
+    {
+      "name": "Hierarchical two-level reduction tree",
+      "desc": "Partition 224 ranks into groups (e.g., 28 groups of 8) and perform two-level reductions: intra-group all-reduce followed by inter-group all-reduce with broadcast back. Exploits network topology to reduce congestion. Doubles dispatch count to 14 but each operates on smaller effective world size, potentially hiding latency through locality."
+    },
+    {
+      "name": "Pipelined overlapped mean-scale iterations",
+      "desc": "Decompose the 8 blocks into independent streams and pipeline the 6 dependent iterations such that block b's iteration i overlaps with block b+1's iteration i-1. Use non-blocking all-reduce calls (if available) or manual chunking to issue multiple in-flight collectives. Same 7 logical all-reduce stages but up to 8\u00d7 pipelined execution to hide latency behind computation.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Baseline sequential all-reduce chain",
+      "sim": 6793.5,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Block-wise parallel reduce-scatter gather",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.385053"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused mean computation via single-scalar all-reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.046103"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-level reduction tree",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.385053"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined overlapped mean-scale iterations",
+      "sim": 15145.5,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "refine:Pipelined overlapped mean-scale iterations",
+      "round": 1,
+      "sim": 6793.5
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6793.5,
+  "final_code": "def r47_dd_meanabs_d7_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256\n    B = 8\n    dtype = x.dtype\n    \n    # Initial all-reduce to get sum across all ranks\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Perform 6 dependent iterations\n    for iteration in range(6):\n        # Compute block means and scaling factors\n        f = []\n        for b in range(B):\n            block_mean = s[b*S:(b+1)*S].mean().abs()\n            f.append(1.0 + block_mean)\n        \n        # Scale each block by its factor\n        buf = s.clone()\n        for b in range(B):\n            buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n        \n        # All-reduce the scaled buffer\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n        \n        # Unscale by dividing by (world_size * f[b])\n        for b in range(B):\n            acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n        \n        s = acc\n    \n    # Final iteration (7th): compute factors, scale, all-reduce, and divide by world_size only\n    f = []\n    for b in range(B):\n        block_mean = s[b*S:(b+1)*S].mean().abs()\n        f.append(1.0 + block_mean)\n    \n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    \n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / world_size\n    \n    return acc"
+}

@@ -1,0 +1,78 @@
+{
+  "pipeline": "overlay",
+  "problem": "r1_fold_s256",
+  "gate": "fp32",
+  "baseline_sim": 7089.928571428564,
+  "strategies": [
+    {
+      "name": "Direct Three-Stage AllReduce Baseline",
+      "desc": "Three sequential all_reduce calls with elementwise scale/divide operations cloned and applied between each collective. Total 3 dispatches for collectives plus 6 for clone/scale ops. Represents the straightforward translation with no fusion, highest dispatch overhead but clearest correctness path."
+    },
+    {
+      "name": "Fused Local-Ops Between AllReduces",
+      "desc": "Three all_reduce calls but fuse clone+scale+divide into single kernel launches between collectives using in-place operations where safe and view operations to avoid redundant clones. Reduces to 3 collective dispatches plus 3 fused compute dispatches. Trades implementation complexity for 50% fewer non-collective dispatches."
+    },
+    {
+      "name": "ReduceScatter-AllGather Decomposition Pipeline",
+      "desc": "Decompose each all_reduce into reduce_scatter followed by all_gather, allowing scale operations to happen on smaller per-rank chunks (size W*S/W = S per rank) between the RS and AG phases. Results in 6 collectives but each scale operates on 1/W of data locally, potentially better cache behavior and overlapping opportunities."
+    },
+    {
+      "name": "Preallocated Buffer Reuse Pattern",
+      "desc": "Allocate single working buffer once, perform all three all_reduce operations using alternating source/destination patterns to eliminate all clone() calls. Requires careful indexing but reduces to exactly 3 collective dispatches plus 3 in-place elementwise kernels. Minimizes memory allocation overhead and dispatch count."
+    },
+    {
+      "name": "AllReduce with Strided Coefficient Broadcast",
+      "desc": "Recognize that coefficient array 'a' is rank-dependent but globally determined; broadcast or replicate 'a' once, then perform all scale/divide operations as batched strided operations with precomputed indices. Three all_reduce calls with vectorized local ops using tensor views to process all W shards simultaneously. Reduces per-shard loop overhead into batch operations.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Direct Three-Stage AllReduce Baseline",
+      "sim": 7089.928571428564,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Local-Ops Between AllReduces",
+      "sim": 7089.928571428564,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "ReduceScatter-AllGather Decomposition Pipeline",
+      "sim": 7154.364732142855,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Preallocated Buffer Reuse Pattern",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    },
+    {
+      "stage": "impl",
+      "name": "AllReduce with Strided Coefficient Broadcast",
+      "sim": 5695.428571428571,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "refine:AllReduce with Strided Coefficient Broadcast",
+      "round": 3,
+      "sim": 5694.728571428571
+    },
+    {
+      "stage": "refine:Direct Three-Stage AllReduce Baseline",
+      "round": 2,
+      "sim": 5715.728571428571
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 5694.728571428571,
+  "final_code": "def r1_fold_s256_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256\n    W = world_size\n    dtype = x.dtype\n    \n    # Precompute coefficient array 'a' for all ranks (globally determined)\n    a = [1.0 + 0.5 * (r % 3) for r in range(W)]\n    \n    # Create coefficient tensors for vectorized operations\n    # Each coefficient is repeated S times for its corresponding shard\n    a_tensor = torch.tensor([a[r] for r in range(W) for _ in range(S)], \n                           dtype=dtype, device=x.device)\n    a_inv_tensor = torch.tensor([1.0 / max(a[r], 1e-9) for r in range(W) for _ in range(S)],\n                                dtype=dtype, device=x.device)\n    \n    # Precompute sum of all coefficients and other constants\n    sum_a = sum(a)\n    a_scaled_tensor = a_tensor / W\n    \n    # Stage 1: First all_reduce\n    s1 = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Fuse stages 2-4: compute all local operations before next collective\n    # Stage 2 computation: a[r] * s1 / W\n    buf0 = a_scaled_tensor * s1\n    \n    # Stage 2 all_reduce\n    s2 = xm.all_reduce(xm.REDUCE_SUM, buf0)\n    \n    # Fuse stages 3-4 locally\n    # Stage 3: s2 / a[r]\n    s3 = s2 * a_inv_tensor\n    # Stage 4: a[r] * s3 / W\n    bufN = a_scaled_tensor * s3\n    \n    # Final all_reduce\n    out = xm.all_reduce(xm.REDUCE_SUM, bufN)\n    \n    return out"
+}

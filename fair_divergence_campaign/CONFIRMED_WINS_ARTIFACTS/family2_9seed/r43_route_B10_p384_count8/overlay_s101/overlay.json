@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r43_route_B10_p384_count8",
+  "gate": "fp32",
+  "baseline_sim": 6687.999999999999,
+  "strategies": [
+    {
+      "name": "Fused mask computation with persistent buffers",
+      "desc": "Precompute all masks for the 8 iterations and reuse a single persistent buffer across all all_reduce calls, eliminating 7 torch.zeros_like allocations. Expected dispatch count remains 9 (1 initial + 8 dependent all_reduces). Trades minimal setup overhead for reduced memory allocation latency, keeping the same collective structure as the reference."
+    },
+    {
+      "name": "Hierarchical two-stage all-reduce decomposition",
+      "desc": "Split the 8 dependent all_reduces into two 4-stage hierarchies where each stage processes multiple blocks in parallel using reduce_scatter followed by all_gather patterns. Expected dispatch count ~10-12 (initial AR + 2\u00d74 stages with RS/AG pairs). Trades increased dispatch count for better pipeline parallelism and reduced data movement per operation."
+    },
+    {
+      "name": "Block-interleaved broadcast-reduce tree",
+      "desc": "Replace the sequence of masked all_reduces with a broadcast tree where each rank sends its window blocks via targeted reduce operations, then reconstructs the result through 3 all_gather passes (one per window position). Expected dispatch count ~13 (1 initial AR + 3 AG + 9 targeted reduces). Eliminates redundant zero-padding communication at the cost of more fine-grained collectives."
+    },
+    {
+      "name": "Single all-reduce with replicated computation",
+      "desc": "Perform only the initial all_reduce to get global sum, then each rank independently computes the overlap counts and applies local division without further communication. Expected dispatch count 1. Trades zero additional network cost for replicated O(W\u00d7B) local computation (trivial at W=224, B=10), eliminating all 8 dependent all_reduces."
+    },
+    {
+      "name": "Pipelined reduce-scatter + indexed all-gather chain",
+      "desc": "Transform each masked all_reduce into reduce_scatter on active blocks followed by all_gather reconstruction, pipelining 8 RS operations before their corresponding AG operations to overlap computation. Expected dispatch count 17 (1 initial + 8 RS + 8 AG). Trades higher dispatch count for better network utilization through overlapped RS operations and smaller per-operation payloads.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Fused mask computation with persistent buffers",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.714571"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-stage all-reduce decomposition",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.714571"
+    },
+    {
+      "stage": "impl",
+      "name": "Block-interleaved broadcast-reduce tree",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.079619"
+    },
+    {
+      "stage": "impl",
+      "name": "Single all-reduce with replicated computation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=inf"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined reduce-scatter + indexed all-gather chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.714571"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 6687.999999999999,
+  "final_code": "def r43_route_B10_p384_count8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 384; B = 10; W = world_size; L = 3; OFF = 2; STR = 1\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    # per-block overlap count c[b] = #ranks whose window covers block b\n    c = [0]*B\n    for r in range(W):\n        st = (r + OFF) % B\n        for j in range(L):\n            c[(st + STR*j) % B] += 1\n    # rank-indexed routing: THIS rank masks its own length-L window\n    start = (rank + OFF) % B\n    keep = set((start + STR*j) % B for j in range(L))\n    buf = torch.zeros_like(s)\n    for b in range(B):\n        if b in keep:\n            buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n    s = acc\n    # rank-indexed routing: THIS rank masks its own length-L window\n    start = (rank + OFF) % B\n    keep = set((start + STR*j) % B for j in range(L))\n    buf = torch.zeros_like(s)\n    for b in range(B):\n        if b in keep:\n            buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n    s = acc\n    # rank-indexed routing: THIS rank masks its own length-L window\n    start = (rank + OFF) % B\n    keep = set((start + STR*j) % B for j in range(L))\n    buf = torch.zeros_like(s)\n    for b in range(B):\n        if b in keep:\n            buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n    s = acc\n    # rank-indexed routing: THIS rank masks its own length-L window\n    start = (rank + OFF) % B\n    keep = set((start + STR*j) % B for j in range(L))\n    buf = torch.zeros_like(s)\n    for b in range(B):\n        if b in keep:\n            buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n    s = acc\n    # rank-indexed routing: THIS rank masks its own length-L window\n    start = (rank + OFF) % B\n    keep = set((start + STR*j) % B for j in range(L))\n    buf = torch.zeros_like(s)\n    for b in range(B):\n        if b in keep:\n            buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n    s = acc\n    # rank-indexed routing: THIS rank masks its own length-L window\n    start = (rank + OFF) % B\n    keep = set((start + STR*j) % B for j in range(L))\n    buf = torch.zeros_like(s)\n    for b in range(B):\n        if b in keep:\n            buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n    s = acc\n    # rank-indexed routing: THIS rank masks its own length-L window\n    start = (rank + OFF) % B\n    keep = set((start + STR*j) % B for j in range(L))\n    buf = torch.zeros_like(s)\n    for b in range(B):\n        if b in keep:\n            buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    s = acc\n    return s\n",
+  "fell_back_to_baseline": true
+}

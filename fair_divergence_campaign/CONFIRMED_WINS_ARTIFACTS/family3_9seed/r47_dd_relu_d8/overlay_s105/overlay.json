@@ -1,0 +1,78 @@
+{
+  "pipeline": "overlay",
+  "problem": "r47_dd_relu_d8",
+  "gate": "fp32",
+  "baseline_sim": 6793.5,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with per-block ReLU",
+      "desc": "Perform 8 dependent all-reduce operations sequentially, each preceded by local computation of block means, ReLU scaling factors, and element-wise multiplication. This is the baseline from the seed library with 8 all-reduce dispatches (one per iteration) and explicit per-block scalar extraction. Tradeoff: maximum dispatch count but simplest control flow."
+    },
+    {
+      "name": "Fused-buffer single all-reduce per iteration",
+      "desc": "Within each of the 8 iterations, fuse all local operations (mean computation, ReLU, scaling) into a single buffer preparation step before dispatching one all-reduce, then fuse the post-reduction normalization. This reduces overhead by batching all block operations together, maintaining 8 all-reduce dispatches but with better compute-communication overlap through vectorized local ops."
+    },
+    {
+      "name": "Pipelined dual-buffer overlapped collective",
+      "desc": "Use two buffers to overlap the local computation of iteration i+1 (means, ReLU factors for all blocks) with the all-reduce of iteration i. Requires careful buffer management and asynchronous collective dispatch if supported. Still 8 all-reduces but hides local compute latency behind communication, trading memory (2x buffers) for time."
+    },
+    {
+      "name": "Hierarchical two-stage reduction tree",
+      "desc": "Exploit multi-node topology by decomposing each all-reduce into intra-node reduce-scatter + all-reduce on node-leaders + intra-node all-gather. For world_size=224 across multiple nodes, this reduces cross-node bandwidth pressure. Each of 8 iterations now has 3 sub-collectives (24 total dispatches), but payload sizes are smaller and inter-node traffic is minimized."
+    },
+    {
+      "name": "Block-wise reduce-scatter then all-gather finale",
+      "desc": "Restructure the 8 dependent iterations by distributing ownership: assign each rank a subset of blocks, perform local iterations on owned blocks with reduce-scatter collectives to aggregate partial sums, then final all-gather to broadcast results. Converts 8 all-reduces into 8 reduce-scatters + 1 all-gather (9 dispatches), reducing total data movement by a factor of ~2 but requiring careful rank-to-block assignment logic.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with per-block ReLU",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.279368"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused-buffer single all-reduce per iteration",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.279368"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined dual-buffer overlapped collective",
+      "sim": 6793.5,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-stage reduction tree",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Block-wise reduce-scatter then all-gather finale",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.279368"
+    },
+    {
+      "stage": "refine:Pipelined dual-buffer overlapped collective",
+      "round": 1,
+      "sim": 6739.0
+    },
+    {
+      "stage": "refine:Pipelined dual-buffer overlapped collective",
+      "round": 2,
+      "sim": 6333.6
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 6333.6,
+  "final_code": "def r47_dd_relu_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256\n    B = 8\n    dtype = x.dtype\n    \n    # Reshape for vectorized operations\n    s = x.view(B, S)\n    \n    # Initial all-reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, s.reshape(-1)).view(B, S)\n    \n    # Process iterations 1-6 in pairs to reduce collectives\n    for pair_idx in range(3):\n        # First iteration of pair\n        mb = s.mean(dim=1, keepdim=True)\n        f = 1.0 + torch.where(mb > 0, mb, mb * 0.0)\n        buf = s * f\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf.reshape(-1)).view(B, S)\n        s = acc / (world_size * f)\n        \n        # Second iteration of pair (do locally without intermediate all-reduce)\n        mb = s.mean(dim=1, keepdim=True)\n        f = 1.0 + torch.where(mb > 0, mb, mb * 0.0)\n        buf = s * f\n        # Accumulate locally instead of all-reduce\n        s = buf / f\n    \n    # Now do a single all-reduce for all 3 second iterations\n    s = xm.all_reduce(xm.REDUCE_SUM, s.reshape(-1)).view(B, S) / world_size\n    \n    # Iteration 7 (final iteration)\n    mb = s.mean(dim=1, keepdim=True)\n    f = 1.0 + torch.where(mb > 0, mb, mb * 0.0)\n    buf = s * f\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf.reshape(-1)).view(B, S)\n    acc = acc / world_size\n    \n    return acc.reshape(-1)"
+}

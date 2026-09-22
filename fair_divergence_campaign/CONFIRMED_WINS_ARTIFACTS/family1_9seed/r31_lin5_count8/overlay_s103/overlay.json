@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r31_lin5_count8",
+  "gate": "fp32",
+  "baseline_sim": 12919.428571428683,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with fused local ops",
+      "desc": "Performs 8 sequential all-reduce operations as in the reference, but fuses all element-wise scaling, division, and buffer operations into single kernel launches between collectives. Expected 8 all-reduce dispatches plus 8 fused local-op dispatches (16 total). Trades off minimal algorithmic change for moderate fusion gains."
+    },
+    {
+      "name": "Reduce-scatter then all-gather pipeline",
+      "desc": "Decomposes each all-reduce into reduce-scatter followed by all-gather, allowing the 8 iterations to pipeline local computation during the scatter phase and gather phase separately. Expected 16 collective dispatches (8 RS + 8 AG) plus interleaved local ops. Exposes more parallelism but doubles collective count, beneficial if local ops dominate latency."
+    },
+    {
+      "name": "Hierarchical two-level all-reduce batching",
+      "desc": "Groups the 8 all-reduces into 2-4 batches, performing intra-batch aggregation with fused local transforms, then inter-batch correction passes. Expected 2-4 all-reduce dispatches plus local correction sweeps. Significantly fewer dispatches but requires careful numerics to maintain equivalence through batched scaling factors."
+    },
+    {
+      "name": "Pre-computed coefficient tensor broadcast",
+      "desc": "Precompute all 8 iterations' worth of per-shard scaling coefficients into a single tensor, perform one all-reduce of the scaled input, then apply iterative correction via local matrix operations that simulate the dependent chain. Expected 1-2 all-reduce dispatches plus dense local computation. Minimizes collectives at cost of increased local FLOPs and memory."
+    },
+    {
+      "name": "Ring-based chunk pipelining per iteration",
+      "desc": "Replace each all-reduce with explicit send/recv in a ring topology, allowing fine-grained pipelining of the 224-shard vector in smaller chunks across the 8 dependent iterations. Expected 8 \u00d7 224 send/recv pairs (1792 point-to-point ops) with overlapped local scaling. Maximizes communication-computation overlap but drastically increases dispatch count; only wins if network latency dominates.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with fused local ops",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-scatter then all-gather pipeline",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.211808"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-level all-reduce batching",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.211808"
+    },
+    {
+      "stage": "impl",
+      "name": "Pre-computed coefficient tensor broadcast",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.211808"
+    },
+    {
+      "stage": "impl",
+      "name": "Ring-based chunk pipelining per iteration",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.211808"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 12919.428571428683,
+  "final_code": "def r31_lin5_count8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256; W = world_size\n    a = [1.0 + 0.25*(r % 5) for r in range(W)]\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    return s\n",
+  "fell_back_to_baseline": true
+}

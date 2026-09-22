@@ -1,0 +1,83 @@
+{
+  "pipeline": "overlay",
+  "problem": "r47_xc_r4",
+  "gate": "fp32",
+  "baseline_sim": 6562.799999999999,
+  "strategies": [
+    {
+      "name": "Sequential reduce-scatter all-gather chain",
+      "desc": "Four consecutive reduce_scatter+all_gather pairs executed sequentially, as shown in the reference implementation. 8 total collective dispatches (4 RS + 4 AG). Represents the baseline straightforward approach with no optimization, highest dispatch count but simplest control flow."
+    },
+    {
+      "name": "Fused reduce-scatter-allgather primitive chain",
+      "desc": "Replace each RS+AG pair with a single all_reduce operation (since RS followed by AG on the same dimension is mathematically equivalent to all_reduce). 4 total collective dispatches. Reduces dispatch overhead by 50% while maintaining identical mathematical result and memory footprint."
+    },
+    {
+      "name": "Interleaved chunked RS-AG pipeline",
+      "desc": "Split input tensor into multiple chunks along non-collective dimension, then pipeline the RS-AG rounds across chunks to overlap computation and communication. Still 8 dispatches per chunk but enables better hardware utilization through concurrent execution. Trades increased complexity for better latency hiding."
+    },
+    {
+      "name": "Hierarchical two-level reduction pattern",
+      "desc": "Group the 4 RS-AG rounds into 2 meta-rounds: perform 2 RS-AG pairs, apply local scaling, then perform 2 more RS-AG pairs with different chunking strategy. 8 dispatches but reordered to enable better fusion opportunities and cache locality. Represents a compute-communication reordering optimization."
+    },
+    {
+      "name": "Batched collective with single dispatch",
+      "desc": "Concatenate all intermediate states into a single large tensor, issue one mega reduce_scatter followed by local reshaping/slicing operations and one mega all_gather, then extract results. 2 total dispatches. Maximizes per-dispatch payload size to amortize launch overhead, trades memory pressure for minimal dispatch count.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential reduce-scatter all-gather chain",
+      "sim": 6562.799999999999,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused reduce-scatter-allgather primitive chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: TypeError: MockXM.all_reduce() got an unexpec"
+    },
+    {
+      "stage": "impl",
+      "name": "Interleaved chunked RS-AG pipeline",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: IndexError: tuple index out of range"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-level reduction pattern",
+      "sim": 6563.5,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Batched collective with single dispatch",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=162.592194"
+    },
+    {
+      "stage": "refine:Sequential reduce-scatter all-gather chain",
+      "round": 2,
+      "sim": 6582.400000000001
+    },
+    {
+      "stage": "refine:Sequential reduce-scatter all-gather chain",
+      "round": 3,
+      "sim": 6576.8
+    },
+    {
+      "stage": "refine:Hierarchical two-level reduction pattern",
+      "round": 2,
+      "sim": 6569.8
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6562.799999999999,
+  "final_code": "def r47_xc_r4_fn(x, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Sequential reduce-scatter all-gather chain.\n    Four consecutive reduce_scatter+all_gather pairs executed sequentially.\n    8 total collective dispatches (4 RS + 4 AG).\n    \"\"\"\n    s = x\n    \n    # Round 1: reduce_scatter + all_gather\n    rs = xm.reduce_scatter(xm.REDUCE_SUM, s, scale=1.0, scatter_dim=0,\n                           shard_count=world_size)\n    rs = rs * 1.0\n    s = xm.all_gather(rs, dim=0)\n    \n    # Round 2: reduce_scatter + all_gather\n    rs = xm.reduce_scatter(xm.REDUCE_SUM, s, scale=1.0, scatter_dim=0,\n                           shard_count=world_size)\n    rs = rs * 1.0\n    s = xm.all_gather(rs, dim=0)\n    \n    # Round 3: reduce_scatter + all_gather\n    rs = xm.reduce_scatter(xm.REDUCE_SUM, s, scale=1.0, scatter_dim=0,\n                           shard_count=world_size)\n    rs = rs * 1.0\n    s = xm.all_gather(rs, dim=0)\n    \n    # Round 4: reduce_scatter + all_gather\n    rs = xm.reduce_scatter(xm.REDUCE_SUM, s, scale=1.0, scatter_dim=0,\n                           shard_count=world_size)\n    rs = rs * 1.0\n    s = xm.all_gather(rs, dim=0)\n    \n    return s"
+}

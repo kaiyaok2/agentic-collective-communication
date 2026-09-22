@@ -1,0 +1,93 @@
+{
+  "pipeline": "overlay",
+  "problem": "r1_fold_s1024",
+  "gate": "fp32",
+  "baseline_sim": 7517.428571428563,
+  "strategies": [
+    {
+      "name": "Baseline Three-Stage AllReduce",
+      "desc": "Three sequential all_reduce operations with interleaved per-shard scaling operations (clone, scale by a[r]/W, scale by 1/a[r]). Expected 3 collective dispatches. This is the reference implementation trading simplicity for dispatch count, with no fusion or overlap opportunities."
+    },
+    {
+      "name": "Fused Local-Op Between AllReduces",
+      "desc": "Same three all_reduce calls but eliminate intermediate clone() calls and fuse the scale-by-a[r]/W and scale-by-1/a[r] operations into single in-place tensor updates between collectives. Expected 3 collective dispatches but reduced local memory operations, trading code complexity for lower host overhead and memory bandwidth."
+    },
+    {
+      "name": "AllGather-Compute-ReduceScatter Pattern",
+      "desc": "Replace first all_reduce with all_gather to get full tensor, perform all three scaling transformations locally on the gathered data, then use reduce_scatter to distribute results. Expected 2 collective dispatches (all_gather + reduce_scatter), trading increased intermediate memory footprint (world_size \u00d7 S elements) for fewer synchronization points."
+    },
+    {
+      "name": "Pipelined Chunked AllReduce",
+      "desc": "Split the 1024-element shards into smaller chunks and pipeline the three all_reduce stages across chunks, starting the second stage on chunk[0] while first stage processes chunk[1]. Expected 3\u00d7k collective dispatches for k chunks but exposes pipeline parallelism, trading dispatch count for potential latency hiding through overlapped communication."
+    },
+    {
+      "name": "ReduceScatter-AllGather Decomposition",
+      "desc": "Decompose each all_reduce into reduce_scatter followed by all_gather, giving 6 total collectives but with smaller per-rank payloads in reduce_scatter phases (S elements vs W\u00d7S). Expected 6 collective dispatches, trading increased synchronization count for potentially better bandwidth utilization on smaller per-device messages and different hardware primitive optimization paths.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Baseline Three-Stage AllReduce",
+      "sim": 7517.428571428563,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Local-Op Between AllReduces",
+      "sim": 7293.428571428563,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "AllGather-Compute-ReduceScatter Pattern",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.142260"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Chunked AllReduce",
+      "sim": 15477.428571428693,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "ReduceScatter-AllGather Decomposition",
+      "sim": 8119.9732142857065,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "refine:Fused Local-Op Between AllReduces",
+      "round": 1,
+      "sim": 6122.228571428572
+    },
+    {
+      "stage": "refine:Fused Local-Op Between AllReduces",
+      "round": 2,
+      "sim": 6120.828571428571
+    },
+    {
+      "stage": "refine:Baseline Three-Stage AllReduce",
+      "round": 1,
+      "sim": 7008.828571428569
+    },
+    {
+      "stage": "refine:Baseline Three-Stage AllReduce",
+      "round": 2,
+      "sim": 7013.028571428568
+    },
+    {
+      "stage": "refine:Baseline Three-Stage AllReduce",
+      "round": 3,
+      "sim": 6121.52857142857
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6120.828571428571,
+  "final_code": "def r1_fold_s1024_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 1024\n    W = world_size\n    a = torch.tensor([1.0 + 0.5*(r % 3) for r in range(W)], device=x.device)\n    \n    # First all-reduce\n    s1 = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Vectorized scaling: a[r]/W for each segment, then by 1/W (from step 4)\n    # Combined: a[r]/W * 1/W = a[r]/W^2\n    a_scaled = (a / (W * W)).repeat_interleave(S)\n    s1 = s1 * a_scaled\n    \n    # Second all-reduce (combines what were previously the 2nd and 3rd all-reduces)\n    s1 = xm.all_reduce(xm.REDUCE_SUM, s1)\n    \n    # Third all-reduce (still needed for correctness)\n    out = xm.all_reduce(xm.REDUCE_SUM, s1)\n    \n    return out"
+}

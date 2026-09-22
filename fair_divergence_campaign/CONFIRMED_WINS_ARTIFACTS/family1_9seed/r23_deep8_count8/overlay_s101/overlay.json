@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r23_deep8_count8",
+  "gate": "fp32",
+  "baseline_sim": 12919.428571428683,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with interleaved scaling",
+      "desc": "Performs 8 all-reduce operations sequentially, each preceded by local per-shard scaling (multiply by a[r]/W) and followed by local normalization (divide by a[r]). Results in 8 all-reduce dispatches plus 16 element-wise operations that can be fused. Minimizes code complexity at the cost of maximum dispatch count."
+    },
+    {
+      "name": "Fused scale-allreduce kernel batching",
+      "desc": "Pre-computes all scaling coefficients and fuses scale+clone operations into vectorized operations before each all-reduce, reducing memory traffic. Still 8 all-reduce dispatches but eliminates redundant buffer allocations by reusing two ping-pong buffers. Trades dispatch count for memory bandwidth efficiency."
+    },
+    {
+      "name": "Hierarchical two-level reduction tree",
+      "desc": "Groups the 8 dependent all-reduces into 2 or 4 stages where inner stages batch multiple scale/normalize cycles using tensor views or strides. Potentially reduces effective dispatch overhead by amortizing collective setup costs across multi-level operations. Exploits structural similarity in repeated scale-reduce-normalize pattern."
+    },
+    {
+      "name": "Pipelined all-reduce with async dispatch",
+      "desc": "Overlaps computation (scaling/normalization) of iteration i+1 with communication (all-reduce) of iteration i by pre-computing scaling buffers for multiple iterations. Requires 8 all-reduce dispatches but hides local compute latency behind network transfers. Maximizes throughput on large world_size by exploiting collective/compute concurrency."
+    },
+    {
+      "name": "Coefficient-precomputed single-buffer mutation",
+      "desc": "Allocates a single working buffer and performs all 8 iterations in-place, computing composite scaling factors (product of all intermediate a[r]/W and 1/a[r] terms) to minimize buffer clones. Uses 8 all-reduce dispatches but only 2 tensor allocations total (input and working buffer). Optimizes for memory footprint and allocation overhead.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with interleaved scaling",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.032979"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused scale-allreduce kernel batching",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-level reduction tree",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.032979"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined all-reduce with async dispatch",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.032979"
+    },
+    {
+      "stage": "impl",
+      "name": "Coefficient-precomputed single-buffer mutation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 12919.428571428683,
+  "final_code": "def r23_deep8_count8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256; W = world_size\n    a = [1.0 + 0.5*(r % 3) for r in range(W)]\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    return s\n",
+  "fell_back_to_baseline": true
+}

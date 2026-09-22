@@ -1,0 +1,68 @@
+{
+  "pipeline": "overlay",
+  "problem": "r31_lin5_count8",
+  "gate": "fp32",
+  "baseline_sim": 12919.428571428683,
+  "strategies": [
+    {
+      "name": "Baseline Sequential All-Reduce Chain",
+      "desc": "Uses 8 sequential all_reduce operations with interleaved local multiply-divide transformations, each operating on the full (world*256) vector. Expected 8 all_reduce dispatches plus local ops. Represents the reference pattern with no fusion or overlap optimization\u2014maximal correctness, minimal dispatch optimization."
+    },
+    {
+      "name": "Fused Local Operations Per Stage",
+      "desc": "Merges the multiply-by-a[r]/W and divide-by-a[r] local operations within each iteration into single vectorized kernels before/after each all_reduce, reducing memory traffic. Still 8 all_reduce dispatches but fewer intermediate clones and loops. Trades code complexity for reduced memory bandwidth by batching element-wise operations."
+    },
+    {
+      "name": "Reduce-Scatter + All-Gather Pattern",
+      "desc": "Replaces each all_reduce with a reduce_scatter (producing S-sized shard per rank) followed by local scaling, then all_gather to reconstruct full vector. 16 total dispatches (8\u00d72) but smaller per-rank payload during reduce_scatter phase. Trades dispatch count for reduced per-dispatch communication volume, potentially better for bandwidth-constrained networks."
+    },
+    {
+      "name": "Pipelined Double-Buffered Computation",
+      "desc": "Overlaps local computation (scaling operations) of iteration i with all_reduce communication of iteration i+1 using two alternating buffers. Requires careful dependency management across 8 stages. Still 8 all_reduce dispatches but hides local arithmetic latency behind network time, improving overall throughput on high-latency interconnects."
+    },
+    {
+      "name": "Hierarchical Two-Level Collective",
+      "desc": "Exploits potential node structure by performing intra-node reductions (if num_nodes>1) using smaller world_size collectives, then inter-node all_reduce, then intra-node broadcast for each of 8 stages. Reduces cross-node bandwidth pressure by aggregating within NUMA domains first. Total dispatches 8\u00d73=24 but with heterogeneous payload sizes optimized for network topology.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Baseline Sequential All-Reduce Chain",
+      "sim": 12919.428571428683,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Local Operations Per Stage",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.211808"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-Scatter + All-Gather Pattern",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.211808"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Double-Buffered Computation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level Collective",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 12919.428571428683,
+  "final_code": "def r31_lin5_count8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256\n    W = world_size\n    dtype = x.dtype\n    \n    # Precompute scaling coefficients a[r] = 1.0 + 0.25*(r % 5)\n    a = [1.0 + 0.25 * (r % 5) for r in range(W)]\n    \n    # Sequential all-reduce chain with 8 all_reduce operations\n    # Pattern: all_reduce -> scale by a[r]/W -> all_reduce -> scale by 1/a[r]\n    # Repeated 4 times for 8 total all_reduce operations\n    \n    # First all_reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Scale by a[r] / W\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    \n    # Second all_reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    \n    # Scale by 1 / a[r]\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    \n    # Scale by a[r] / W\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    \n    # Third all_reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    \n    # Scale by 1 / a[r]\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    \n    # Scale by a[r] / W\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    \n    # Fourth all_reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    \n    # Scale by 1 / a[r]\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    \n    # Scale by a[r] / W\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    \n    # Fifth all_reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    \n    # Scale by 1 / a[r]\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    \n    # Scale by a[r] / W\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    \n    # Sixth all_reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    \n    # Scale by 1 / a[r]\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    \n    # Scale by a[r] / W\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    \n    # Seventh all_reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    \n    # Scale by 1 / a[r]\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    \n    # Scale by a[r] / W\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    \n    # Eighth all_reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    \n    return s"
+}

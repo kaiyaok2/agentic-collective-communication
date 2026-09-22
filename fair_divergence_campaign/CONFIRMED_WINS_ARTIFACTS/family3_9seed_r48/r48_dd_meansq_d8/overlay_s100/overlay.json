@@ -1,0 +1,73 @@
+{
+  "pipeline": "overlay",
+  "problem": "r48_dd_meansq_d8",
+  "gate": "fp32",
+  "baseline_sim": 7930.299999999999,
+  "strategies": [
+    {
+      "name": "Sequential All-Reduce with Iterative Refinement",
+      "desc": "Performs 8 dependent all-reduce operations sequentially, each computing sum, then scaling by block-specific factors, then all-reducing the scaled result. 8 all-reduce dispatches total. Represents the baseline reference with maximum dispatch count but simplest logic and smallest per-dispatch payload (2048 elements)."
+    },
+    {
+      "name": "Batched Metadata Collection with Deferred Scaling",
+      "desc": "Collects all 8 block mean-squares via reduction to scalars (8 small all-reduces), then performs one large all-reduce on the full scaled vector. Uses 9 total dispatches: 8 scalar reductions + 1 vector all-reduce. Trades more dispatches for opportunity to overlap small metadata reductions."
+    },
+    {
+      "name": "Fused Buffer All-Reduce with Block Interleaving",
+      "desc": "Fuses consecutive iterations by packing multiple (s, buf) pairs into a single larger tensor, dispatching fewer all-reduces on concatenated payloads. For example, 4 dispatches handling 2 iterations each on 4096-element tensors. Reduces dispatch overhead by 2x via payload doubling and fusion of dependent stages."
+    },
+    {
+      "name": "Hierarchical Two-Stage Aggregation Pattern",
+      "desc": "Exploits the 224-rank world by splitting into groups (e.g., 28 groups of 8), performing intra-group all-reduces for each iteration, then inter-group all-reduces. Uses reduce-scatter + all-gather pattern within each stage. Total ~16 dispatches (2 per iteration) but with smaller per-rank communication volume."
+    },
+    {
+      "name": "Tensor Stacking with Single Mega All-Reduce",
+      "desc": "Stack all 8 intermediate buffers into a single (8, 2048) or (16384,) tensor, perform one all-reduce dispatch to get all intermediate sums simultaneously, then locally compute all scaling factors and apply them. Uses exactly 1 all-reduce dispatch on 8x payload. Maximizes fusion, minimizes latency, trades computation locality for minimal dispatch count.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential All-Reduce with Iterative Refinement",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=3.237034"
+    },
+    {
+      "stage": "impl",
+      "name": "Batched Metadata Collection with Deferred Scaling",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=3.237034"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Buffer All-Reduce with Block Interleaving",
+      "sim": 8149.3,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Stage Aggregation Pattern",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=3.237034"
+    },
+    {
+      "stage": "impl",
+      "name": "Tensor Stacking with Single Mega All-Reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.653117"
+    },
+    {
+      "stage": "refine:Fused Buffer All-Reduce with Block Interleaving",
+      "round": 1,
+      "sim": 8008.8
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 8008.8,
+  "final_code": "def r48_dd_meansq_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256\n    B = 8\n    dtype = x.dtype\n    \n    # Initial all-reduce to sum x across all ranks\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Process all 7 dependent iterations\n    # Key insight: we can't reduce number of all-reduces due to dependencies,\n    # but we can reduce local operations and cloning overhead\n    \n    for iteration in range(7):\n        # Compute all factors at once for all blocks\n        factors = torch.tensor([1.0 + (s[b*S:(b+1)*S]**2).mean().item() for b in range(B)], dtype=dtype)\n        \n        # Apply factors using vectorized operations where possible\n        # Create a view/reshape to apply factors efficiently\n        s_reshaped = s.view(B, S)\n        factors_expanded = factors.view(B, 1)\n        buf = (s_reshaped * factors_expanded).view(-1)\n        \n        # All-reduce\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n        \n        # Divide by world_size and factors in one go\n        if iteration < 6:  # For iterations 0-6, apply the inverse factor division\n            acc_reshaped = acc.view(B, S)\n            factors_expanded = factors.view(B, 1)\n            s = (acc_reshaped / (world_size * factors_expanded)).view(-1)\n        else:  # Final iteration\n            s = acc / world_size\n    \n    return s"
+}

@@ -1,0 +1,73 @@
+{
+  "pipeline": "overlay",
+  "problem": "r43_route_B9_d8_L3_count8",
+  "gate": "fp32",
+  "baseline_sim": 6673.5142857142855,
+  "strategies": [
+    {
+      "name": "Fused mask precomputation with loop",
+      "desc": "Precompute the per-block overlap counts once, then execute 8 sequential all-reduce rounds where each rank masks its 3-block window, all-reduces, and divides by overlap counts. Total 9 dispatches (1 initial all-reduce + 8 mask-reduce-scale rounds). Trades minimal code complexity for maximum dispatch count."
+    },
+    {
+      "name": "Vectorized multi-round with shared buffers",
+      "desc": "Allocate a single persistent buffer and reuse it across all 8 dependent rounds, eliminating redundant tensor allocations. Each round: in-place mask application, all-reduce, in-place scaling. Total 9 dispatches but reduces memory allocation overhead. Same latency as Strategy 1 but better memory efficiency."
+    },
+    {
+      "name": "Batch-pack multiple rounds into single dispatch",
+      "desc": "Pack data from multiple rounds into a larger tensor (e.g., concatenate 2-4 rounds' masked buffers along a batch dimension), issue fewer but larger all-reduces, then unpack and apply scaling. Reduces dispatches from 9 to 3-5 by trading increased payload size (2-3x per dispatch) for lower launch overhead."
+    },
+    {
+      "name": "Hierarchical two-stage reduction with broadcast",
+      "desc": "Replace the 8 sequential mask-reduce-scale rounds with a hierarchical approach: perform 4 parallel all-reduces on disjoint block subsets (using reduce-scatter to split work), then 4 all-gathers to reassemble. Exploits potential parallelism if hardware supports concurrent collectives, reducing critical path latency from 8\u00d7 to ~4\u00d7 AR cost."
+    },
+    {
+      "name": "Eliminate intermediate all-reduces via accumulation",
+      "desc": "Recognize that multiple mask-reduce rounds on the same rank-specific window can be fused: accumulate partial sums locally across rounds, then issue a single all-reduce per \"phase\" of dependent operations. Analyzes the dependency structure to collapse 8 rounds into 2-3 phases, yielding 4-5 total dispatches by exploiting associativity of the masking pattern.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Fused mask precomputation with loop",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=nan"
+    },
+    {
+      "stage": "impl",
+      "name": "Vectorized multi-round with shared buffers",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'TrackedTensor' object has no"
+    },
+    {
+      "stage": "impl",
+      "name": "Batch-pack multiple rounds into single dispatch",
+      "sim": 6079.514285714286,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-stage reduction with broadcast",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=6.897992"
+    },
+    {
+      "stage": "impl",
+      "name": "Eliminate intermediate all-reduces via accumulation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=34.647438"
+    },
+    {
+      "stage": "refine:Batch-pack multiple rounds into single dispatch",
+      "round": 1,
+      "sim": 5679.5142857142855
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 5679.5142857142855,
+  "final_code": "def r43_route_B9_d8_L3_count8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256\n    B = 9\n    W = world_size\n    L = 3\n    OFF = 2\n    STR = 1\n    \n    # Compute per-block overlap count\n    c = [0] * B\n    for r in range(W):\n        st = (r + OFF) % B\n        for j in range(L):\n            c[(st + STR * j) % B] += 1\n    \n    # Initial all-reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Determine which blocks this rank keeps\n    start = (rank + OFF) % B\n    keep = set((start + STR * j) % B for j in range(L))\n    \n    # Pack all 7 rounds into fewer dispatches\n    # Strategy: do all 7 rounds in a single mega-batch\n    states = [s]\n    for round_idx in range(6):\n        buf = torch.zeros_like(s)\n        for b in range(B):\n            if b in keep:\n                buf[b*S:(b+1)*S] = states[-1][b*S:(b+1)*S]\n        states.append(buf)\n    \n    # Concatenate all 7 intermediate states\n    packed = torch.cat(states[1:], dim=0)\n    \n    # Single all-reduce for all 7 rounds\n    reduced = xm.all_reduce(xm.REDUCE_SUM, packed)\n    \n    # Unpack and apply scaling sequentially\n    for round_idx in range(6):\n        offset = round_idx * B * S\n        acc = reduced[offset:offset + B*S]\n        for b in range(B):\n            acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n        s = acc\n    \n    # Final round (7th)\n    buf = torch.zeros_like(s)\n    for b in range(B):\n        if b in keep:\n            buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    \n    return s"
+}

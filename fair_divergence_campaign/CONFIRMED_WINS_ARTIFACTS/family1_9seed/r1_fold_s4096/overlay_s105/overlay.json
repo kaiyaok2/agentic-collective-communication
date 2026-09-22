@@ -1,0 +1,83 @@
+{
+  "pipeline": "overlay",
+  "problem": "r1_fold_s4096",
+  "gate": "fp32",
+  "baseline_sim": 7880.999999999992,
+  "strategies": [
+    {
+      "name": "Three sequential all-reduce baseline",
+      "desc": "Direct translation of the reference: 3 xm.all_reduce calls with local scaling ops between them. Total 3 dispatches. Represents the straightforward approach with minimal complexity but no optimization\u2014each all-reduce waits for the previous to complete, maximizing latency."
+    },
+    {
+      "name": "Fused local-ops between collectives",
+      "desc": "Same 3 all-reduce structure but fuse all scaling operations (clone + per-shard multiply/divide in loops) into single kernel launches between dispatches. Still 3 collective dispatches but reduces local overhead. Trades implementation complexity for lower host-device synchronization cost while keeping collective count unchanged."
+    },
+    {
+      "name": "Reduce-scatter then all-gather decomposition",
+      "desc": "Replace first all-reduce with reduce-scatter (each rank gets 1/W of result), apply first scaling locally on smaller buffer, use all-gather to distribute, then repeat with second reduce-scatter/all-gather pair. 4 collective dispatches but smaller per-op payload (S instead of W*S for middle ops). Trades dispatch count for bandwidth efficiency on large world sizes."
+    },
+    {
+      "name": "Hierarchical two-level reduction pattern",
+      "desc": "Exploit multi-node topology (224 = 7 nodes \u00d7 32 devices): intra-node all-reduce, inter-node all-reduce on representatives, intra-node broadcast, repeated 3 times with scaling. Up to 9 dispatches but leverages faster local interconnect for bulk of traffic. Optimizes for hierarchical network topology at cost of more kernel launches."
+    },
+    {
+      "name": "All-to-all with rank-local accumulation",
+      "desc": "Use xm.all_to_all to exchange S-sized chunks so each rank owns one shard across all 3 reduction phases, perform all 3 scaled reductions locally on that shard, then all-to-all back to restore layout. 2 all-to-all dispatches plus local compute. Minimizes collective count by spatially partitioning the problem, trading collective type for frequency.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Three sequential all-reduce baseline",
+      "sim": 7880.999999999992,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused local-ops between collectives",
+      "sim": 7343.399999999998,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-scatter then all-gather decomposition",
+      "sim": 7027.56875,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-level reduction pattern",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "All-to-all with rank-local accumulation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'list' object has no attribut"
+    },
+    {
+      "stage": "refine:Fused local-ops between collectives",
+      "round": 1,
+      "sim": 6484.8
+    },
+    {
+      "stage": "refine:Fused local-ops between collectives",
+      "round": 2,
+      "sim": 6461.1
+    },
+    {
+      "stage": "refine:Fused local-ops between collectives",
+      "round": 3,
+      "sim": 6464.1
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6461.1,
+  "final_code": "def r1_fold_s4096_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 4096\n    W = world_size\n    dtype = x.dtype\n    \n    # Precompute scaling factors - simpler computation\n    a = torch.tensor([1.0 + 0.5 * (r % 3) for r in range(W)], \n                     dtype=dtype, device=x.device)\n    \n    # First all-reduce\n    s1 = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Scale: multiply by a/W (vectorized, minimal reshaping)\n    buf0 = s1.view(W, S) * (a / W).view(W, 1)\n    \n    # Second all-reduce\n    s2 = xm.all_reduce(xm.REDUCE_SUM, buf0.view(-1))\n    \n    # Divide by (W*a) and multiply by a = divide by W\n    bufN = s2.view(W, S) / W\n    \n    # Third all-reduce\n    out = xm.all_reduce(xm.REDUCE_SUM, bufN.view(-1))\n    \n    return out"
+}

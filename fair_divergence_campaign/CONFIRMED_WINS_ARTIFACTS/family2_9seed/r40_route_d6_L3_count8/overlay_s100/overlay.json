@@ -1,0 +1,73 @@
+{
+  "pipeline": "overlay",
+  "problem": "r40_route_d6_L3_count8",
+  "gate": "fp32",
+  "baseline_sim": 6229.4,
+  "strategies": [
+    {
+      "name": "Direct Masked All-Reduce Chain",
+      "desc": "Performs 6 sequential all-reduce operations with rank-specific masking and scaling exactly as in the reference implementation. Each rank zeros out blocks not in its window, all-reduces the masked buffer, then scales by overlap counts. 7 total dispatches (1 initial sum + 6 dependent ARs), straightforward but no fusion opportunities."
+    },
+    {
+      "name": "Fused Mask-and-Scale Preprocessing",
+      "desc": "Precompute all 6 masks and scaling factors locally, then merge consecutive mask+all-reduce+scale steps by exploiting the fact that the same window/scaling pattern repeats. Reduces to 1 initial all-reduce + 5 dependent all-reduces with fused local ops between them, potentially 6 dispatches if scale operations fuse with subsequent mask preparation."
+    },
+    {
+      "name": "Block-Wise Reduce-Scatter then All-Gather",
+      "desc": "Instead of masked all-reduces, decompose into reduce-scatter (each rank owns specific blocks), apply windowing logic locally on owned shards, then all-gather to reconstruct. Trades the 6 all-reduce dispatches for a different communication pattern: potentially 1 initial AR + 1 RS + local compute + 1 AG per dependency level, exploiting smaller per-rank payloads during the scatter phase."
+    },
+    {
+      "name": "Pipelined Window Accumulation",
+      "desc": "Recognize that each of the 6 dependent all-reduces applies the same windowing rule; instead of sequential full all-reduces, pipeline by splitting each all-reduce into multiple smaller reductions over subsets of blocks that share the same overlap count. This allows partial results from earlier stages to begin propagating while later stages are still computing, potentially overlapping communication and computation across the dependency chain."
+    },
+    {
+      "name": "Hierarchical Two-Level Reduction",
+      "desc": "Exploit world_size=224 structure by grouping ranks and performing intra-group reductions followed by inter-group aggregation. First level: within each group, perform windowed all-reduces (fewer ranks = lower latency). Second level: aggregate across group representatives with appropriate scaling adjustments. Total dispatches depend on grouping factor but trades off dispatch count against per-dispatch parallelism and message size.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Direct Masked All-Reduce Chain",
+      "sim": 6446.0,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Mask-and-Scale Preprocessing",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: float division by zero"
+    },
+    {
+      "stage": "impl",
+      "name": "Block-Wise Reduce-Scatter then All-Gather",
+      "sim": 6446.0,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Window Accumulation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=nan"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level Reduction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.223216"
+    },
+    {
+      "stage": "refine:Block-Wise Reduce-Scatter then All-Gather",
+      "round": 2,
+      "sim": 6388.5
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6388.5,
+  "final_code": "def r40_route_d6_L3_count8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256\n    B = 8\n    W = world_size\n    L = 3\n    OFF = 2\n    dtype = x.dtype\n    \n    # Compute per-block overlap count c[b] = #ranks whose window covers block b\n    c = [0] * B\n    for r in range(W):\n        st = (r + OFF) % B\n        for j in range(L):\n            c[(st + j) % B] += 1\n    \n    # Step 1: Initial all-reduce to get global sum\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Step 2: Apply local windowing for all 5 intermediate levels\n    # Each level applies windowing and scaling in a single pass\n    start = (rank + OFF) % B\n    keep = set((start + j) % B for j in range(L))\n    \n    # Process all 5 levels with local operations only\n    for level in range(5):\n        # Apply windowing: zero out blocks not in this rank's window\n        buf = torch.zeros_like(s)\n        for b in range(B):\n            if b in keep:\n                buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] / c[b]\n        \n        # All-reduce to sum the masked and scaled contributions\n        s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    \n    # Final level (6th): apply windowing and sum\n    buf = torch.zeros_like(s)\n    for b in range(B):\n        if b in keep:\n            buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    \n    return s"
+}

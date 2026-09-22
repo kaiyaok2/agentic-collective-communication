@@ -1,0 +1,83 @@
+{
+  "pipeline": "overlay",
+  "problem": "r48_dd_relu_d6",
+  "gate": "fp32",
+  "baseline_sim": 6323.099999999999,
+  "strategies": [
+    {
+      "name": "Baseline Sequential Six All-Reduces",
+      "desc": "Six consecutive all_reduce(REDUCE_SUM) operations with interleaved local compute (mean, ReLU, scaling) between each. Total 6 dispatches. Represents the reference pattern with maximum clarity but no communication-computation overlap or fusion opportunity."
+    },
+    {
+      "name": "Fused Scaling Tensors Broadcast",
+      "desc": "Perform initial all_reduce, compute all six generations of scaling factors locally in a loop storing intermediate results, then use all_reduce on concatenated metadata (8 scalars per iteration) to synchronize scaling factors before applying them. Reduces to 2-3 all_reduce dispatches by separating data and metadata communication, trading off local memory for fewer collective calls."
+    },
+    {
+      "name": "Pipelined Block-wise Reduce-Scatter All-Gather",
+      "desc": "Replace each all_reduce with reduce_scatter (producing 8 shards) followed by all_gather after local scaling computation. Total 12 dispatches (6 iterations \u00d7 2 collectives) but each operates on 1/world_size or full payload respectively, enabling potential pipeline overlap between dependent stages and exploiting hierarchical network topology at world_size=224."
+    },
+    {
+      "name": "Vectorized Multi-Iteration Single Dispatch",
+      "desc": "Stack all intermediate buffers across the 6 iterations into a single large tensor (48\u00d7256 = 12288 elements), perform one all_reduce on the entire working set, then extract and compute all scaling operations locally via tensor views. Reduces to 1 dispatch with 6\u00d7 payload size, optimizing for dispatch overhead dominance."
+    },
+    {
+      "name": "Hierarchical Two-Stage Reduction Tree",
+      "desc": "Exploit multi-node structure (224 ranks suggests 28 nodes \u00d7 8 devices): first perform intra-node all_reduce (within 8 local devices) for all 6 iterations, then inter-node all_reduce on aggregated results. Total 12 dispatches (6\u00d72 stages) but with smaller inter-node payloads and leveraging faster intra-node interconnect bandwidth.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Baseline Sequential Six All-Reduces",
+      "sim": 6323.099999999999,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Scaling Tensors Broadcast",
+      "sim": 6626.3,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Block-wise Reduce-Scatter All-Gather",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: shape (16,) != (2048,)"
+    },
+    {
+      "stage": "impl",
+      "name": "Vectorized Multi-Iteration Single Dispatch",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Stage Reduction Tree",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.279368"
+    },
+    {
+      "stage": "refine:Baseline Sequential Six All-Reduces",
+      "round": 1,
+      "sim": 6760.3
+    },
+    {
+      "stage": "refine:Baseline Sequential Six All-Reduces",
+      "round": 2,
+      "sim": 6293.799999999999
+    },
+    {
+      "stage": "refine:Fused Scaling Tensors Broadcast",
+      "round": 3,
+      "sim": 5812.700000000001
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 5812.700000000001,
+  "final_code": "def r48_dd_relu_d6_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256\n    B = 8\n    dtype = x.dtype\n    \n    # Initial all_reduce to get summed vector\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Compute all 6 iterations with pipelined all_reduces\n    # Strategy: compute scaling factors for multiple iterations, \n    # then batch the all_reduce operations\n    \n    current = s\n    \n    # Batch iterations into groups to reduce collective dispatches\n    # Group 1: iterations 0-2\n    buffers_batch1 = []\n    factors_batch1 = []\n    \n    for iteration in range(3):\n        f = []\n        for b in range(B):\n            mb = current[b*S:(b+1)*S].mean()\n            f.append(1.0 + (mb if mb > 0 else mb*0.0))\n        \n        buf = current.clone()\n        for b in range(B):\n            buf[b*S:(b+1)*S] = current[b*S:(b+1)*S] * f[b]\n        \n        buffers_batch1.append(buf)\n        factors_batch1.append(f)\n        \n        if iteration < 2:\n            simulated = buf.clone()\n            for b in range(B):\n                simulated[b*S:(b+1)*S] = buf[b*S:(b+1)*S] / f[b]\n            current = simulated\n    \n    # Process batch 1 with combined buffer\n    combined_buf1 = torch.stack(buffers_batch1)\n    reduced_buf1 = xm.all_reduce(xm.REDUCE_SUM, combined_buf1)\n    \n    for iteration in range(3):\n        acc = reduced_buf1[iteration]\n        f = factors_batch1[iteration]\n        for b in range(B):\n            acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n        if iteration == 2:\n            current = acc\n    \n    # Group 2: iterations 3-5\n    buffers_batch2 = []\n    factors_batch2 = []\n    \n    for iteration in range(3, 6):\n        f = []\n        for b in range(B):\n            mb = current[b*S:(b+1)*S].mean()\n            f.append(1.0 + (mb if mb > 0 else mb*0.0))\n        \n        buf = current.clone()\n        for b in range(B):\n            buf[b*S:(b+1)*S] = current[b*S:(b+1)*S] * f[b]\n        \n        buffers_batch2.append(buf)\n        factors_batch2.append(f)\n        \n        if iteration < 5:\n            simulated = buf.clone()\n            for b in range(B):\n                simulated[b*S:(b+1)*S] = buf[b*S:(b+1)*S] / f[b]\n            current = simulated\n    \n    # Process batch 2 with combined buffer\n    combined_buf2 = torch.stack(buffers_batch2)\n    reduced_buf2 = xm.all_reduce(xm.REDUCE_SUM, combined_buf2)\n    \n    for iteration in range(3):\n        acc = reduced_buf2[iteration]\n        f = factors_batch2[iteration]\n        if iteration < 2:\n            for b in range(B):\n                acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n        else:\n            acc = acc / world_size\n    \n    return acc"
+}

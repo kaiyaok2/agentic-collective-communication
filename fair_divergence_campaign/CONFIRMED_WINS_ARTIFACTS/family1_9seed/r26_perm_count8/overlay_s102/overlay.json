@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r26_perm_count8",
+  "gate": "fp32",
+  "baseline_sim": 12919.428571428683,
+  "strategies": [
+    {
+      "name": "Baseline Sequential All-Reduce Chain",
+      "desc": "Performs 8 sequential all-reduce operations with local scale/permute transformations between each. Each all-reduce dispatches the full world*256 tensor. Total 8 dispatches with maximum synchronization overhead but simplest structure. Represents the direct translation of the reference implementation."
+    },
+    {
+      "name": "Fused Local-Op Batching",
+      "desc": "Groups the local permutation and scaling operations to minimize intermediate buffers, potentially using in-place operations where the permutation pattern allows. Still 8 all-reduce dispatches but reduces local compute overhead and memory allocations by pre-computing scale factors and reusing buffers. Trades off code complexity for reduced memory traffic."
+    },
+    {
+      "name": "Reduce-Scatter + All-Gather Decomposition",
+      "desc": "Decomposes each all-reduce into reduce-scatter followed by all-gather, allowing for smaller intermediate payloads (256 elements instead of world*256) during the reduce phase. Results in 16 collective dispatches but each reduce-scatter only communicates 1/W of the data. Favorable when network bandwidth is the bottleneck and latency cost of extra dispatches is acceptable."
+    },
+    {
+      "name": "Hierarchical Two-Level Reduction",
+      "desc": "Exploits potential node-level topology by performing intra-node reductions first, then inter-node reductions. With num_nodes parameter, structure 8 rounds of (intra-node all-reduce, inter-node all-reduce) for 16 dispatches total. Reduces cross-node bandwidth by W/nodes factor at cost of additional dispatches, optimized for multi-node deployments."
+    },
+    {
+      "name": "Pipelined All-Reduce with Chunking",
+      "desc": "Splits the world*256 tensor into chunks and pipelines all-reduce operations across chunks and across the 8 rounds. Issues multiple smaller all-reduce operations that can overlap communication with computation of local transformations. Increases dispatch count significantly (8 * num_chunks) but enables better overlap and reduces per-dispatch latency, trading dispatch overhead for pipeline parallelism.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Baseline Sequential All-Reduce Chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.917109"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Local-Op Batching",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-Scatter + All-Gather Decomposition",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: shape (4, 256) != (1024,)"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level Reduction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined All-Reduce with Chunking",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.917109"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 12919.428571428683,
+  "final_code": "def r26_perm_count8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256; W = world_size\n    a = [1.0 + 0.5*(r % 3) for r in range(W)]\n    perm = [(r + W // 2) % W for r in range(W)]\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    buf = s.clone()\n    for r in range(W):\n        p = perm[r]\n        buf[p*S:(p+1)*S] = a[r] * s[p*S:(p+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        p = perm[r]\n        s[p*S:(p+1)*S] = s[p*S:(p+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        p = perm[r]\n        buf[p*S:(p+1)*S] = a[r] * s[p*S:(p+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        p = perm[r]\n        s[p*S:(p+1)*S] = s[p*S:(p+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        p = perm[r]\n        buf[p*S:(p+1)*S] = a[r] * s[p*S:(p+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        p = perm[r]\n        s[p*S:(p+1)*S] = s[p*S:(p+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        p = perm[r]\n        buf[p*S:(p+1)*S] = a[r] * s[p*S:(p+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        p = perm[r]\n        s[p*S:(p+1)*S] = s[p*S:(p+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        p = perm[r]\n        buf[p*S:(p+1)*S] = a[r] * s[p*S:(p+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        p = perm[r]\n        s[p*S:(p+1)*S] = s[p*S:(p+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        p = perm[r]\n        buf[p*S:(p+1)*S] = a[r] * s[p*S:(p+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        p = perm[r]\n        s[p*S:(p+1)*S] = s[p*S:(p+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        p = perm[r]\n        buf[p*S:(p+1)*S] = a[r] * s[p*S:(p+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    return s\n",
+  "fell_back_to_baseline": true
+}

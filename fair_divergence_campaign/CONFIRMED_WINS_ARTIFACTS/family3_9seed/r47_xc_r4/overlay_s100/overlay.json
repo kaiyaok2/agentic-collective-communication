@@ -1,0 +1,78 @@
+{
+  "pipeline": "overlay",
+  "problem": "r47_xc_r4",
+  "gate": "fp32",
+  "baseline_sim": 6562.799999999999,
+  "strategies": [
+    {
+      "name": "Sequential reduce_scatter all_gather chain",
+      "desc": "Four back-to-back reduce_scatter (SUM) followed by all_gather pairs, exactly as in the reference implementation. 8 total collective dispatches with no fusion or reordering. Straightforward baseline that incurs maximum dispatch overhead but is structurally simple and matches the reference semantics directly."
+    },
+    {
+      "name": "Fused all_reduce four-round equivalent",
+      "desc": "Replace each reduce_scatter+all_gather pair with a single all_reduce (SUM), yielding 4 all_reduce dispatches instead of 8 separate collectives. Reduces dispatch count by 50% at the cost of potentially doubling bandwidth per round (all_reduce = reduce_scatter + all_gather fused). Exploits the mathematical equivalence: RS(SUM) + AG = AR(SUM)."
+    },
+    {
+      "name": "Batched two-phase reduce_scatter then all_gather",
+      "desc": "Execute all 4 reduce_scatter operations consecutively (4 dispatches), then all 4 all_gather operations (4 dispatches), for 8 total dispatches but different pipeline behavior. Intermediate results accumulate in reduced form before expansion, potentially improving memory locality and enabling better overlap of reduction phases, though increases latency to final result."
+    },
+    {
+      "name": "Hierarchical intra-node then inter-node collectives",
+      "desc": "Decompose each collective into node-local operations (within 224/num_nodes ranks per node) followed by cross-node operations, using 16 dispatches (4 rounds \u00d7 2 levels \u00d7 2 ops). Exploits faster intra-node interconnect bandwidth and lower latency for the majority of communication volume, trading increased dispatch count for reduced per-dispatch latency on critical path."
+    },
+    {
+      "name": "Single all_reduce with world_size^3 scaling",
+      "desc": "Recognize that 4 rounds of (reduce_scatter + all_gather) on a SUM operation is mathematically equivalent to summing x across all ranks 4 times (world_size^4 factor), then apply single all_reduce with output scaled by world_size^3. Only 1 collective dispatch, minimum overhead, but requires verifying numerical stability and may not match bit-exact semantics if intermediate rounding matters.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential reduce_scatter all_gather chain",
+      "sim": 6562.799999999999,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused all_reduce four-round equivalent",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: TypeError: MockXM.all_reduce() got an unexpec"
+    },
+    {
+      "stage": "impl",
+      "name": "Batched two-phase reduce_scatter then all_gather",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=120.838570"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical intra-node then inter-node collectives",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Single all_reduce with world_size^3 scaling",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: TypeError: MockXM.all_reduce() got an unexpec"
+    },
+    {
+      "stage": "refine:Sequential reduce_scatter all_gather chain",
+      "round": 2,
+      "sim": 6574.0
+    },
+    {
+      "stage": "refine:Sequential reduce_scatter all_gather chain",
+      "round": 3,
+      "sim": 6582.0
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 6562.799999999999,
+  "final_code": "def r47_xc_r4_fn(x, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Sequential reduce_scatter all_gather chain strategy.\n    \n    Implements 4 rounds of:\n    1. reduce_scatter (SUM) with scale=1.0\n    2. all_gather to restore full tensor\n    \n    This matches the reference implementation exactly with 8 total collective dispatches.\n    \"\"\"\n    s = x\n    \n    # Round 1: reduce_scatter + all_gather\n    rs = xm.reduce_scatter(xm.REDUCE_SUM, s, scale=1.0, scatter_dim=0, shard_count=world_size)\n    rs = rs * 1.0\n    s = xm.all_gather(rs, dim=0)\n    \n    # Round 2: reduce_scatter + all_gather\n    rs = xm.reduce_scatter(xm.REDUCE_SUM, s, scale=1.0, scatter_dim=0, shard_count=world_size)\n    rs = rs * 1.0\n    s = xm.all_gather(rs, dim=0)\n    \n    # Round 3: reduce_scatter + all_gather\n    rs = xm.reduce_scatter(xm.REDUCE_SUM, s, scale=1.0, scatter_dim=0, shard_count=world_size)\n    rs = rs * 1.0\n    s = xm.all_gather(rs, dim=0)\n    \n    # Round 4: reduce_scatter + all_gather\n    rs = xm.reduce_scatter(xm.REDUCE_SUM, s, scale=1.0, scatter_dim=0, shard_count=world_size)\n    rs = rs * 1.0\n    s = xm.all_gather(rs, dim=0)\n    \n    return s"
+}

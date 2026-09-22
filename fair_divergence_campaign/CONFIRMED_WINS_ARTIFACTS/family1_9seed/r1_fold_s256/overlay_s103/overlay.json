@@ -1,0 +1,93 @@
+{
+  "pipeline": "overlay",
+  "problem": "r1_fold_s256",
+  "gate": "fp32",
+  "baseline_sim": 7089.928571428564,
+  "strategies": [
+    {
+      "name": "Three Sequential AllReduce Baseline",
+      "desc": "Direct transcription of the reference: three all_reduce dispatches with interleaved local per-shard scaling and cloning operations. 3 collective dispatches, no fusion opportunities. Represents the straightforward \"dispatch-per-allreduce\" approach with maximum algorithmic clarity but no optimization for dispatch overhead."
+    },
+    {
+      "name": "Fused Local-Op Between AllReduces",
+      "desc": "Merge clone+scale operations into single kernels between the three all_reduce calls, reducing local dispatch overhead. Still 3 collective dispatches but fewer host-device round-trips for element-wise ops. Trades off code simplicity for reduced local-op dispatch count by batching scale/copy into view or reshape operations where possible."
+    },
+    {
+      "name": "AllGather-ReduceScatter Decomposition",
+      "desc": "Replace first all_reduce with all_gather to get full replica, perform all three scale passes locally on the gathered buffer, then reduce_scatter the final result. 2 collective dispatches (AG + RS) instead of 3 ARs. Trades increased intermediate buffer memory (W\u00d7S full replicas) for one fewer collective dispatch."
+    },
+    {
+      "name": "Reduce-Scatter then AllGather Pattern",
+      "desc": "Decompose the three-stage fold into reduce_scatter of input chunks, local scale on partial results, then all_gather to reconstruct. 2 collective dispatches (RS + AG) with different data flow than strategy 3. Minimizes data-in-flight during first collective but requires careful shard-aware indexing for the per-rank scale coefficients."
+    },
+    {
+      "name": "Pipelined AllReduce with Overlapped Scaling",
+      "desc": "Issue all three all_reduce operations with distinct output buffers, interleaving the scale operations on completed ARs while later ARs are in flight. 3 collective dispatches but with potential backend overlap if XLA can pipeline. Represents a concurrency-oriented approach trading synchronization complexity for potential wall-clock speedup on high-bandwidth interconnects.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Three Sequential AllReduce Baseline",
+      "sim": 7089.928571428564,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Local-Op Between AllReduces",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    },
+    {
+      "stage": "impl",
+      "name": "AllGather-ReduceScatter Decomposition",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: RuntimeError: The size of tensor a (1024) mus"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-Scatter then AllGather Pattern",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.718417"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined AllReduce with Overlapped Scaling",
+      "sim": 7089.928571428564,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "refine:Three Sequential AllReduce Baseline",
+      "round": 2,
+      "sim": 6552.328571428569
+    },
+    {
+      "stage": "refine:Three Sequential AllReduce Baseline",
+      "round": 3,
+      "sim": 5670.028571428572
+    },
+    {
+      "stage": "refine:Pipelined AllReduce with Overlapped Scaling",
+      "round": 1,
+      "sim": 6395.528571428571
+    },
+    {
+      "stage": "refine:Pipelined AllReduce with Overlapped Scaling",
+      "round": 2,
+      "sim": 5668.028571428571
+    },
+    {
+      "stage": "refine:Pipelined AllReduce with Overlapped Scaling",
+      "round": 3,
+      "sim": 5673.528571428572
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 5668.028571428571,
+  "final_code": "def r1_fold_s256_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256\n    W = world_size\n    dtype = x.dtype\n    \n    # Precompute all scaling factors once\n    a_over_w = torch.tensor([1.0 + 0.5 * (r % 3) for r in range(W)], dtype=dtype) / W\n    inv_w = 1.0 / W\n    \n    # Stage 1: First all_reduce\n    ar1_out = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Stage 2: Vectorized scaling and second all_reduce\n    ar1_out_reshaped = ar1_out.view(W, S)\n    buf2_in = (ar1_out_reshaped * a_over_w.unsqueeze(1)).view(-1)\n    ar2_out = xm.all_reduce(xm.REDUCE_SUM, buf2_in)\n    \n    # Stage 3: Vectorized final scale for third all_reduce\n    buf3_in = ar2_out * inv_w\n    ar3_out = xm.all_reduce(xm.REDUCE_SUM, buf3_in)\n    \n    return ar3_out"
+}

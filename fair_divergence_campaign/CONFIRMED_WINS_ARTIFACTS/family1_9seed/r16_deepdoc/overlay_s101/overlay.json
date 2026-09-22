@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r16_deepdoc",
+  "gate": "fp32",
+  "baseline_sim": 12919.428571428683,
+  "strategies": [
+    {
+      "name": "Sequential All-Reduce with In-Place Scaling",
+      "desc": "Uses 8 all-reduce dispatches with in-place element-wise scaling operations between stages. Each all-reduce operates on the full (world*256,) tensor, with scaling/unscaling applied locally via loops over shards. This is the baseline approach with 8 AR dispatches and minimal memory overhead but maximum compute overhead from repeated scaling loops."
+    },
+    {
+      "name": "Fused Scale-Reduce with Precomputed Coefficients",
+      "desc": "Precomputes all scale/unscale coefficient combinations into lookup tables, then fuses adjacent scale+clone operations into single vectorized operations before each all-reduce. Reduces local compute overhead through vectorization and eliminates redundant clone operations where possible, maintaining 8 AR dispatches but with reduced host overhead."
+    },
+    {
+      "name": "Reduce-Scatter + All-Gather Decomposition",
+      "desc": "Decomposes each all-reduce into reduce-scatter followed by all-gather, allowing per-rank ownership of shards during intermediate stages. Uses 16 collective dispatches (8 RS + 8 AG) but enables potential pipelining and reduces memory bandwidth since each rank only needs to scale its owned shard between RS and AG phases."
+    },
+    {
+      "name": "Batched All-Reduce with Metadata Views",
+      "desc": "Reorganizes data into a (8, world*256) tensor where dimension 0 represents stages, applies all scaling transformations as tensor views/reshapes, then dispatches all 8 all-reduces together if framework supports batched collectives. Trades memory (8x buffer) for potential dispatch coalescing and better hardware utilization."
+    },
+    {
+      "name": "Ring-Based Cumulative Scaling Pipeline",
+      "desc": "Implements custom ring algorithm where each stage's scaled data is sent point-to-point in a pipelined fashion, accumulating results progressively. Uses O(world) send/recv pairs per stage instead of all-reduce, potentially hiding latency through pipelining but with higher dispatch count (8*world point-to-point ops) suitable only if per-dispatch overhead is negligible.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential All-Reduce with In-Place Scaling",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.516489"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Scale-Reduce with Precomputed Coefficients",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.516489"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-Scatter + All-Gather Decomposition",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.032979"
+    },
+    {
+      "stage": "impl",
+      "name": "Batched All-Reduce with Metadata Views",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.032979"
+    },
+    {
+      "stage": "impl",
+      "name": "Ring-Based Cumulative Scaling Pipeline",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=36.142200"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 12919.428571428683,
+  "final_code": "def r16_deepdoc_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256; W = world_size\n    a = [1.0 + 0.5*(r % 3) for r in range(W)]\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    return s\n",
+  "fell_back_to_baseline": true
+}

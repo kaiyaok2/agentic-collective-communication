@@ -1,0 +1,73 @@
+{
+  "pipeline": "overlay",
+  "problem": "r31_lin5_count8",
+  "gate": "fp32",
+  "baseline_sim": 12919.428571428683,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with fused local ops",
+      "desc": "Execute 8 all-reduce operations sequentially with all local scaling and division operations fused between collectives. This matches the reference implementation structure with 8 all-reduce dispatches plus local compute, trading off communication latency for simplicity and minimal memory overhead."
+    },
+    {
+      "name": "Bucketed parallel all-reduce with delayed fusion",
+      "desc": "Group the 8 all-reduces into 2-4 buckets that can be dispatched in overlapping waves, using separate buffers to allow launch of reduce(i+1) before reduce(i) completes. Expected 8 all-reduce dispatches but with reduced wall-clock time through pipelining, at the cost of 2-4x buffer memory."
+    },
+    {
+      "name": "Reduce-scatter then all-gather decomposition",
+      "desc": "Replace each all-reduce with a reduce-scatter followed by all-gather pattern, performing local operations on the scattered smaller chunks between communication phases. This increases dispatch count to 16 (8\u00d72) but reduces per-collective payload from world_size\u00d7256 to 256, potentially winning on large world sizes through better network utilization."
+    },
+    {
+      "name": "Single all-reduce with replicated iterative correction",
+      "desc": "Perform one initial all-reduce to get the sum, then iterate 7 times with only local operations (scale, replicate-sum via local broadcast patterns or views, divide) to simulate the effect of dependent all-reduces. Reduces dispatches from 8 to 1, trading collective communication for increased local compute and potential numerical drift."
+    },
+    {
+      "name": "Chunk-pipelined ring all-reduce custom implementation",
+      "desc": "Manually implement a ring-based all-reduce that pipelines the 8 dependent operations by processing chunks of the vector in different stages simultaneously across ranks. Uses point-to-point send/recv operations (if available via xm) or all-to-all to create a custom pipeline, targeting ~O(chunks \u00d7 8) dispatches but overlapping communication and compute across the dependency chain.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with fused local ops",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.211808"
+    },
+    {
+      "stage": "impl",
+      "name": "Bucketed parallel all-reduce with delayed fusion",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.211808"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-scatter then all-gather decomposition",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: TypeError: MockXM.all_gather() got an unexpec"
+    },
+    {
+      "stage": "impl",
+      "name": "Single all-reduce with replicated iterative correction",
+      "sim": 15187.085714285911,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Chunk-pipelined ring all-reduce custom implementation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.211808"
+    },
+    {
+      "stage": "refine:Single all-reduce with replicated iterative correction",
+      "round": 1,
+      "sim": 5370.085714285714
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 5370.085714285714,
+  "final_code": "def r31_lin5_count8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256\n    W = world_size\n    dtype = x.dtype\n    \n    # Compute scaling factors for each rank as a tensor\n    a = torch.tensor([1.0 + 0.25 * (r % 5) for r in range(W)], \n                     dtype=dtype, device=x.device)\n    \n    # Single all-reduce to get the global sum\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Reshape to enable vectorized operations across shards\n    # Shape: (W, S) where W is world_size and S is shard size\n    s_reshaped = s.view(W, S)\n    \n    # Create scaling vector: shape (W, 1) for broadcasting\n    a_vec = a.view(W, 1)\n    \n    # Simulate 7 iterations of dependent all-reduces using vectorized operations\n    for iteration in range(7):\n        # Apply scaling: buf = a[r] * s / W for each shard r\n        # Shape: (W, S)\n        buf = a_vec * s_reshaped / W\n        \n        # Simulate all-reduce: multiply by W to get the effect of summing W copies\n        s_new = buf * W\n        \n        # Apply inverse scaling: divide by a[r] for each shard\n        s_reshaped = s_new / a_vec.clamp(min=1e-9)\n    \n    # Final iteration (8th): scale by a[r] / W and sum\n    buf = a_vec * s_reshaped / W\n    \n    # Simulate final all-reduce\n    s_final = buf * W\n    \n    # Reshape back to flat vector\n    return s_final.view(-1)"
+}

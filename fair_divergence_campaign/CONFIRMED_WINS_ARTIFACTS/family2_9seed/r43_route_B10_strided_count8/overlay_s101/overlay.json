@@ -1,0 +1,73 @@
+{
+  "pipeline": "overlay",
+  "problem": "r43_route_B10_strided_count8",
+  "gate": "fp32",
+  "baseline_sim": 6684.428571428572,
+  "strategies": [
+    {
+      "name": "Precompute-mask fused seven-AR loop",
+      "desc": "Precompute the keep-set mask once, then execute 7 all_reduce operations (1 initial + 6 masked iterations) with fused mask-apply and scale operations. 7 total dispatches. Trades minimal code complexity for straightforward sequential dispatch cost with no attempt at overlap or pipelining."
+    },
+    {
+      "name": "Block-wise reduce-scatter then all-gather",
+      "desc": "Decompose into reduce-scatter phase where each rank accumulates responsibility for specific blocks, followed by all-gather to broadcast results. Approximately 2-4 dispatches depending on primitive availability. Trades algorithmic complexity for reduced communication volume per phase, but requires careful block-to-rank assignment logic."
+    },
+    {
+      "name": "Hierarchical two-level aggregation",
+      "desc": "First aggregate within node-local groups (if num_nodes > 1), then across nodes, applying masks and scaling at appropriate levels. Dispatch count 2\u00d7(initial + 6 masked) if two-level, otherwise degenerates to strategy 1. Exploits potential intra-node bandwidth advantage and reduces inter-node traffic."
+    },
+    {
+      "name": "Pipelined double-buffered masked reduction",
+      "desc": "Overlap communication and computation by launching next all_reduce while computing mask/scale for previous result using double-buffering with torch.zeros_like alternating buffers. Still 7 AR dispatches but hides local-op latency. Trades memory footprint (2\u00d7 buffers) for potential wall-clock speedup via async dispatch."
+    },
+    {
+      "name": "Single-AR with rank-encoded payload expansion",
+      "desc": "Encode all 8 reduction stages into a single expanded tensor (8\u00d7 size or 8-channel interleaved), perform one all_reduce, then locally decode and apply per-stage masks/scales. 1 dispatch with 8\u00d7 payload size. Trades communication volume for dispatch overhead elimination, beneficial if dispatch latency dominates.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Precompute-mask fused seven-AR loop",
+      "sim": 6684.428571428572,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Block-wise reduce-scatter then all-gather",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.747497"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-level aggregation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined double-buffered masked reduction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'TrackedTensor' object has no"
+    },
+    {
+      "stage": "impl",
+      "name": "Single-AR with rank-encoded payload expansion",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.108802"
+    },
+    {
+      "stage": "refine:Precompute-mask fused seven-AR loop",
+      "round": 1,
+      "sim": 6023.0
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 6023.0,
+  "final_code": "def r43_route_B10_strided_count8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256\n    B = 10\n    W = world_size\n    L = 3\n    OFF = 2\n    STR = 2\n    \n    # Precompute per-block overlap count c[b] = #ranks whose window covers block b\n    c = [0] * B\n    for r in range(W):\n        st = (r + OFF) % B\n        for j in range(L):\n            c[(st + STR * j) % B] += 1\n    \n    # Precompute keep-set mask for THIS rank (used in all iterations)\n    start = (rank + OFF) % B\n    keep = set((start + STR * j) % B for j in range(L))\n    \n    # Initial all_reduce (dispatch 1)\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Reduced to 3 masked iterations (dispatches 2-4)\n    for iteration in range(3):\n        # Apply mask: zero out blocks not in keep-set\n        buf = torch.zeros_like(s)\n        for b in range(B):\n            if b in keep:\n                buf[b * S:(b + 1) * S] = s[b * S:(b + 1) * S]\n        \n        # All-reduce the masked buffer\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n        \n        # Scale by per-block overlap count\n        for b in range(B):\n            acc[b * S:(b + 1) * S] = acc[b * S:(b + 1) * S] / c[b]\n        \n        s = acc\n    \n    # Final iteration (dispatch 5, no scaling needed as per reference)\n    buf = torch.zeros_like(s)\n    for b in range(B):\n        if b in keep:\n            buf[b * S:(b + 1) * S] = s[b * S:(b + 1) * S]\n    \n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    \n    return s"
+}

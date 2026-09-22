@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r2_deep4",
+  "gate": "fp32",
+  "baseline_sim": 8255.828571428561,
+  "strategies": [
+    {
+      "name": "Single Fused All-Reduce",
+      "desc": "Perform all local scaling operations (multiply by a[r]/W, sum, divide by a[r]) within a single all-reduce by computing the mathematically equivalent net transformation per shard upfront. Results in exactly 1 all-reduce dispatch instead of 4, trading upfront analytical derivation for minimal communication rounds and maximum fusion."
+    },
+    {
+      "name": "Two-Stage Reduce-Scatter AllGather Chain",
+      "desc": "Replace each all-reduce with a reduce-scatter followed by all-gather pair, yielding 8 total dispatches (4\u00d72). This exposes opportunities to fuse local scaling ops between RS and AG phases, and reduces per-dispatch payload size during the scatter phase by factor of W, trading dispatch count for bandwidth efficiency on large world sizes."
+    },
+    {
+      "name": "Pipelined Overlapped Four All-Reduces",
+      "desc": "Keep the 4 all-reduce structure but partition each shard into sub-chunks (e.g., 4\u00d764 elements), launching all-reduce on chunk[i] while computing local scale/unscale on chunk[i-1]. Results in 4 all-reduce dispatches with 4-way internal pipelining, hiding local compute latency behind communication at the cost of increased dispatch metadata overhead."
+    },
+    {
+      "name": "Hierarchical Two-Level Reduction",
+      "desc": "Exploit multi-node topology by splitting the 4-stage computation into intra-node (32 devices) and inter-node (7 nodes) phases, performing intermediate stages as node-local all-reduces then cross-node reductions. Yields approximately 8-12 dispatches depending on hierarchy depth, trading flat communication for topology-aware bandwidth optimization."
+    },
+    {
+      "name": "Precomputed Coefficient All-Reduce",
+      "desc": "Recognize that the 4 nested scale/unscale/all-reduce stages apply a linear transformation, precompute the W\u00d7W coefficient matrix mapping input shards to output shards, then perform a single all-reduce on coefficient-weighted inputs. Results in 1 all-reduce with O(W) local memory for coefficients, trading memory footprint for dispatch reduction.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Single Fused All-Reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.947006"
+    },
+    {
+      "stage": "impl",
+      "name": "Two-Stage Reduce-Scatter AllGather Chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=3.774734"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Overlapped Four All-Reduces",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level Reduction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Precomputed Coefficient All-Reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: RuntimeError: The expanded size of the tensor"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 8255.828571428561,
+  "final_code": "def r2_deep4_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256; W = world_size\n    a = [1.0 + 0.5*(r % 3) for r in range(W)]\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    return s\n",
+  "fell_back_to_baseline": true
+}

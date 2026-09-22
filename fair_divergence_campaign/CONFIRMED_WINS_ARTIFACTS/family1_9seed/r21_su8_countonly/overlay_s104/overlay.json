@@ -1,0 +1,73 @@
+{
+  "pipeline": "overlay",
+  "problem": "r21_su8_countonly",
+  "gate": "fp32",
+  "baseline_sim": 12919.428571428683,
+  "strategies": [
+    {
+      "name": "Inline Scalar-Loop All-Reduce Chain",
+      "desc": "Eight sequential all_reduce calls with per-rank scaling/unscaling loops inlined between each collective, exactly as in the reference. Expected 8 all_reduce dispatches plus local arithmetic. Baseline: highest dispatch count but simplest control flow, no fusion opportunities."
+    },
+    {
+      "name": "Vectorized Pre-Compute Scale Tensor",
+      "desc": "Pre-compute the full scaling tensor a_tensor[r*S:(r+1)*S] = a[r] once, then use element-wise multiply/divide instead of per-shard loops. Still 8 all_reduce dispatches but fuses W scalar operations into vectorized ops, reducing local compute overhead and enabling better compiler optimization across the scaling operations."
+    },
+    {
+      "name": "Fused Buffer Preparation Kernel",
+      "desc": "Merge the clone() and the scaling loop into a single fused kernel that writes directly to the output buffer (buf = scale_and_copy(s, a)). Maintains 8 all_reduce dispatches but reduces memory traffic by eliminating intermediate clone copies, trading one dispatch overhead for 8 saved memory allocations."
+    },
+    {
+      "name": "Batched All-Reduce with Concatenation",
+      "desc": "Stack/concatenate multiple scaled buffers along a new dimension, issue fewer all_reduce calls on larger tensors (e.g., 4 dispatches on 2x-sized payloads or 2 dispatches on 4x-sized payloads), then unpack. Reduces dispatch count to 2-4 but increases per-dispatch payload size and requires additional reshape/slice overhead."
+    },
+    {
+      "name": "Pipeline Overlapped All-Reduce Stream",
+      "desc": "Split each all_reduce into non-blocking calls on separate XLA streams or use explicit async collectives, allowing computation (scaling/unscaling) on iteration i+1 to overlap with communication on iteration i. Still logically 8 all_reduces but hides arithmetic latency behind network transfer, trading code complexity for better pipeline utilization.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Inline Scalar-Loop All-Reduce Chain",
+      "sim": 12919.428571428683,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Vectorized Pre-Compute Scale Tensor",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.032979"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Buffer Preparation Kernel",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    },
+    {
+      "stage": "impl",
+      "name": "Batched All-Reduce with Concatenation",
+      "sim": 13446.728571428697,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipeline Overlapped All-Reduce Stream",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    },
+    {
+      "stage": "refine:Batched All-Reduce with Concatenation",
+      "round": 2,
+      "sim": 6080.728571428572
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6080.728571428572,
+  "final_code": "def r21_su8_countonly_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256\n    W = world_size\n    a = torch.tensor([1.0 + 0.5*(r % 3) for r in range(W)], dtype=x.dtype, device=x.device)\n    \n    # Initial all_reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Vectorized scaling helper - reshape for broadcasting\n    def apply_scale(tensor, scale_vec, inverse=False):\n        t = tensor.view(W, S)\n        scale = scale_vec.view(W, 1)\n        if inverse:\n            return (t / scale.clamp(min=1e-9)).view(-1)\n        else:\n            return (t * scale / W).view(-1)\n    \n    # Batch all 7 remaining iterations into groups\n    # Strategy: prepare multiple buffers and concatenate for single all_reduce\n    \n    # Prepare buffers for iterations 1-4 all at once\n    buffers = []\n    temp = s\n    \n    for iter_idx in range(4):\n        # Scale\n        scaled = apply_scale(temp, a, inverse=False)\n        buffers.append(scaled)\n        \n        # We need intermediate result for next iteration\n        # Do a temporary calculation assuming all_reduce would sum\n        if iter_idx < 3:  # Not the last in this batch\n            # Simulate what would happen after all_reduce\n            temp_reduced = scaled * W  # Simulate sum across W ranks\n            temp = apply_scale(temp_reduced, a, inverse=True)\n    \n    # Concatenate all 4 buffers and do single all_reduce\n    combined = torch.cat(buffers, dim=0)\n    combined_reduced = xm.all_reduce(xm.REDUCE_SUM, combined)\n    \n    # Unpack and process - take the 4th result and unscale\n    chunk_size = W * S\n    result4 = combined_reduced[3*chunk_size:4*chunk_size]\n    s = apply_scale(result4, a, inverse=True)\n    \n    # Prepare buffers for iterations 5-7\n    buffers = []\n    temp = s\n    \n    for iter_idx in range(3):\n        scaled = apply_scale(temp, a, inverse=False)\n        buffers.append(scaled)\n        \n        if iter_idx < 2:\n            temp_reduced = scaled * W\n            temp = apply_scale(temp_reduced, a, inverse=True)\n    \n    # Concatenate and do single all_reduce\n    combined = torch.cat(buffers, dim=0)\n    combined_reduced = xm.all_reduce(xm.REDUCE_SUM, combined)\n    \n    # Take final result (7th iteration)\n    result7 = combined_reduced[2*chunk_size:3*chunk_size]\n    \n    return result7"
+}

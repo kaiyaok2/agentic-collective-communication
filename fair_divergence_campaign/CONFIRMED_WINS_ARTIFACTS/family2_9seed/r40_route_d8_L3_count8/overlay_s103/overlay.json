@@ -1,0 +1,68 @@
+{
+  "pipeline": "overlay",
+  "problem": "r40_route_d8_L3_count8",
+  "gate": "fp32",
+  "baseline_sim": 6662.599999999999,
+  "strategies": [
+    {
+      "name": "Baseline sequential mask-allreduce-scale loop",
+      "desc": "Performs 1 initial all_reduce for global sum, then 7 sequential iterations of (mask window blocks \u2192 all_reduce \u2192 scale by overlap counts). Total 8 all_reduce dispatches. Represents the reference pattern with no fusion optimizations; maximizes correctness clarity at the cost of dispatch overhead."
+    },
+    {
+      "name": "Fused mask preparation with batch allreduce",
+      "desc": "Pre-compute all 7 masked buffers locally (each rank masks its window 7 times), concatenate them into a single (7 \u00d7 8 \u00d7 256) payload, dispatch 1 all_reduce on concatenated buffer, then locally slice and apply scaling. Total 2 all_reduce dispatches (initial sum + fused masked). Trades memory footprint (7\u00d7 buffer) for 6 fewer dispatches."
+    },
+    {
+      "name": "Reduce-scatter then all-gather pattern",
+      "desc": "After initial all_reduce, partition the 8 blocks across ranks in a cyclic manner, perform reduce_scatter so each rank owns specific blocks, apply masking/scaling logic locally in parallel, then all_gather to reconstruct full result. Uses 1 all_reduce + 7 reduce_scatter + 7 all_gather operations, exploiting bandwidth-optimal collectives but increases total dispatch count to ~15."
+    },
+    {
+      "name": "Hierarchical two-phase mask aggregation",
+      "desc": "Group the 7 dependent mask-allreduce steps into 2 phases: first aggregate masks 0-3 into one fused all_reduce (4-way concatenated buffer), second aggregate masks 4-6 similarly (3-way), apply all scaling at the end. Total 4 all_reduce dispatches (initial + phase1 + phase2 + optional final). Balances dispatch count reduction with moderate memory overhead."
+    },
+    {
+      "name": "Block-diagonal payload packing per rank",
+      "desc": "Each rank constructs a (8 \u00d7 8 \u00d7 256) tensor where row i contains the mask for iteration i, uses a single all_reduce on the packed structure, then extracts and accumulates across rows with local weights. Total 2 all_reduce dispatches (initial + packed). Exploits uniform structure across all 7 iterations, maximizing fusion at cost of 8\u00d7 memory and complex indexing.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Baseline sequential mask-allreduce-scale loop",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=nan"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused mask preparation with batch allreduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=nan"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-scatter then all-gather pattern",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=inf"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-phase mask aggregation",
+      "sim": 5944.914285714286,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Block-diagonal payload packing per rank",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=nan"
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 5944.914285714286,
+  "final_code": "def r40_route_d8_L3_count8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256\n    B = 8\n    W = world_size\n    L = 3\n    OFF = 2\n    \n    # Initial all_reduce to get sum across all ranks\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Compute per-block overlap counts (how many ranks' windows cover each block)\n    c = [0] * B\n    for r in range(W):\n        st = (r + OFF) % B\n        for j in range(L):\n            c[(st + j) % B] += 1\n    \n    # Determine which blocks this rank keeps (its window)\n    start = (rank + OFF) % B\n    keep = set((start + j) % B for j in range(L))\n    \n    # Phase 1: Aggregate masks 0-3 (first 4 dependent steps)\n    # Create a 4x larger buffer to hold all 4 intermediate results\n    phase1_buf = torch.zeros(4 * B * S, dtype=x.dtype)\n    \n    for mask_idx in range(4):\n        # For each mask iteration, apply the mask and store in its slice\n        buf = torch.zeros_like(s)\n        for b in range(B):\n            if b in keep:\n                buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n        # Store in the corresponding slice of phase1_buf\n        phase1_buf[mask_idx * B * S : (mask_idx + 1) * B * S] = buf\n    \n    # All-reduce the concatenated buffer\n    phase1_result = xm.all_reduce(xm.REDUCE_SUM, phase1_buf)\n    \n    # Apply the 4 mask operations sequentially using the aggregated result\n    for mask_idx in range(4):\n        acc = phase1_result[mask_idx * B * S : (mask_idx + 1) * B * S].clone()\n        for b in range(B):\n            acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n        s = acc\n    \n    # Phase 2: Aggregate masks 4-6 (next 3 dependent steps)\n    # Create a 3x larger buffer\n    phase2_buf = torch.zeros(3 * B * S, dtype=x.dtype)\n    \n    for mask_idx in range(3):\n        # For each mask iteration, apply the mask and store in its slice\n        buf = torch.zeros_like(s)\n        for b in range(B):\n            if b in keep:\n                buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n        # Store in the corresponding slice of phase2_buf\n        phase2_buf[mask_idx * B * S : (mask_idx + 1) * B * S] = buf\n    \n    # All-reduce the concatenated buffer\n    phase2_result = xm.all_reduce(xm.REDUCE_SUM, phase2_buf)\n    \n    # Apply the 3 mask operations sequentially using the aggregated result\n    for mask_idx in range(3):\n        acc = phase2_result[mask_idx * B * S : (mask_idx + 1) * B * S].clone()\n        for b in range(B):\n            acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n        s = acc\n    \n    # Final mask operation (mask 7) - just one more all_reduce\n    buf = torch.zeros_like(s)\n    for b in range(B):\n        if b in keep:\n            buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    \n    return s"
+}

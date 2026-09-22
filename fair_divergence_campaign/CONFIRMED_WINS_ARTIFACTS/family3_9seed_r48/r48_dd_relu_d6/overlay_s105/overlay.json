@@ -1,0 +1,68 @@
+{
+  "pipeline": "overlay",
+  "problem": "r48_dd_relu_d6",
+  "gate": "fp32",
+  "baseline_sim": 6323.099999999999,
+  "strategies": [
+    {
+      "name": "Baseline six sequential all-reduces",
+      "desc": "Performs 6 dependent all_reduce operations sequentially, each computing scaled block means with ReLU applied. Each all_reduce waits for the previous iteration's result before computing block statistics, scaling, and dispatching the next collective. Total 6 dispatches with full 2048-element payload each time, trading latency for simplicity."
+    },
+    {
+      "name": "Fused block-statistics all-gather followed by reduce-scatter",
+      "desc": "Replace each all_reduce with an all-gather to collect all ranks' data, compute block means and scaling factors locally on the full gathered tensor, then reduce-scatter the scaled results back. This increases per-dispatch payload (224x larger for all-gather) but enables local computation of all block statistics without intermediate collectives, potentially 12 dispatches (6 AG + 6 RS)."
+    },
+    {
+      "name": "Block-wise parallel all-reduce with concatenated metadata",
+      "desc": "Pack all 8 block means into a small metadata tensor (size 8) and all-reduce it separately from the data payload, allowing parallel dispatch of data and statistics collectives. Each iteration dispatches 2 all-reduces (one for means, one for scaled data), totaling 12 dispatches but with smaller average payload and potential overlap between metadata and data synchronization."
+    },
+    {
+      "name": "Reduce-scatter then all-gather pattern per iteration",
+      "desc": "For each of the 6 iterations, first reduce-scatter the 8 blocks across a subset of ranks (distributing blocks), compute local statistics on assigned blocks, then all-gather to broadcast results. This creates a 3-stage pipeline per iteration (RS + local-compute + AG) with 12 total dispatches, trading increased dispatch count for reduced per-rank computation and smaller working sets."
+    },
+    {
+      "name": "Hierarchical two-level reduction with node-local aggregation",
+      "desc": "Exploit the multi-node topology by first performing intra-node all-reduce (within each node's ranks) for each iteration, then inter-node all-reduce across node representatives, finally broadcasting back within nodes. Assumes num_nodes parameter usage with 6 iterations \u00d7 3 collectives each = 18 dispatches, but each collective operates on smaller world_size, reducing latency at the cost of more synchronization points.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Baseline six sequential all-reduces",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused block-statistics all-gather followed by reduce-scatter",
+      "sim": 9494.39999999999,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Block-wise parallel all-reduce with concatenated metadata",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.110714"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-scatter then all-gather pattern per iteration",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-level reduction with node-local aggregation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 9494.39999999999,
+  "final_code": "def r48_dd_relu_d6_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256\n    B = 8\n    dtype = x.dtype\n    \n    # Initial all-gather to collect all ranks' data\n    gathered = xm.all_gather(x, dim=0)  # Shape: (world_size * B * S,)\n    \n    # Reshape for easier per-rank processing\n    # gathered[r*B*S:(r+1)*B*S] contains rank r's data\n    \n    # Initialize s with the sum across all ranks\n    s = torch.zeros(B * S, dtype=dtype, device=x.device)\n    for r in range(world_size):\n        s += gathered[r * B * S:(r + 1) * B * S]\n    \n    # Perform 5 iterations of the transformation\n    for iteration in range(5):\n        # Compute block means and scaling factors\n        f = []\n        for b in range(B):\n            mb = s[b * S:(b + 1) * S].mean()\n            f.append(1.0 + (mb if mb > 0 else mb * 0.0))\n        \n        # Scale each block\n        buf = s.clone()\n        for b in range(B):\n            buf[b * S:(b + 1) * S] = s[b * S:(b + 1) * S] * f[b]\n        \n        # All-gather the scaled buffer\n        gathered_buf = xm.all_gather(buf, dim=0)  # Shape: (world_size * B * S,)\n        \n        # Sum across all ranks\n        acc = torch.zeros(B * S, dtype=dtype, device=x.device)\n        for r in range(world_size):\n            acc += gathered_buf[r * B * S:(r + 1) * B * S]\n        \n        # Unscale by dividing by (world_size * f[b]) for each block\n        for b in range(B):\n            acc[b * S:(b + 1) * S] = acc[b * S:(b + 1) * S] / (world_size * f[b])\n        \n        s = acc\n    \n    # Final iteration (6th): compute scaling factors, scale, gather, sum, and divide by world_size\n    f = []\n    for b in range(B):\n        mb = s[b * S:(b + 1) * S].mean()\n        f.append(1.0 + (mb if mb > 0 else mb * 0.0))\n    \n    buf = s.clone()\n    for b in range(B):\n        buf[b * S:(b + 1) * S] = s[b * S:(b + 1) * S] * f[b]\n    \n    # All-gather the scaled buffer\n    gathered_buf = xm.all_gather(buf, dim=0)\n    \n    # Sum across all ranks and divide by world_size\n    acc = torch.zeros(B * S, dtype=dtype, device=x.device)\n    for r in range(world_size):\n        acc += gathered_buf[r * B * S:(r + 1) * B * S]\n    \n    acc = acc / world_size\n    s = acc\n    \n    return s"
+}
