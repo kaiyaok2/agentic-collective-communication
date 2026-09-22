@@ -1,0 +1,83 @@
+{
+  "pipeline": "overlay",
+  "problem": "r1_fold_s4096",
+  "gate": "fp32",
+  "baseline_sim": 7880.999999999992,
+  "strategies": [
+    {
+      "name": "Three sequential all-reduce baseline",
+      "desc": "Direct transcription of the reference: 3 all-reduce dispatches with interleaved per-shard scaling (element-wise multiply/divide on local tensor between collectives). 3 collective dispatches, no fusion. Represents the naive correct implementation with maximum dispatch overhead but simplest logic."
+    },
+    {
+      "name": "Fused local-ops between all-reduces",
+      "desc": "Same 3 all-reduce structure but fuse all local scaling operations (clone, slice assignment loops) into single kernel launches between collectives where possible. Still 3 collective dispatches but reduces local op overhead from ~6 separate tensor operations to ~2-3 fused kernels, trading kernel complexity for fewer host-device round-trips."
+    },
+    {
+      "name": "Reduce-scatter then all-gather decomposition",
+      "desc": "Replace each all-reduce with reduce-scatter + all-gather pair (6 collectives total), performing per-shard scaling on smaller intermediate tensors (size S instead of W*S) between the RS and AG of each stage. Increases collective count to 6 but each operates on smaller payloads; may win on bandwidth-limited networks if per-rank payload reduction offsets dispatch overhead."
+    },
+    {
+      "name": "Pipelined overlapped all-reduce chunks",
+      "desc": "Partition the (W*S) tensor into C chunks, launch 3*C all-reduces on disjoint subranges with different xm process groups or async handles, interleaving local scaling on chunk i while collective i+1 is in flight. 3*C dispatches but exploits potential network-compute overlap; trades dispatch count and group-management complexity for pipeline parallelism."
+    },
+    {
+      "name": "Single all-reduce with pre-post scaling",
+      "desc": "Perform all three per-shard scaling operations (a[r]/W, then 1/a[r], then a[r]/W again) as a single composed multiplicative factor a[r]^2/W^2 applied once before a single all-reduce, then inverse-scale output. Reduces to 1 collective dispatch at the cost of numerical stability risk (squaring scale factors) and requires mathematical refactoring of the dependence chain.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Three sequential all-reduce baseline",
+      "sim": 7880.999999999992,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused local-ops between all-reduces",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-scatter then all-gather decomposition",
+      "sim": 7028.96875,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined overlapped all-reduce chunks",
+      "sim": 9692.999999999993,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Single all-reduce with pre-post scaling",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.078906"
+    },
+    {
+      "stage": "refine:Reduce-scatter then all-gather decomposition",
+      "round": 3,
+      "sim": 7028.96875
+    },
+    {
+      "stage": "refine:Three sequential all-reduce baseline",
+      "round": 1,
+      "sim": 6512.099999999999
+    },
+    {
+      "stage": "refine:Three sequential all-reduce baseline",
+      "round": 2,
+      "sim": 6434.199999999999
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6434.199999999999,
+  "final_code": "def r1_fold_s4096_fn(x, rank, world_size, num_devices,\n                     cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Streamlined implementation that minimizes operation count and dispatch overhead.\n    Reduces the number of separate tensor operations between collectives.\n    \"\"\"\n    S = 4096\n    W = world_size\n    dtype = x.dtype\n    \n    # Precompute all scaling factors as a single tensor operation\n    a = 1.0 + 0.5 * (torch.arange(W, dtype=dtype, device=x.device) % 3)\n    \n    # First all-reduce: sum all inputs\n    s1 = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Fuse reshape and first scaling into minimal operations\n    # Scale by a[r]/W in-place style computation\n    s1 = s1.view(W, S) * (a / W).view(W, 1)\n    \n    # Second all-reduce on flattened result\n    s1 = xm.all_reduce(xm.REDUCE_SUM, s1.view(-1))\n    \n    # Fuse reshape and second scaling (simplified to 1/W)\n    # Since we divide by a[r] then multiply by a[r], they cancel\n    s1 = s1.view(W, S) * (1.0 / W)\n    \n    # Third all-reduce: sum the final scaled values\n    out = xm.all_reduce(xm.REDUCE_SUM, s1.view(-1))\n    \n    return out"
+}

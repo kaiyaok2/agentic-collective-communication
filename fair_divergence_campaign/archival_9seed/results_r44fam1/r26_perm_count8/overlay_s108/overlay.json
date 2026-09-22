@@ -1,0 +1,73 @@
+{
+  "pipeline": "overlay",
+  "problem": "r26_perm_count8",
+  "gate": "fp32",
+  "baseline_sim": 12919.428571428683,
+  "strategies": [
+    {
+      "name": "Sequential All-Reduce with Interleaved Scaling",
+      "desc": "Uses 8 sequential all_reduce calls with local scaling/permutation operations between each. Each all_reduce operates on the full W*256 tensor. This matches the reference implementation with 8 dispatches (one per all_reduce), trading off simple structure for serial execution with no overlap opportunity."
+    },
+    {
+      "name": "Fused Multi-Round All-Reduce Batch",
+      "desc": "Pre-compute all 8 scaling coefficients and buffer transformations locally, then batch multiple all_reduce operations back-to-back to enable potential hardware pipelining. Uses 8 all_reduce dispatches but arranges local operations (clones, permutation indexing, scaling) to minimize synchronization barriers between collectives, reducing latency through better overlap of compute and communication."
+    },
+    {
+      "name": "Reduce-Scatter + All-Gather Decomposition",
+      "desc": "Decompose each all_reduce into reduce_scatter followed by all_gather to enable chunked processing. For each of 8 rounds, reduce_scatter aggregates per-rank slices (256 elements each), apply local scaling/permutation, then all_gather broadcasts results. Uses 16 collective dispatches (2 per round) but enables smaller per-rank working sets and potential memory bandwidth savings."
+    },
+    {
+      "name": "Hierarchical Two-Level Tree Reduction",
+      "desc": "Exploit multi-node topology (224 ranks likely spans multiple nodes) by using intra-node all_reduce followed by inter-node all_reduce for each of the 8 rounds. Pre-aggregate scaling coefficients by node locality. Uses 16 dispatches (2-level \u00d7 8 rounds) but optimizes for network topology by reducing cross-node traffic volume and exploiting faster intra-node interconnects."
+    },
+    {
+      "name": "Vectorized Coefficient Pre-Broadcast Strategy",
+      "desc": "Pre-broadcast the permutation mapping and scaling coefficients (a[r] values) once, then pipeline the 8 all_reduce operations with local SIMD-friendly operations that avoid per-element indexing. Uses 9-10 dispatches (1 initial metadata broadcast + 8 all_reduce) but trades initial coordination overhead for faster local computation through vectorized operations instead of element-wise permutation loops.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential All-Reduce with Interleaved Scaling",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.917109"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Multi-Round All-Reduce Batch",
+      "sim": 12919.428571428683,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-Scatter + All-Gather Decomposition",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.917109"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level Tree Reduction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Vectorized Coefficient Pre-Broadcast Strategy",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.917109"
+    },
+    {
+      "stage": "refine:Fused Multi-Round All-Reduce Batch",
+      "round": 2,
+      "sim": 10091.428571428683
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 10091.428571428683,
+  "final_code": "def r26_perm_count8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256\n    W = world_size\n    \n    # Pre-compute coefficients and permutation mapping\n    a = torch.tensor([1.0 + 0.5 * (r % 3) for r in range(W)], dtype=x.dtype, device=x.device)\n    perm = torch.tensor([(r + W // 2) % W for r in range(W)], dtype=torch.long, device=x.device)\n    \n    # Create index tensors for vectorized operations\n    indices = torch.arange(W, device=x.device)\n    \n    # Round 1: Initial all_reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Rounds 2-8: Simplified operations\n    for round_idx in range(7):\n        # Vectorized scaling and permutation\n        s_reshaped = s.view(W, S)\n        buf_reshaped = torch.zeros_like(s_reshaped)\n        \n        for r in range(W):\n            p = perm[r].item()\n            buf_reshaped[p] = a[r] * s_reshaped[p] / W\n        \n        buf = buf_reshaped.view(-1)\n        \n        # All-reduce\n        s = xm.all_reduce(xm.REDUCE_SUM, buf)\n        \n        # Inverse scaling (skip on last iteration)\n        if round_idx < 6:\n            s_reshaped = s.view(W, S)\n            for r in range(W):\n                p = perm[r].item()\n                s_reshaped[p] = s_reshaped[p] / a[r]\n            s = s_reshaped.view(-1)\n    \n    return s"
+}

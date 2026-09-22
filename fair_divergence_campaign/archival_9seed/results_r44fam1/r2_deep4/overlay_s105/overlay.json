@@ -1,0 +1,68 @@
+{
+  "pipeline": "overlay",
+  "problem": "r2_deep4",
+  "gate": "fp32",
+  "baseline_sim": 8255.828571428561,
+  "strategies": [
+    {
+      "name": "Four Sequential All-Reduce Baseline",
+      "desc": "Direct implementation of the baseline using four dependent all-reduce dispatches with local scale/unscale operations between each. Expected 4 all-reduce dispatches. Represents the naive approach with maximum dispatch overhead but simplest structure."
+    },
+    {
+      "name": "Fused Single All-Reduce Algebraic",
+      "desc": "Algebraically simplify the four stages into one mathematical expression, then perform a single all-reduce on a transformed input. Expected 1 all-reduce dispatch. Trades local computation complexity for minimal communication by pre-computing the composite scaling factors that collapse all four stages."
+    },
+    {
+      "name": "Two-Stage Reduce-Scatter AllGather",
+      "desc": "Decompose each all-reduce into reduce-scatter followed by all-gather, allowing fusion of local operations during the scatter phase and broadcast phase separately. Expected 8 dispatches (4 RS + 4 AG). Exposes more fusion opportunities at intermediate boundaries but doubles primitive count."
+    },
+    {
+      "name": "Hierarchical Two-Level All-Reduce",
+      "desc": "Exploit the 224-rank structure (multi-node topology) by performing intra-node all-reduce followed by inter-node all-reduce with fused scaling. Expected 2-3 dispatches per stage, 8-12 total. Balances communication volume across network tiers while maintaining some fusion opportunities."
+    },
+    {
+      "name": "Pipelined All-Reduce with Buffer Reuse",
+      "desc": "Issue all four all-reduce operations with intermediate buffers prepared ahead, allowing backend to pipeline communication while CPU prepares next scaling operation. Expected 4 all-reduce dispatches but overlapped. Maintains dispatch count but hides latency through asynchronous execution and careful buffer management.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Four Sequential All-Reduce Baseline",
+      "sim": 8255.828571428561,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Single All-Reduce Algebraic",
+      "sim": null,
+      "ok": false,
+      "err": "sandbox_exec returned None"
+    },
+    {
+      "stage": "impl",
+      "name": "Two-Stage Reduce-Scatter AllGather",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.032979"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level All-Reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined All-Reduce with Buffer Reuse",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 8255.828571428561,
+  "final_code": "def r2_deep4_fn(x, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    S = 256\n    W = world_size\n    \n    # Preserve input dtype\n    dtype = x.dtype\n    \n    # Define per-shard scale factors\n    a = [1.0 + 0.5 * (r % 3) for r in range(W)]\n    \n    # Stage 1: All-reduce, scale, all-reduce, unscale\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    \n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    \n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    \n    # Stage 2: Scale, all-reduce, unscale\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    \n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    \n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    \n    # Stage 3: Scale, all-reduce\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    \n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    \n    return s"
+}

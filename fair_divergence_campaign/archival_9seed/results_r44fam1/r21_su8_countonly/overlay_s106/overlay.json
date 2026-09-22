@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r21_su8_countonly",
+  "gate": "fp32",
+  "baseline_sim": 12919.428571428683,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with scalar reweighting",
+      "desc": "Performs 8 dependent all-reduce operations (9 total including initial sum) with intermediate clone+scale operations between each, exactly as in the reference. Each dispatch alternates between collective communication and local element-wise multiply/divide operations on W shards. Represents the baseline with ~17 dispatches (8 all-reduces + intermediate local ops), prioritizing correctness over fusion."
+    },
+    {
+      "name": "Fused local-op batching per all-reduce",
+      "desc": "Combines the scale-by-a[r]/W and subsequent divide-by-a[r] operations into pre-computed coefficient tensors, reducing intermediate clones. Uses 8 all-reduces with fused local operations (vectorized coefficient application instead of per-shard loops). Reduces dispatch count to ~16 by eliminating redundant clone() calls and fusing multiply/divide into single kernel when algebraically equivalent."
+    },
+    {
+      "name": "Coefficient-precomputed single-pass pipeline",
+      "desc": "Pre-computes the compound effect of all 8 iterations' scaling factors into a single coefficient vector before any all-reduce, recognizing the pattern is repetitive reweighting. Performs initial scaling, then 8 all-reduces with minimal intermediate ops by applying cumulative coefficients. Reduces to ~10-12 dispatches by eliminating redundant intermediate normalization steps that cancel algebraically."
+    },
+    {
+      "name": "Reduce-scatter + all-gather decomposition",
+      "desc": "Decomposes each all-reduce into reduce-scatter followed by all-gather, allowing overlap of the 8 dependent stages. Each rank computes its portion during reduce-scatter phase, then broadcasts during all-gather. Increases collective count to 16 (2\u00d78) but enables better pipelining and smaller per-stage payloads (S*W/W messages vs full S*W), trading dispatch count for bandwidth efficiency."
+    },
+    {
+      "name": "Blocked iteration with tensor views",
+      "desc": "Eliminates all clone() operations by using tensor views and in-place operations where dependencies allow. Pre-allocates two buffers and ping-pongs between them across the 8 iterations, using reshape/view operations to reference shard boundaries without copy. Reduces to ~9 dispatches (8 all-reduces + 1 final view op) by maximizing in-place computation and minimizing memory allocation overhead.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with scalar reweighting",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.032979"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused local-op batching per all-reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.032979"
+    },
+    {
+      "stage": "impl",
+      "name": "Coefficient-precomputed single-pass pipeline",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.032979"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-scatter + all-gather decomposition",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.032979"
+    },
+    {
+      "stage": "impl",
+      "name": "Blocked iteration with tensor views",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 12919.428571428683,
+  "final_code": "def r21_su8_countonly_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256; W = world_size\n    a = [1.0 + 0.5*(r % 3) for r in range(W)]\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    return s\n",
+  "fell_back_to_baseline": true
+}

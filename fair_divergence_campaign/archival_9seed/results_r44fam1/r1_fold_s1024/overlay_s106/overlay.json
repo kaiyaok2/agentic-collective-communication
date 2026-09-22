@@ -1,0 +1,78 @@
+{
+  "pipeline": "overlay",
+  "problem": "r1_fold_s1024",
+  "gate": "fp32",
+  "baseline_sim": 7517.428571428563,
+  "strategies": [
+    {
+      "name": "Baseline Three-Stage All-Reduce",
+      "desc": "Uses three sequential xm.all_reduce(REDUCE_SUM) calls with local scaling operations (clone + per-shard multiply/divide) between them. Total of 3 collective dispatches with full (world*1024) payload each time. Represents the straightforward reference: maximum clarity, no fusion, moderate latency from 3 network round-trips."
+    },
+    {
+      "name": "Fused Local-Op Single-Buffer",
+      "desc": "Eliminates intermediate clone() calls by reusing a single buffer and performing in-place scaling between all-reduces. Still 3 all-reduce dispatches but reduces memory allocation overhead and potential host-device synchronization points. Trades off code simplicity for fewer memory operations while keeping the same collective count."
+    },
+    {
+      "name": "Reduce-Scatter + All-Gather Decomposition",
+      "desc": "Decomposes the first all-reduce into reduce-scatter (each rank gets 1/W of result), performs local scaling on the smaller shard (size 1024), then uses all-gather to reconstruct. Middle all-reduce remains full-sized, final all-reduce similarly decomposed. Total 6 dispatches (3 RS + 3 AG) but smaller per-dispatch payloads; trades dispatch count for reduced per-op bandwidth."
+    },
+    {
+      "name": "Pipelined Chunk-wise Processing",
+      "desc": "Splits the (world*1024) tensor into multiple chunks and pipelines the three all-reduce stages across chunks, allowing overlap of computation and communication. Uses ~3*num_chunks dispatches but enables latency hiding through concurrent execution of different pipeline stages. Trades increased dispatch overhead for improved hardware utilization."
+    },
+    {
+      "name": "Two-Stage with Fused Scaling",
+      "desc": "Mathematically fuses the middle scaling operations (multiply by a[r]/W then divide by a[r]) to recognize they partially cancel, potentially collapsing to a simpler form or merging scale factors into fewer all-reduce stages. Aims for 2 all-reduce dispatches by algebraic simplification of the scale-reduce-scale pattern. Represents algorithmic optimization through mathematical insight.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Baseline Three-Stage All-Reduce",
+      "sim": 7517.428571428563,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Local-Op Single-Buffer",
+      "sim": 7293.428571428563,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-Scatter + All-Gather Decomposition",
+      "sim": 7382.924999999998,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Chunk-wise Processing",
+      "sim": 9358.428571428565,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Two-Stage with Fused Scaling",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=3.231295"
+    },
+    {
+      "stage": "refine:Fused Local-Op Single-Buffer",
+      "round": 1,
+      "sim": 6291.154171428571
+    },
+    {
+      "stage": "refine:Fused Local-Op Single-Buffer",
+      "round": 2,
+      "sim": 6214.578971428571
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6214.578971428571,
+  "final_code": "def r1_fold_s1024_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 1024\n    W = world_size\n    a = [1.0 + 0.5*(r % 3) for r in range(W)]\n    \n    # Preserve input dtype\n    dtype = x.dtype\n    \n    # Compute scale factors ahead of time and combine more operations\n    scale1 = torch.tensor([a[r] / W for r in range(W)], dtype=dtype, device=x.device).view(-1, 1).expand(W, S).reshape(-1)\n    scale2_combined = torch.tensor([(1.0 / max(a[r], 1e-9)) * (a[r] / W) for r in range(W)], dtype=dtype, device=x.device).view(-1, 1).expand(W, S).reshape(-1)\n    \n    # First all-reduce with immediate scale operation\n    buf = xm.all_reduce(xm.REDUCE_SUM, x) * scale1\n    \n    # Second all-reduce with immediate scale operation\n    buf = xm.all_reduce(xm.REDUCE_SUM, buf) * scale2_combined\n    \n    # Third all-reduce\n    out = xm.all_reduce(xm.REDUCE_SUM, buf)\n    \n    return out"
+}

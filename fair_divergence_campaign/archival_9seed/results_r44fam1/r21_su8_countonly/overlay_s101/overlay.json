@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r21_su8_countonly",
+  "gate": "fp32",
+  "baseline_sim": 12919.428571428683,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with per-shard scaling",
+      "desc": "Execute 8 all-reduce operations sequentially, each followed by local scaling and normalization operations on per-shard segments. This matches the reference implementation with 8 all-reduce dispatches plus local computation between each. Straightforward but maximizes dispatch count at 8 all-reduces."
+    },
+    {
+      "name": "Fused buffer preparation with batched all-reduce",
+      "desc": "Pre-compute all 8 buffer transformations locally (scale, normalize patterns) and store them, then issue all-reduce operations on multiple buffers in rapid succession to enable backend batching. Uses 8 all-reduce dispatches but reduces synchronization overhead by minimizing compute between collective calls, trading memory (8 buffers) for potential dispatch amortization."
+    },
+    {
+      "name": "Vectorized multi-shard local operations",
+      "desc": "Replace per-shard loops with vectorized operations using torch indexing and broadcasting of the scaling array 'a' across all shards simultaneously. Maintains 8 all-reduce dispatches but reduces local compute overhead through elimination of 224-iteration loops, replacing with single vectorized multiply/divide operations on the full tensor."
+    },
+    {
+      "name": "Recursive halving with shard-aware reduction",
+      "desc": "Restructure the computation to exploit the repetitive scale-reduce-normalize pattern by precomputing compound scaling factors across multiple iterations, then applying 4-6 all-reduces instead of 8 by algebraically combining consecutive operations. Reduces dispatch count by folding mathematical dependencies where commutative operations allow reordering."
+    },
+    {
+      "name": "Pipelined all-reduce with asynchronous local compute",
+      "desc": "Overlap the all-reduce communication of iteration i+1 with local scaling/normalization compute of iteration i by maintaining double-buffering scheme. Uses 8 all-reduce dispatches but hides local compute latency within communication time by issuing non-blocking collectives where supported, maximizing hardware utilization through computation-communication overlap.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with per-shard scaling",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.032979"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused buffer preparation with batched all-reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.032979"
+    },
+    {
+      "stage": "impl",
+      "name": "Vectorized multi-shard local operations",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.032979"
+    },
+    {
+      "stage": "impl",
+      "name": "Recursive halving with shard-aware reduction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.032979"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined all-reduce with asynchronous local compute",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.032979"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 12919.428571428683,
+  "final_code": "def r21_su8_countonly_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256; W = world_size\n    a = [1.0 + 0.5*(r % 3) for r in range(W)]\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    return s\n",
+  "fell_back_to_baseline": true
+}

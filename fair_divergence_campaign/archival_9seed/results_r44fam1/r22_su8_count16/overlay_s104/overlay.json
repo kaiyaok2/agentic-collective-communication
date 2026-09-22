@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r22_su8_count16",
+  "gate": "fp32",
+  "baseline_sim": 12919.428571428683,
+  "strategies": [
+    {
+      "name": "Sequential All-Reduce with In-Place Scaling",
+      "desc": "Performs 16 dependent all-reduce operations sequentially, each preceded by in-place element-wise scaling (multiply by a[r]/W) and followed by in-place division (divide by a[r]). Results in 16 all-reduce dispatches with minimal memory overhead. Trades dispatch latency for memory efficiency and straightforward control flow."
+    },
+    {
+      "name": "Fused Scale-Reduce with Vectorized Operations",
+      "desc": "Pre-computes all scaling factors and fuses the scale/divide operations into vectorized tensor operations before/after each all-reduce, eliminating per-shard loops where possible. Still requires 16 all-reduce dispatches but reduces local computation overhead by batching element-wise operations. Optimizes compute-to-communication ratio while maintaining the same collective count."
+    },
+    {
+      "name": "Pipelined All-Reduce with Double Buffering",
+      "desc": "Uses two buffers to overlap computation (scaling/division of iteration i) with communication (all-reduce of iteration i-1) across the 16 iterations. Requires 16 all-reduce dispatches but hides local computation latency behind communication. Trades increased memory footprint (2x buffers) for reduced end-to-end walltime through pipeline parallelism."
+    },
+    {
+      "name": "Hierarchical Reduce-Scatter All-Gather Chain",
+      "desc": "Decomposes each all-reduce into reduce-scatter followed by all-gather, enabling partial result computation on smaller chunks during the scatter phase. For 16 iterations, this yields 32 collective dispatches but each operates on 1/W of the data initially. Trades increased dispatch count for reduced per-dispatch payload size and better network utilization."
+    },
+    {
+      "name": "Batched Multi-Tensor All-Reduce",
+      "desc": "Groups multiple scale-reduce iterations into batched all-reduce calls where XLA runtime permits, concatenating scaled buffers across several iterations before dispatching. Reduces dispatch count from 16 toward ~4-8 by amortizing launch overhead across batches. Trades increased temporary memory allocation (batch concatenation) for fewer kernel launches and better hardware utilization.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential All-Reduce with In-Place Scaling",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.032979"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Scale-Reduce with Vectorized Operations",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.032979"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined All-Reduce with Double Buffering",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.032979"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Reduce-Scatter All-Gather Chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.032979"
+    },
+    {
+      "stage": "impl",
+      "name": "Batched Multi-Tensor All-Reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.516489"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 12919.428571428683,
+  "final_code": "def r22_su8_count16_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256; W = world_size\n    a = [1.0 + 0.5*(r % 3) for r in range(W)]\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    return s\n",
+  "fell_back_to_baseline": true
+}

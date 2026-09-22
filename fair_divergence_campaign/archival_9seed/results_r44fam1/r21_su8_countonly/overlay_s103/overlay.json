@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r21_su8_countonly",
+  "gate": "fp32",
+  "baseline_sim": 12919.428571428683,
+  "strategies": [
+    {
+      "name": "Baseline Sequential All-Reduce Chain",
+      "desc": "Executes 8 dependent all_reduce operations sequentially with interleaved local scaling/descaling operations as shown in the reference. Each iteration performs one all_reduce dispatch followed by local element-wise operations. Total 8 all_reduce dispatches with no opportunity for overlap, representing the straightforward implementation with maximum dispatch count but simplest logic."
+    },
+    {
+      "name": "Fused Local Operations Between Collectives",
+      "desc": "Merges all local scaling, division, and buffer operations between consecutive all_reduce calls into single vectorized kernels to minimize local dispatch overhead. Still performs 8 all_reduce dispatches but reduces local operation dispatches from ~32 (clone + scale + descale per iteration) to 8 fused kernels. Trades code complexity for reduced local-op dispatch count while maintaining identical collective communication pattern."
+    },
+    {
+      "name": "Two-Phase Reduce-Scatter All-Gather Decomposition",
+      "desc": "Replaces each all_reduce with a reduce_scatter followed by all_gather pattern, enabling per-rank computation on smaller chunks between phases. For each of 8 iterations: reduce_scatter (partial sums), local scale on 1/W of data, all_gather (broadcast scaled results). Total 16 dispatches (8\u00d72) but each operates on reduced payload initially, potentially better bandwidth utilization on large world_size."
+    },
+    {
+      "name": "Pipelined All-Reduce with Pre-Scaled Buffers",
+      "desc": "Pre-computes all 8 scaling/descaling patterns into separate buffers before any collective, then pipelines all_reduce operations on transformed views. Launches multiple non-blocking all_reduce calls with different buffer offsets/strides if supported, or batches operations to overlap computation and communication. Aims for ~8 all_reduce dispatches with maximal pipeline fill, trading memory footprint for latency hiding."
+    },
+    {
+      "name": "Hierarchical Two-Level Aggregation",
+      "desc": "Exploits potential node-level topology by decomposing each all_reduce into intra-node reduce + inter-node all_reduce + intra-node broadcast for the 8 iterations. With num_nodes parameter available, performs local aggregation first (cheaper), global sync across node leaders, then local distribution. Total ~24 collective dispatches (8\u00d73 phases) but with smaller participant counts per phase, optimizing for hierarchical network topology.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Baseline Sequential All-Reduce Chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.516489"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Local Operations Between Collectives",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    },
+    {
+      "stage": "impl",
+      "name": "Two-Phase Reduce-Scatter All-Gather Decomposition",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.032979"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined All-Reduce with Pre-Scaled Buffers",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.032979"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level Aggregation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 12919.428571428683,
+  "final_code": "def r21_su8_countonly_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256; W = world_size\n    a = [1.0 + 0.5*(r % 3) for r in range(W)]\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    return s\n",
+  "fell_back_to_baseline": true
+}

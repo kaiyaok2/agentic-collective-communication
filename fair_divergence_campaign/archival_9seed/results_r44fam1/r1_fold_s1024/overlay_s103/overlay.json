@@ -1,0 +1,73 @@
+{
+  "pipeline": "overlay",
+  "problem": "r1_fold_s1024",
+  "gate": "fp32",
+  "baseline_sim": 7517.428571428563,
+  "strategies": [
+    {
+      "name": "Baseline three-stage all-reduce",
+      "desc": "Three sequential all-reduce operations with local element-wise scaling (multiply by a[r]/W, divide by a[r], multiply by a[r]/W) between them. Total 3 collective dispatches with full payload (world_size*1024 elements each). Represents the straightforward reference with maximum latency but simplest structure."
+    },
+    {
+      "name": "Fused local-ops between collectives",
+      "desc": "Same three all-reduces but merge all local scaling operations into single kernels between dispatches\u2014one fused scale-and-copy after AR1, one fused scale after AR2, one fused scale-and-copy before AR3. Still 3 collective dispatches but reduces intermediate buffer allocations and local kernel launches from ~6 to ~3, trading off no collective cost for better host-device synchronization."
+    },
+    {
+      "name": "Reduce-scatter plus all-gather decomposition",
+      "desc": "Decompose each all-reduce into reduce-scatter + all-gather (6 collectives total). Apply per-shard scaling on the reduced local slices (size S=1024) between the reduce-scatter and all-gather of each stage. Increases dispatch count to 6 but each intermediate local operation works on 1/W of the data, potentially better cache locality and reduced intermediate memory footprint."
+    },
+    {
+      "name": "Pipelined overlapped all-reduce stages",
+      "desc": "Split the tensor into chunks and pipeline the three all-reduce stages across chunks using asynchronous dispatch where each chunk's stage-2 overlaps with next chunk's stage-1. Requires ~3*num_chunks dispatches but exploits network/compute overlap. Tradeoff: increased dispatch overhead and complexity for potential latency hiding on large payloads."
+    },
+    {
+      "name": "Single all-reduce with rank-distributed scaling broadcast",
+      "desc": "Precompute the composite scaling factors a[r] across all three stages into a lookup table, broadcast/all-gather this metadata (224 floats), then perform a single mathematically-equivalent all-reduce with post-processing using the received scaling factors. Reduces to 2 dispatches (1 metadata all-gather + 1 data all-reduce) but requires careful numerical reformulation to maintain correctness of the fold pattern.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Baseline three-stage all-reduce",
+      "sim": 7203.828571428569,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused local-ops between collectives",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-scatter plus all-gather decomposition",
+      "sim": 7203.6732142857145,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined overlapped all-reduce stages",
+      "sim": 9358.428571428565,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Single all-reduce with rank-distributed scaling broadcast",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.346373"
+    },
+    {
+      "stage": "refine:Baseline three-stage all-reduce",
+      "round": 1,
+      "sim": 6263.676785714286
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6263.676785714286,
+  "final_code": "def r1_fold_s1024_fn(x, rank, world_size, num_devices,\n                     cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Optimized implementation using reduce-scatter and all-gather pattern.\n    \n    Strategy: Replace some all-reduce operations with more efficient \n    reduce-scatter + all-gather patterns to reduce collective dispatch overhead.\n    \"\"\"\n    S = 1024\n    W = world_size\n    dtype = x.dtype\n    \n    # Define the per-rank scaling factors\n    a = [1.0 + 0.5 * (r % 3) for r in range(W)]\n    \n    # Stage 1: Use reduce-scatter instead of all-reduce\n    # This reduces data movement by only giving each rank its portion\n    local_result = xm.reduce_scatter(xm.REDUCE_SUM, x, scale=1.0, \n                                      scatter_dim=0, shard_count=W)\n    \n    # Apply first scaling: a[rank]/W on local shard\n    scale_factor = a[rank] / W\n    scaled_local = local_result * scale_factor\n    \n    # Stage 2: All-gather to reconstruct full tensor\n    buf0 = xm.all_gather(scaled_local, dim=0)\n    \n    # Second all-reduce with fused local scaling\n    s2 = xm.all_reduce(xm.REDUCE_SUM, buf0)\n    \n    # Fused local operations: divide by a[r] then multiply by a[r]/W\n    # This simplifies to just dividing by W\n    bufN = s2 / W\n    \n    # Stage 3: Final all-reduce\n    out = xm.all_reduce(xm.REDUCE_SUM, bufN)\n    \n    return out"
+}

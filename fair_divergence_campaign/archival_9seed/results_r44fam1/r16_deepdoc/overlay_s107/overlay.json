@@ -1,0 +1,73 @@
+{
+  "pipeline": "overlay",
+  "problem": "r16_deepdoc",
+  "gate": "fp32",
+  "baseline_sim": 12919.428571428683,
+  "strategies": [
+    {
+      "name": "Sequential All-Reduce with Inline Scaling",
+      "desc": "Performs 8 sequential all-reduce operations with element-wise scale/unscale operations fused between dispatches using in-place tensor views. Expected 8 all-reduce dispatches plus O(W) local scalar ops per stage. Trades dispatch count for simplicity; no overlap, but minimal intermediate buffers."
+    },
+    {
+      "name": "Batched All-Reduce with Concatenated Stages",
+      "desc": "Concatenates multiple stage buffers along a new dimension to issue fewer, larger all-reduce calls covering multiple stages simultaneously. Expected 2-4 dispatches by batching stages 2-4 and 5-8 together with reshaped payloads. Trades increased memory footprint (3-4\u00d7 buffer size) for reduced dispatch overhead."
+    },
+    {
+      "name": "Reduce-Scatter + All-Gather Pipeline per Stage",
+      "desc": "Decomposes each all-reduce into reduce-scatter followed by all-gather, applying scaling only to local shard between the two operations. Expected 16 dispatches (8 stages \u00d7 2 collectives) but enables per-stage pipelining and reduces intermediate full-buffer materialization. Trades dispatch count for memory bandwidth savings on scaling ops."
+    },
+    {
+      "name": "Fused Scale Precomputation with Single-Buffer Reuse",
+      "desc": "Precomputes all scale/unscale coefficients as lookup tensors, performs all-reduces on a single reused buffer with vectorized indexing for scale application. Expected 8 all-reduce dispatches with O(1) buffer allocations and GPU-accelerated scale lookup. Optimizes memory allocation overhead at cost of lookup indirection."
+    },
+    {
+      "name": "Hierarchical Two-Level All-Reduce Tree",
+      "desc": "Exploits multi-node topology by performing intra-node all-reduce followed by inter-node all-reduce at each stage, applying scaling only at node-local results. Expected 16 dispatches (8 stages \u00d7 2 levels) but leverages faster intra-node links (NVLink/ICI) for bulk of data movement. Trades dispatch count for topology-aware bandwidth optimization.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential All-Reduce with Inline Scaling",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.032979"
+    },
+    {
+      "stage": "impl",
+      "name": "Batched All-Reduce with Concatenated Stages",
+      "sim": 11977.428571428683,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-Scatter + All-Gather Pipeline per Stage",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.032979"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Scale Precomputation with Single-Buffer Reuse",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level All-Reduce Tree",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "refine:Batched All-Reduce with Concatenated Stages",
+      "round": 2,
+      "sim": 15511.628571428646
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 11977.428571428683,
+  "final_code": "def r16_deepdoc_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256\n    W = world_size\n    dtype = x.dtype\n    \n    # Precompute scale factors\n    a = [1.0 + 0.5*(r % 3) for r in range(W)]\n    \n    # Stage 1: Initial all-reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # We'll batch stages 2-4 and 5-8 together\n    # Stages 2-4: 3 stages (apply scale, reduce, undo scale)\n    # Stages 5-8: 4 stages (apply scale, reduce, undo scale, apply scale again)\n    \n    # Batch stages 2-4 (3 iterations of the pattern)\n    # Each iteration: scale -> reduce -> unscale\n    batch_1_stages = 3\n    stacked_1 = torch.zeros((batch_1_stages, W * S), dtype=dtype, device=x.device)\n    \n    current_s = s.clone()\n    for stage_idx in range(batch_1_stages):\n        buf = current_s.clone()\n        for r in range(W):\n            buf[r*S:(r+1)*S] = a[r] * current_s[r*S:(r+1)*S] / W\n        stacked_1[stage_idx] = buf\n    \n    # All-reduce the stacked buffer\n    reduced_1 = xm.all_reduce(xm.REDUCE_SUM, stacked_1)\n    \n    # Unpack and process each stage\n    for stage_idx in range(batch_1_stages):\n        temp_s = reduced_1[stage_idx]\n        for r in range(W):\n            temp_s[r*S:(r+1)*S] = temp_s[r*S:(r+1)*S] / max(a[r], 1e-9)\n        if stage_idx < batch_1_stages - 1:\n            # Prepare for next stage in batch\n            current_s = temp_s\n    \n    s = temp_s\n    \n    # Batch stages 5-8 (4 iterations of the pattern)\n    batch_2_stages = 4\n    stacked_2 = torch.zeros((batch_2_stages, W * S), dtype=dtype, device=x.device)\n    \n    current_s = s.clone()\n    for stage_idx in range(batch_2_stages):\n        buf = current_s.clone()\n        for r in range(W):\n            buf[r*S:(r+1)*S] = a[r] * current_s[r*S:(r+1)*S] / W\n        stacked_2[stage_idx] = buf\n    \n    # All-reduce the stacked buffer\n    reduced_2 = xm.all_reduce(xm.REDUCE_SUM, stacked_2)\n    \n    # Unpack and process each stage\n    for stage_idx in range(batch_2_stages):\n        temp_s = reduced_2[stage_idx]\n        if stage_idx < batch_2_stages - 1:\n            # Unscale for stages 5-7\n            for r in range(W):\n                temp_s[r*S:(r+1)*S] = temp_s[r*S:(r+1)*S] / max(a[r], 1e-9)\n            current_s = temp_s\n        else:\n            # Stage 8: don't unscale, this is the final result\n            s = temp_s\n    \n    return s"
+}
