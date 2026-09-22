@@ -139,6 +139,22 @@ R60 = {
     "r60_b6_varL_d8": {"shape": "varL", "B": 6, "off": 0, "lmin": 3, "lspan": 2, "L": 3, "stride": 1, "part": 256},
     "r60_b5_varL_d8": {"shape": "varL", "B": 5, "off": 0, "lmin": 2, "lspan": 2, "L": 2, "stride": 1, "part": 256},
 }
+R59B = {
+    "r59b_su_a4_d8_p2048": ("fam1", 2048, "1.0 + 0.6*(r % 4)"),
+    "r59b_su_a5_d8_p1024": ("fam1", 1024, "1.0 + 0.4*(r % 5)"),
+    "r59b_su_a6_d8_p1024": ("fam1", 1024, "1.0 + 0.35*(r % 6)"),
+}
+R60C = {
+    "r60c_b8_L3_p2048_d8": {"shape": "contig", "B": 8, "off": 2, "L": 3, "stride": 1, "part": 2048},
+    "r60c_b8_L4_p2048_d8": {"shape": "contig", "B": 8, "off": 2, "L": 4, "stride": 1, "part": 2048},
+    "r60c_b8_L2_p2048_d8": {"shape": "contig", "B": 8, "off": 2, "L": 2, "stride": 1, "part": 2048},
+    "r60c_b8_L5_p2048_d8": {"shape": "contig", "B": 8, "off": 2, "L": 5, "stride": 1, "part": 2048},
+    "r60c_b8_L3_p4096_d8": {"shape": "contig", "B": 8, "off": 2, "L": 3, "stride": 1, "part": 4096},
+    "r60c_b9_L3_p2048_d8": {"shape": "contig", "B": 9, "off": 2, "L": 3, "stride": 1, "part": 2048},
+    "r60c_b10_L4_p2048_d8": {"shape": "contig", "B": 10, "off": 2, "L": 4, "stride": 1, "part": 2048},
+    "r60c_b11_L4_p2048_d8": {"shape": "contig", "B": 11, "off": 2, "L": 4, "stride": 1, "part": 2048},
+    "r60c_b12_L5_p2048_d8": {"shape": "contig", "B": 12, "off": 2, "L": 5, "stride": 1, "part": 2048},
+}
 R61 = {
     "r61_dd_var_d8": ("fam3dd", 256, "var"),
     "r61_dd_soft_d8": ("fam3dd", 256, "soft"),
@@ -154,8 +170,12 @@ R61 = {
 def make_fold(name):
     if name in R59:
         _, part, a = R59[name]; return fold_fam1(name, part, a)
+    if name in R59B:
+        _, part, a = R59B[name]; return fold_fam1(name, part, a)
     if name in R60:
         return fold_fam2(name, R60[name])
+    if name in R60C:
+        return fold_fam2(name, R60C[name])
     fam = R61[name][0]
     if fam == "fam3dd":
         _, part, kind = R61[name]; return fold_fam3_dd(name, part, kind)
@@ -164,7 +184,7 @@ def make_fold(name):
 
 def main():
     print(f"=== r59/r60/r61 family-expansion pre-screen @ W={WORLD} gate=fp32 ===")
-    names = list(R59) + list(R60) + list(R61)
+    names = list(R59) + list(R59B) + list(R60) + list(R60C) + list(R61)
     rows = []
     for name in names:
         try:

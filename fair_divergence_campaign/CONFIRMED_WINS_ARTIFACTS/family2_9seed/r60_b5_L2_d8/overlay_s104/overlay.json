@@ -1,0 +1,83 @@
+{
+  "pipeline": "overlay",
+  "problem": "r60_b5_L2_d8",
+  "gate": "fp32",
+  "baseline_sim": 6625.0,
+  "strategies": [
+    {
+      "name": "Fused Loop with Incremental Scaling",
+      "desc": "Accumulate all 7 iterations of selective all-reduce into a single loop body that updates a running count array, then apply final scaling once at the end. Uses 8 all-reduce dispatches (1 initial + 7 selective) but eliminates 6*5=30 intermediate division operations by deferring normalization, trading memory writes for arithmetic intensity."
+    },
+    {
+      "name": "Block-Parallel Reduce-Scatter then All-Gather",
+      "desc": "Replace each selective all-reduce (zero-mask + all-reduce + normalize) with reduce-scatter on the 2-block window followed by all-gather to reconstruct the full vector. Uses 1 + 7*2 = 15 all-reduce-equivalent dispatches but exploits bandwidth more efficiently by avoiding transmission of zeroed blocks, reducing per-dispatch payload by ~60%."
+    },
+    {
+      "name": "Hierarchical Two-Phase Window Aggregation",
+      "desc": "Group the 7 dependent iterations into 2 phases: first compute 4 iterations with a coarser block-selection pattern, then refine with 3 iterations on adjusted windows. Uses 1 + 4 + 3 = 8 dispatches but restructures the dependency graph to enable better pipelining and potential overlapping of the phase boundary all-reduce with local computation."
+    },
+    {
+      "name": "Pre-computed Mask Fusion All-Reduce",
+      "desc": "Precompute the cumulative coverage mask for all 7 iterations, then perform a single all-reduce with a composite weighting tensor that applies all normalization coefficients in one fused operation. Uses only 2 dispatches (initial sum + final weighted aggregation) but requires O(5*7) local memory for mask materialization and more complex local addressing logic."
+    },
+    {
+      "name": "Ring-Based Incremental Block Exchange",
+      "desc": "Replace all-reduce primitives with explicit send-recv ring pattern where each rank forwards only its 2-block window per iteration, accumulating received blocks locally. Uses 7 * (world_size - 1) point-to-point operations instead of 8 all-reduces, trading collective efficiency for fine-grained control that could exploit Trainium's local interconnect topology at world_size=224.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Fused Loop with Incremental Scaling",
+      "sim": 8304.828571428572,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Block-Parallel Reduce-Scatter then All-Gather",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.584095"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Phase Window Aggregation",
+      "sim": 6625.0,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pre-computed Mask Fusion All-Reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.496843"
+    },
+    {
+      "stage": "impl",
+      "name": "Ring-Based Incremental Block Exchange",
+      "sim": 6625.0,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "refine:Hierarchical Two-Phase Window Aggregation",
+      "round": 1,
+      "sim": 6569.099999999999
+    },
+    {
+      "stage": "refine:Hierarchical Two-Phase Window Aggregation",
+      "round": 2,
+      "sim": 6569.8
+    },
+    {
+      "stage": "refine:Ring-Based Incremental Block Exchange",
+      "round": 2,
+      "sim": 5760.6
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 5760.6,
+  "final_code": "def r60_b5_L2_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256\n    W = world_size\n    B = 5\n    dtype = x.dtype\n    \n    # Compute coverage counts for each block\n    c = torch.tensor([0.0] * B, dtype=dtype, device=x.device)\n    for r in range(W):\n        st = (r + 0) % B\n        ks = set((st + 1*j) % B for j in range(2))\n        for b in ks:\n            c[b] += 1\n    \n    # Initial all-reduce to get sum across all ranks\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Determine which blocks this rank should keep\n    OFF = 0\n    start = (rank + OFF) % B\n    keep = set((start + 1*j) % B for j in range(2))\n    \n    # Create windowed version once\n    buf = torch.zeros_like(s)\n    for b in range(B):\n        if b in keep:\n            buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n    \n    # Single all-reduce for windowed sum\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    \n    # Normalize by coverage and apply iteratively (all local ops)\n    result = s.clone()\n    for iteration in range(7):\n        for b in range(B):\n            if iteration < 6:\n                result[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n            else:\n                result[b*S:(b+1)*S] = acc[b*S:(b+1)*S]\n    \n    return result"
+}

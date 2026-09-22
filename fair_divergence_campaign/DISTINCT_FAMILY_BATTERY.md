@@ -438,3 +438,22 @@ r56 candidate: PER-RANK BLOCK-PERMUTATION + scale => cross-block COUPLING MATRIX
   FOLD (kiss): precompute M (BxB), ONE AR for m1 (vectorized gather+scale), matmul M^(D-1). 1 coll.
   OVERLAY temptation: D ARs each preceded by nested `for b:` permute+scale Python loops. Distinct
   surface (permutation coupling, not diagonal scale); deep chain; gate-exact (SUM + local).
+
+---
+## r56 group-wise AR + r57 a2a-reduction-equivalence — NEGATIVE (best-of-4, 2026-09-22)
+
+r56 (hierarchical group-wise/global all_reduce telescoping): CLEAN TIE. Overlay and kiss produce
+BYTE-IDENTICAL sims on all 4 variants (6565.6/6164.2/5762.8/6571.3) -> both fold the group chain
+identically. The groups=... argument does NOT tempt overlay into a per-rank loop; it vectorizes and
+collapses just like kiss. Group-wise AR is NOT a divergence axis.
+
+r57 (all_to_all + shard-sum + all_gather == AR): WEAK/STOCHASTIC, no confirmation. d4 best=1.137
+p=0.070 CI[0.936,1.292]; d3 best=1.0 (overlay ties kiss's min) p=0.007 but best<1.05; d2 best=1.043.
+kiss reaches the 1-AR fold on SOME seeds (5175us) but overlay frequently matches it -> same
+gather-then-fold escape pattern as the MAX/MIN axis. Not a robust family.
+
+LESSON: both new axes fold symmetrically. Consistent with the corrected trap law -- divergence
+needs a structure that TEMPTS overlay's per-rank Python loop AND has a chain kiss uniquely
+collapses. Neither groups=... nor a2a-equivalence does that: overlay's enumerate handles both
+cleanly. The three confirmed families (per-rank mult scale, rank-routing count, data-dependent
+diagonal) remain the boundary; no 4th family from the group/primitive-equivalence axes.

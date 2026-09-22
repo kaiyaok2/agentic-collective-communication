@@ -1,0 +1,73 @@
+{
+  "pipeline": "overlay",
+  "problem": "r60_b5_L2_d8",
+  "gate": "fp32",
+  "baseline_sim": 6625.0,
+  "strategies": [
+    {
+      "name": "Baseline Repeated Masked All-Reduce",
+      "desc": "Performs 8 sequential all-reduce operations where each uses selective masking (zeroing non-window blocks) followed by normalization. 8 dispatch operations total. Represents the straightforward interpretation of dependent reductions with high dispatch overhead but simple logic and no temporary storage beyond one buffer."
+    },
+    {
+      "name": "Fused Multi-Stage Pipeline Reduction",
+      "desc": "Merges consecutive all-reduce stages by accumulating multiple mask patterns into a single buffer before collective dispatch, reducing 8 dependent operations to 2-3 dispatches by batching independent normalization steps. Trades increased local computation (multi-pass masking) for fewer network round-trips, exploiting algebraic properties of the windowed sum-and-scale pattern."
+    },
+    {
+      "name": "Reduce-Scatter then All-Gather Chain",
+      "desc": "Decomposes the problem into reduce-scatter phases that distribute block ownership across ranks, followed by all-gather to reconstruct the full result. Approximately 4-6 dispatches using primitive pairing. Exploits bandwidth efficiency of scatter/gather primitives at the cost of more complex indexing and potential load imbalance across the 5-block non-power-of-2 structure."
+    },
+    {
+      "name": "Hierarchical Two-Level Block Aggregation",
+      "desc": "First performs intra-group all-reduce on subsets of the 224 ranks (e.g., groups of 32 or 56), then inter-group reduction with adjusted scaling factors. 4-5 dispatches leveraging hierarchy to reduce message contention. Represents latency-bandwidth tradeoff by creating a logical topology that amortizes per-rank overhead in large world sizes."
+    },
+    {
+      "name": "Pre-Computed Scaling with Single All-Reduce",
+      "desc": "Analytically computes all 8 stages of block coverage counts offline, applies cumulative rank-dependent masks to local x before a single or dual all-reduce dispatch. 1-2 dispatches total. Maximizes dispatch reduction by front-loading all masking/scaling logic into local operations, trading off increased local memory bandwidth for minimal collective overhead.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Baseline Repeated Masked All-Reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.584095"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Multi-Stage Pipeline Reduction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.235089"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-Scatter then All-Gather Chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.584095"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level Block Aggregation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.584095"
+    },
+    {
+      "stage": "impl",
+      "name": "Pre-Computed Scaling with Single All-Reduce",
+      "sim": 6625.0,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "refine:Pre-Computed Scaling with Single All-Reduce",
+      "round": 2,
+      "sim": 6625.0
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 6625.0,
+  "final_code": "def r60_b5_L2_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256  # block size\n    B = 5    # number of blocks\n    L = 2    # window size\n    W = world_size\n    \n    # Pre-compute which blocks this rank contributes to at each stage\n    # Stage 0: initial sum (all blocks)\n    # Stages 1-7: only blocks in this rank's window\n    start_block = rank % B\n    keep_blocks = set((start_block + j) % B for j in range(L))\n    \n    # Pre-compute coverage counts for each block at each stage\n    # Stage 0: all W ranks contribute\n    # Stages 1-7: only ranks whose window includes that block\n    coverage = [[0] * B for _ in range(8)]\n    \n    # Stage 0: all ranks contribute all blocks\n    for b in range(B):\n        coverage[0][b] = W\n    \n    # Stages 1-7: count how many ranks cover each block\n    for stage in range(1, 8):\n        for r in range(W):\n            r_start = r % B\n            r_keep = set((r_start + j) % B for j in range(L))\n            for b in r_keep:\n                coverage[stage][b] += 1\n    \n    # Compute cumulative scaling factors\n    # After stage s, block b has been scaled by product of 1/coverage[i][b] for i in 1..s\n    cumulative_scale = [[1.0] * B for _ in range(8)]\n    for b in range(B):\n        cumulative_scale[0][b] = 1.0\n        for stage in range(1, 8):\n            cumulative_scale[stage][b] = cumulative_scale[stage-1][b] / coverage[stage][b]\n    \n    dtype = x.dtype\n    \n    # Strategy: Do all 8 all-reduces with pre-computed masks\n    # Stage 0: all-reduce of x (no mask)\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Stages 1-7: mask and all-reduce, with cumulative scaling\n    for stage in range(1, 8):\n        buf = torch.zeros_like(s)\n        for b in range(B):\n            if b in keep_blocks:\n                # Apply cumulative scaling from previous stages and prepare for this stage\n                buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n        \n        s = xm.all_reduce(xm.REDUCE_SUM, buf)\n        \n        # Apply scaling for this stage (except last stage doesn't need it since it's final)\n        if stage < 7:\n            for b in range(B):\n                s[b*S:(b+1)*S] = s[b*S:(b+1)*S] / coverage[stage][b]\n    \n    return s"
+}

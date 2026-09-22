@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r60_b5_L2_d8",
+  "gate": "fp32",
+  "baseline_sim": 6625.0,
+  "strategies": [
+    {
+      "name": "Fused block-mask all-reduce pipeline",
+      "desc": "Precompute all 8 rank-dependent block masks, concatenate them into a single tensor with 8 segments, then execute a single all-reduce on the concatenated payload followed by local block-wise normalization. Expected 1 dispatch with 8\u00d7 payload size, trading network bandwidth for drastically reduced dispatch overhead and exposing normalization compute/memory overlap opportunities."
+    },
+    {
+      "name": "Hierarchical two-level reduction tree",
+      "desc": "Partition 224 ranks into groups (e.g., 14 groups of 16), perform intra-group all-reduce on masked blocks (8 dispatches per level), then inter-group all-reduce on aggregated results, followed by broadcast back. Expected 16 total dispatches (8 intra + 8 inter), exploiting locality and reducing cross-group traffic by aggregating early."
+    },
+    {
+      "name": "Reduce-scatter then all-gather pattern",
+      "desc": "Replace each all-reduce with reduce-scatter (5 chunks) followed by all-gather, allowing each rank to compute its needed blocks in parallel during the scatter phase. Expected 16 dispatches (8 RS + 8 AG), trading all-reduce simplicity for better pipeline parallelism and potential bandwidth optimization on ring topologies."
+    },
+    {
+      "name": "Overlapped computation and communication",
+      "desc": "Reorder the 8 dependent all-reduce operations to interleave block masking, normalization, and communication by splitting each all-reduce into non-blocking send/recv pairs with immediate local computation on received chunks. Expected 8 dispatches but with async execution, hiding normalization latency behind network transfers."
+    },
+    {
+      "name": "Block-interleaved sparse all-reduce",
+      "desc": "Exploit the fact that each rank only needs 2 out of 5 blocks per iteration; use sparse tensors or index-based gather/scatter to communicate only the active blocks, reconstructing full tensors only after final accumulation. Expected 8 dispatches with ~40% payload size, trading local gather/scatter overhead for reduced network volume.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Fused block-mask all-reduce pipeline",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.792047"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-level reduction tree",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.123183"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-scatter then all-gather pattern",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.123183"
+    },
+    {
+      "stage": "impl",
+      "name": "Overlapped computation and communication",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.792047"
+    },
+    {
+      "stage": "impl",
+      "name": "Block-interleaved sparse all-reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.584095"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 6625.0,
+  "final_code": "def r60_b5_L2_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256; W = world_size\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    c = [0]*5\n    for r in range(W):\n        st = (r + 0) % 5\n        ks = set((st + 1*j) % 5 for j in range(2))\n        for b in ks:\n            c[b] += 1\n    B = 5; OFF = 0\n    start = (rank + OFF) % B\n    keep = set((start + 1*j) % B for j in range(2))\n    buf = torch.zeros_like(s)\n    for b in range(5):\n        if b in keep:\n            buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(5):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n    s = acc\n    B = 5; OFF = 0\n    start = (rank + OFF) % B\n    keep = set((start + 1*j) % B for j in range(2))\n    buf = torch.zeros_like(s)\n    for b in range(5):\n        if b in keep:\n            buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(5):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n    s = acc\n    B = 5; OFF = 0\n    start = (rank + OFF) % B\n    keep = set((start + 1*j) % B for j in range(2))\n    buf = torch.zeros_like(s)\n    for b in range(5):\n        if b in keep:\n            buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(5):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n    s = acc\n    B = 5; OFF = 0\n    start = (rank + OFF) % B\n    keep = set((start + 1*j) % B for j in range(2))\n    buf = torch.zeros_like(s)\n    for b in range(5):\n        if b in keep:\n            buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(5):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n    s = acc\n    B = 5; OFF = 0\n    start = (rank + OFF) % B\n    keep = set((start + 1*j) % B for j in range(2))\n    buf = torch.zeros_like(s)\n    for b in range(5):\n        if b in keep:\n            buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(5):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n    s = acc\n    B = 5; OFF = 0\n    start = (rank + OFF) % B\n    keep = set((start + 1*j) % B for j in range(2))\n    buf = torch.zeros_like(s)\n    for b in range(5):\n        if b in keep:\n            buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(5):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n    s = acc\n    B = 5; OFF = 0\n    start = (rank + OFF) % B\n    keep = set((start + 1*j) % B for j in range(2))\n    buf = torch.zeros_like(s)\n    for b in range(5):\n        if b in keep:\n            buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    s = acc\n    return s\n",
+  "fell_back_to_baseline": true
+}

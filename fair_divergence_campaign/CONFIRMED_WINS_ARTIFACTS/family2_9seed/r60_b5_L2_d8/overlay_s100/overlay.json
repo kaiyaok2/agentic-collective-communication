@@ -1,0 +1,68 @@
+{
+  "pipeline": "overlay",
+  "problem": "r60_b5_L2_d8",
+  "gate": "fp32",
+  "baseline_sim": 6625.0,
+  "strategies": [
+    {
+      "name": "Iterative Masked All-Reduce Chain",
+      "desc": "Performs 8 dependent all-reduce operations where each iteration selectively masks blocks based on rank-dependent windows, accumulating scaled results. Uses 8 all-reduce dispatches with intermediate division operations. This is the baseline reference structure trading minimal code complexity for maximum dispatch count."
+    },
+    {
+      "name": "Fused Block-Window Computation Precompute",
+      "desc": "Pre-computes all coverage counts and window masks once, then executes 8 all-reduces on pre-masked buffers without recalculating which blocks each rank owns per iteration. Still 8 dispatches but eliminates redundant set arithmetic and modulo operations, trading memory for repeated computation cycles."
+    },
+    {
+      "name": "Reduce-Scatter + All-Gather Pipeline",
+      "desc": "Decomposes each dependent step into reduce-scatter (to distribute block ownership) followed by all-gather (to broadcast results), doubling primitive count to 16 dispatches but enabling better overlap opportunities. Each reduce-scatter operates on 1/5th payload, potentially reducing per-op latency and enabling pipelining across the dependency chain."
+    },
+    {
+      "name": "Hierarchical Two-Level Aggregation",
+      "desc": "Groups the 224 ranks into clusters (e.g., 28 groups of 8), performs intra-cluster all-reduces for all 8 dependent steps, then inter-cluster all-reduces to merge results. Total dispatches = 16 (8 intra + 8 inter), trading increased dispatch count for reduced per-dispatch world size and message contention."
+    },
+    {
+      "name": "Packed Multi-Block Single All-Reduce",
+      "desc": "Concatenates all intermediate states across the 8 dependency layers into a larger tensor (5*256*8 elements), performs careful index mapping so one all-reduce captures all dependencies through strategic zero-masking patterns, then unpacks. Reduces to 1-2 dispatches but massively increases payload size and local computation complexity.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Iterative Masked All-Reduce Chain",
+      "sim": 6625.0,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Block-Window Computation Precompute",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.584095"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-Scatter + All-Gather Pipeline",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.584095"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level Aggregation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.584095"
+    },
+    {
+      "stage": "impl",
+      "name": "Packed Multi-Block Single All-Reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 6625.0,
+  "final_code": "def r60_b5_L2_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256  # block size\n    W = world_size\n    B = 5  # number of blocks\n    L = 2  # window length\n    \n    # Step 1: Initial all-reduce (dispatch 1)\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Compute counts for each block\n    c = [0] * B\n    for r in range(W):\n        start = (r + 0) % B\n        keep = set((start + 1*j) % B for j in range(L))\n        for b in keep:\n            c[b] += 1\n    \n    # Perform 7 more iterations (dispatches 2-8)\n    for iteration in range(7):\n        # Determine which blocks this rank keeps\n        start = (rank + 0) % B\n        keep = set((start + 1*j) % B for j in range(L))\n        \n        # Mask: zero out blocks not in keep set\n        buf = torch.zeros_like(s)\n        for b in range(B):\n            if b in keep:\n                buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n        \n        # All-reduce the masked buffer\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n        \n        # Divide by counts (except on last iteration)\n        if iteration < 6:\n            for b in range(B):\n                acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n        \n        s = acc\n    \n    return s"
+}

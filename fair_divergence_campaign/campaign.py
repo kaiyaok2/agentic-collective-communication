@@ -30,7 +30,7 @@ from statistics import median
 PY = sys.executable
 FD = "/private/tmp/fair_diverge"
 ACC = "/private/tmp/acc_verify"
-LEDGER = "/private/tmp/fair_diverge/campaign_ledger.json"
+LEDGER = os.environ.get("LEDGER", "/private/tmp/fair_diverge/campaign_ledger.json")
 GATE = os.environ.get("GATE_MODE", "fp32")
 NODES = "7"
 MAX_PAR = int(os.environ.get("MAX_PAR", "10"))
