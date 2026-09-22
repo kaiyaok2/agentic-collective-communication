@@ -1,0 +1,78 @@
+{
+  "pipeline": "overlay",
+  "problem": "r48_dd_square_d8",
+  "gate": "fp32",
+  "baseline_sim": 6793.5,
+  "strategies": [
+    {
+      "name": "Baseline Sequential All-Reduce Chain",
+      "desc": "Performs 8 sequential all-reduce operations with local compute (mean, square, scale) between each. 8 all-reduce dispatches total, each operating on full 2048-element tensor. Represents the straightforward translation with no optimization\u2014highest dispatch count but simplest structure."
+    },
+    {
+      "name": "Fused Multi-Stage All-Reduce Buffer",
+      "desc": "Packs all 8 iteration states into a single extended buffer (e.g., 8\u00d72048 elements) and issues fewer, larger all-reduces by exploiting data independence where possible. Approximately 3-5 dispatches by batching dependent stages together. Trades increased payload size and memory footprint for reduced dispatch overhead."
+    },
+    {
+      "name": "Block-Parallel Reduce-Scatter + All-Gather",
+      "desc": "Decomposes each iteration into reduce-scatter (8 blocks distributed across subset of ranks) followed by all-gather to reconstruct full result, enabling parallel computation of per-block means and scales. Roughly 16 collective dispatches (2 per iteration) but with smaller per-block payloads (256 elements). Exploits block independence to overlap communication and computation."
+    },
+    {
+      "name": "Pipelined Overlapped Iteration Staging",
+      "desc": "Launches next iteration's all-reduce immediately after current iteration's local compute completes, overlapping communication of iteration i+1 with computation of iteration i. Still 8 all-reduce dispatches but with async/non-blocking calls where supported. Reduces wall-clock time by hiding latency, though total data volume unchanged."
+    },
+    {
+      "name": "Hierarchical Two-Level Reduction Tree",
+      "desc": "Exploits multi-node topology (224 ranks) by performing intra-node reductions (smaller groups) followed by inter-node reductions, repeated for each of 8 iterations. Approximately 16 collective dispatches (2 levels \u00d7 8 iterations) but with reduced cross-node bandwidth pressure. Optimizes for network topology at cost of additional staging complexity.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Baseline Sequential All-Reduce Chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.284269"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Multi-Stage All-Reduce Buffer",
+      "sim": 6793.5,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Block-Parallel Reduce-Scatter + All-Gather",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.284269"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Overlapped Iteration Staging",
+      "sim": 6793.5,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level Reduction Tree",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "refine:Pipelined Overlapped Iteration Staging",
+      "round": 1,
+      "sim": 6856.1
+    },
+    {
+      "stage": "refine:Pipelined Overlapped Iteration Staging",
+      "round": 2,
+      "sim": 6571.8
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6571.8,
+  "final_code": "def r48_dd_square_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256\n    B = 8\n    dtype = x.dtype\n    \n    # Reshape to work with batches more efficiently\n    s = x.view(B, S)\n    \n    # Iteration 0\n    s = xm.all_reduce(xm.REDUCE_SUM, s)\n    # Vectorized computation: compute mean and f for all batches at once\n    means = s.mean(dim=1, keepdim=True)  # Shape: (B, 1)\n    f = 1.0 + means ** 2  # Shape: (B, 1)\n    buf = s * f  # Broadcasting multiplication\n    \n    # Iterations 1-6\n    for iter_idx in range(1, 7):\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n        # Vectorized division\n        s = acc / (world_size * f)\n        \n        # Vectorized computation for next iteration\n        means = s.mean(dim=1, keepdim=True)\n        f = 1.0 + means ** 2\n        buf = s * f\n    \n    # Final iteration (7)\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    s = acc / world_size\n    \n    # Flatten back to original shape\n    return s.view(-1)"
+}

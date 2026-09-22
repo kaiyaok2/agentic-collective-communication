@@ -1,0 +1,78 @@
+{
+  "pipeline": "overlay",
+  "problem": "r48_dd_relu_d6",
+  "gate": "fp32",
+  "baseline_sim": 6323.099999999999,
+  "strategies": [
+    {
+      "name": "Direct six all-reduce chain",
+      "desc": "Performs 6 sequential all-reduce operations as in the reference, computing block means and ReLU scaling factors between each. Total 6 all-reduce dispatches with full vector payload (2048 elements) each time. Straightforward translation with no fusion; highest dispatch count but simplest correctness verification."
+    },
+    {
+      "name": "Fused local computation blocks",
+      "desc": "Groups the mean computation, ReLU, and scaling operations for all 8 blocks into vectorized tensor operations before each all-reduce, reducing intermediate clones and buffer allocations. Still 6 all-reduce dispatches but with fused local ops that minimize memory operations and enable better compiler optimization of the compute between collectives."
+    },
+    {
+      "name": "Block-wise independent all-reduce streams",
+      "desc": "Treats each of the 8 blocks as independent communication streams, launching 8\u00d76=48 smaller all-reduce operations (256 elements each) that can potentially overlap. Increases dispatch count dramatically but enables parallelism across blocks and reduces per-dispatch latency on ring/tree topologies where smaller messages have better efficiency."
+    },
+    {
+      "name": "Two-stage hierarchical reduction per iteration",
+      "desc": "Replaces each all-reduce with a reduce-scatter followed by all-gather pattern, enabling pipelining of the 6 dependent stages. Total 12 collectives (6 RS + 6 AG) but each handles smaller payloads (256 elements per rank during scatter phase). Trades dispatch count for reduced per-rank communication volume and better network utilization."
+    },
+    {
+      "name": "Precomputed factor broadcast pattern",
+      "desc": "Performs initial all-reduce on input, then computes all 5 intermediate scaling factor sets (8 factors each) locally and broadcasts only the 40 scalars using all-reduce on a tiny buffer, then applies accumulated scaling locally before final all-reduce. Reduces to 3 all-reduces (initial sum, factor synchronization, final scaled sum) by exploiting commutativity of the scaling operations.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Direct six all-reduce chain",
+      "sim": 6558.299999999999,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused local computation blocks",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    },
+    {
+      "stage": "impl",
+      "name": "Block-wise independent all-reduce streams",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    },
+    {
+      "stage": "impl",
+      "name": "Two-stage hierarchical reduction per iteration",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.279368"
+    },
+    {
+      "stage": "impl",
+      "name": "Precomputed factor broadcast pattern",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.038036"
+    },
+    {
+      "stage": "refine:Direct six all-reduce chain",
+      "round": 1,
+      "sim": 6524.900000000001
+    },
+    {
+      "stage": "refine:Direct six all-reduce chain",
+      "round": 3,
+      "sim": 6509.9
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 6509.9,
+  "final_code": "def r48_dd_relu_d6_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 256\n    B = 8\n    dtype = x.dtype\n    \n    # First all-reduce: sum across all ranks\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Reshape once for all iterations\n    s = s.view(B, S)\n    \n    # Repeat the pattern 5 times with fused operations\n    for iteration in range(5):\n        # Compute block means, ReLU, and factors in one pass\n        mb = s.mean(dim=1, keepdim=True)  # Shape: (B, 1)\n        f = 1.0 + torch.clamp(mb, min=0.0)  # Fused ReLU and addition\n        \n        # Scale each block by its factor using broadcasting\n        buf = s * f  # Broadcasting: (B, S) * (B, 1)\n        \n        # All-reduce the scaled buffer (flatten inline)\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf.view(-1))\n        \n        # Divide by (world_size * factor) and reshape in one step\n        s = (acc.view(B, S) / (world_size * f))\n    \n    # Final iteration (6th): compute factors, scale, all-reduce, then divide by world_size only\n    mb = s.mean(dim=1, keepdim=True)\n    f = 1.0 + torch.clamp(mb, min=0.0)\n    buf = s * f\n    \n    acc = xm.all_reduce(xm.REDUCE_SUM, buf.view(-1))\n    \n    # Final division by world_size only (not by factors)\n    return acc / world_size"
+}

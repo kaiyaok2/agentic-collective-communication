@@ -1,0 +1,73 @@
+{
+  "pipeline": "overlay",
+  "problem": "r48_dd_relu_d6",
+  "gate": "fp32",
+  "baseline_sim": 6323.099999999999,
+  "strategies": [
+    {
+      "name": "Baseline Sequential All-Reduce Chain",
+      "desc": "Execute 6 dependent all_reduce operations sequentially as in the seed implementation, with local compute (mean, ReLU, scaling) between each. Dispatch count: 6 all_reduce calls. Represents the reference approach with maximum dependency chain length but simplest correctness reasoning."
+    },
+    {
+      "name": "Fused Local-Compute Between Collectives",
+      "desc": "Merge all local operations (cloning, per-block mean/ReLU/scaling) into single fused kernels between all_reduce dispatches to reduce kernel launch overhead. Dispatch count: 6 all_reduce + 5-6 fused local kernels. Trades kernel fusion complexity for reduced dispatch overhead on local compute."
+    },
+    {
+      "name": "Block-Parallel Reduce-Scatter + All-Gather",
+      "desc": "Replace each all_reduce with reduce_scatter (8 blocks distributed across ranks) followed by local compute on owned blocks, then all_gather to reconstruct full result. Dispatch count: 12 collectives (6 RS + 6 AG). Trades more collectives for smaller per-collective payload (256 vs 2048 elements), potentially better network utilization."
+    },
+    {
+      "name": "Pipelined Multi-Block Staging",
+      "desc": "Overlap communication of independent blocks by splitting the 8 blocks into groups and staging all_reduce operations across groups when dependency permits (e.g., issue AR for blocks 0-3 while computing local ops on blocks 4-7). Dispatch count: 6-12 all_reduce depending on granularity. Hides latency through pipeline parallelism at cost of increased dispatch complexity."
+    },
+    {
+      "name": "Vectorized All-Reduce with Metadata Encoding",
+      "desc": "Pack scaling factors and intermediate block statistics into auxiliary tensors, perform all_reduce on both data and metadata streams in parallel where dependencies allow, then apply corrections. Dispatch count: 6-8 all_reduce (some parallel). Reduces dependency chain depth by 1-2 stages through speculative metadata aggregation, trading correctness complexity for potential latency hiding.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Baseline Sequential All-Reduce Chain",
+      "sim": 6323.099999999999,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Local-Compute Between Collectives",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    },
+    {
+      "stage": "impl",
+      "name": "Block-Parallel Reduce-Scatter + All-Gather",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Multi-Block Staging",
+      "sim": 6558.299999999999,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Vectorized All-Reduce with Metadata Encoding",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    },
+    {
+      "stage": "refine:Pipelined Multi-Block Staging",
+      "round": 1,
+      "sim": 6520.9
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6323.099999999999,
+  "final_code": "def r48_dd_relu_d6_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Baseline Sequential All-Reduce Chain:\n    Execute 6 dependent all_reduce operations sequentially as in the seed implementation.\n    \n    Pattern:\n    1. First all_reduce: sum x across ranks\n    2. For iterations 2-5: compute scaling factors f[b] = 1 + ReLU(mean(block b)),\n       scale each block, all_reduce sum, then unscale by dividing\n    3. Iteration 6: same as 2-5 but final division is by world_size only (no f factor)\n    \"\"\"\n    S = 256\n    B = 8\n    dtype = x.dtype\n    \n    # Iteration 1: Initial all_reduce sum\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Iterations 2-5: scaling with f factors\n    for iteration in range(4):\n        # Compute scaling factors f[b] = 1 + ReLU(mean(block b))\n        f = []\n        for b in range(B):\n            block = s[b*S:(b+1)*S]\n            mb = block.mean()\n            f_b = 1.0 + (mb if mb > 0 else mb * 0.0)\n            f.append(f_b)\n        \n        # Scale each block by f[b]\n        buf = s.clone()\n        for b in range(B):\n            buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n        \n        # All-reduce sum\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n        \n        # Unscale: divide by (world_size * f[b])\n        for b in range(B):\n            acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n        \n        s = acc\n    \n    # Iteration 6: final iteration (scaling but simpler final division)\n    f = []\n    for b in range(B):\n        block = s[b*S:(b+1)*S]\n        mb = block.mean()\n        f_b = 1.0 + (mb if mb > 0 else mb * 0.0)\n        f.append(f_b)\n    \n    # Scale each block by f[b]\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    \n    # All-reduce sum\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    \n    # Final division: by world_size only\n    acc = acc / world_size\n    \n    s = acc\n    \n    return s"
+}
