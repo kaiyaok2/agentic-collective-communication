@@ -59,6 +59,17 @@ def _run(cmd, tag, logdir, env_extra=None):
 
 def overlay(prob, seed, outroot):
     odir = os.path.join(outroot, prob, f"overlay_s{seed}")
+    oj = os.path.join(odir, "overlay.json")
+    if os.path.exists(oj):  # resume: reuse a valid cached seed result, skip the pipeline re-run
+        try:
+            with open(oj) as f:
+                od = json.load(f)
+            if od.get("final_sim") is not None:
+                return {"kind": "overlay", "prob": prob, "seed": seed,
+                        "sim": od.get("final_sim"), "baseline": od.get("baseline_sim"),
+                        "fell_back": od.get("fell_back_to_baseline", False)}
+        except (ValueError, OSError):
+            pass  # corrupt/partial json -> fall through and re-run cleanly
     rc, dt, lp = _run(
         [PY, f"{FD}/run_overlay_fair.py", "--problem", prob, "--pattern", "moe",
          "--num-nodes", NODES, "--gate", GATE, "--k", "5", "--rounds", "3",
@@ -77,6 +88,18 @@ def overlay(prob, seed, outroot):
 
 def kiss(prob, seed, outroot):
     kdir = os.path.join(outroot, prob, f"kiss_s{seed}")
+    kj = os.path.join(kdir, "kiss_summary.json")
+    if os.path.exists(kj):  # resume: reuse a valid cached seed result, skip the pipeline re-run
+        try:
+            with open(kj) as f:
+                kd = json.load(f)
+            if kd.get("best_sim_time_us") is not None:
+                return {"kind": "kiss", "prob": prob, "seed": seed,
+                        "sim": kd.get("best_sim_time_us"),
+                        "baseline": kd.get("baseline_sim_time_us"),
+                        "n_ok": kd.get("n_ok")}
+        except (ValueError, OSError):
+            pass  # corrupt/partial json -> fall through and re-run cleanly
     rc, dt, lp = _run(
         [PY, f"{FD}/run_kiss_fair.py", "--problem", prob, "--pattern", "moe",
          "--num-nodes", NODES, "--gate", GATE, "--max-budget", "1.5",
