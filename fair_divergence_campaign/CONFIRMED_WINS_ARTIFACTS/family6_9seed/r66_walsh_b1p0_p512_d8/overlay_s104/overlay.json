@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r66_walsh_b1p0_p512_d8",
+  "gate": "fp32",
+  "baseline_sim": 6611.914285714285,
+  "strategies": [
+    {
+      "name": "Baseline Sequential All-Reduce Chain",
+      "desc": "Performs 8 sequential all-reduce operations with intermediate local computations (Walsh transform steps) between each collective. Each all-reduce operates on the full 4096-element vector. Expected 8 dispatches with no overlap; represents the straightforward translation of the reference code with maximum clarity but no optimization for latency hiding or bandwidth aggregation."
+    },
+    {
+      "name": "Pipelined Multi-Buffer All-Reduce",
+      "desc": "Splits the 4096-element vector into independent chunks (e.g., 8 chunks of 512 elements each) and pipelines the 8 all-reduce stages across chunks, allowing earlier chunks to proceed to later stages while later chunks are still in early stages. Expected 8 dispatches but with overlapped communication across different data segments; trades increased memory footprint and bookkeeping complexity for reduced end-to-end latency through pipeline parallelism."
+    },
+    {
+      "name": "Fused Local-Op Batched Collectives",
+      "desc": "Pre-computes all 8 intermediate \"buf\" tensors locally by unrolling the Walsh transform recurrence, then concatenates them into a single payload for one large all-reduce, followed by local extraction and final computation. Expected 1-2 dispatches (one mega-reduce or reduce+broadcast); trades correctness of dependencies (requires mathematical reformulation to decouple stages) for minimal dispatch overhead, though may not preserve exact semantics without algebraic restructuring."
+    },
+    {
+      "name": "Reduce-Scatter + All-Gather Decomposition",
+      "desc": "Decomposes each of the 8 all-reduce operations into a reduce-scatter (producing partial sums on subsets of ranks) followed by all-gather (redistributing complete results). Expected 16 dispatches (2 per original all-reduce); trades increased dispatch count for potentially better bandwidth utilization on high-radix topologies where RS+AG pairs can exploit bidirectional links more efficiently than all-reduce."
+    },
+    {
+      "name": "Hierarchical Two-Level All-Reduce",
+      "desc": "Exploits multi-node topology by performing intra-node all-reduce (among cores_per_device * num_devices ranks per node) followed by inter-node all-reduce (across num_nodes) for each of the 8 stages. Expected 16 dispatches (2 per stage); trades increased dispatch count for reduced per-collective payload fan-out and better alignment with physical network hierarchy, especially beneficial when intra-node bandwidth significantly exceeds inter-node bandwidth.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Baseline Sequential All-Reduce Chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.007987"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Multi-Buffer All-Reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.007987"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Local-Op Batched Collectives",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.007987"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-Scatter + All-Gather Decomposition",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.274871"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level All-Reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.274871"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 6611.914285714285,
+  "final_code": "def r66_walsh_b1p0_p512_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size; BETA = 1.0; N = 4096\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    idx = torch.arange(N)\n    v = (1 - 2 * (idx % 2)).to(s.dtype)\n    u = (1 - 2 * ((idx // 2) % 2)).to(s.dtype)\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    return s\n",
+  "fell_back_to_baseline": true
+}

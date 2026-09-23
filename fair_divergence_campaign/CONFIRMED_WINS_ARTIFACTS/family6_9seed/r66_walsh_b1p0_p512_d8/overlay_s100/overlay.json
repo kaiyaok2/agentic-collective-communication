@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r66_walsh_b1p0_p512_d8",
+  "gate": "fp32",
+  "baseline_sim": 6611.914285714285,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with local Walsh transforms",
+      "desc": "Performs 8 sequential all-reduce operations (initial sum + 7 iterative corrections) with local elementwise Walsh transform applications between each. 8 dispatch operations total. This is the reference baseline: straightforward structure trading latency for simplicity, no fusion or pipelining."
+    },
+    {
+      "name": "Fused buffer preparation with batched all-reduce",
+      "desc": "Pre-compute and stack all 8 buffers (initial s, then 7 buf = s + BETA*u*(v*s).mean() transforms) into a single [8, N] tensor, then issue a single batched all-reduce or 8 overlapped all-reduces with prepared payloads. Trades memory (8x working set) for reduced dispatch overhead and potential kernel fusion of local Walsh operations."
+    },
+    {
+      "name": "Reduce-scatter then all-gather decomposition",
+      "desc": "Decompose each all-reduce into reduce-scatter + all-gather pairs (16 collectives total). Allows interleaving of local Walsh computation during the gather phase, hiding arithmetic in communication time. Higher dispatch count (16) but enables computation-communication overlap that sequential all-reduce cannot achieve."
+    },
+    {
+      "name": "Hierarchical two-level aggregation scheme",
+      "desc": "Exploit potential multi-node structure (224 = 28 nodes \u00d7 8 devices): perform intra-node reductions first, apply Walsh transforms once per node, then inter-node reductions. Reduces effective world-size for most operations from 224 to 28, trading algorithmic restructuring for ~8\u00d7 reduction in per-collective latency on cross-node steps."
+    },
+    {
+      "name": "Pipelined ring with chunked Walsh application",
+      "desc": "Partition the 4096-element vector into chunks and pipeline 8 iterations of (reduce chunk, apply Walsh, forward) in a ring topology. Overlaps communication of chunk i with computation on chunk i-1. Increases dispatch count significantly but enables fine-grained overlap, beneficial when computation cost of Walsh transforms is non-trivial relative to small-message latency.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with local Walsh transforms",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.007987"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused buffer preparation with batched all-reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.007987"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-scatter then all-gather decomposition",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.274871"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-level aggregation scheme",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.274871"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined ring with chunked Walsh application",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.274871"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 6611.914285714285,
+  "final_code": "def r66_walsh_b1p0_p512_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size; BETA = 1.0; N = 4096\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    idx = torch.arange(N)\n    v = (1 - 2 * (idx % 2)).to(s.dtype)\n    u = (1 - 2 * ((idx // 2) % 2)).to(s.dtype)\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    return s\n",
+  "fell_back_to_baseline": true
+}

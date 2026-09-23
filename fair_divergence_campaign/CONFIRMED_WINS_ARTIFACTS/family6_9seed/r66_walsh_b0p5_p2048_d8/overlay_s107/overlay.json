@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r66_walsh_b0p5_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6646.2,
+  "strategies": [
+    {
+      "name": "Sequential All-Reduce Chain (Baseline)",
+      "desc": "Execute 8 dependent all-reduce operations sequentially, each followed by local elementwise operations (division, mean computation, vector arithmetic). This is the reference implementation with 8 all-reduce dispatches and minimal local compute fusion. Represents the straightforward approach with highest dispatch overhead but simplest structure."
+    },
+    {
+      "name": "Fused Local Computation Between Collectives",
+      "desc": "Keep 8 all-reduce operations but fuse all local elementwise operations (u*mean(v*s), division by W, buffer construction) into minimal kernel launches between collectives. Reduces local compute overhead by batching vector operations and reusing computed u, v masks. Same 8 collective dispatches but lower host-device synchronization cost."
+    },
+    {
+      "name": "Chunked Vector All-Reduce Parallelism",
+      "desc": "Partition the 16384-element vector into independent chunks (e.g., 4 chunks of 4096 elements) and pipeline the 8-iteration algorithm across chunks using non-blocking all-reduce operations where dependencies permit. Exploits potential parallelism in communication for different data segments. Total dispatches increase to ~32 but allows overlap of communication and computation across chunks."
+    },
+    {
+      "name": "Reduce-Scatter + All-Gather Decomposition",
+      "desc": "Replace each all-reduce with a reduce-scatter followed by all-gather pattern, computing the local operations only on the scattered partition (1/224th of data per rank). Reduces per-rank computation cost for mean and vector operations by 224x. Results in 16 collective dispatches (8 RS + 8 AG) but dramatically lower local compute and memory bandwidth requirements."
+    },
+    {
+      "name": "Recursive Halving with Local Accumulation",
+      "desc": "Exploit the iterative structure by maintaining partial results in a local accumulator and using butterfly/recursive-halving all-reduce topology instead of ring-based. Pre-compute and cache u, v patterns and their products. Combines multiple buffer transformations into single kernels. Still 8 all-reduce dispatches but optimizes network topology efficiency and eliminates redundant mask recomputation across iterations.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential All-Reduce Chain (Baseline)",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902069"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Local Computation Between Collectives",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.002052"
+    },
+    {
+      "stage": "impl",
+      "name": "Chunked Vector All-Reduce Parallelism",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902069"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-Scatter + All-Gather Decomposition",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902069"
+    },
+    {
+      "stage": "impl",
+      "name": "Recursive Halving with Local Accumulation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.002052"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 6646.2,
+  "final_code": "def r66_walsh_b0p5_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size; BETA = 0.5; N = 16384\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    idx = torch.arange(N)\n    v = (1 - 2 * (idx % 2)).to(s.dtype)\n    u = (1 - 2 * ((idx // 2) % 2)).to(s.dtype)\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    return s\n",
+  "fell_back_to_baseline": true
+}

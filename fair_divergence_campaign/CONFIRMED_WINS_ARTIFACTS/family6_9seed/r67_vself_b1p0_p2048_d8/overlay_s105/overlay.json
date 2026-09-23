@@ -1,0 +1,68 @@
+{
+  "pipeline": "overlay",
+  "problem": "r67_vself_b1p0_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6643.4,
+  "strategies": [
+    {
+      "name": "Sequential All-Reduce with Scalar Reduction",
+      "desc": "Performs 8 sequential all-reduce operations on the full vector (16384 elements each), computing the v-projection scalar via a separate mean reduction after each all-reduce. This yields 8 vector all-reduces + 8 scalar all-reduces = 16 total dispatches. Trades dispatch count for simplicity and matches reference structure exactly."
+    },
+    {
+      "name": "Fused Buffer All-Reduce Single Dispatch",
+      "desc": "Pre-computes all 8 \"buf\" vectors locally (s + BETA * v * (v * s).mean()) by maintaining approximate s estimates, packs them into a single [8, 16384] tensor, dispatches one all-reduce, then unpacks and applies the inverse transforms sequentially. Reduces to 1 dispatch but requires O(8\u00d7) memory and approximates intermediate s values, trading accuracy for communication efficiency."
+    },
+    {
+      "name": "Pipelined Scalar-Vector Interleaved All-Reduce",
+      "desc": "Computes v-projection scalars (v * s).mean() and full vectors s in alternating pattern, but fuses each (scalar, vector) pair into a single heterogeneous all-reduce payload of size 16385 (concatenating the scalar and vector). Results in 8 fused dispatches instead of 16 separate ones, halving dispatch overhead while preserving exact semantics."
+    },
+    {
+      "name": "Hierarchical Two-Stage Projection Decomposition",
+      "desc": "Splits the 16384-element vector into even/odd indices (aligned with v's [+1,-1] pattern), performs all-reduce on even-odd difference and sum separately (2 vectors of 8192 elements each), which naturally separates v-parallel and v-orthogonal components. Requires restructuring the 8-iteration loop into operations on these 2 components, yielding approximately 16 dispatches but with smaller per-dispatch payloads and better cache locality."
+    },
+    {
+      "name": "Speculative Parallel All-Reduce with Correction",
+      "desc": "Launches all 8 all-reduce operations in parallel (non-blocking) on speculatively computed buf values assuming previous iterations converged to approximate values, then applies correction passes once actual results arrive. Uses approximately 8 initial dispatches + correction dispatches, exploiting network parallelism to hide latency at the cost of potential redundant computation if speculative estimates are poor.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential All-Reduce with Scalar Reduction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.004103"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Buffer All-Reduce Single Dispatch",
+      "sim": 5482.771428571428,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Scalar-Vector Interleaved All-Reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902558"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Stage Projection Decomposition",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.004103"
+    },
+    {
+      "stage": "impl",
+      "name": "Speculative Parallel All-Reduce with Correction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902558"
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 5482.771428571428,
+  "final_code": "def r67_vself_b1p0_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size\n    BETA = 1.0\n    N = 16384\n    depth = 8\n    \n    dtype = x.dtype\n    \n    # Compute initial s\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Create v pattern\n    idx = torch.arange(N, device=x.device)\n    v = (1 - 2 * (idx % 2)).to(dtype)\n    \n    # Pre-compute all 8 \"buf\" vectors using approximate s values\n    # We'll maintain an estimate of s and compute all buffers at once\n    buffers = []\n    s_estimate = s.clone()\n    \n    for i in range(depth):\n        # Compute buf_i = s_estimate + BETA * v * (v * s_estimate).mean()\n        buf_i = s_estimate + BETA * v * (v * s_estimate).mean()\n        buffers.append(buf_i)\n        \n        # Update s_estimate for next iteration using approximation\n        # We approximate what acc would be after all-reduce and averaging\n        # acc \u2248 buf_i (assuming all ranks have similar values)\n        acc_approx = buf_i\n        # Apply inverse transform\n        s_estimate = acc_approx - (BETA / (1.0 + BETA)) * v * (v * acc_approx).mean()\n    \n    # Pack all buffers into a single tensor [depth, N]\n    packed_buffers = torch.stack(buffers, dim=0)  # [8, 16384]\n    \n    # Flatten for all-reduce\n    packed_flat = packed_buffers.reshape(-1)  # [8*16384]\n    \n    # Single all-reduce dispatch\n    all_reduced_flat = xm.all_reduce(xm.REDUCE_SUM, packed_flat)\n    \n    # Unpack and average\n    all_reduced = all_reduced_flat.reshape(depth, N)  # [8, 16384]\n    all_reduced = all_reduced / W\n    \n    # Apply inverse transforms sequentially to get final s\n    s_result = s  # Start from initial s\n    for i in range(depth):\n        acc = all_reduced[i]\n        if i < depth - 1:\n            # Apply inverse transform\n            s_result = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n        else:\n            # Last iteration: s = acc directly\n            s_result = acc\n    \n    return s_result"
+}

@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r67_vself_b2p0_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6643.4,
+  "strategies": [
+    {
+      "name": "Baseline Sequential All-Reduce Chain",
+      "desc": "Executes 8 dependent all-reduce operations sequentially with intermediate local computations (v-projection, mean, scaling). Dispatch count = 8 all-reduces. Represents the straightforward approach with no fusion or structural optimization\u2014highest latency due to serial collective dependencies but simplest correctness guarantee."
+    },
+    {
+      "name": "Fused Buffer Preparation Before Collectives",
+      "desc": "Pre-computes the vector v once and reuses it; fuses all elementwise operations (multiplication, mean computation, addition) into single kernel launches between all-reduces to minimize dispatch overhead from local ops. Dispatch count = 8 all-reduces + ~8 fused local kernels. Trades off additional engineering complexity for reduced local-op dispatch count while keeping collective count unchanged."
+    },
+    {
+      "name": "Scalar Mean All-Reduce Decomposition",
+      "desc": "Instead of all-reducing the full buffer, decompose into two collectives per iteration: one all-reduce for the full s vector and one scalar all-reduce for (v*s).mean() across ranks, then reconstruct locally. Dispatch count = 16 all-reduces (8 iterations \u00d7 2 per iteration). Trades increased collective count for smaller second payload (scalar vs 16384 elements), potentially better for bandwidth-constrained scenarios."
+    },
+    {
+      "name": "Pipelined Dual-Buffer Overlap Strategy",
+      "desc": "Maintain two buffers and attempt to overlap computation of iteration i+1's local operations (v-projection, mean) with the all-reduce communication of iteration i, using asynchronous collective launches where possible. Dispatch count = 8 all-reduces with attempted overlap. Represents latency hiding through pipeline parallelism, trading memory footprint (2\u00d7 buffers) for reduced wall-clock time."
+    },
+    {
+      "name": "Hierarchical Two-Stage Reduction Pattern",
+      "desc": "Exploit multi-node topology by splitting each all-reduce into intra-node reduce-scatter + inter-node all-reduce + intra-node all-gather for better bandwidth utilization at scale (world_size=224). Dispatch count = 24 collectives (8 iterations \u00d7 3-phase pattern). Optimizes for NUMA/network topology awareness, trading collective count for per-collective efficiency on large-scale hierarchical interconnects.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Baseline Sequential All-Reduce Chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.008204"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Buffer Preparation Before Collectives",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902884"
+    },
+    {
+      "stage": "impl",
+      "name": "Scalar Mean All-Reduce Decomposition",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902884"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Dual-Buffer Overlap Strategy",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Stage Reduction Pattern",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.906055"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 6643.4,
+  "final_code": "def r67_vself_b2p0_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size; BETA = 2.0; N = 16384\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    idx = torch.arange(N)\n    v = (1 - 2 * (idx % 2)).to(s.dtype)\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    return s\n",
+  "fell_back_to_baseline": true
+}

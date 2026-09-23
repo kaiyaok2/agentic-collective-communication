@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r66_walsh_b1p0_p512_d8",
+  "gate": "fp32",
+  "baseline_sim": 6611.914285714285,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with intermediate computations",
+      "desc": "Directly implements the reference pattern with 8 separate all-reduce dispatches, each preceded by local buffer computation (s + BETA*u*(v*s).mean()) and followed by division and inverse transform (s = acc - BETA*u*(v*acc).mean()). This yields 8 collective dispatches with minimal per-dispatch payload (4096 elements), trading dispatch overhead for simplicity and matching the dependency chain exactly."
+    },
+    {
+      "name": "Fused buffer preparation with batched collectives",
+      "desc": "Pre-compute all sign vectors (u, v) once, then attempt to batch multiple all-reduce operations by packing buffers into a single tensor of shape (8, 4096) or (32768,) and using a single all-reduce with 8\u00d7 payload, then unpacking and applying all local transformations in a vectorized loop. This reduces dispatches from 8 to 1 but increases payload size and requires careful handling of the true data dependencies (each iteration depends on previous result)."
+    },
+    {
+      "name": "Pipelined two-phase reduce-scatter/all-gather decomposition",
+      "desc": "Replace each all-reduce with a reduce-scatter followed by all-gather pair, exploiting potential hardware pipeline parallelism across the 8 iterations. Each rank computes its local transforms on smaller chunks during the RS phase, then reconstructs full results during AG. This yields 16 collective dispatches (8 RS + 8 AG) but with smaller per-dispatch payloads (4096/224 \u2248 18 elements for RS) and potential overlap opportunities."
+    },
+    {
+      "name": "Recursive-halving butterfly with interleaved computation",
+      "desc": "Reorganize the 8 dependent all-reduces into a tree structure by exploiting mathematical properties of the Walsh-Hadamard-like transform pattern (u, v sign vectors). Use log\u2082(world_size) \u2248 8 collectives in a butterfly/recursive-halving pattern where each step exchanges different data chunks, interleaving the buffer transformations. This maintains 8 dispatches but changes communication topology for better network utilization at world_size=224."
+    },
+    {
+      "name": "Scalar-only side-channel with broadcast optimization",
+      "desc": "Observe that each iteration only depends on a single scalar (v*s).mean() broadcast by the previous step. Separate the communication into: one initial all-reduce for the sum s, then 7 iterations of broadcast (scalar mean value) + local computation + all-reduce. This changes the collective mix from 8\u00d7all-reduce to 1\u00d7all-reduce + 7\u00d7(broadcast + all-reduce), potentially 15 dispatches but with 7 scalar broadcasts that are extremely lightweight compared to 4096-element all-reduces.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with intermediate computations",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.007987"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused buffer preparation with batched collectives",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined two-phase reduce-scatter/all-gather decomposition",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.274871"
+    },
+    {
+      "stage": "impl",
+      "name": "Recursive-halving butterfly with interleaved computation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.274871"
+    },
+    {
+      "stage": "impl",
+      "name": "Scalar-only side-channel with broadcast optimization",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.063892"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 6611.914285714285,
+  "final_code": "def r66_walsh_b1p0_p512_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size; BETA = 1.0; N = 4096\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    idx = torch.arange(N)\n    v = (1 - 2 * (idx % 2)).to(s.dtype)\n    u = (1 - 2 * ((idx // 2) % 2)).to(s.dtype)\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    return s\n",
+  "fell_back_to_baseline": true
+}

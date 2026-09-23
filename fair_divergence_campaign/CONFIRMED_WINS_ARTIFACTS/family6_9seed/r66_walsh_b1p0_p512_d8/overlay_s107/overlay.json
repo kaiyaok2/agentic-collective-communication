@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r66_walsh_b1p0_p512_d8",
+  "gate": "fp32",
+  "baseline_sim": 6611.914285714285,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with intermediate recomputation",
+      "desc": "Directly follows the reference implementation with 8 sequential all_reduce operations (one initial sum + 7 iterations), each followed by local compute of Walsh-Hadamard-like transforms with v and u sign patterns. Total 8 all_reduce dispatches. Represents the baseline: simple structure, high dispatch count, minimal fusion opportunities."
+    },
+    {
+      "name": "Fused buffer preparation with batched collectives",
+      "desc": "Pre-compute all 7 intermediate buffers locally by unrolling the recurrence formula symbolically, then issue all 7 all_reduce operations on a stacked/concatenated tensor (shape [7, 4096] or [28672]). Total 2 all_reduce dispatches (initial + batched). Trades increased payload size (7x) and local memory for fewer dispatches."
+    },
+    {
+      "name": "Reduce-scatter then all-gather pipelined decomposition",
+      "desc": "Decompose each all_reduce into reduce_scatter + all_gather pairs to enable partial overlap. Partition the 4096 elements across 224 ranks, allowing pipelined communication where all_gather of iteration i overlaps with reduce_scatter of iteration i+1. Total 16 dispatches (2 per iteration) but exposes pipeline parallelism opportunities."
+    },
+    {
+      "name": "Two-level hierarchical all-reduce with local Walsh fusion",
+      "desc": "Exploit potential multi-node topology (num_nodes parameter): perform intra-node all_reduce followed by inter-node all_reduce for each iteration, fusing the Walsh transform computation between hierarchy levels. Total 16 dispatches (2 per iteration) but reduces cross-node bandwidth by factor of devices-per-node."
+    },
+    {
+      "name": "Algebraic loop unrolling with single collective",
+      "desc": "Analytically solve the 7-iteration recurrence as a closed-form linear transformation: recognize that repeated application of (s + \u03b2*u*(v\u00b7s)) forms a matrix power that can be precomputed. Compute local transform, single all_reduce, then apply inverse transform. Total 1 all_reduce dispatch, but requires O(N\u00b2) or O(N log N) local precomputation and careful numerical stability.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with intermediate recomputation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.007987"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused buffer preparation with batched collectives",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.007987"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-scatter then all-gather pipelined decomposition",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: RuntimeError: The size of tensor a (4096) mus"
+    },
+    {
+      "stage": "impl",
+      "name": "Two-level hierarchical all-reduce with local Walsh fusion",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Algebraic loop unrolling with single collective",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.274311"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 6611.914285714285,
+  "final_code": "def r66_walsh_b1p0_p512_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size; BETA = 1.0; N = 4096\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    idx = torch.arange(N)\n    v = (1 - 2 * (idx % 2)).to(s.dtype)\n    u = (1 - 2 * ((idx // 2) % 2)).to(s.dtype)\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    return s\n",
+  "fell_back_to_baseline": true
+}

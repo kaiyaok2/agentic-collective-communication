@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r67_vself_b0p5_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6643.4,
+  "strategies": [
+    {
+      "name": "Baseline Sequential All-Reduce Chain",
+      "desc": "Performs 8 sequential all-reduce operations with interleaved local vector operations (v multiplication, mean computation, scaling). 8 collective dispatches on full 16384-element tensors. Represents the direct translation with no structural optimization\u2014high dispatch overhead but simple correctness."
+    },
+    {
+      "name": "Fused Scalar Reduce for Projections",
+      "desc": "Replaces (v*s).mean() computations with separate all-reduce calls on the scalar dot product v\u00b7s, then broadcasts implicitly via local replication. Results in 8 + 8 = 16 dispatches (8 vector all-reduce + 8 scalar all-reduce) but each scalar operation has 1-element payload, potentially enabling faster convergence tracking with minimal bandwidth overhead."
+    },
+    {
+      "name": "Concatenated Multi-Iteration Payload Bundling",
+      "desc": "Stacks multiple iteration buffers into a single larger tensor (e.g., concatenate 2-4 iterations' worth of s + BETA*v*(v*s).mean() transforms) and issues one all-reduce per bundle, then unpacks and applies inverse transforms. Reduces dispatch count to 2-4 collectives but increases per-dispatch payload size by 2-4x and requires careful buffering of intermediate states."
+    },
+    {
+      "name": "Pipelined Dual-Stream Overlap",
+      "desc": "Splits the 16384 elements into two independent halves, launches all-reduce for first half while computing local ops for second half, alternating to hide compute-communication latency. Still 8 logical iterations but doubles dispatch count to 16 (two streams) while halving per-dispatch payload; exploits parallelism if backend supports concurrent small collectives."
+    },
+    {
+      "name": "Hierarchical Two-Phase Node-Local Reduction",
+      "desc": "Leverages multi-node topology (assumes ranks grouped into nodes): first performs intra-node reductions via device-local all-reduce primitives on subgroups, then inter-node all-reduce on node representatives, finally intra-node broadcast. Each of 8 iterations becomes 3 dispatches but with smaller effective world sizes (node-local W_local << 224), improving algorithmic latency at cost of dispatch count (24 total).\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Baseline Sequential All-Reduce Chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902395"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Scalar Reduce for Projections",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902395"
+    },
+    {
+      "stage": "impl",
+      "name": "Concatenated Multi-Iteration Payload Bundling",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.002052"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Dual-Stream Overlap",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.002052"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Phase Node-Local Reduction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 6643.4,
+  "final_code": "def r67_vself_b0p5_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size; BETA = 0.5; N = 16384\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    idx = torch.arange(N)\n    v = (1 - 2 * (idx % 2)).to(s.dtype)\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    return s\n",
+  "fell_back_to_baseline": true
+}

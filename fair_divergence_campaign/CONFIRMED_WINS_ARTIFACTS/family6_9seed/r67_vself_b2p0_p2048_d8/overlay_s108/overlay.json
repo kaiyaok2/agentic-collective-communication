@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r67_vself_b2p0_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6643.4,
+  "strategies": [
+    {
+      "name": "Naive Sequential All-Reduce Chain",
+      "desc": "Performs 8 sequential all-reduce operations exactly as shown in the reference, with local elementwise operations (mean, scaling, vector projection) interleaved between each all-reduce. Total of 9 dispatches (1 initial + 8 dependent). Maximizes clarity but offers no optimization; serves as baseline with highest dispatch count and full network round-trip latency exposed."
+    },
+    {
+      "name": "Fused Buffer Pre-computation with Reduce",
+      "desc": "Pre-compute all local vector operations (v generation, elementwise products, means) before any communication, then batch the scalar projection coefficients and use a single all-reduce on concatenated [data||coefficient] payload to exchange both s and the v\u00b7s mean in one dispatch per iteration. Reduces to ~8 dispatches by eliminating separate reductions for coefficients, trading larger message size for fewer network round-trips."
+    },
+    {
+      "name": "Pipelined Two-Stage All-Reduce Pattern",
+      "desc": "Exploit the structure where each iteration has a forward transform (s \u2192 buf) and inverse transform (acc \u2192 s). Pipeline by overlapping the all-reduce of iteration i's buffer with the local computation of iteration i-1's inverse transform and iteration i+1's forward transform. Uses async all-reduce dispatch if available, maintaining 8 all-reduce calls but hiding ~50% of local compute latency behind communication."
+    },
+    {
+      "name": "Hierarchical Reduce-Scatter + All-Gather",
+      "desc": "Decompose each all-reduce into reduce-scatter followed by all-gather, partitioning the 16384-element vector across ranks. Each rank computes its assigned partition through all 8 iterations locally using only its slice, then performs a single final all-gather to broadcast results. Trades 16 dispatches (8 RS + 8 AG) for dramatically smaller per-iteration payload (16384/224 elements), improving bandwidth efficiency on large world sizes."
+    },
+    {
+      "name": "Scalar Coefficient All-Reduce Only",
+      "desc": "Observe that v is fixed and known to all ranks; only the scalar coefficient (v\u00b7s).mean() needs global synchronization each iteration. Perform all-reduce on a single scalar per iteration instead of the full vector, then reconstruct buf locally. Reduces to 9 dispatches (1 initial vector all-reduce + 8 scalar all-reduces) with minimal payload per dependent step, optimizing for latency-bound small-message regime at world size 224.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Naive Sequential All-Reduce Chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902884"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Buffer Pre-computation with Reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.712520"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Two-Stage All-Reduce Pattern",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.008204"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Reduce-Scatter + All-Gather",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: RuntimeError: The size of tensor a (4096) mus"
+    },
+    {
+      "stage": "impl",
+      "name": "Scalar Coefficient All-Reduce Only",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.305264"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 6643.4,
+  "final_code": "def r67_vself_b2p0_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size; BETA = 2.0; N = 16384\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    idx = torch.arange(N)\n    v = (1 - 2 * (idx % 2)).to(s.dtype)\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    return s\n",
+  "fell_back_to_baseline": true
+}

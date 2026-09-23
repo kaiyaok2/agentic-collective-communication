@@ -1,0 +1,73 @@
+{
+  "pipeline": "overlay",
+  "problem": "r67_vself_b1p0_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6643.4,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with scalar v-projection",
+      "desc": "Perform 8 sequential all_reduce operations (9 total including initial sum), each computing the v-projection scalar (v*s).mean() locally, then adding BETA*v*(scalar) before next all_reduce. 9 collective dispatches, minimal fusion, straightforward iteration structure. Represents the baseline reference with clear separation of collective and local ops."
+    },
+    {
+      "name": "Fused buffer preparation with batched collectives",
+      "desc": "Pre-compute all 8 v-projection scalars and buffer transformations locally using intermediate state tracking, then issue all 8 all_reduce operations back-to-back to maximize NIC/DMA pipeline utilization. Still 9 dispatches but improved overlap potential; trades increased local memory footprint for better collective pipelining across dependent stages."
+    },
+    {
+      "name": "Split even/odd v-components separate reduction",
+      "desc": "Decompose the alternating sign vector v into two separate channels (even indices = +1, odd indices = -1), perform parallel all_reduce on each half, then interleave results. Exploits the structured v pattern to potentially reduce per-collective payload size or enable independent dataflow; approximately 16-18 dispatches but smaller messages."
+    },
+    {
+      "name": "Recursive halving with v-projection checkpoints",
+      "desc": "After initial all_reduce, recursively perform log2(world_size) stages where each stage does hierarchical reduction (e.g., reduce_scatter + all_gather pattern) and checkpoints v-projection state at power-of-2 intervals among the 8 iterations. Trades iteration count structure for collective primitive diversity; total dispatches ~10-12 depending on hierarchy depth."
+    },
+    {
+      "name": "Ring-based iterative refinement pipeline",
+      "desc": "Replace all_reduce with manual ring all-reduce (send/recv chains forming 2*(W-1) steps), fusing the v-projection computation into each ring segment's local accumulation. Dramatically increases dispatches (~3000+ point-to-point ops) but enables fine-grained fusion of local projection math with communication, hiding scalar recomputation latency.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with scalar v-projection",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902558"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused buffer preparation with batched collectives",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: TypeError: unsupported operand type(s) for *:"
+    },
+    {
+      "stage": "impl",
+      "name": "Split even/odd v-components separate reduction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902558"
+    },
+    {
+      "stage": "impl",
+      "name": "Recursive halving with v-projection checkpoints",
+      "sim": 6643.4,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Ring-based iterative refinement pipeline",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902558"
+    },
+    {
+      "stage": "refine:Recursive halving with v-projection checkpoints",
+      "round": 1,
+      "sim": 5857.400000000001
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 5857.400000000001,
+  "final_code": "def r67_vself_b1p0_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Recursive halving with batched collectives to reduce dispatch count.\n    \n    Strategy: Batch multiple iteration buffers together to reduce\n    the number of collective dispatches from 8 to 3-4.\n    \"\"\"\n    W = world_size\n    BETA = 1.0\n    N = x.shape[0]\n    dtype = x.dtype\n    \n    # Precompute v vector (fixed sign pattern [+1, -1, +1, -1, ...])\n    idx = torch.arange(N, device=x.device)\n    v = (1 - 2 * (idx % 2)).to(dtype)\n    \n    # Initial all_reduce to get s\n    s = xm.all_reduce(xm.REDUCE_SUM, x)  # Dispatch 1\n    \n    # Batch iterations 1-3 together\n    buffers = []\n    s_temp = s\n    for i in range(3):\n        buf = s_temp + BETA * v * (v * s_temp).mean()\n        buffers.append(buf)\n        # Compute tentative next s locally (will be corrected after all_reduce)\n        acc_approx = buf  # approximate\n        s_temp = acc_approx - (BETA / (1.0 + BETA)) * v * (v * acc_approx).mean()\n    \n    # Single batched all_reduce for iterations 1-3\n    stacked = torch.stack(buffers, dim=0)\n    reduced = xm.all_reduce(xm.REDUCE_SUM, stacked)  # Dispatch 2\n    reduced = reduced / W\n    \n    # Process results sequentially to maintain dependencies\n    s = reduced[0] - (BETA / (1.0 + BETA)) * v * (v * reduced[0]).mean()\n    s = reduced[1] - (BETA / (1.0 + BETA)) * v * (v * reduced[1]).mean()\n    s = reduced[2] - (BETA / (1.0 + BETA)) * v * (v * reduced[2]).mean()\n    \n    # Batch iterations 4-6 together\n    buffers = []\n    s_temp = s\n    for i in range(3):\n        buf = s_temp + BETA * v * (v * s_temp).mean()\n        buffers.append(buf)\n        acc_approx = buf\n        s_temp = acc_approx - (BETA / (1.0 + BETA)) * v * (v * acc_approx).mean()\n    \n    # Single batched all_reduce for iterations 4-6\n    stacked = torch.stack(buffers, dim=0)\n    reduced = xm.all_reduce(xm.REDUCE_SUM, stacked)  # Dispatch 3\n    reduced = reduced / W\n    \n    # Process results\n    s = reduced[0] - (BETA / (1.0 + BETA)) * v * (v * reduced[0]).mean()\n    s = reduced[1] - (BETA / (1.0 + BETA)) * v * (v * reduced[1]).mean()\n    s = reduced[2] - (BETA / (1.0 + BETA)) * v * (v * reduced[2]).mean()\n    \n    # Final iteration 7\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)  # Dispatch 4\n    acc = acc / W\n    s = acc\n    \n    return s"
+}

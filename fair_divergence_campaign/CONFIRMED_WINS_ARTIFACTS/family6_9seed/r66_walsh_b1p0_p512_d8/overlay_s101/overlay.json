@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r66_walsh_b1p0_p512_d8",
+  "gate": "fp32",
+  "baseline_sim": 6611.914285714285,
+  "strategies": [
+    {
+      "name": "Sequential All-Reduce with Inline Transforms",
+      "desc": "Performs 8 sequential all-reduce operations with local Walsh transforms (u, v masking and mean computation) interleaved between each collective. 8 total dispatches. Baseline reference approach with maximum locality but no overlap; trades dispatch count for code simplicity."
+    },
+    {
+      "name": "Chunked Reduce-Scatter Plus All-Gather Pipeline",
+      "desc": "Split the 8-iteration dependency chain into reduce-scatter phases (accumulating partial results per rank) followed by all-gather to broadcast final state. Approximately 8-10 dispatches (4 RS + 4 AG pairs), but smaller per-rank payloads during scatter phases reduce network congestion and enable better pipelining across iterations."
+    },
+    {
+      "name": "Hierarchical Two-Level All-Reduce Tree",
+      "desc": "Leverage multi-node topology by decomposing each all-reduce into intra-node (8 devices) and inter-node (28 nodes) phases using xm.mesh_reduce or manual node-local reductions followed by cross-node collectives. 16 total dispatches (8 iterations \u00d7 2 levels), but each operates on smaller domains and may exploit NVLink/local fabric bandwidth."
+    },
+    {
+      "name": "Fused Buffer Accumulation with Batched Dispatch",
+      "desc": "Precompute all 8 Walsh-transform buffers locally, stack them into a single (8, 4096) tensor, and issue one large all-reduce followed by 7 smaller corrections, or batch multiple all-reduce calls into one xm dispatch if API supports it. Reduces dispatch overhead to 1-2 calls but increases memory footprint and may serialize computation."
+    },
+    {
+      "name": "Recursive Halving with In-Place Updates",
+      "desc": "Implement the 8-step dependency as a recursive-doubling pattern (log\u2082 224 \u2248 8 steps) by pairing ranks in a butterfly topology and exchanging only delta corrections (differences in Walsh-transformed buffers) rather than full vectors. 8 dispatches of xm.send/recv or all-to-all with half-size payloads per step, trading algorithmic complexity for bandwidth savings.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential All-Reduce with Inline Transforms",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.007987"
+    },
+    {
+      "stage": "impl",
+      "name": "Chunked Reduce-Scatter Plus All-Gather Pipeline",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.007987"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level All-Reduce Tree",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.274871"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Buffer Accumulation with Batched Dispatch",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.274318"
+    },
+    {
+      "stage": "impl",
+      "name": "Recursive Halving with In-Place Updates",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.274871"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 6611.914285714285,
+  "final_code": "def r66_walsh_b1p0_p512_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size; BETA = 1.0; N = 4096\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    idx = torch.arange(N)\n    v = (1 - 2 * (idx % 2)).to(s.dtype)\n    u = (1 - 2 * ((idx // 2) % 2)).to(s.dtype)\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    return s\n",
+  "fell_back_to_baseline": true
+}

@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r67_vself_b0p5_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6643.4,
+  "strategies": [
+    {
+      "name": "Sequential All-Reduce with Scalar Broadcast",
+      "desc": "Perform 8 separate all-reduce operations in sequence, each reducing a full vector buffer. After each all-reduce, compute the scalar mean of (v * result) locally, then broadcast this scalar to all ranks before computing the next iteration's input buffer. This increases dispatch count to ~16 (8 vector all-reduces + 8 scalar broadcasts) but reduces computation redundancy by computing the projection scalar once per iteration."
+    },
+    {
+      "name": "Fused Buffer with Auxiliary Channel",
+      "desc": "Concatenate each iteration's vector buffer with its scalar projection (v*s).mean() into a single payload of size N+1, then perform one all-reduce per iteration (8 total dispatches). Each rank extracts both the summed vector and the summed scalar projection from the result, avoiding redundant local mean computations. Trades slightly larger payload (16384\u219216385 elements) for cleaner structure and potential fusion opportunities."
+    },
+    {
+      "name": "Pipelined Dual-Buffer with Overlap",
+      "desc": "Maintain two buffers and issue all-reduce on buffer A while computing local operations (v-projection, scaling) on buffer B from the previous iteration. Requires careful dependency tracking across 8 iterations but allows computation-communication overlap. Total dispatches remain 8, but effective latency is reduced by hiding ~50% of local compute time behind network operations."
+    },
+    {
+      "name": "Hierarchical Reduce-Scatter then All-Gather",
+      "desc": "For each of the 8 iterations, replace the all-reduce with a reduce-scatter (each rank gets 1/224 of result) followed by local projection computation on the local slice, then all-gather to reconstruct the full vector. Total 16 dispatches (8 RS + 8 AG), but each reduce-scatter moves less data than all-reduce, potentially better bandwidth utilization on high world-size topologies."
+    },
+    {
+      "name": "Vectorized Multi-Iteration with Stacked Payload",
+      "desc": "Stack multiple iterations' buffers along a new dimension (shape [k, N] where k\u22648), perform batched all-reduce operations that process multiple iterations simultaneously. Requires careful dependency analysis to determine maximum k that respects data dependencies (likely k=2-3 given the recurrence). Reduces dispatch count to 3-4 at the cost of larger per-dispatch payload and more complex local reshape/indexing operations.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential All-Reduce with Scalar Broadcast",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902395"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Buffer with Auxiliary Channel",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.002052"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Dual-Buffer with Overlap",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902395"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Reduce-Scatter then All-Gather",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902395"
+    },
+    {
+      "stage": "impl",
+      "name": "Vectorized Multi-Iteration with Stacked Payload",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.002052"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 6643.4,
+  "final_code": "def r67_vself_b0p5_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size; BETA = 0.5; N = 16384\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    idx = torch.arange(N)\n    v = (1 - 2 * (idx % 2)).to(s.dtype)\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    return s\n",
+  "fell_back_to_baseline": true
+}

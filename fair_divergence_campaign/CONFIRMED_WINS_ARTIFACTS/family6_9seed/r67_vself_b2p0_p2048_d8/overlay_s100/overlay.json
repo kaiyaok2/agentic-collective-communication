@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r67_vself_b2p0_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6643.4,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with scalar reduction",
+      "desc": "Performs 8 sequential all-reduce operations on the full 16384-element vector, with local scalar mean computations (v*s dot product) between each collective. 9 total dispatches (1 initial + 8 dependent). Baseline approach with maximum latency exposure but simplest structure."
+    },
+    {
+      "name": "Fused buffer preparation with vectorized operations",
+      "desc": "Pre-computes all scalar projections (v*s).mean() locally before issuing collectives, then batches the buffer transformations. Still 9 dispatches but reduces local compute overhead between collectives by vectorizing v-operations and potentially overlapping mean reductions with communication."
+    },
+    {
+      "name": "Split vector into even/odd partitions",
+      "desc": "Decompose the alternating sign pattern into two independent subproblems: sum over even indices (v=+1) and odd indices (v=-1), process each with 8 all-reduces in parallel logical streams, then interleave results. 17 dispatches (1+8+8) but exposes potential pipeline parallelism if hardware supports concurrent collectives on disjoint data."
+    },
+    {
+      "name": "Hierarchical two-stage reduction with projection",
+      "desc": "First stage computes full sum s and projection coefficient c=(v*s).mean() via 2 all-reduces (one for s, one for c as scalar). Second stage iterates 7 times with both values synchronized together in a concatenated payload. 9 dispatches but each dispatch after first two carries both vector and scalar, changing network efficiency profile."
+    },
+    {
+      "name": "Ring-allreduce with in-flight local updates",
+      "desc": "Replace global all-reduce primitives with manual ring-reduce-scatter + all-gather pattern, applying the v-projection formula locally during the scatter phase on partial sums. 16 dispatches (8 iterations \u00d7 2 phases) but allows computation-communication overlap and reduces per-hop payload via chunking at world_size 224.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with scalar reduction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902884"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused buffer preparation with vectorized operations",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902884"
+    },
+    {
+      "stage": "impl",
+      "name": "Split vector into even/odd partitions",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902884"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-stage reduction with projection",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.016572"
+    },
+    {
+      "stage": "impl",
+      "name": "Ring-allreduce with in-flight local updates",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: RuntimeError: The size of tensor a (16384) mu"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 6643.4,
+  "final_code": "def r67_vself_b2p0_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size; BETA = 2.0; N = 16384\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    idx = torch.arange(N)\n    v = (1 - 2 * (idx % 2)).to(s.dtype)\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    return s\n",
+  "fell_back_to_baseline": true
+}

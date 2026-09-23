@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r67_vself_b2p0_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6643.4,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with repeated local computation",
+      "desc": "Performs 8 sequential all_reduce operations with interleaved local v-projection computations (mean, scaling, addition/subtraction). This is the baseline approach with 8 all_reduce dispatches. Trades minimal code complexity for maximum dispatch count and latency from dependent collectives."
+    },
+    {
+      "name": "Fused buffer accumulation with single final all-reduce",
+      "desc": "Accumulates all 8 iteration states locally into separate buffers, then performs a single all_reduce on a concatenated tensor of shape (8*N,) containing all intermediate results, followed by local unpacking and iterative refinement. Reduces to 1 all_reduce dispatch but increases payload 8x and requires significant local memory and post-processing."
+    },
+    {
+      "name": "Scalar projection with vector all-reduce separation",
+      "desc": "Separates the scalar projection coefficient (v\u00b7s).mean() computation from the vector all_reduce by computing projections locally, performing all_reduce only on the scalar accumulator across iterations, then broadcasting/reconstructing the full vector. Uses 8 all_reduce calls on scalars plus 1 initial vector all_reduce, trading smaller per-dispatch payload for slightly increased dispatch count."
+    },
+    {
+      "name": "Pipelined double-buffered all-reduce chain",
+      "desc": "Overlaps computation of iteration i+1's local v-projection with the all_reduce of iteration i's buffer by maintaining two buffers and issuing non-blocking collectives where possible. Still requires 8 all_reduce dispatches but attempts to hide local computation latency behind communication, though dependent data flow limits overlap opportunity."
+    },
+    {
+      "name": "Hierarchical reduction with separate s and projection accumulators",
+      "desc": "Decomposes into two phases: first accumulates raw s vectors across all 8 iterations with 8 all_reduce calls, then performs a second pass computing all v-projections on the accumulated history with 1 final all_reduce of the projection correction terms. Uses 9 total dispatches but restructures the dependency graph to enable potential batching of independent operations.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with repeated local computation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902884"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused buffer accumulation with single final all-reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902707"
+    },
+    {
+      "stage": "impl",
+      "name": "Scalar projection with vector all-reduce separation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902884"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined double-buffered all-reduce chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'TrackedTensor' object has no"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical reduction with separate s and projection accumulators",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902884"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 6643.4,
+  "final_code": "def r67_vself_b2p0_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size; BETA = 2.0; N = 16384\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    idx = torch.arange(N)\n    v = (1 - 2 * (idx % 2)).to(s.dtype)\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    return s\n",
+  "fell_back_to_baseline": true
+}

@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r67_vself_b2p0_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6643.4,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with scalar reduction",
+      "desc": "Perform 8 sequential all-reduce operations (one initial for x, then 7 iterative updates) with interleaved local elementwise operations for v projection. Each iteration computes mean of v*s locally, applies transform, then all-reduces. Total 8 all-reduce dispatches with full 16384-element payloads. Baseline approach matching reference: maximizes simplicity but highest dispatch count."
+    },
+    {
+      "name": "Fused buffer with dual-channel payload",
+      "desc": "Pack [buf, v*buf_scalar_broadcast] into a single 2x-sized payload per all-reduce, reducing mean() to a single scalar slot. After all-reduce, unpack and compute locally. Reduces 8 all-reduces to 8 fused all-reduces with 16385-element payloads (16384 + 1 scalar). Trades ~12% larger payload for eliminating separate scalar reduction and enabling better kernel fusion."
+    },
+    {
+      "name": "Batch all-reduce with stacked iterations",
+      "desc": "Stack all 8 iteration buffers into shape (8, 16384) and issue a single all-reduce on the flattened 131072-element tensor, then unpack and apply 7 correction transforms locally in sequence. Only 1 dispatch but cannot exploit iterative refinement structure; approximates the coupled iteration as independent. Minimizes network round-trips at cost of incorrect semantics unless reformulated."
+    },
+    {
+      "name": "Pipelined two-phase reduce-broadcast decomposition",
+      "desc": "Decompose each all-reduce into reduce-scatter followed by all-gather across a logical 2D topology (e.g., 14x16 or 16x14 grid). For each of 8 iterations, pipeline the RS and AG phases to overlap computation of v-projection with inter-node transfers. Total 16 collectives (2 per iteration \u00d7 8) but each on 1/sqrt(W) of payload, exploiting hierarchical bandwidth."
+    },
+    {
+      "name": "Delta-encoded iterative refinement all-reduce",
+      "desc": "All-reduce the initial x, then for iterations 2-8 compute only the delta (correction term from v-projection difference), all-reduce the delta (smaller effective payload due to sparsity/compressibility), and accumulate locally. 8 all-reduce dispatches but iterations 2-8 on effectively sparser data. Trades CPU-side delta computation for potential bandwidth savings if deltas compress well or can use reduced-precision.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with scalar reduction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.008204"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused buffer with dual-channel payload",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.008204"
+    },
+    {
+      "stage": "impl",
+      "name": "Batch all-reduce with stacked iterations",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.008204"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined two-phase reduce-broadcast decomposition",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=2: RuntimeError: The size of tensor a (16384) mu"
+    },
+    {
+      "stage": "impl",
+      "name": "Delta-encoded iterative refinement all-reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.008204"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 6643.4,
+  "final_code": "def r67_vself_b2p0_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size; BETA = 2.0; N = 16384\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    idx = torch.arange(N)\n    v = (1 - 2 * (idx % 2)).to(s.dtype)\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    return s\n",
+  "fell_back_to_baseline": true
+}

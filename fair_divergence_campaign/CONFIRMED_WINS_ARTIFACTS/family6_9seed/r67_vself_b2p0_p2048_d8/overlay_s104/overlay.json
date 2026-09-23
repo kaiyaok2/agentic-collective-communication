@@ -1,0 +1,78 @@
+{
+  "pipeline": "overlay",
+  "problem": "r67_vself_b2p0_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6643.4,
+  "strategies": [
+    {
+      "name": "Naive sequential all-reduce loop",
+      "desc": "Execute 8 sequential all-reduce operations with interleaved local vector multiplications and mean computations exactly as in the reference. Dispatch count is 8 all-reduces. This is the baseline: no optimization, straightforward translation of the mathematical dependency chain, highest latency due to sequential blocking collectives."
+    },
+    {
+      "name": "Fused scalar all-reduce sideband",
+      "desc": "Observe that only the scalar projection (v\u00b7s).mean() changes between iterations, not the full vector. Perform one vector all-reduce for initial s, then 7 iterations of: compute scalar projection locally, all-reduce only that scalar (much smaller payload), reconstruct full vector locally. Dispatch count is 8 all-reduces (1 vector + 7 scalars), dramatically reduced bandwidth on 7/8 operations."
+    },
+    {
+      "name": "Pipelined two-phase batched reduction",
+      "desc": "Split the 8 iterations into two phases of 4. In phase 1, compute all 4 local buffers and batch them into a single all-reduce call with concatenated payload (4\u00d7N elements). Similarly for phase 2, using phase 1 results. Dispatch count is 2 all-reduces. Trades off memory (4\u00d7 intermediate storage) and compute latency for fewer network round-trips."
+    },
+    {
+      "name": "Hierarchical reduction with algebraic reformulation",
+      "desc": "Algebraically factor the iterative s \u2190 f(s) updates to express the final result as a closed-form function of intermediate projections. Compute all 8 projection scalars in a single pass, all-reduce the vector of 8 scalars together, then reconstruct final s locally. Dispatch count is 2 all-reduces (initial vector + scalar vector). Requires careful mathematical derivation but minimizes collectives."
+    },
+    {
+      "name": "Overlapped compute-communication with async",
+      "desc": "Initiate all-reduce asynchronously, immediately compute the next iteration's local v\u00b7s projection on stale data (speculative), then wait and correct once collective completes. Pipeline 8 all-reduce operations with their dependent local compute. Dispatch count remains 8 all-reduces but overlap reduces wall-clock time. Requires non-blocking collectives and careful synchronization.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Naive sequential all-reduce loop",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902884"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused scalar all-reduce sideband",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.152027"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined two-phase batched reduction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902176"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical reduction with algebraic reformulation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.008204"
+    },
+    {
+      "stage": "impl",
+      "name": "Overlapped compute-communication with async",
+      "sim": 6643.4,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "refine:Overlapped compute-communication with async",
+      "round": 1,
+      "sim": 6634.3
+    },
+    {
+      "stage": "refine:Overlapped compute-communication with async",
+      "round": 2,
+      "sim": 6635.0
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 6634.3,
+  "final_code": "def r67_vself_b2p0_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size\n    BETA = 2.0\n    N = 16384\n    \n    # Pre-compute constants\n    inv_W = 1.0 / W\n    beta_factor = BETA / (1.0 + BETA)\n    \n    # Create the fixed pattern vector v (alternating +1, -1)\n    idx = torch.arange(N, device=x.device)\n    v = (1 - 2 * (idx % 2)).to(x.dtype)\n    \n    # Initial all-reduce to get s\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Unroll iterations and fuse operations\n    for _ in range(6):\n        # Compute v dot s efficiently\n        v_dot_s = (v * s).mean()\n        # Compute buffer with fused operations\n        buf = s + (BETA * v_dot_s) * v\n        # All-reduce\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n        # Apply scaling and correction in one step\n        acc *= inv_W\n        s = acc - (beta_factor * (v * acc).mean()) * v\n    \n    # Final iteration (no correction needed)\n    v_dot_s = (v * s).mean()\n    buf = s + (BETA * v_dot_s) * v\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    s = acc * inv_W\n    \n    return s"
+}

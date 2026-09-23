@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r67_vself_b0p5_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6643.4,
+  "strategies": [
+    {
+      "name": "Sequential All-Reduce with Scalar Fusing",
+      "desc": "Perform 8 sequential all-reduce operations as in the reference, but fuse the v-projection scalar computation (mean of v*s) into a separate scalar all-reduce channel that pipelines with the main vector all-reduce. This yields 8 vector all-reduces + 8 scalar all-reduces (16 total dispatches), trading more collectives for potential overlap and reduced synchronization latency."
+    },
+    {
+      "name": "Batched Two-Phase Iteration Block",
+      "desc": "Group the 8 iterations into 4 blocks of 2, where each block computes both forward transformations locally, issues a single all-reduce on a [2, N] tensor containing both intermediate buffers, then applies both inverse transformations. This reduces dispatches from 8 to 4 by doubling payload size per dispatch, trading bandwidth for fewer kernel launches and synchronization points."
+    },
+    {
+      "name": "Auxiliary Channel v-Projection Accumulation",
+      "desc": "Split the tensor into two channels: main data (all N elements) and auxiliary scalar (tracking cumulative v-projection coefficient across iterations). Use 8 all-reduces but concatenate the scalar coefficient with the vector payload as an N+1 element tensor, avoiding separate scalar reductions. This maintains 8 dispatches but restructures data layout to enable single-collective synchronization of both vector and scalar state."
+    },
+    {
+      "name": "Pipelined All-Reduce with Lookahead",
+      "desc": "Issue all 8 all-reduce operations back-to-back before consuming any results, relying on XLA's asynchronous dispatch and hardware queueing to overlap communication. Buffer all intermediate states locally (8\u00d7N memory), then apply all inverse v-projections in a single fused kernel pass after synchronization completes. This trades 8\u00d7 memory footprint for maximum communication-computation overlap."
+    },
+    {
+      "name": "Hierarchical Reduce-Scatter All-Gather Chain",
+      "desc": "Decompose each iteration's all-reduce into reduce-scatter (producing N/W fragments per rank) followed by all-gather, enabling computation on partial results during the gather phase. Apply v-projection transforms on scattered chunks and pipeline the inverse operation during gather. This yields 16 primitives (8 RS + 8 AG) with smaller per-dispatch payload (N/W), trading more fine-grained collectives for potential latency hiding in hierarchical topologies.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential All-Reduce with Scalar Fusing",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902395"
+    },
+    {
+      "stage": "impl",
+      "name": "Batched Two-Phase Iteration Block",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902395"
+    },
+    {
+      "stage": "impl",
+      "name": "Auxiliary Channel v-Projection Accumulation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.002052"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined All-Reduce with Lookahead",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902395"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Reduce-Scatter All-Gather Chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902395"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 6643.4,
+  "final_code": "def r67_vself_b0p5_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size; BETA = 0.5; N = 16384\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    idx = torch.arange(N)\n    v = (1 - 2 * (idx % 2)).to(s.dtype)\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    return s\n",
+  "fell_back_to_baseline": true
+}
