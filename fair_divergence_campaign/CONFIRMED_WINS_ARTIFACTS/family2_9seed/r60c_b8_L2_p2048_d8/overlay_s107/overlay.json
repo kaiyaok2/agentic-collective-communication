@@ -1,0 +1,68 @@
+{
+  "pipeline": "overlay",
+  "problem": "r60c_b8_L2_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6695.599999999999,
+  "strategies": [
+    {
+      "name": "Unrolled sequential mask-reduce pattern",
+      "desc": "Performs 8 sequential all-reduce operations (1 initial sum + 7 masked iterations) exactly as in the reference, with each iteration masking to the rank's window, all-reducing, then dividing by overlap counts. Total 8 all-reduce dispatches with full 16384-element payload each time. Trades dispatch count for simplicity and clarity."
+    },
+    {
+      "name": "Fused block-gather with single aggregate all-reduce",
+      "desc": "Pre-compute all 8 masked buffers locally (one per iteration), concatenate them into a single large tensor [8\u00d716384], dispatch one all-reduce on the concatenated payload, then locally split and apply per-block scaling. Reduces from 8 to 1 all-reduce dispatch at the cost of 8\u00d7 larger payload and local memory overhead."
+    },
+    {
+      "name": "Pipelined window-indexed reduce-scatter + all-gather chain",
+      "desc": "Split the computation into a reduce-scatter phase (where each rank holds partial results for its window blocks) followed by an all-gather phase to reconstruct the full result. Uses 2 collectives per iteration depth, approximately 16 total dispatches, but with smaller per-operation payloads (only L=2 blocks per rank). Trades dispatch count for reduced per-dispatch bandwidth."
+    },
+    {
+      "name": "Hierarchical two-phase aggregation with block routing",
+      "desc": "First phase performs a single all-reduce to get global sum, then locally computes all 8 intermediate states by iteratively applying mask+scale operations without communication. Second phase uses 7 all-reduce operations only on changed blocks (selective 2-block windows). Maintains 8 dispatches but with smaller effective payload per later dispatch."
+    },
+    {
+      "name": "Loop-fused single-pass with pre-packed metadata tensor",
+      "desc": "Pack the window masks and overlap counts into a metadata tensor, perform one all-reduce on concatenated [data || metadata], then locally unpack and apply 8 iterations of masking/scaling using the synchronized metadata. Requires 1 all-reduce dispatch with slightly larger payload (16384 + small metadata overhead), trading communication for local compute iteration.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Unrolled sequential mask-reduce pattern",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=nan"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused block-gather with single aggregate all-reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=nan"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined window-indexed reduce-scatter + all-gather chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.804463"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-phase aggregation with block routing",
+      "sim": 6695.599999999999,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Loop-fused single-pass with pre-packed metadata tensor",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.804463"
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 6695.599999999999,
+  "final_code": "def r60c_b8_L2_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 2048\n    B = 8\n    W = world_size\n    L = 2\n    OFF = 2\n    \n    # Phase 1: Get global sum with a single all-reduce\n    global_sum = xm.all_reduce(xm.REDUCE_SUM, x.clone())\n    \n    # Compute per-block overlap counts\n    c = [0] * B\n    for r in range(W):\n        st = (r + OFF) % B\n        for j in range(L):\n            c[(st + j) % B] += 1\n    \n    # Phase 2: Iteratively compute 8 intermediate states locally\n    # Start with state 0 = global_sum\n    states = [global_sum.clone()]\n    \n    # For each of the 7 subsequent states (iterations 1-7)\n    for iteration in range(1, 8):\n        # Start from previous state\n        prev_state = states[-1]\n        \n        # Apply mask+scale: each rank zeros out its window and scales rest by overlap counts\n        start = (rank + OFF) % B\n        keep = set((start + j) % B for j in range(L))\n        \n        buf = torch.zeros_like(prev_state)\n        for b in range(B):\n            if b in keep:\n                buf[b*S:(b+1)*S] = prev_state[b*S:(b+1)*S]\n        \n        # All-reduce to aggregate masked contributions\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n        \n        # Scale by overlap counts (except for last iteration which doesn't need scaling)\n        if iteration < 7:\n            for b in range(B):\n                acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n        \n        states.append(acc)\n    \n    # Return the 8th state (last one)\n    return states[7]"
+}

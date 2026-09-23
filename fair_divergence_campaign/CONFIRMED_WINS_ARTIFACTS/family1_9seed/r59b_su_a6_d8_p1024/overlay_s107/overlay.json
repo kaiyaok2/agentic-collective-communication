@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r59b_su_a6_d8_p1024",
+  "gate": "fp32",
+  "baseline_sim": 13438.000000000113,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with fused local ops",
+      "desc": "Perform 8 sequential all-reduce operations with all local scaling, unscaling, and division operations fused between dispatches. 8 all-reduce dispatches total. Minimizes dispatch overhead by batching all element-wise operations on the full vector between collectives, trading compute intensity for communication serialization."
+    },
+    {
+      "name": "Reduce-scatter then all-gather pattern",
+      "desc": "Replace each all-reduce with a reduce-scatter followed by all-gather, performing local scaling operations on the smaller reduced chunks between the scatter and gather phases. 16 collective dispatches (8 RS + 8 AG). Reduces per-rank communication volume during the reduction phase at the cost of doubling collective count."
+    },
+    {
+      "name": "Pipelined dual-buffer staging",
+      "desc": "Use two buffers to overlap computation of stage N+1's local operations with the all-reduce communication of stage N, issuing non-blocking all-reduce calls. Still 8 all-reduce dispatches but with async overlap potential. Hides local computation latency behind communication, though synchronization points may limit gains at 224 ranks."
+    },
+    {
+      "name": "Hierarchical two-level reduction",
+      "desc": "Exploit multi-node topology by performing intra-node all-reduce followed by inter-node all-reduce at each stage, with local ops between levels. 16 collective dispatches (8 stages \u00d7 2 levels). Optimizes for bandwidth hierarchy when nodes have faster local interconnect than cross-node links."
+    },
+    {
+      "name": "Vectorized pre-computed scale tensors",
+      "desc": "Pre-compute all scale/unscale coefficient tensors as views or broadcasts, then use element-wise multiply instead of per-shard loops, keeping 8 all-reduce dispatches. Reduces kernel launch overhead for local ops by replacing O(W) scalar operations with O(1) vectorized tensor operations, better utilizing accelerator SIMD width.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with fused local ops",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.235783"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-scatter then all-gather pattern",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.235783"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined dual-buffer staging",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-level reduction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Vectorized pre-computed scale tensors",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.235783"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 13438.000000000113,
+  "final_code": "def r59b_su_a6_d8_p1024_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 1024; W = world_size\n    a = [1.0 + 0.35*(r % 6) for r in range(W)]\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    return s\n",
+  "fell_back_to_baseline": true
+}

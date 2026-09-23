@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r61_dd_negrelu_p384_d8",
+  "gate": "fp32",
+  "baseline_sim": 6796.357142857143,
+  "strategies": [
+    {
+      "name": "Sequential All-Reduce with Separate Scaling",
+      "desc": "Performs 8 dependent all-reduce operations sequentially, each preceded by block-wise mean computation and negrelu scaling, then followed by inverse scaling. Each iteration: compute 8 block means locally, scale blocks, all-reduce (1 dispatch), unscale. Total ~8 all-reduce dispatches. Trades dispatch count for correctness of the dependent computation chain."
+    },
+    {
+      "name": "Fused Mean All-Gather with Batched All-Reduce",
+      "desc": "Compute all 8 block means locally, concatenate means into auxiliary tensor (size 8), all-reduce means first (1 dispatch), then apply all negrelu scales, perform block-scaled all-reduce (1 dispatch per iteration). Reduces mean synchronization overhead by batching mean all-reduces separately from data all-reduces. Total ~9-10 dispatches (1 mean + 8 data)."
+    },
+    {
+      "name": "Pipelined Overlapping Block Communication",
+      "desc": "Interleave computation and communication by launching all-reduce on subset of blocks while computing means/scales for subsequent blocks. Uses non-blocking collectives or careful ordering to overlap block b's all-reduce with block b+1's local computation. Maintains 8 all-reduce dispatches but hides local compute latency behind communication."
+    },
+    {
+      "name": "Hierarchical Reduction Tree with Cached Intermediates",
+      "desc": "Exploit the iterative structure by caching intermediate sum results and reusing across iterations. Each iteration recomputes only the delta from scaling changes rather than full all-reduce. Uses all-reduce for initial sum (1 dispatch), then 7 iterations of smaller correction all-reduces on scaled deltas. Reduces payload size in later iterations but adds local computation complexity."
+    },
+    {
+      "name": "Single All-Reduce with Augmented Payload",
+      "desc": "Pack original data with pre-computed block statistics (means) into larger payload, perform single all-reduce (1 dispatch) to get global sums and sum-of-means, then iterate locally 7 times using global statistics to converge on correct scaling factors without additional collectives. Minimizes dispatches (1 all-reduce) at cost of larger initial payload and complex local convergence logic.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential All-Reduce with Separate Scaling",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.141625"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Mean All-Gather with Batched All-Reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.141625"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Overlapping Block Communication",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.141625"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Reduction Tree with Cached Intermediates",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.141625"
+    },
+    {
+      "stage": "impl",
+      "name": "Single All-Reduce with Augmented Payload",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.606219"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 6796.357142857143,
+  "final_code": "def r61_dd_negrelu_p384_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 384; B = 8\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    f = []\n    for b in range(B):\n        mb = -(s[b*S:(b+1)*S].mean())\n        f.append(1.0 + (mb if mb > 0 else mb*0.0))\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    f = []\n    for b in range(B):\n        mb = -(s[b*S:(b+1)*S].mean())\n        f.append(1.0 + (mb if mb > 0 else mb*0.0))\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    f = []\n    for b in range(B):\n        mb = -(s[b*S:(b+1)*S].mean())\n        f.append(1.0 + (mb if mb > 0 else mb*0.0))\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    f = []\n    for b in range(B):\n        mb = -(s[b*S:(b+1)*S].mean())\n        f.append(1.0 + (mb if mb > 0 else mb*0.0))\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    f = []\n    for b in range(B):\n        mb = -(s[b*S:(b+1)*S].mean())\n        f.append(1.0 + (mb if mb > 0 else mb*0.0))\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    f = []\n    for b in range(B):\n        mb = -(s[b*S:(b+1)*S].mean())\n        f.append(1.0 + (mb if mb > 0 else mb*0.0))\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    f = []\n    for b in range(B):\n        mb = -(s[b*S:(b+1)*S].mean())\n        f.append(1.0 + (mb if mb > 0 else mb*0.0))\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / world_size\n    s = acc\n    return s\n",
+  "fell_back_to_baseline": true
+}

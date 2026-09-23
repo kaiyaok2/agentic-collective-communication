@@ -1,0 +1,68 @@
+{
+  "pipeline": "overlay",
+  "problem": "r60c_b9_L3_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6726.371428571429,
+  "strategies": [
+    {
+      "name": "Nested masked all-reduce with sequential scaling",
+      "desc": "Performs 8 all-reduce dispatches (1 initial full all-reduce + 7 masked all-reduces) with sequential buffer zeroing and scaling operations between each collective. This is the reference approach with 8 dispatches, representing the baseline trade-off of straightforward correctness with no fusion optimizations."
+    },
+    {
+      "name": "Fused mask computation with batched scaling",
+      "desc": "Pre-computes all 7 mask patterns and count arrays before any collectives, then executes 8 all-reduce dispatches with masks applied via in-place multiplication (avoiding torch.zeros_like allocations). Reduces memory allocation overhead by reusing buffers and batching all scaling operations after the collective chain completes, trading increased local compute for reduced allocation cost."
+    },
+    {
+      "name": "Hierarchical two-level reduction with block grouping",
+      "desc": "Groups the 9 blocks into 3 meta-blocks of 3 consecutive blocks each, performs 4 all-reduces at meta-block granularity, then 4 all-reduces at individual block granularity. Total 8 dispatches but with different payload patterns\u2014early dispatches move larger contiguous chunks, potentially improving bandwidth utilization on Trainium's interconnect."
+    },
+    {
+      "name": "Reduce-scatter then all-gather decomposition",
+      "desc": "Decomposes each masked all-reduce into a reduce-scatter phase (each rank gets 1/W of the result) followed by all-gather (broadcasting back), exploiting the block-sparse structure. Uses 16 total dispatches (8 RS + 8 AG pairs) but each moves smaller payloads, potentially hiding latency through pipelining if collectives overlap."
+    },
+    {
+      "name": "Single-buffer accumulation with dynamic masking",
+      "desc": "Allocates one persistent accumulator buffer, applies all 8 all-reduce operations to the same buffer with dynamically updated masks (using torch.where or multiply-add patterns to merge results). Executes 8 all-reduce dispatches but eliminates intermediate buffer allocations and redundant memory copies, trading increased local ALU ops for reduced memory bandwidth pressure.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Nested masked all-reduce with sequential scaling",
+      "sim": 6726.371428571429,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused mask computation with batched scaling",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-level reduction with block grouping",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=7.453826"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-scatter then all-gather decomposition",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=nan"
+    },
+    {
+      "stage": "impl",
+      "name": "Single-buffer accumulation with dynamic masking",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 6726.371428571429,
+  "final_code": "def r60c_b9_L3_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 2048\n    W = world_size\n    \n    # Initial full all-reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Precompute block counts\n    c = [0] * 9\n    for r in range(W):\n        st = (r + 2) % 9\n        ks = set((st + 1*j) % 9 for j in range(3))\n        for b in ks:\n            c[b] += 1\n    \n    # Perform 7 masked all-reduces with sequential scaling\n    B = 9\n    OFF = 2\n    \n    for iteration in range(7):\n        # Compute keep set for this rank\n        start = (rank + OFF) % B\n        keep = set((start + 1*j) % B for j in range(3))\n        \n        # Create masked buffer\n        buf = torch.zeros_like(s)\n        for b in range(9):\n            if b in keep:\n                buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n        \n        # All-reduce the masked buffer\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n        \n        # Scale each block by its count (except on last iteration)\n        if iteration < 6:\n            for b in range(9):\n                acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n        \n        s = acc\n    \n    return s"
+}

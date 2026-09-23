@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r59b_su_a4_d8_p2048",
+  "gate": "fp32",
+  "baseline_sim": 13490.222222222334,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with fused local ops",
+      "desc": "Perform 8 sequential all-reduce operations with all local scaling, unscaling, and buffer preparation fused between dispatches. This is the reference approach with 8 all-reduce dispatches. Minimizes code complexity but has highest latency due to sequential collective dependency chain."
+    },
+    {
+      "name": "Reduce-scatter then all-gather pipeline",
+      "desc": "Replace each all-reduce with reduce-scatter followed by all-gather, allowing local computation to be inserted between the two phases. This doubles collective count to 16 dispatches but enables potential overlap of local scaling operations with the gather phase, trading dispatch count for pipeline opportunities."
+    },
+    {
+      "name": "Chunked vector all-reduce with interleaving",
+      "desc": "Split the W*S vector into chunks and issue all-reduce operations on different chunks in a staggered pattern across the 8 stages, allowing multiple in-flight collectives. Maintains 8 stages but issues multiple smaller all-reduce calls per stage (e.g., 4-8 chunks), trading payload size for potential network parallelism and better NIC utilization."
+    },
+    {
+      "name": "Precompute scale composition and fold stages",
+      "desc": "Mathematically analyze the scale/unscale pattern across all 8 stages to derive a closed-form per-shard scaling coefficient, then perform only 2-3 all-reduce operations with adjusted scaling. Dramatically reduces dispatches (to 2-3) at the cost of more complex local arithmetic and potential numerical precision considerations."
+    },
+    {
+      "name": "Hierarchical reduction with node-local aggregation",
+      "desc": "Exploit multi-node structure by first performing intra-node reductions (assuming multiple devices per node), then inter-node reductions, repeating the 8-stage pattern at each hierarchy level. Reduces cross-node bandwidth usage and may enable better cache locality, with total dispatches around 8*2=16 but smaller cross-node payloads.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with fused local ops",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.288648"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-scatter then all-gather pipeline",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=6.671230"
+    },
+    {
+      "stage": "impl",
+      "name": "Chunked vector all-reduce with interleaving",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=6.671230"
+    },
+    {
+      "stage": "impl",
+      "name": "Precompute scale composition and fold stages",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1248.744385"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical reduction with node-local aggregation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 13490.222222222334,
+  "final_code": "def r59b_su_a4_d8_p2048_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 2048; W = world_size\n    a = [1.0 + 0.6*(r % 4) for r in range(W)]\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    buf = s.clone()\n    for r in range(W):\n        buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    return s\n",
+  "fell_back_to_baseline": true
+}

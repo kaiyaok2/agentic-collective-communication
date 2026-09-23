@@ -1,0 +1,83 @@
+{
+  "pipeline": "overlay",
+  "problem": "r61_dd_meansq_p512_d8",
+  "gate": "fp32",
+  "baseline_sim": 6838.414285714285,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with loop fusion",
+      "desc": "Perform 7 all-reduce operations sequentially (1 initial + 6 dependent iterations) with all local computation (scaling, squaring, mean) fused between dispatches. 7 total all-reduce dispatches. Represents the baseline: minimal code complexity, maximal dispatch count, no overlap of communication and computation."
+    },
+    {
+      "name": "Pipelined block-wise partial overlap",
+      "desc": "Split computation into block-level operations to enable partial overlap by issuing the next all-reduce as soon as the current iteration's local computation completes, potentially using non-blocking collectives if available. Still 7 all-reduce dispatches but attempts to hide latency by interleaving computation of block statistics with communication initiation. Trades code complexity for reduced wall-clock time through better hardware utilization."
+    },
+    {
+      "name": "Vectorized scaling with reduced-precision intermediate",
+      "desc": "Pack all 8 block scaling factors into a small auxiliary tensor, perform a single all-reduce on this metadata (8 floats) per iteration instead of full buffer, then locally reconstruct scaled result. Requires 1 initial full all-reduce + 6 small (8-element) all-reduces + 1 final full all-reduce = 8 dispatches total, but drastically reduces communication volume for the 6 dependent iterations at cost of extra local reconstruction work."
+    },
+    {
+      "name": "Hierarchical two-phase reduction per iteration",
+      "desc": "Exploit potential multi-node topology by using reduce-scatter followed by all-gather pattern within each iteration instead of all-reduce, allowing better bandwidth utilization on hierarchical networks. 1 initial all-reduce + 6 \u00d7 2 collectives (reduce-scatter + all-gather) = 13 dispatches, but each collective moves less data and may better exploit NVLink/inter-node bandwidth ratios."
+    },
+    {
+      "name": "Batched dependent all-reduce with checkpointing",
+      "desc": "Group the 6 dependent iterations into 2-3 batches, performing multi-tensor all-reduce where the framework concatenates buffers from multiple logical operations into one dispatch. Achieves 3-4 total dispatches (1 initial + 2-3 batched dependent iterations) by amortizing launch overhead, trading increased memory footprint for cloning multiple intermediate states against fewer kernel launches and better PCIe/DMA efficiency.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with loop fusion",
+      "sim": 6838.414285714285,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined block-wise partial overlap",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=3.290570"
+    },
+    {
+      "stage": "impl",
+      "name": "Vectorized scaling with reduced-precision intermediate",
+      "sim": 7120.0,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-phase reduction per iteration",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=3.290570"
+    },
+    {
+      "stage": "impl",
+      "name": "Batched dependent all-reduce with checkpointing",
+      "sim": 6838.414285714285,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "refine:Batched dependent all-reduce with checkpointing",
+      "round": 1,
+      "sim": 6838.414285714285
+    },
+    {
+      "stage": "refine:Batched dependent all-reduce with checkpointing",
+      "round": 2,
+      "sim": 6606.414285714285
+    },
+    {
+      "stage": "refine:Batched dependent all-reduce with checkpointing",
+      "round": 3,
+      "sim": 6600.614285714285
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6600.614285714285,
+  "final_code": "def r61_dd_meansq_p512_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 512\n    B = 8\n    dtype = x.dtype\n    \n    # Initial all-reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Precompute world_size as tensor for potential optimization\n    ws = float(world_size)\n    \n    # Process 7 dependent iterations with maximized local compute\n    s_view = s.view(B, S)\n    \n    for i in range(7):\n        # Fuse: mean of squares computation + scaling + division prep\n        # All done in one pass through memory\n        meansq = (s_view * s_view).mean(dim=1, keepdim=True)\n        f = 1.0 + meansq\n        \n        # Combine multiply and prepare for all-reduce in single operation\n        buf = s_view * f\n        \n        # All-reduce (unavoidable due to dependency)\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf.view(-1))\n        \n        # Fuse division operations\n        if i < 6:\n            # Divide by (world_size * f) in one operation\n            s_view = (acc.view(B, S) / ws) / f\n        else:\n            s_view = (acc / ws).view(B, S)\n    \n    return s_view.view(-1)"
+}

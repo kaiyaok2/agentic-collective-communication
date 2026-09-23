@@ -1,0 +1,68 @@
+{
+  "pipeline": "overlay",
+  "problem": "r60c_b12_L5_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6811.685714285714,
+  "strategies": [
+    {
+      "name": "Naive sequential all-reduce chain",
+      "desc": "Performs 8 sequential all-reduce operations as specified, each preceded by selective masking (zeroing non-keep blocks) and followed by per-block division. Dispatch count: 8 all-reduces. Trades minimal code complexity for maximum latency due to sequential dependencies and no overlap opportunity."
+    },
+    {
+      "name": "Fused masking with pre-computed coefficients",
+      "desc": "Pre-computes all 8 keep-sets and scaling coefficients once, then fuses masking operations across multiple stages before issuing all-reduces in a tight loop. Dispatch count: still 8 all-reduces but with reduced host-device synchronization overhead. Reduces CPU computation between collectives at cost of more complex bookkeeping."
+    },
+    {
+      "name": "Reduce-scatter + all-gather decomposition",
+      "desc": "Decomposes each masked all-reduce into reduce-scatter (summing only relevant blocks per rank subset) followed by all-gather to reconstruct full tensor. Dispatch count: up to 16 (8\u00d72) collectives but with smaller per-dispatch payload (only transmitted blocks that matter). Trades dispatch count for bandwidth efficiency when keep-sets are sparse."
+    },
+    {
+      "name": "Hierarchical two-level reduction tree",
+      "desc": "Exploits 224 = 14 nodes \u00d7 16 devices structure by performing intra-node reductions (smaller world-size, lower latency) followed by inter-node reductions, applying the 8-stage logic at the inter-node level only. Dispatch count: 8 + intra-node preprocessing overhead. Reduces cross-node traffic at cost of additional intra-node collectives."
+    },
+    {
+      "name": "Pipelined overlapping with async dispatch",
+      "desc": "Issues all 8 all-reduce operations asynchronously with explicit ordering constraints, allowing network/compute overlap where the keep-set masking for stage i+1 happens during all-reduce transmission of stage i. Dispatch count: 8 all-reduces but with potential wall-time overlap. Hides CPU and memory-copy latency in network time at cost of more complex dependency management.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Naive sequential all-reduce chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=9.976284"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused masking with pre-computed coefficients",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: float division by zero"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-scatter + all-gather decomposition",
+      "sim": 6811.685714285714,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-level reduction tree",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=9.976284"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined overlapping with async dispatch",
+      "sim": 6811.685714285714,
+      "ok": true,
+      "err": null
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6811.685714285714,
+  "final_code": "def r60c_b12_L5_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 2048\n    B = 12\n    OFF = 2\n    W = world_size\n    \n    # Precompute counts: how many ranks contribute to each block\n    c = [0] * B\n    for r in range(W):\n        st = (r + OFF) % B\n        ks = set((st + 1*j) % B for j in range(5))\n        for b in ks:\n            c[b] += 1\n    \n    # Initial full all-reduce to get sum of x across all ranks\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Now perform 7 iterations of masked all-reduce using reduce-scatter + all-gather\n    for iteration in range(7):\n        # Determine which blocks this rank keeps\n        start = (rank + OFF) % B\n        keep = set((start + 1*j) % B for j in range(5))\n        \n        # Strategy: reduce-scatter then all-gather\n        # For reduce-scatter: partition the tensor into chunks and reduce only relevant ones\n        # Since keep-set is sparse (5 out of 12 blocks), we:\n        # 1. Extract blocks we care about\n        # 2. Perform reduce-scatter on those blocks\n        # 3. All-gather to reconstruct\n        \n        # However, xm.reduce_scatter expects uniform chunk division across ranks\n        # Instead, we use a different decomposition:\n        # - Scatter phase: each rank sends its kept blocks to others\n        # - Gather phase: reconstruct full tensor\n        \n        # Simpler approach with available primitives:\n        # Use all_reduce on masked tensor (zero out non-kept blocks)\n        buf = torch.zeros_like(s)\n        for b in range(B):\n            if b in keep:\n                buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n        \n        # All-reduce the masked buffer (this is the \"reduce\" part)\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n        \n        # Normalize by contribution counts (only on last iteration we skip this)\n        if iteration < 6:\n            for b in range(B):\n                acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n        \n        s = acc\n    \n    return s"
+}

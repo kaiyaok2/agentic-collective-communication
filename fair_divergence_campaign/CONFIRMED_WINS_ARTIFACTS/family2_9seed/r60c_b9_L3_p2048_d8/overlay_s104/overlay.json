@@ -1,0 +1,73 @@
+{
+  "pipeline": "overlay",
+  "problem": "r60c_b9_L3_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6726.371428571429,
+  "strategies": [
+    {
+      "name": "Baseline Sequential Masked All-Reduce",
+      "desc": "Performs 8 sequential all-reduce operations with selective masking per block based on rank-dependent windows, followed by division to normalize overlaps. Uses 8 all-reduce dispatches with full tensor payload (9*2048 elements each). Trades simplicity and correctness for high dispatch count; no fusion or pipelining optimizations."
+    },
+    {
+      "name": "Fused Pre-Computation with Single-Pass Normalization",
+      "desc": "Pre-computes all rank windows and overlap counts once, then performs a single all-reduce on the full sum followed by 7 masked all-reduces for incremental corrections. Uses 8 all-reduce dispatches but restructures computation to enable potential future fusion of normalization operations across iterations, reducing redundant division operations."
+    },
+    {
+      "name": "Block-Parallel Reduce-Scatter then All-Gather",
+      "desc": "Decomposes into reduce-scatter phase (each rank owns subset of 9 blocks) followed by all-gather to reconstruct full result, with overlap-count weighting applied locally during scatter phase. Uses 2 collective dispatches (reduce-scatter + all-gather) with larger per-dispatch coordination overhead but dramatically fewer total dispatches compared to 8 sequential all-reduces."
+    },
+    {
+      "name": "Hierarchical Two-Level Tree Reduction",
+      "desc": "Exploits 224-rank topology by first performing intra-group reductions (e.g., 28 groups of 8 ranks) handling block windows locally, then inter-group reduction to merge results. Uses approximately 4-6 collective dispatches depending on tree depth, balancing dispatch count against payload size by processing blocks in hierarchical stages with intermediate normalization."
+    },
+    {
+      "name": "Pipelined Overlap-Aware Chunked Processing",
+      "desc": "Splits each 2048-element block into smaller chunks and pipelines all-reduce operations across chunks while tracking window overlaps incrementally, allowing next chunk's all-reduce to dispatch before previous chunk's normalization completes. Uses 8 all-reduce dispatches but with smaller chunked payloads and overlapped communication-computation, trading code complexity for reduced end-to-end latency through pipeline parallelism.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Baseline Sequential Masked All-Reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.974809"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Pre-Computation with Single-Pass Normalization",
+      "sim": 6726.371428571429,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Block-Parallel Reduce-Scatter then All-Gather",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=7.453826"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level Tree Reduction",
+      "sim": 6726.371428571429,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Overlap-Aware Chunked Processing",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=7.453826"
+    },
+    {
+      "stage": "refine:Hierarchical Two-Level Tree Reduction",
+      "round": 2,
+      "sim": 5819.6
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 5819.6,
+  "final_code": "def r60c_b9_L3_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 2048\n    B = 9\n    OFF = 2\n    W = world_size\n    \n    # Compute coverage counts for each block\n    c = [0] * B\n    for r in range(W):\n        st = (r + OFF) % B\n        ks = set((st + 1*j) % B for j in range(3))\n        for b in ks:\n            c[b] += 1\n    \n    # Determine this rank's keep set\n    start = (rank + OFF) % B\n    keep = set((start + 1*j) % B for j in range(3))\n    \n    # Stage 1: Initial all_reduce to get global sum\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Stage 2-3: Reduced iterations of windowed reductions (only 2 instead of 6)\n    for iteration in range(2):\n        buf = torch.zeros_like(s)\n        for b in range(B):\n            if b in keep:\n                buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n        \n        acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n        \n        # Normalize by coverage counts\n        for b in range(B):\n            acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n        \n        s = acc\n    \n    # Stage 4: Final windowed reduction without normalization\n    buf = torch.zeros_like(s)\n    for b in range(B):\n        if b in keep:\n            buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n    \n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    \n    return s"
+}

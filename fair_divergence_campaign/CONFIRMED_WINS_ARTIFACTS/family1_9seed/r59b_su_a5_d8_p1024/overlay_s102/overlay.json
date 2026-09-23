@@ -1,0 +1,68 @@
+{
+  "pipeline": "overlay",
+  "problem": "r59b_su_a5_d8_p1024",
+  "gate": "fp32",
+  "baseline_sim": 13438.000000000113,
+  "strategies": [
+    {
+      "name": "Sequential All-Reduce with Local Scaling",
+      "desc": "Direct translation of the seed library approach: 8 sequential all_reduce dispatches with local scale/unscale operations between them. Total 8 all_reduce dispatches on full tensor (224*1024 elements each). Represents baseline: maximizes dispatch count but each operation is straightforward and numerically stable."
+    },
+    {
+      "name": "Fused Scale-Reduce with Precomputed Coefficients",
+      "desc": "Precompute the cumulative effect of all 8 stages' scale/unscale operations per shard, then perform all_reduce operations with fused local scaling (scale before reduce, unscale after). Still 8 all_reduce dispatches but eliminates intermediate clone() calls and reduces local compute by batching scale computations. Trade-off: same dispatch count but fewer memory allocations and arithmetic ops."
+    },
+    {
+      "name": "Reduce-Scatter then All-Gather Pipeline",
+      "desc": "Decompose each all_reduce into reduce_scatter + all_gather pairs, enabling pipelining where subsequent stage's reduce_scatter overlaps with previous stage's all_gather. Total 16 collective dispatches (8 RS + 8 AG) but potentially better network utilization through smaller per-dispatch payloads (1024 elements for RS output). Hides latency through overlap at cost of more dispatches."
+    },
+    {
+      "name": "Shard-Wise Independent All-Reduce Buckets",
+      "desc": "Recognize that each shard evolves independently under its own scale factor across stages; partition tensor into 224 separate all_reduce groups (one per shard of 1024 elements), dispatching all 8 stages for shard i before moving to shard i+1. Total 8*224=1792 tiny all_reduce dispatches. Extreme: maximizes dispatch overhead but enables per-shard optimizations and potentially better cache locality."
+    },
+    {
+      "name": "Two-Phase Butterfly with Stage Batching",
+      "desc": "Batch stages 1-4 and stages 5-8 into two mega-phases, using hierarchical reduce (node-local aggregation + cross-node reduce) within each phase to amortize network cost. Requires 2 major all_reduce waves with intermediate local accumulation of 4 stages each. Approximately 4-6 total dispatches (2 per phase with possible split for node-local vs global). Trade-off: fewer dispatches and better network efficiency but more complex local bookkeeping.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential All-Reduce with Local Scaling",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.479483"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Scale-Reduce with Precomputed Coefficients",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-Scatter then All-Gather Pipeline",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.545718"
+    },
+    {
+      "stage": "impl",
+      "name": "Shard-Wise Independent All-Reduce Buckets",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.545718"
+    },
+    {
+      "stage": "impl",
+      "name": "Two-Phase Butterfly with Stage Batching",
+      "sim": 13438.000000000113,
+      "ok": true,
+      "err": null
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 13438.000000000113,
+  "final_code": "def r59b_su_a5_d8_p1024_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 1024\n    W = world_size\n    dtype = x.dtype\n    \n    # Precompute scaling factors a[r] = 1.0 + 0.4*(r % 5)\n    a = [1.0 + 0.4 * (r % 5) for r in range(W)]\n    \n    # Phase 1: Batch stages 1-4\n    # Stage 1: Initial all_reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Stages 2-4: Apply scale, reduce, unscale pattern 3 times\n    for stage_idx in range(3):\n        buf = s.clone()\n        for r in range(W):\n            buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n        s = xm.all_reduce(xm.REDUCE_SUM, buf)\n        for r in range(W):\n            s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    \n    # Phase 2: Batch stages 5-8\n    # Stages 5-8: Apply scale, reduce, unscale pattern 4 times\n    for stage_idx in range(4):\n        buf = s.clone()\n        for r in range(W):\n            buf[r*S:(r+1)*S] = a[r] * s[r*S:(r+1)*S] / W\n        s = xm.all_reduce(xm.REDUCE_SUM, buf)\n        # Only unscale if not the last stage\n        if stage_idx < 3:\n            for r in range(W):\n                s[r*S:(r+1)*S] = s[r*S:(r+1)*S] / max(a[r], 1e-9)\n    \n    return s"
+}

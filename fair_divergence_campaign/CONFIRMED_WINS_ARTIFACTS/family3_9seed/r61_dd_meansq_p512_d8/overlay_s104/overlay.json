@@ -1,0 +1,78 @@
+{
+  "pipeline": "overlay",
+  "problem": "r61_dd_meansq_p512_d8",
+  "gate": "fp32",
+  "baseline_sim": 6838.414285714285,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with per-iteration scaling",
+      "desc": "Performs 8 sequential all-reduce operations (one initial sum + 7 dependent iterations), each followed by local computation of block-wise mean-square scaling factors, element-wise multiplication, and normalization. Dispatch count: 8 all-reduces. Represents the baseline reference pattern with maximum correctness but highest latency due to serial dependencies."
+    },
+    {
+      "name": "Fused buffer preparation with batched all-reduce",
+      "desc": "Pre-computes all local scaling factors before communication, packs multiple transformed buffers into a single tensor, then issues fewer all-reduce calls by exploiting algebraic properties to defer normalization. Dispatch count: 2-4 all-reduces by fusing consecutive operations. Trades increased local computation and memory for reduced collective dispatch overhead."
+    },
+    {
+      "name": "Reduce-scatter plus all-gather decomposition",
+      "desc": "Decomposes each all-reduce into reduce-scatter (producing partial results distributed across ranks) followed by all-gather, enabling overlap of computation on local shards with communication of other shards. Dispatch count: 16 collectives (8 RS + 8 AG). Increases total collective count but exposes pipeline parallelism between computation and communication phases."
+    },
+    {
+      "name": "Block-parallel pipelined all-reduce chain",
+      "desc": "Partitions the 8 blocks across a virtual pipeline, issuing all-reduce for block subset while computing scaling factors for next subset, using asynchronous dispatch and explicit wait barriers. Dispatch count: 8 all-reduces with overlapped compute. Hides local computation latency behind network transfer at cost of code complexity."
+    },
+    {
+      "name": "Hierarchical two-level reduction with intra-node fusion",
+      "desc": "Exploits multi-node topology (224 ranks) by performing intra-node reductions first (reducing to per-node representatives), computing scaling on aggregated data, then inter-node all-reduce, followed by intra-node broadcast. Dispatch count: ~3-4 collectives per iteration with smaller payloads. Optimizes for bandwidth hierarchy but requires topology-aware collective selection.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with per-iteration scaling",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=3.290570"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused buffer preparation with batched all-reduce",
+      "sim": 7075.014285714286,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-scatter plus all-gather decomposition",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=3.290570"
+    },
+    {
+      "stage": "impl",
+      "name": "Block-parallel pipelined all-reduce chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.723849"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-level reduction with intra-node fusion",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=3.290570"
+    },
+    {
+      "stage": "refine:Fused buffer preparation with batched all-reduce",
+      "round": 1,
+      "sim": 6594.414285714285
+    },
+    {
+      "stage": "refine:Fused buffer preparation with batched all-reduce",
+      "round": 2,
+      "sim": 6594.414285714285
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 6594.414285714285,
+  "final_code": "def r61_dd_meansq_p512_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 512\n    B = 8\n    dtype = x.dtype\n    \n    # Initial all_reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Reshape for vectorized operations\n    s_view = s.view(B, S)\n    \n    # 6 iterations with full cycle (scale, all_reduce, unscale)\n    for iteration in range(6):\n        # Compute scaling factors for all blocks (vectorized)\n        f = 1.0 + (s_view * s_view).mean(dim=1)\n        \n        # Scale by f[b] (vectorized)\n        buf = s_view * f.unsqueeze(1)\n        \n        # All-reduce\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf.view(-1))\n        acc_view = acc.view(B, S)\n        \n        # Unscale by (world_size * f[b]) (vectorized)\n        s_view = acc_view / (world_size * f.unsqueeze(1))\n    \n    # 7th iteration (final): scale, all_reduce, divide by world_size only\n    f = 1.0 + (s_view * s_view).mean(dim=1)\n    buf = s_view * f.unsqueeze(1)\n    \n    acc = xm.all_reduce(xm.REDUCE_SUM, buf.view(-1))\n    acc = acc / world_size\n    \n    return acc"
+}

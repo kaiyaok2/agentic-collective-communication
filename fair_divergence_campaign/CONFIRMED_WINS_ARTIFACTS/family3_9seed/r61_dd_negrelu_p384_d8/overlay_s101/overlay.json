@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r61_dd_negrelu_p384_d8",
+  "gate": "fp32",
+  "baseline_sim": 6796.357142857143,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with scalar feedback",
+      "desc": "Performs 8 dependent all-reduce operations sequentially, each preceded by local mean computation and negReLU scaling. Total ~16 dispatches (8 all-reduce + 8 local compute/scale ops). Trades simplicity for dispatch count; each all-reduce waits for previous round's feedback computation."
+    },
+    {
+      "name": "Fused local-op batched all-reduce",
+      "desc": "Fuses all local operations (mean, negReLU, scaling) into single kernels between all-reduce calls, reducing dispatch overhead from separate mean/scale/clone operations. ~8-9 dispatches total (8 all-reduce + 1 fused local work). Optimizes local compute fusion while keeping all-reduce structure intact."
+    },
+    {
+      "name": "Block-parallel reduce-scatter then all-gather",
+      "desc": "Replaces each all-reduce with reduce-scatter (8 chunks) followed by all-gather, allowing parallel processing of independent blocks during scatter phase. ~16 dispatches (8 RS + 8 AG pairs) but exposes parallelism across blocks during reduction phase, trading collective count for bandwidth utilization."
+    },
+    {
+      "name": "Pipelined overlapped all-reduce chain",
+      "desc": "Launches next all-reduce while previous iteration's local computation executes, using asynchronous dispatch to hide computation latency. Still 8 all-reduce dispatches but overlaps ~7 compute-communication pairs, trading code complexity for reduced wall-clock time through pipeline parallelism."
+    },
+    {
+      "name": "Hierarchical two-level aggregation structure",
+      "desc": "Exploits num_nodes topology by performing intra-node reduction (node-local all-reduce or shared memory) then inter-node all-reduce for each of 8 iterations. ~16-24 dispatches (8 iterations \u00d7 2-3 collectives) but reduces cross-node bandwidth by factor of cores-per-node, trading dispatch count for network efficiency at scale.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with scalar feedback",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.141625"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused local-op batched all-reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    },
+    {
+      "stage": "impl",
+      "name": "Block-parallel reduce-scatter then all-gather",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.141625"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined overlapped all-reduce chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.141625"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-level aggregation structure",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 6796.357142857143,
+  "final_code": "def r61_dd_negrelu_p384_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 384; B = 8\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    f = []\n    for b in range(B):\n        mb = -(s[b*S:(b+1)*S].mean())\n        f.append(1.0 + (mb if mb > 0 else mb*0.0))\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    f = []\n    for b in range(B):\n        mb = -(s[b*S:(b+1)*S].mean())\n        f.append(1.0 + (mb if mb > 0 else mb*0.0))\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    f = []\n    for b in range(B):\n        mb = -(s[b*S:(b+1)*S].mean())\n        f.append(1.0 + (mb if mb > 0 else mb*0.0))\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    f = []\n    for b in range(B):\n        mb = -(s[b*S:(b+1)*S].mean())\n        f.append(1.0 + (mb if mb > 0 else mb*0.0))\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    f = []\n    for b in range(B):\n        mb = -(s[b*S:(b+1)*S].mean())\n        f.append(1.0 + (mb if mb > 0 else mb*0.0))\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    f = []\n    for b in range(B):\n        mb = -(s[b*S:(b+1)*S].mean())\n        f.append(1.0 + (mb if mb > 0 else mb*0.0))\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    f = []\n    for b in range(B):\n        mb = -(s[b*S:(b+1)*S].mean())\n        f.append(1.0 + (mb if mb > 0 else mb*0.0))\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / world_size\n    s = acc\n    return s\n",
+  "fell_back_to_baseline": true
+}

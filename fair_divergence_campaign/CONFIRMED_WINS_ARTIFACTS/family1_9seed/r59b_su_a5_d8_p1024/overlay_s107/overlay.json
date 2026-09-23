@@ -1,0 +1,73 @@
+{
+  "pipeline": "overlay",
+  "problem": "r59b_su_a5_d8_p1024",
+  "gate": "fp32",
+  "baseline_sim": 13438.000000000113,
+  "strategies": [
+    {
+      "name": "Sequential All-Reduce with Full Vectorization",
+      "desc": "Performs 8 sequential all-reduce operations on the full vector (world_size*1024 elements), fusing all per-shard scaling operations into vectorized tensor operations between dispatches. Expected 8 all-reduce dispatches with O(W) local compute per stage. Minimizes code complexity at the cost of no overlap between communication and computation."
+    },
+    {
+      "name": "Reduce-Scatter + All-Gather Pipeline",
+      "desc": "Replaces each all-reduce with a reduce-scatter followed by local computation on the local shard only, then all-gather to broadcast results. This doubles collective count to 16 dispatches but reduces per-dispatch payload from W*S to S (reduce-scatter) and enables better pipeline overlap. Trades dispatch count for smaller message sizes and potential compute-communication overlap."
+    },
+    {
+      "name": "Hierarchical Two-Level All-Reduce",
+      "desc": "Exploits multi-node topology by performing intra-node all-reduce followed by inter-node all-reduce at each of the 8 stages (16 total dispatches). For 224 ranks, this reduces communication diameter and leverages faster intra-node links. Beneficial when node count is substantial and intra-node bandwidth significantly exceeds inter-node bandwidth."
+    },
+    {
+      "name": "Fused Multi-Stage All-Reduce Kernel",
+      "desc": "Batches multiple dependent all-reduce stages by pre-computing scale transformation matrices and issuing multiple all-reduce operations back-to-back before synchronization, allowing the XLA compiler to fuse communication patterns. Expected 8 all-reduce dispatches but with compiler-level fusion opportunities that may reduce actual barrier synchronizations and enable better NIC pipelining."
+    },
+    {
+      "name": "Ring All-Reduce with In-Place Scaling",
+      "desc": "Implements custom ring-based all-reduce using point-to-point send/recv primitives (if available via xm), applying per-shard scaling inline during the reduce-scatter and all-gather phases of each ring iteration. Expected 2*W*(W-1)*8 send/recv operations organized in 8 ring stages, trading collective primitive efficiency for fine-grained control over when scaling is applied to minimize intermediate buffer allocations.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential All-Reduce with Full Vectorization",
+      "sim": 13438.000000000113,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-Scatter + All-Gather Pipeline",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.545718"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level All-Reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Multi-Stage All-Reduce Kernel",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.545718"
+    },
+    {
+      "stage": "impl",
+      "name": "Ring All-Reduce with In-Place Scaling",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.545718"
+    },
+    {
+      "stage": "refine:Sequential All-Reduce with Full Vectorization",
+      "round": 1,
+      "sim": 7583.8
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 7583.8,
+  "final_code": "def r59b_su_a5_d8_p1024_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 1024\n    W = world_size\n    dtype = x.dtype\n    \n    # Compute scaling factors a[r] = 1.0 + 0.4 * (r % 5) for each rank\n    a = torch.tensor([1.0 + 0.4 * (r % 5) for r in range(W)], dtype=dtype, device=x.device)\n    \n    # Stage 1: Initial all-reduce to sum across all ranks\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Precompute scaling vectors for efficiency\n    a_expanded = a.repeat_interleave(S)\n    \n    # Stages 2-8: Apply per-shard scaling, reduce, then undo scaling\n    for stage in range(2, 9):\n        # Apply per-shard scaling a[r] and normalize by W in one vectorized op\n        buf = (s * a_expanded) / W\n        \n        # All-reduce the scaled buffer\n        s = xm.all_reduce(xm.REDUCE_SUM, buf)\n        \n        # Undo the per-shard scaling (except for the last stage) in vectorized form\n        if stage < 8:\n            s = s / torch.clamp(a_expanded, min=1e-9)\n    \n    return s"
+}

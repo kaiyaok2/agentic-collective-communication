@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r60c_b9_L3_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6726.371428571429,
+  "strategies": [
+    {
+      "name": "Baseline Sequential Masked All-Reduce",
+      "desc": "Performs 8 sequential all-reduce operations with selective masking per block based on rank-dependent windows, exactly as in the reference. Each iteration creates a zero buffer, selectively copies blocks that fall within the rank's window, performs all-reduce, and normalizes by coverage count. 8 all-reduce dispatches plus initial full all-reduce = 9 total dispatches. Straightforward but maximum latency due to sequential dependencies."
+    },
+    {
+      "name": "Fused Buffer Preparation Single-Pass",
+      "desc": "Pre-compute all 7 masked buffers (iterations 2-8) before any all-reduce dispatch, storing them in a single concatenated tensor of shape (7, 9*2048). Dispatch 7 all-reduces back-to-back on slices of this buffer, allowing hardware to potentially pipeline communications. Still 9 total dispatches (1 initial + 1 final + 7 windowed) but enables better overlap of computation and communication through batched buffer preparation."
+    },
+    {
+      "name": "Hierarchical Two-Level Reduction Tree",
+      "desc": "Exploit the 224-rank world size (224 = 32 \u00d7 7) by organizing into hierarchical groups. Perform intra-group reductions first (8 dependent all-reduces within each group of 32 ranks using reduce-scatter + all-gather pattern), then inter-group aggregation (single all-reduce across 7 group leaders), followed by broadcast back. Reduces effective world size per operation but adds extra dispatch overhead; trades per-dispatch latency for increased dispatch count (~16-20 total dispatches)."
+    },
+    {
+      "name": "Block-Wise Pipelined Reduction Waves",
+      "desc": "Instead of processing all 9 blocks together in each all-reduce, partition the 8 dependent iterations into waves where independent blocks can be reduced in parallel. Since each rank's window covers 3 contiguous blocks, partition the 9 blocks into 3 groups of 3, and pipeline the windowed reductions across these groups with overlapping all-reduce calls on disjoint block sets. Approximately 12-15 dispatches (initial full + 3 groups \u00d7 4 waves) but smaller payloads and potential hardware overlap."
+    },
+    {
+      "name": "Reduce-Scatter All-Gather Decomposition",
+      "desc": "Replace each masked all-reduce with a reduce-scatter followed by all-gather pattern, where reduce-scatter aggregates only the blocks each rank needs and all-gather redistributes results. This transforms 8 all-reduce operations into 16 operations (8 reduce-scatter + 8 all-gather) but each operation moves less data (approximately 3/9 of the payload for windowed blocks). Total 17 dispatches (1 initial full + 16 decomposed) trading dispatch count for per-dispatch bandwidth reduction.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Baseline Sequential Masked All-Reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=7.453826"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Buffer Preparation Single-Pass",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=7.453826"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level Reduction Tree",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=7.453826"
+    },
+    {
+      "stage": "impl",
+      "name": "Block-Wise Pipelined Reduction Waves",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=nan"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-Scatter All-Gather Decomposition",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=nan"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 6726.371428571429,
+  "final_code": "def r60c_b9_L3_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 2048; W = world_size\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    c = [0]*9\n    for r in range(W):\n        st = (r + 2) % 9\n        ks = set((st + 1*j) % 9 for j in range(3))\n        for b in ks:\n            c[b] += 1\n    B = 9; OFF = 2\n    start = (rank + OFF) % B\n    keep = set((start + 1*j) % B for j in range(3))\n    buf = torch.zeros_like(s)\n    for b in range(9):\n        if b in keep:\n            buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(9):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n    s = acc\n    B = 9; OFF = 2\n    start = (rank + OFF) % B\n    keep = set((start + 1*j) % B for j in range(3))\n    buf = torch.zeros_like(s)\n    for b in range(9):\n        if b in keep:\n            buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(9):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n    s = acc\n    B = 9; OFF = 2\n    start = (rank + OFF) % B\n    keep = set((start + 1*j) % B for j in range(3))\n    buf = torch.zeros_like(s)\n    for b in range(9):\n        if b in keep:\n            buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(9):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n    s = acc\n    B = 9; OFF = 2\n    start = (rank + OFF) % B\n    keep = set((start + 1*j) % B for j in range(3))\n    buf = torch.zeros_like(s)\n    for b in range(9):\n        if b in keep:\n            buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(9):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n    s = acc\n    B = 9; OFF = 2\n    start = (rank + OFF) % B\n    keep = set((start + 1*j) % B for j in range(3))\n    buf = torch.zeros_like(s)\n    for b in range(9):\n        if b in keep:\n            buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(9):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n    s = acc\n    B = 9; OFF = 2\n    start = (rank + OFF) % B\n    keep = set((start + 1*j) % B for j in range(3))\n    buf = torch.zeros_like(s)\n    for b in range(9):\n        if b in keep:\n            buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(9):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n    s = acc\n    B = 9; OFF = 2\n    start = (rank + OFF) % B\n    keep = set((start + 1*j) % B for j in range(3))\n    buf = torch.zeros_like(s)\n    for b in range(9):\n        if b in keep:\n            buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    s = acc\n    return s\n",
+  "fell_back_to_baseline": true
+}
