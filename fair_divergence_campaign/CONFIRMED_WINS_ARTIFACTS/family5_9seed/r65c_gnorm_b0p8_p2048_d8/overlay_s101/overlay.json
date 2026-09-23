@@ -1,0 +1,83 @@
+{
+  "pipeline": "overlay",
+  "problem": "r65c_gnorm_b0p8_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6877.900000000001,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with local normalization",
+      "desc": "Direct translation of the reference: 8 independent all-reduce dispatches (7 intermediate + 1 final), each preceded by local compute (abs, mean, division). 8 total all-reduce dispatches with minimal payload (16384 elements each). Trades dispatch overhead for simplicity and minimal memory footprint."
+    },
+    {
+      "name": "Fused buffer preparation with batched all-reduce",
+      "desc": "Pre-compute all 7 intermediate normalization steps locally using estimated global statistics, pack the 7 buffers together, then issue a single large all-reduce on concatenated tensor (7\u00d716384 elements), followed by correction pass and final all-reduce. 2 all-reduce dispatches total, trading increased payload size and speculative computation for dramatic reduction in collective overhead."
+    },
+    {
+      "name": "Pipelined overlapped all-reduce with async dispatch",
+      "desc": "Issue all-reduce on current buffer while computing normalization for next iteration, using non-blocking collectives where possible. Still 8 all-reduce dispatches but overlaps communication with local abs/mean/division compute. Hides latency behind computation, optimal when network and compute can truly overlap on Trainium."
+    },
+    {
+      "name": "Hierarchical reduce-scatter then all-gather",
+      "desc": "Replace each all-reduce with reduce-scatter + all-gather pair to enable rank-local processing on sharded intermediate results. 16 total collectives (8 RS + 8 AG), but each moves W times less data. Exploits bandwidth-optimal collectives at cost of algorithmic complexity and potential load imbalance in local reductions."
+    },
+    {
+      "name": "Metadata-only circulation with in-place accumulation",
+      "desc": "Perform a single all-reduce of input x, then circulate only scalar metadata (mean absolute values, normalizers) using all-reduce on 1-element tensors for the 7 dependent iterations, reconstruct final result locally. 8 all-reduce dispatches: 1 full-size (16384) + 7 tiny (1 scalar each), minimizing total bytes moved while preserving dependency structure.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with local normalization",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused buffer preparation with batched all-reduce",
+      "sim": 5962.099999999999,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined overlapped all-reduce with async dispatch",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical reduce-scatter then all-gather",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.045120"
+    },
+    {
+      "stage": "impl",
+      "name": "Metadata-only circulation with in-place accumulation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.857111"
+    },
+    {
+      "stage": "refine:Sequential all-reduce with local normalization",
+      "round": 1,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Sequential all-reduce with local normalization",
+      "round": 2,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Sequential all-reduce with local normalization",
+      "round": 3,
+      "sim": 6877.900000000001
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 5962.099999999999,
+  "final_code": "def r65c_gnorm_b0p8_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size\n    BETA = 0.8\n    dtype = x.dtype\n    \n    # Step 1: First all-reduce to get initial s\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Step 2: Speculative forward pass - compute all 7 iterations locally\n    # using estimated global statistics (will be approximate)\n    buffers = []\n    current = s\n    \n    for iter_idx in range(7):\n        # Local normalization step\n        g = 1.0 + BETA * current.abs().mean()\n        buf = current / g\n        \n        # Store buffer for batched all-reduce\n        buffers.append(buf)\n        \n        # Estimate what the all-reduced result would be\n        # We use current buffer * W as estimate (speculative)\n        acc_estimate = buf  # Approximate - will be corrected later\n        \n        # Continue pipeline with estimated values\n        A = acc_estimate.abs().mean()\n        M = A / (1.0 - BETA * A)\n        gr = 1.0 + BETA * M\n        current = acc_estimate * gr\n    \n    # Step 3: Concatenate all 7 buffers and do single large all-reduce\n    concatenated = torch.cat(buffers, dim=0)\n    reduced_concat = xm.all_reduce(xm.REDUCE_SUM, concatenated)\n    \n    # Step 4: Split back and apply corrections\n    chunk_size = x.shape[0]\n    reduced_buffers = [reduced_concat[i*chunk_size:(i+1)*chunk_size] for i in range(7)]\n    \n    # Now process with correct global values\n    for iter_idx in range(7):\n        acc = reduced_buffers[iter_idx] / W\n        \n        if iter_idx < 6:\n            # Compute correction for next iteration\n            A = acc.abs().mean()\n            M = A / (1.0 - BETA * A)\n            gr = 1.0 + BETA * M\n            s_corrected = acc * gr\n            g_corrected = 1.0 + BETA * s_corrected.abs().mean()\n            buf_corrected = s_corrected / g_corrected\n            \n            # Update the next buffer with correction\n            reduced_buffers[iter_idx + 1] = buf_corrected * W  # Re-scale for division later\n        else:\n            # Last iteration - this is our final result\n            s = acc\n    \n    return s"
+}

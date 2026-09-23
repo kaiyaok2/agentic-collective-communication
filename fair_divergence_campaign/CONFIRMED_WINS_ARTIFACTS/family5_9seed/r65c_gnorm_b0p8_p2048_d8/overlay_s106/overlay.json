@@ -1,0 +1,83 @@
+{
+  "pipeline": "overlay",
+  "problem": "r65c_gnorm_b0p8_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6877.900000000001,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with interleaved local computation",
+      "desc": "Direct translation of the reference: 7 all-reduce dispatches interleaved with local normalization ops (abs, mean, division). Each all-reduce synchronizes world_size=224 ranks with payload size 8*2048. Represents the baseline \"naive but correct\" approach with maximum dispatch overhead but simplest control flow."
+    },
+    {
+      "name": "Fused metadata reduction pipeline",
+      "desc": "Perform first all-reduce on x to get sum s, then batch all subsequent scalar metadata (mean absolute values, normalization factors) into a single small tensor and reduce once. Approximately 2-3 all-reduce dispatches total (initial data reduce + 1-2 metadata reduces). Trades increased local compute complexity for fewer expensive collective operations at world_size=224."
+    },
+    {
+      "name": "Hierarchical two-level reduction tree",
+      "desc": "Exploit the num_nodes parameter by splitting the 224 ranks into node-local groups, performing intra-node all-reduce followed by inter-node all-reduce at each of the 7 stages. Doubles dispatch count (14 total) but each operates on smaller communicator groups. Beneficial when inter-node bandwidth is the bottleneck and node-local fabric is much faster."
+    },
+    {
+      "name": "Vectorized multi-iteration reduction with tensor stacking",
+      "desc": "Stack all 7 iteration states into a single tensor dimension, perform all-reduce operations on batched payloads where legal (initial sum, then vectorized normalization passes). Requires careful dependency tracking but can reduce to 3-4 dispatches by overlapping independent computation. Larger per-dispatch payload but better amortizes collective launch overhead."
+    },
+    {
+      "name": "Reduce-scatter plus all-gather decomposition",
+      "desc": "Replace each all-reduce with reduce-scatter (partition output across ranks) followed by all-gather (broadcast partitions). Enables compute/communication overlap: while gathering iteration i results, begin computing iteration i+1 on local partition. Increases dispatch count to ~14 but can hide latency through pipelining, especially effective at large world_size=224.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with interleaved local computation",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused metadata reduction pipeline",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.960742"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-level reduction tree",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Vectorized multi-iteration reduction with tensor stacking",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-scatter plus all-gather decomposition",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.045120"
+    },
+    {
+      "stage": "refine:Vectorized multi-iteration reduction with tensor stacking",
+      "round": 1,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Vectorized multi-iteration reduction with tensor stacking",
+      "round": 2,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Vectorized multi-iteration reduction with tensor stacking",
+      "round": 3,
+      "sim": 6877.900000000001
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6877.900000000001,
+  "final_code": "def r65c_gnorm_b0p8_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Sequential all-reduce with interleaved local computation.\n    \n    Direct translation of the reference implementation that performs 7 all-reduce\n    operations interleaved with local normalization operations. This represents\n    the baseline approach with maximum dispatch overhead but simplest control flow.\n    \n    Each iteration:\n    1. All-reduce sum across all ranks\n    2. Divide by world_size to get average\n    3. Compute local statistics (abs, mean)\n    4. Apply group normalization scaling\n    \n    The pattern repeats 6 times, with a final 7th all-reduce that produces the result.\n    \"\"\"\n    W = world_size\n    BETA = 0.8\n    \n    # Preserve input dtype\n    dtype = x.dtype\n    \n    # First all-reduce: sum across all ranks\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Iteration 1\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Iteration 2\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Iteration 3\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Iteration 4\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Iteration 5\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Iteration 6\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Final all-reduce (7th)\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    \n    return s"
+}

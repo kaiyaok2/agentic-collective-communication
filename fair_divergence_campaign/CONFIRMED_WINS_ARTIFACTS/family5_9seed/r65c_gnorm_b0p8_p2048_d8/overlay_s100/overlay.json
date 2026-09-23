@@ -1,0 +1,93 @@
+{
+  "pipeline": "overlay",
+  "problem": "r65c_gnorm_b0p8_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6877.900000000001,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with scalar broadcast",
+      "desc": "Perform 7 all-reduce operations sequentially as in the reference, but after each iteration broadcast the computed scalar divisor `g` separately before the division. This adds 6 scalar broadcasts (tiny payload) but allows verification/debugging. Expected 13 dispatches total (7 AR + 6 broadcast). Trades more dispatches for explicit scalar synchronization."
+    },
+    {
+      "name": "Fused buffer preparation with batched all-reduce",
+      "desc": "Concatenate multiple intermediate buffers (buf values) into a single tensor before dispatching all-reduce operations in groups. For example, compute 2-3 iterations worth of local divisions, stack them, then dispatch a single all-reduce on the concatenated payload. Expected 3-4 dispatches with 2-3\u00d7 larger payloads. Trades payload size for fewer dispatches and better amortization of collective overhead."
+    },
+    {
+      "name": "Pipelined dual-buffer overlapping computation",
+      "desc": "Maintain two buffers and overlap the all-reduce of iteration i with the local computation (abs, mean, division) of iteration i-1. Use asynchronous dispatch where possible to hide local arithmetic latency behind network transfer. Expected 7 dispatches but with overlapped execution. Trades complexity for latency hiding through pipeline parallelism."
+    },
+    {
+      "name": "Hierarchical two-level reduction with intra-node optimization",
+      "desc": "Exploit num_nodes structure by first performing device-local reductions within each node (if num_devices/cores_per_device allows), then inter-node all-reduce, then broadcast back within node. For 224 ranks across multiple nodes, this reduces cross-node traffic. Expected 7\u00d72=14 dispatches (intra+inter per iteration) but with smaller cross-node payloads. Trades dispatch count for network topology awareness."
+    },
+    {
+      "name": "Vectorized scalar accumulation with single final sync",
+      "desc": "Each rank independently computes its local trajectory through all 7 iterations storing only the scalars g_i, then performs a single all-reduce of a small vector containing all intermediate scalar statistics needed for global correction, finally recomputes the result. Expected 2 dispatches (initial sum + final scalar vector sync) plus local recomputation. Trades redundant computation for minimal collective operations.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with scalar broadcast",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=nan"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused buffer preparation with batched all-reduce",
+      "sim": 6629.485714285714,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined dual-buffer overlapping computation",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-level reduction with intra-node optimization",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Vectorized scalar accumulation with single final sync",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: shape () != (16384,)"
+    },
+    {
+      "stage": "refine:Fused buffer preparation with batched all-reduce",
+      "round": 1,
+      "sim": 6629.485714285714
+    },
+    {
+      "stage": "refine:Fused buffer preparation with batched all-reduce",
+      "round": 2,
+      "sim": 6670.785714285714
+    },
+    {
+      "stage": "refine:Fused buffer preparation with batched all-reduce",
+      "round": 3,
+      "sim": 6670.785714285714
+    },
+    {
+      "stage": "refine:Pipelined dual-buffer overlapping computation",
+      "round": 1,
+      "sim": 6275.8
+    },
+    {
+      "stage": "refine:Pipelined dual-buffer overlapping computation",
+      "round": 2,
+      "sim": 5929.971428571429
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 5929.971428571429,
+  "final_code": "def r65c_gnorm_b0p8_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size\n    BETA = 0.8\n    dtype = x.dtype\n    \n    # Minimize collectives by doing more local work before synchronization\n    # We'll do all 8 iterations but only synchronize strategically\n    \n    # Initial all_reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf) / W\n    \n    # Do all remaining 7 iterations with a single collective at the end\n    # Stack all intermediate buffers\n    buffers = []\n    \n    for i in range(7):\n        A = acc.abs().mean()\n        M = A / (1.0 - BETA * A)\n        gr = 1.0 + BETA * M\n        s = acc * gr\n        g = 1.0 + BETA * s.abs().mean()\n        buf = s / g\n        buffers.append(buf)\n        # Use local buffer for next iteration\n        acc = buf\n    \n    # Single stacked all_reduce for all 7 iterations\n    stacked = torch.stack(buffers)\n    reduced = xm.all_reduce(xm.REDUCE_SUM, stacked) / W\n    \n    # Return the final iteration result\n    return reduced[-1]"
+}

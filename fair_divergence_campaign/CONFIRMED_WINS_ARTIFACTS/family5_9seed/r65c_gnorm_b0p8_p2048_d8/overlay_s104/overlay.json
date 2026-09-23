@@ -1,0 +1,98 @@
+{
+  "pipeline": "overlay",
+  "problem": "r65c_gnorm_b0p8_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6877.900000000001,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with scalar normalization",
+      "desc": "Performs 7 all-reduce operations sequentially as in the reference implementation, with local compute (division, abs, mean) between each. Dispatch count is 7 (one per all-reduce). Represents the baseline: straightforward translation of the mathematical dependency chain with no optimization\u2014maximum clarity, maximum latency."
+    },
+    {
+      "name": "Batched tensor all-reduce with stacked intermediates",
+      "desc": "Concatenates or stacks multiple intermediate scalars (g, A, M, gr) across iterations into a single tensor and performs fewer all-reduce calls by batching scalar reductions together where dependencies allow. Reduces dispatch count to ~4-5 by trading increased payload size (stacked scalars + original vector) for fewer round-trips. Fewer dispatches but larger per-dispatch payload."
+    },
+    {
+      "name": "Pipelined hierarchical two-level reduction",
+      "desc": "Exploits the multi-node topology (num_nodes parameter) by first performing intra-node reductions (across cores_per_device * num_devices per node) then inter-node reductions, overlapping compute of normalization steps with cross-node communication. Dispatch count remains ~7 but communication volume is reduced by log(nodes) factor in latency-critical path. Hierarchical topology-aware reduction trading algorithmic complexity for bandwidth efficiency."
+    },
+    {
+      "name": "Fused local-op kernel with reduced all-reduce",
+      "desc": "Fuses all local elementwise operations (division, absolute value, mean, scalar arithmetic) into composite PyTorch operations to minimize intermediate tensor allocations and dispatches between host and device. Keeps 7 all-reduce dispatches but reduces local compute overhead by ~6x through kernel fusion. Same communication cost, lower compute overhead per iteration."
+    },
+    {
+      "name": "Asynchronous all-reduce with computation overlap",
+      "desc": "Uses non-blocking all-reduce primitives (if available in xm) to launch all 7 all-reduce operations asynchronously, then performs local computation on already-completed results while later all-reduces are in flight. Dispatch count is 7 but effective latency is reduced by overlapping independent compute with network transfers. Pipeline-fill across back-to-back all-reduces hiding local arithmetic in communication shadow.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with scalar normalization",
+      "sim": 6629.485714285714,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Batched tensor all-reduce with stacked intermediates",
+      "sim": 7030.887109375,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined hierarchical two-level reduction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused local-op kernel with reduced all-reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'TrackedTensor' object has no"
+    },
+    {
+      "stage": "impl",
+      "name": "Asynchronous all-reduce with computation overlap",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "refine:Sequential all-reduce with scalar normalization",
+      "round": 1,
+      "sim": 6638.585714285714
+    },
+    {
+      "stage": "refine:Sequential all-reduce with scalar normalization",
+      "round": 2,
+      "sim": 6629.485714285714
+    },
+    {
+      "stage": "refine:Sequential all-reduce with scalar normalization",
+      "round": 3,
+      "sim": 6629.485714285714
+    },
+    {
+      "stage": "refine:Asynchronous all-reduce with computation overlap",
+      "round": 1,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Asynchronous all-reduce with computation overlap",
+      "round": 2,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Asynchronous all-reduce with computation overlap",
+      "round": 3,
+      "sim": 6877.900000000001
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6629.485714285714,
+  "final_code": "def r65c_gnorm_b0p8_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Sequential all-reduce with scalar normalization strategy.\n    \n    Performs 7 all-reduce operations sequentially with local compute between each.\n    This is a straightforward translation of the mathematical dependency chain.\n    \n    Dispatch count: 7 (one per all-reduce)\n    \"\"\"\n    W = world_size\n    BETA = 0.8\n    dtype = x.dtype\n    \n    # First all-reduce: sum x across all ranks\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Second all-reduce\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Third all-reduce\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Fourth all-reduce\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Fifth all-reduce\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Sixth all-reduce\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Seventh all-reduce\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    \n    return s"
+}

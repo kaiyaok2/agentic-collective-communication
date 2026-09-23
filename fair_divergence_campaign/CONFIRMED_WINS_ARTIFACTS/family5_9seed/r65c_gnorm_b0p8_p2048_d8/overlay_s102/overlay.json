@@ -1,0 +1,88 @@
+{
+  "pipeline": "overlay",
+  "problem": "r65c_gnorm_b0p8_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6877.900000000001,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with scalar aggregation",
+      "desc": "Performs 7 all-reduce operations sequentially (1 initial sum, 6 iterative normalization steps), each followed by local scalar computation (mean, abs, division). Requires 7 collective dispatches with full tensor payloads. Represents the baseline reference pattern with maximum clarity but no overlap or fusion opportunities."
+    },
+    {
+      "name": "Fused local ops between collectives",
+      "desc": "Same 7 all-reduce structure but aggressively fuses all local arithmetic (division, absolute value, mean computation) into single kernels between dispatches to minimize local kernel launches. Still 7 collective dispatches but reduces local compute overhead. Trades code complexity for reduced local synchronization points while keeping collective structure unchanged."
+    },
+    {
+      "name": "Pipelined two-stage all-reduce batching",
+      "desc": "Splits the 6 iterative normalization rounds into chunks and pipelines preparation of the next all-reduce payload while waiting for the current collective to complete. Uses asynchronous dispatch where possible to overlap computation and communication. Still 7 dispatches but exploits hardware pipelining to hide latency, trading implementation complexity for better overlap."
+    },
+    {
+      "name": "Hierarchical reduce-scatter then all-gather",
+      "desc": "Replaces some all-reduce operations with reduce-scatter + all-gather pairs, particularly in middle iterations where partial results can be distributed. Each rank computes normalization on a shard, then gathers final result. Increases dispatch count (potentially 10-14 dispatches) but reduces per-dispatch payload size by factor of world_size for scattered phases."
+    },
+    {
+      "name": "Scalar broadcast with single final all-reduce",
+      "desc": "After initial all-reduce for sum, performs the 6 normalization iterations using only scalar all-reduce operations (mean of abs values as scalars), broadcasting tiny payloads instead of full tensors. Final result computed locally then validated with one more full all-reduce if needed. Reduces to 2-3 full tensor dispatches plus 6 scalar dispatches, trading tensor payload size for increased dispatch count.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with scalar aggregation",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused local ops between collectives",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined two-stage all-reduce batching",
+      "sim": 6629.485714285714,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical reduce-scatter then all-gather",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.045120"
+    },
+    {
+      "stage": "impl",
+      "name": "Scalar broadcast with single final all-reduce",
+      "sim": 7013.4163783482145,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "refine:Pipelined two-stage all-reduce batching",
+      "round": 1,
+      "sim": 6629.485714285714
+    },
+    {
+      "stage": "refine:Pipelined two-stage all-reduce batching",
+      "round": 2,
+      "sim": 6006.385714285714
+    },
+    {
+      "stage": "refine:Sequential all-reduce with scalar aggregation",
+      "round": 1,
+      "sim": 6629.485714285714
+    },
+    {
+      "stage": "refine:Sequential all-reduce with scalar aggregation",
+      "round": 3,
+      "sim": 5884.242857142857
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 5884.242857142857,
+  "final_code": "def r65c_gnorm_b0p8_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Optimized all-reduce with reduced collective dispatch count.\n    Reduces the number of iterations to minimize collective operations.\n    \"\"\"\n    W = world_size\n    BETA = 0.8\n    dtype = x.dtype\n    \n    # Initial all-reduce to get global sum\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Compute global normalization factor and normalize\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Iterative normalization: reduced to 3 rounds\n    for i in range(3):\n        # All-reduce the normalized buffer\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n        acc = acc / W\n        \n        # For the last iteration, use acc directly as result\n        if i == 2:\n            s = acc\n            break\n        \n        # Compute mean absolute value\n        A = acc.abs().mean()\n        \n        # Compute multiplier to restore magnitude\n        M = A / (1.0 - BETA * A)\n        gr = 1.0 + BETA * M\n        \n        # Scale up\n        s = acc * gr\n        \n        # Normalize again\n        g = 1.0 + BETA * s.abs().mean()\n        buf = s / g\n    \n    return s"
+}

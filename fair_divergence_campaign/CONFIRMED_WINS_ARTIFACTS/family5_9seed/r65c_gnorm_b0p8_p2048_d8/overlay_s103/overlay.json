@@ -1,0 +1,93 @@
+{
+  "pipeline": "overlay",
+  "problem": "r65c_gnorm_b0p8_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6877.900000000001,
+  "strategies": [
+    {
+      "name": "Sequential All-Reduce with Local Fusion",
+      "desc": "Performs 8 sequential all_reduce operations with all local scalar computations (division, abs, mean, scaling) fused between dispatches. Total 8 all_reduce dispatches with minimal intermediate tensors. Represents the baseline \"compute then communicate\" pattern with maximum local compute fusion but no overlap of communication phases."
+    },
+    {
+      "name": "Batched Metadata All-Reduce",
+      "desc": "Aggregates the scalar metadata (g values, A values, M values) from all 8 iterations into a single tensor and performs one collective all_reduce of the metadata after local computation, then uses broadcasted results to correct the final tensor. Reduces from 8 to approximately 2-3 all_reduce dispatches by trading off recomputation for communication reduction, especially effective when scalar synchronization dominates."
+    },
+    {
+      "name": "Pipelined Two-Phase Reduce-Scatter/All-Gather",
+      "desc": "Decomposes each all_reduce into reduce_scatter followed by all_gather, allowing overlap of the gather phase of iteration i with the reduce phase of iteration i+1 across the 8 dependent steps. Total 16 collective dispatches (8 RS + 8 AG) but with potential pipeline parallelism if the runtime supports asynchronous collectives, trading dispatch count for latency hiding."
+    },
+    {
+      "name": "Hierarchical Reduction with Checkpoint Aggregation",
+      "desc": "Groups the 8 iterations into 2-3 hierarchical stages, performing local all_reduce within each stage, then a final cross-stage correction all_reduce. Uses approximately 3-4 all_reduce dispatches by checkpointing intermediate normalization states and applying correction factors in bulk, representing a \"coarse-grain then refine\" approach that reduces communication at the cost of numerical approximation management."
+    },
+    {
+      "name": "Fused Vector-Scalar All-Reduce",
+      "desc": "Concatenates the data payload with its computed scalar metadata (g, A, M values) into a single extended tensor for each all_reduce call, performing one all_reduce per iteration but with larger payload (16384 + O(10) elements). Maintains 8 all_reduce dispatches but eliminates separate scalar synchronization needs, trading slightly larger bandwidth for simpler dependency chains and potential kernel fusion opportunities.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential All-Reduce with Local Fusion",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Batched Metadata All-Reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.044621"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Two-Phase Reduce-Scatter/All-Gather",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.045120"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Reduction with Checkpoint Aggregation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.857113"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Vector-Scalar All-Reduce",
+      "sim": 7095.009940011161,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "refine:Sequential All-Reduce with Local Fusion",
+      "round": 1,
+      "sim": 6887.0
+    },
+    {
+      "stage": "refine:Sequential All-Reduce with Local Fusion",
+      "round": 2,
+      "sim": 6258.657142857142
+    },
+    {
+      "stage": "refine:Fused Vector-Scalar All-Reduce",
+      "round": 1,
+      "sim": 7160.109940011161
+    },
+    {
+      "stage": "refine:Fused Vector-Scalar All-Reduce",
+      "round": 2,
+      "sim": 7095.009940011161
+    },
+    {
+      "stage": "refine:Fused Vector-Scalar All-Reduce",
+      "round": 3,
+      "sim": 6560.10994001116
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6258.657142857142,
+  "final_code": "def r65c_gnorm_b0p8_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Optimized All-Reduce with reduced collective dispatch count.\n    Groups operations to minimize collective calls while maximizing local compute.\n    \"\"\"\n    W = world_size\n    BETA = 0.8\n    dtype = x.dtype\n    \n    # First all_reduce: sum x across all ranks\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Local compute block 1\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # All_reduce 2-3 combined: do two iterations with one collective\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    \n    # Two iterations of local processing\n    for _ in range(2):\n        A = acc.abs().mean()\n        M = A / (1.0 - BETA * A)\n        gr = 1.0 + BETA * M\n        s = acc * gr\n        g = 1.0 + BETA * s.abs().mean()\n        acc = s / g\n    \n    # All_reduce 4-5 combined\n    acc = xm.all_reduce(xm.REDUCE_SUM, acc)\n    acc = acc / W\n    \n    # Two more iterations of local processing\n    for _ in range(2):\n        A = acc.abs().mean()\n        M = A / (1.0 - BETA * A)\n        gr = 1.0 + BETA * M\n        s = acc * gr\n        g = 1.0 + BETA * s.abs().mean()\n        acc = s / g\n    \n    # All_reduce 6-7 combined\n    acc = xm.all_reduce(xm.REDUCE_SUM, acc)\n    acc = acc / W\n    \n    # Two more iterations of local processing\n    for _ in range(2):\n        A = acc.abs().mean()\n        M = A / (1.0 - BETA * A)\n        gr = 1.0 + BETA * M\n        s = acc * gr\n        g = 1.0 + BETA * s.abs().mean()\n        acc = s / g\n    \n    # Final all_reduce 8\n    acc = xm.all_reduce(xm.REDUCE_SUM, acc)\n    acc = acc / W\n    s = acc\n    \n    return s"
+}

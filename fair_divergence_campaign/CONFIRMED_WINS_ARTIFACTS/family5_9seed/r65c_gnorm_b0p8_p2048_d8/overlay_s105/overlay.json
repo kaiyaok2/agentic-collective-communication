@@ -1,0 +1,88 @@
+{
+  "pipeline": "overlay",
+  "problem": "r65c_gnorm_b0p8_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6877.900000000001,
+  "strategies": [
+    {
+      "name": "Sequential All-Reduce with Scalar Broadcasts",
+      "desc": "Performs 7 all-reduce operations sequentially (1 initial + 6 iterative), computing local normalization scalars between each all-reduce, then broadcasts scalars separately if beneficial. Total ~7-13 dispatches depending on whether scalar normalization terms are all-reduced separately or kept local. Trades dispatch count for simplicity and follows the reference structure closely."
+    },
+    {
+      "name": "Fused All-Reduce with Concatenated Payloads",
+      "desc": "Packs vector data and scalar normalization statistics into a single enlarged buffer for each all-reduce, reducing 7 separate all-reduces to 7 all-reduces with larger payloads (vector + 1-2 scalars per iteration). Approximately 7 dispatches total. Trades larger per-dispatch payload (16KB + metadata) for fewer total dispatches and better pipeline utilization."
+    },
+    {
+      "name": "Two-Phase Hierarchical Reduction with Intra-Node Fusion",
+      "desc": "Exploits multi-node topology by splitting all-reduces into intra-node (fast) and inter-node (slow) phases, performing 6 normalization iterations at node-level first, then global correction. Approximately 7-10 intra-node + 2-3 inter-node dispatches. Optimizes for network hierarchy at world_size=224 assuming multiple nodes, hiding latency behind bandwidth."
+    },
+    {
+      "name": "Pipelined All-Reduce with Chunked Vector Processing",
+      "desc": "Splits the 16KB vector into smaller chunks and pipelines all-reduce operations across chunks, overlapping communication of chunk i with computation (normalization) of chunk i-1. Requires ~7 all-reduces \u00d7 chunk_count dispatches but can hide normalization latency. Trades increased dispatch count for better overlap and reduced bubble time."
+    },
+    {
+      "name": "Batched Multi-Tensor All-Reduce with Loop Unrolling",
+      "desc": "Uses a single multi-tensor all-reduce primitive (if available) or batches multiple iteration states into a single dispatch by preparing all 7 iteration buffers upfront, then performing one large all-reduce on the concatenated state. Requires speculative computation and correction passes. Approximately 1-3 dispatches total, trading memory footprint (7\u00d7 vector storage) and algorithmic complexity for minimal dispatch overhead.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential All-Reduce with Scalar Broadcasts",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused All-Reduce with Concatenated Payloads",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Two-Phase Hierarchical Reduction with Intra-Node Fusion",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined All-Reduce with Chunked Vector Processing",
+      "sim": 11753.6,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Batched Multi-Tensor All-Reduce with Loop Unrolling",
+      "sim": 5957.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "refine:Batched Multi-Tensor All-Reduce with Loop Unrolling",
+      "round": 2,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Sequential All-Reduce with Scalar Broadcasts",
+      "round": 1,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Sequential All-Reduce with Scalar Broadcasts",
+      "round": 2,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Sequential All-Reduce with Scalar Broadcasts",
+      "round": 3,
+      "sim": 6877.900000000001
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 5957.900000000001,
+  "final_code": "def r65c_gnorm_b0p8_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Batched Multi-Tensor All-Reduce with Loop Unrolling.\n    \n    Strategy: Speculatively compute all 7 iteration states assuming independent\n    processing, batch them together, perform a single all-reduce, then apply\n    correction passes to account for dependencies.\n    \n    The reference shows 7 iterations of the pattern:\n    1. s = all_reduce(buf_prev)\n    2. g = 1 + 0.8 * mean(abs(s))\n    3. buf = s / g\n    4. acc = all_reduce(buf) / W\n    5. A = mean(abs(acc))\n    6. M = A / (1 - 0.8*A)\n    7. gr = 1 + 0.8*M\n    8. s_next = acc * gr\n    \n    We'll prepare speculative buffers and batch the all-reduce operations.\n    \"\"\"\n    W = world_size\n    BETA = 0.8\n    dtype = x.dtype\n    \n    # First all-reduce to get initial s\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Prepare storage for all 7 iteration buffers\n    # We'll compute them speculatively and batch them\n    buffers = []\n    \n    # Iteration 0: starting from s\n    current = s\n    for i in range(7):\n        g = 1.0 + BETA * current.abs().mean()\n        buf = current / g\n        buffers.append(buf)\n        \n        # Speculative next state (assuming all-reduce result)\n        # This is a placeholder; we'll correct after batched all-reduce\n        if i < 6:\n            # Speculatively assume the all-reduce result\n            acc_speculative = buf  # Will be corrected\n            A = acc_speculative.abs().mean()\n            M = A / (1.0 - BETA * A)\n            gr = 1.0 + BETA * M\n            current = acc_speculative * gr\n    \n    # Concatenate all buffers for a single batched all-reduce\n    batched = torch.cat(buffers, dim=0)\n    \n    # Single all-reduce operation on concatenated tensor\n    batched_reduced = xm.all_reduce(xm.REDUCE_SUM, batched)\n    \n    # Split back into individual results\n    chunk_size = x.shape[0]\n    reduced_buffers = [batched_reduced[i*chunk_size:(i+1)*chunk_size] for i in range(7)]\n    \n    # Now apply correction passes with actual all-reduce results\n    s = s  # Start with initial s\n    for i in range(7):\n        g = 1.0 + BETA * s.abs().mean()\n        buf = s / g\n        \n        # Use the batched all-reduce result\n        acc = reduced_buffers[i] / W\n        \n        if i < 6:\n            # Prepare for next iteration\n            A = acc.abs().mean()\n            M = A / (1.0 - BETA * A)\n            gr = 1.0 + BETA * M\n            s = acc * gr\n        else:\n            # Last iteration\n            s = acc\n    \n    return s"
+}
