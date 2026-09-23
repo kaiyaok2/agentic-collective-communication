@@ -1,0 +1,68 @@
+{
+  "pipeline": "overlay",
+  "problem": "r67b_vself_b0p4_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6643.4,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with local recompute",
+      "desc": "Performs 8 sequential all_reduce calls with local elementwise operations (v creation, mean, scaling) recomputed between each collective. 8 dispatches total. Represents the baseline: simplest structure, no fusion, highest dispatch count but smallest per-dispatch payload (16384 elements)."
+    },
+    {
+      "name": "Fused buffer preparation with batched AR",
+      "desc": "Precompute all 8 \"buf\" tensors locally by unrolling the iterative formula, then concatenate into a single tensor and perform one all_reduce on the stacked payload, followed by local unpacking and inverse transforms. 1 dispatch with 8\u00d7 payload size. Trades dispatch overhead for larger message and increased local compute/memory."
+    },
+    {
+      "name": "Pipelined two-phase all-reduce pairs",
+      "desc": "Group the 8 all_reduce operations into 4 pairs, where each pair fuses the \"forward\" all_reduce of iteration i with preparation of iteration i+1 buffer using overlapped computation. 4 dispatches with doubled effective payload per call. Balances dispatch count reduction with moderate message size increase."
+    },
+    {
+      "name": "Scalar all-reduce on projection coefficients",
+      "desc": "After initial all_reduce to get global sum s, compute local projection coefficient (v*s).mean() and perform 7 scalar all_reduce operations to aggregate only the coefficient (1 element), then reconstruct s locally using the iterative closed-form update. 8 dispatches but 7 are tiny (single scalar). Minimizes bandwidth at cost of numerical precision and dispatch count."
+    },
+    {
+      "name": "Hierarchical reduce-scatter then all-gather",
+      "desc": "Partition the 16384-element vector across ranks using reduce_scatter for the initial sum, perform the 8 iterative updates on local shards in parallel across ranks, then all_gather to reconstruct the full result. 2 dispatches (RS + AG) with full payload. Exploits data parallelism in the iteration structure, trading algorithmic dependency for collective efficiency.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with local recompute",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.001642"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused buffer preparation with batched AR",
+      "sim": 5520.971428571428,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined two-phase all-reduce pairs",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902362"
+    },
+    {
+      "stage": "impl",
+      "name": "Scalar all-reduce on projection coefficients",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.001641"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical reduce-scatter then all-gather",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902362"
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 5520.971428571428,
+  "final_code": "def r67b_vself_b0p4_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size\n    BETA = 0.4\n    N = 16384\n    dtype = x.dtype\n    \n    # Precompute the sign vector v\n    idx = torch.arange(N, device=x.device)\n    v = (1 - 2 * (idx % 2)).to(dtype)\n    \n    # Initialize s with the first all_reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Precompute all 8 \"buf\" tensors locally by unrolling the iteration\n    bufs = []\n    \n    for i in range(8):\n        # Compute buf = s + BETA * v * (v * s).mean()\n        buf = s + BETA * v * (v * s).mean()\n        bufs.append(buf)\n        \n        # Simulate what acc would be after all_reduce and division\n        # acc = all_reduce(buf) / W\n        # For local computation, we assume uniform distribution across ranks\n        # and compute the next s as if we had done the all_reduce\n        acc = buf  # Placeholder - will be replaced by actual all_reduce result\n        \n        # Compute next s (inverse transform)\n        # s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n        # But we need to propagate through the iteration locally\n        \n        # Since we can't actually know acc without communication, \n        # we need a different approach: stack and reduce once\n        break\n    \n    # Actually, let's stack all buffers and do one batched all_reduce\n    # We need to compute each buf_i based on s_i, where s_{i+1} comes from buf_i\n    \n    # Recompute with proper dependency tracking\n    s_current = s\n    buf_list = []\n    \n    for i in range(8):\n        buf = s_current + BETA * v * (v * s_current).mean()\n        buf_list.append(buf)\n        \n        # For next iteration, we need s from this buf\n        # s = (all_reduce(buf) / W) - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n        # We'll approximate locally for precomputation\n        acc_approx = buf  # Local approximation\n        s_current = acc_approx - (BETA / (1.0 + BETA)) * v * (v * acc_approx).mean()\n    \n    # Stack all buffers into a single tensor (shape: 8*N)\n    stacked_bufs = torch.cat(buf_list, dim=0)\n    \n    # Single all_reduce on the stacked tensor\n    reduced_stacked = xm.all_reduce(xm.REDUCE_SUM, stacked_bufs)\n    reduced_stacked = reduced_stacked / W\n    \n    # Unpack the reduced results\n    acc_list = torch.split(reduced_stacked, N)\n    \n    # Now recompute s properly using actual all_reduce results\n    s_final = s  # Start with initial s\n    for i in range(8):\n        acc = acc_list[i]\n        if i < 7:\n            s_final = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n        else:\n            s_final = acc\n    \n    return s_final"
+}

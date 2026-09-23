@@ -1,0 +1,73 @@
+{
+  "pipeline": "overlay",
+  "problem": "r66b_walsh_b1p5_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6646.2,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with scalar broadcast",
+      "desc": "Perform the initial all-reduce on x to get s, then iteratively compute scalar means (v*s).mean() locally and broadcast them separately (8 scalar all-reduces), finally apply transformations locally. Total 9 all-reduces (1 vector + 8 scalar), trading off vector payload size for scalar dispatch overhead but enabling potential pipelining of small messages."
+    },
+    {
+      "name": "Fused buffer construction with batched all-reduce",
+      "desc": "Pre-compute all 8 \"buf\" vectors locally before any communication by predicting intermediate s values, pack them into a single tensor of shape (8, N), perform one large batched all-reduce, then unpack and apply corrections iteratively. Reduces dispatches from 8 to 1-2 but increases total payload by 8x and requires speculative computation with correction passes."
+    },
+    {
+      "name": "Interleaved reduce-scatter and all-gather pattern",
+      "desc": "Split x into chunks, use reduce-scatter to distribute partial sums across ranks, compute transformations on local shards in parallel (reducing mean computation to local scope), then all-gather results. Converts 8 full all-reduces into 8 pairs of reduce-scatter + all-gather (16 ops total), trading dispatch count for potentially better bandwidth utilization at large world sizes."
+    },
+    {
+      "name": "Two-stage hierarchical all-reduce with node-local fusion",
+      "desc": "Leverage num_nodes to perform intra-node all-reduces first (assuming 224 ranks span multiple nodes), compute intermediate transformations once per node, then perform inter-node all-reduces. Reduces cross-node traffic by 8x (only final results cross nodes), requiring 2*8=16 all-reduces total but with smaller effective world size for most operations."
+    },
+    {
+      "name": "Direct loop unroll with opportunistic computation reordering",
+      "desc": "Keep the 8 sequential all-reduces but reorder local operations to maximize fusion opportunities: pre-compute all u and v masks once, hoist invariant multiplications (BETA*u) outside loops, and merge consecutive scalar reductions. Maintains 8 all-reduce dispatches but minimizes local compute overhead between collective calls, representing the \"optimized reference\" baseline.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with scalar broadcast",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.901742"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused buffer construction with batched all-reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.006153"
+    },
+    {
+      "stage": "impl",
+      "name": "Interleaved reduce-scatter and all-gather pattern",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.901742"
+    },
+    {
+      "stage": "impl",
+      "name": "Two-stage hierarchical all-reduce with node-local fusion",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Direct loop unroll with opportunistic computation reordering",
+      "sim": 6637.8,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "refine:Direct loop unroll with opportunistic computation reordering",
+      "round": 1,
+      "sim": 6637.8
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 6637.8,
+  "final_code": "def r66b_walsh_b1p5_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size\n    BETA = 1.5\n    N = 16384\n    \n    # Pre-compute u and v masks once (hoisted out of loop)\n    idx = torch.arange(N, device=x.device)\n    v = (1 - 2 * (idx % 2)).to(x.dtype)\n    u = (1 - 2 * ((idx // 2) % 2)).to(x.dtype)\n    \n    # Hoist invariant multiplication outside loop\n    BETA_u = BETA * u\n    \n    # Initial all-reduce to get s\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Unrolled loop with optimized computation ordering\n    # Iteration 1\n    mean_val = (v * s).mean()\n    buf = s + BETA_u * mean_val\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA_u * (v * acc).mean()\n    \n    # Iteration 2\n    mean_val = (v * s).mean()\n    buf = s + BETA_u * mean_val\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA_u * (v * acc).mean()\n    \n    # Iteration 3\n    mean_val = (v * s).mean()\n    buf = s + BETA_u * mean_val\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA_u * (v * acc).mean()\n    \n    # Iteration 4\n    mean_val = (v * s).mean()\n    buf = s + BETA_u * mean_val\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA_u * (v * acc).mean()\n    \n    # Iteration 5\n    mean_val = (v * s).mean()\n    buf = s + BETA_u * mean_val\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA_u * (v * acc).mean()\n    \n    # Iteration 6\n    mean_val = (v * s).mean()\n    buf = s + BETA_u * mean_val\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA_u * (v * acc).mean()\n    \n    # Iteration 7 (final iteration, no backward step needed)\n    mean_val = (v * s).mean()\n    buf = s + BETA_u * mean_val\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    \n    return s"
+}

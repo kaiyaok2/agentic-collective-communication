@@ -1,0 +1,68 @@
+{
+  "pipeline": "overlay",
+  "problem": "r67b_vself_b0p3_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6643.4,
+  "strategies": [
+    {
+      "name": "Sequential All-Reduce with Local Projections",
+      "desc": "Performs 8 separate all_reduce operations with local projection computations (v*s mean, buffer construction) between each collective. Dispatch count = 8. Represents the baseline reference pattern with maximum synchronization barriers but minimal fusion complexity."
+    },
+    {
+      "name": "Pipelined Two-Stage Reduce-Scatter All-Gather",
+      "desc": "Decomposes each all_reduce into reduce_scatter followed by all_gather, allowing overlap of the inverse projection computation during the gather phase. Dispatch count = 16 (2\u00d78). Trades more dispatches for potential pipeline parallelism between scatter/gather and local compute."
+    },
+    {
+      "name": "Fused Projection Buffer Pre-computation",
+      "desc": "Pre-computes all 8 projection buffers locally before any collective, then issues 8 back-to-back all_reduce calls on pre-allocated tensors, then post-processes results. Dispatch count = 8. Shifts compute-communication dependency to enable better collective batching at the cost of 8\u00d7 memory for intermediate buffers."
+    },
+    {
+      "name": "Hierarchical Two-Level All-Reduce",
+      "desc": "Exploits multi-node topology (224 ranks likely spans multiple nodes) by splitting each all_reduce into intra-node reduction followed by inter-node reduction, with projection math fused at node boundaries. Dispatch count = 16 (2\u00d78). Optimizes for bandwidth hierarchy but requires node-aware rank assignment."
+    },
+    {
+      "name": "Scalar Projection Coefficient Broadcast",
+      "desc": "Extracts the scalar coefficient (v*s).mean() via a separate all_reduce on the single mean value, broadcasts it, then performs vector all_reduce. Dispatch count = 16 (8 scalar + 8 vector reductions). Reduces payload size for half the collectives from 16384 to 1 element, optimizing latency-bound small-message performance.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential All-Reduce with Local Projections",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.001231"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Two-Stage Reduce-Scatter All-Gather",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902330"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Projection Buffer Pre-computation",
+      "sim": 6863.271428571429,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level All-Reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.001231"
+    },
+    {
+      "stage": "impl",
+      "name": "Scalar Projection Coefficient Broadcast",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902330"
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 6863.271428571429,
+  "final_code": "def r67b_vself_b0p3_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size\n    BETA = 0.3\n    N = 16384\n    dtype = x.dtype\n    \n    # Pre-compute the fixed sign vector v\n    idx = torch.arange(N, device=x.device)\n    v = (1 - 2 * (idx % 2)).to(dtype)\n    \n    # Initial all_reduce to get s\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Pre-compute all 8 projection buffers locally before any collective\n    buffers = []\n    for i in range(8):\n        if i == 0:\n            # First iteration uses the initial s\n            buf = s + BETA * v * (v * s).mean()\n        else:\n            # Subsequent iterations: simulate the update s would have after all_reduce\n            # We need to pre-compute what s would be after processing buf[i-1]\n            # s_next = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n            # where acc = all_reduce(buf[i-1]) / W\n            # Since we're pre-computing, we'll use the current s\n            s_local = s\n            buf = s_local + BETA * v * (v * s_local).mean()\n        buffers.append(buf)\n    \n    # Issue 8 back-to-back all_reduce calls on pre-allocated tensors\n    reduced_buffers = []\n    for buf in buffers:\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n        reduced_buffers.append(acc)\n    \n    # Post-process results sequentially\n    s = s  # Start with initial s\n    for i in range(8):\n        acc = reduced_buffers[i] / W\n        if i < 7:\n            # Update s for next iteration\n            s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n        else:\n            # Last iteration: just keep acc as s\n            s = acc\n    \n    return s"
+}

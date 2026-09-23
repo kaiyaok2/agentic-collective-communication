@@ -1,0 +1,68 @@
+{
+  "pipeline": "overlay",
+  "problem": "r67b_vself_b0p3_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6643.4,
+  "strategies": [
+    {
+      "name": "Sequential All-Reduce with Local Computation",
+      "desc": "Performs 8 sequential all_reduce operations with interleaved local element-wise operations (v multiplication, mean computation, scaling). Totals 8 all_reduce dispatches with minimal payload (16384 elements each). Straightforward translation of the reference with no fusion, trading dispatch overhead for simplicity and correctness verification."
+    },
+    {
+      "name": "Fused Buffer Preparation with Batched Collectives",
+      "desc": "Pre-computes multiple \"buf\" tensors locally by unrolling the iteration logic, then issues all_reduce operations in quick succession to leverage potential hardware batching. Still 8 all_reduce dispatches but groups computation phases separately from communication phases. Reduces interleaving overhead and may improve network utilization through back-to-back collective submission."
+    },
+    {
+      "name": "Scalar Projection All-Reduce Decomposition",
+      "desc": "Separates the computation into two streams: one all_reduce for the full vector s, and separate all_reduce operations for the scalar projection (v*s).mean(). Uses 16 total dispatches (8 for vectors, 8 for scalars) but with smaller payloads for scalar reductions (single element). Trades dispatch count for reduced per-dispatch data volume on half the operations."
+    },
+    {
+      "name": "Recursive Doubling with Partial Result Caching",
+      "desc": "Exploits the iterative structure by caching intermediate projection coefficients and amortizing v-related computations. Uses 8 all_reduce dispatches but hoists invariant sub-expressions (v computation, beta scaling constants) outside the loop and pre-allocates buffers. Same dispatch count as reference but reduces local compute overhead between collectives."
+    },
+    {
+      "name": "Pipelined Two-Phase Reduce-Scatter All-Gather",
+      "desc": "Decomposes each logical all_reduce into reduce_scatter followed by all_gather, enabling partial result overlap across the 8 iterations. Uses 16 total dispatches (8 RS + 8 AG pairs) but allows computation on partial sums during the scatter phase. Increases dispatch count but enables finer-grained pipelining and potential latency hiding in high-latency networks.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential All-Reduce with Local Computation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.001231"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Buffer Preparation with Batched Collectives",
+      "sim": 6649.0,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Scalar Projection All-Reduce Decomposition",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902330"
+    },
+    {
+      "stage": "impl",
+      "name": "Recursive Doubling with Partial Result Caching",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.001231"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Two-Phase Reduce-Scatter All-Gather",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902330"
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 6649.0,
+  "final_code": "def r67b_vself_b0p3_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size\n    BETA = 0.3\n    N = 16384\n    \n    # Precompute v once\n    idx = torch.arange(N, device=x.device)\n    v = (1 - 2 * (idx % 2)).to(x.dtype)\n    \n    # Initial all_reduce to get s\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Fused Buffer Preparation: Pre-compute all 7 buffers locally\n    # before issuing collectives\n    buffers = []\n    \n    # Buffer 0\n    buf = s + BETA * v * (v * s).mean()\n    buffers.append(buf)\n    \n    # To compute subsequent buffers, we need to simulate the forward pass\n    # Buffer 1\n    acc = buf  # Will be replaced by all_reduce result, but we can pre-estimate\n    # We know acc after all_reduce will be sum across ranks, so we prepare based on current s\n    s_temp = s.clone()\n    buf_temp = s_temp + BETA * v * (v * s_temp).mean()\n    \n    # Actually, we need to issue collectives sequentially due to dependencies\n    # Let's group computation separately from communication\n    \n    # Strategy: Issue all_reduce, then immediately compute next buffer\n    # Batched approach: compute buffer, issue all_reduce in tight loop\n    \n    # Iteration 1\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    \n    # Iteration 2\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    \n    # Iteration 3\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    \n    # Iteration 4\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    \n    # Iteration 5\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    \n    # Iteration 6\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    \n    # Iteration 7 (final)\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    \n    return s"
+}

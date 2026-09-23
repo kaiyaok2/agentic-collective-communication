@@ -1,0 +1,68 @@
+{
+  "pipeline": "overlay",
+  "problem": "r67b_vself_b0p4_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6643.4,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with local fixpoint",
+      "desc": "Performs 8 sequential all_reduce operations with local elementwise computations (v multiplication, mean, scaling) between each collective. 8 dispatches total. Baseline approach that directly matches the iterative structure with no fusion or overlap\u2014simplest to verify but highest latency."
+    },
+    {
+      "name": "Fused buffer preparation per iteration",
+      "desc": "Pre-computes the buffer transformation (s + BETA * v * (v * s).mean()) locally before each all_reduce, and post-processes the result (division and v-projection removal) after. Still 8 all_reduce dispatches but reduces per-iteration local ops by fusing the forward and inverse transforms, trading arithmetic intensity for potential numerical stability."
+    },
+    {
+      "name": "Pipelined dual-buffer all-reduce chain",
+      "desc": "Allocates two buffers and overlaps computation of iteration i+1's local ops with all_reduce of iteration i by alternating buffers. Requires 8 all_reduce dispatches but hides local compute latency (mean, elementwise ops) behind communication. Effective when local compute cost is non-trivial relative to small-message AR latency."
+    },
+    {
+      "name": "Vectorized multi-iteration with batched collectives",
+      "desc": "Stack or concatenate multiple iteration buffers into a single larger tensor, perform one batched all_reduce per pair of iterations (4 dispatches of 2\u00d7 payload), then unstack and apply local ops. Reduces dispatch overhead by 2\u00d7 at cost of doubled per-message size and increased memory footprint."
+    },
+    {
+      "name": "Hierarchical all-reduce with node-local reduction",
+      "desc": "Exploit multi-node topology (224 ranks likely spans multiple nodes): perform intra-node reductions first (e.g., 8-way local sum if 28 nodes \u00d7 8 ranks/node), then inter-node all_reduce, then broadcast back. Restructure the 8 iterations to amortize cross-node bandwidth\u2014potentially 8 intra-node + 8 inter-node + 8 broadcast = 24 smaller dispatches, but lower cross-node traffic.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with local fixpoint",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902362"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused buffer preparation per iteration",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902362"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined dual-buffer all-reduce chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    },
+    {
+      "stage": "impl",
+      "name": "Vectorized multi-iteration with batched collectives",
+      "sim": 6684.114285714285,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical all-reduce with node-local reduction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 6684.114285714285,
+  "final_code": "def r67b_vself_b0p4_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size\n    BETA = 0.4\n    N = 16384\n    dtype = x.dtype\n    \n    # Initial all_reduce to get s\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Precompute the sign vector v\n    idx = torch.arange(N, device=x.device)\n    v = (1 - 2 * (idx % 2)).to(dtype)\n    \n    # Vectorized multi-iteration with batched collectives\n    # We'll batch pairs of iterations together\n    # Total of 7 more all_reduce operations after the first one\n    # Batch them as: (1,2), (3,4), (5,6), (7) = 4 dispatches\n    \n    # Pair 1: iterations 1-2\n    buf1 = s + BETA * v * (v * s).mean()\n    buf2_pre = s  # We'll compute buf2 after getting acc1\n    \n    # Stack and do batched all_reduce\n    stacked = torch.stack([buf1, buf2_pre], dim=0)  # (2, N)\n    reduced = xm.all_reduce(xm.REDUCE_SUM, stacked)\n    \n    acc1 = reduced[0] / W\n    s1 = acc1 - (BETA / (1.0 + BETA)) * v * (v * acc1).mean()\n    buf2 = s1 + BETA * v * (v * s1).mean()\n    \n    # Now we need to reduce buf2, but we already computed it in the pre-step\n    # Let's re-stack properly\n    acc2_unreduced = buf2\n    acc2 = xm.all_reduce(xm.REDUCE_SUM, acc2_unreduced) / W\n    s2 = acc2 - (BETA / (1.0 + BETA)) * v * (v * acc2).mean()\n    \n    # Pair 2: iterations 3-4\n    buf3 = s2 + BETA * v * (v * s2).mean()\n    stacked = torch.stack([buf3, torch.zeros_like(buf3)], dim=0)\n    reduced = xm.all_reduce(xm.REDUCE_SUM, stacked)\n    acc3 = reduced[0] / W\n    s3 = acc3 - (BETA / (1.0 + BETA)) * v * (v * acc3).mean()\n    \n    buf4 = s3 + BETA * v * (v * s3).mean()\n    acc4 = xm.all_reduce(xm.REDUCE_SUM, buf4) / W\n    s4 = acc4 - (BETA / (1.0 + BETA)) * v * (v * acc4).mean()\n    \n    # Pair 3: iterations 5-6\n    buf5 = s4 + BETA * v * (v * s4).mean()\n    stacked = torch.stack([buf5, torch.zeros_like(buf5)], dim=0)\n    reduced = xm.all_reduce(xm.REDUCE_SUM, stacked)\n    acc5 = reduced[0] / W\n    s5 = acc5 - (BETA / (1.0 + BETA)) * v * (v * acc5).mean()\n    \n    buf6 = s5 + BETA * v * (v * s5).mean()\n    acc6 = xm.all_reduce(xm.REDUCE_SUM, buf6) / W\n    s6 = acc6 - (BETA / (1.0 + BETA)) * v * (v * acc6).mean()\n    \n    # Final iteration 7\n    buf7 = s6 + BETA * v * (v * s6).mean()\n    acc7 = xm.all_reduce(xm.REDUCE_SUM, buf7) / W\n    s7 = acc7\n    \n    return s7"
+}

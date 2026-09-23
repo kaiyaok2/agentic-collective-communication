@@ -1,0 +1,15 @@
+[shim] kiss AnthropicModel._create_message patched -> /tmp/tokens.jsonl
+[shim] kiss client -> AnthropicBedrock (us-east-1)
+[kiss] baseline r67b_vself_b0p3_p2048_d8: {'ok': True, 'sim_time_us': 6643.4, 'num_ops': 70, 'num_all_gather': 0, 'num_all_reduce': 8, 'num_collective_permute': 0, 'num_reduce_scatter': 0}
+[kiss] agent error: KISS Error: Agent fair-r67b_vself_b0p3_p2048_d8 failed with 3 consecutive errors. Last error: Error loading SSO Token: Token for kaiyao does not exist
+{
+  "pipeline": "sorcar",
+  "problem": "r67b_vself_b0p3_p2048_d8",
+  "gate": "fp32",
+  "wall_seconds": 0.10739707946777344,
+  "baseline_sim_time_us": 6643.4,
+  "best_sim_time_us": 6643.4,
+  "best_name": "r67b_vself_b0p3_p2048_d8",
+  "n_score_calls": 0,
+  "n_ok": 0
+}

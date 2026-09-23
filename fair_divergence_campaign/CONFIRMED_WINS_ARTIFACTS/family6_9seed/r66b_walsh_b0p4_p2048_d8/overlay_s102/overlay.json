@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r66b_walsh_b0p4_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6646.2,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with loop",
+      "desc": "Uses 8 back-to-back all-reduce calls in a loop, each dispatching separately with identical payloads of size 16384. Straightforward translation of the reference code with 8 dispatches total. Represents the baseline: no fusion, maximum clarity, but also maximum dispatch overhead."
+    },
+    {
+      "name": "Fused buffer preparation batched all-reduce",
+      "desc": "Pre-compute all 8 intermediate \"buf\" values locally (storing them in a stacked tensor of shape (8, 16384)), then dispatch a single vectorized all-reduce on the combined payload. Post-process the 8 accumulated results in a loop. Reduces to ~1 dispatch for collective but increases memory footprint 8\u00d7 and requires careful index management."
+    },
+    {
+      "name": "Pipelined dual-buffer all-reduce overlap",
+      "desc": "Alternate between two buffers, launching the next all-reduce asynchronously while computing local elementwise operations (sign vectors, mean, scaling) on the previous result. Uses xm barrier or implicit dependency tracking to overlap communication with computation. Still 8 dispatches but hides arithmetic latency behind network transfer."
+    },
+    {
+      "name": "Hierarchical reduce-scatter plus all-gather",
+      "desc": "Decompose each iteration into reduce-scatter (partial sums distributed across ranks) followed by all-gather to reconstruct full result, enabling parallelization of the elementwise operations across different slices. Total 16 dispatches (2 per iteration) but each operates on smaller payloads (16384/224 elements), potentially better network utilization on large world sizes."
+    },
+    {
+      "name": "Chunked vector split with independent streams",
+      "desc": "Partition the 16384-element vector into 4 independent chunks of 4096 elements (aligned with u/v pattern periods), compute the 8-iteration fixpoint for each chunk in parallel using separate logical streams or batch dimensions, then combine. Uses 32 dispatches (8\u00d74) but each on 1/4 payload, exploiting potential parallelism in Trainium's multi-core architecture.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with loop",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.001642"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused buffer preparation batched all-reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.901924"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined dual-buffer all-reduce overlap",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.001642"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical reduce-scatter plus all-gather",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902101"
+    },
+    {
+      "stage": "impl",
+      "name": "Chunked vector split with independent streams",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902101"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 6646.2,
+  "final_code": "def r66b_walsh_b0p4_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size; BETA = 0.4; N = 16384\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    idx = torch.arange(N)\n    v = (1 - 2 * (idx % 2)).to(s.dtype)\n    u = (1 - 2 * ((idx // 2) % 2)).to(s.dtype)\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    return s\n",
+  "fell_back_to_baseline": true
+}

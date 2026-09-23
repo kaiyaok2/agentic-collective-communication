@@ -1,0 +1,68 @@
+{
+  "pipeline": "overlay",
+  "problem": "r66b_walsh_b1p5_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6646.2,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with 8 dispatches",
+      "desc": "Directly translates the reference: 8 separate all_reduce calls with interleaved local compute (vector ops, mean, scaling). Each all_reduce is a separate dispatch for a total of 8 dispatches. Straightforward but highest dispatch overhead; no fusion or pipelining."
+    },
+    {
+      "name": "Fused buffer preparation, batched all-reduce",
+      "desc": "Pre-compute all 8 buffer transformations locally (stack into [8, N] tensor), then issue a single all_reduce on the concatenated payload (128k elements), finally unstack and apply inverse transforms. Reduces to 1 dispatch with 8\u00d7 payload size, trading network bandwidth for dispatch latency."
+    },
+    {
+      "name": "Reduce-scatter then all-gather pattern",
+      "desc": "Partition the N elements across ranks using reduce_scatter for the first operation, perform local iterative refinement on the P/W-sized shard (7 local iterations with no communication), then all_gather to reconstruct full result. Total 2 dispatches but requires careful partitioning of u/v pattern logic and may increase local compute complexity."
+    },
+    {
+      "name": "Pipelined two-phase with intermediate checkpoints",
+      "desc": "Split the 8 iterations into two groups of 4; perform 4 all_reduce ops on full vector, checkpoint intermediate s, then perform final 4 all_reduce ops. Optionally overlap compute of buffer preparation for iteration i+1 with all_reduce of iteration i using async dispatch. 8 dispatches but with potential compute-communication overlap."
+    },
+    {
+      "name": "Hierarchical intra-node then inter-node reduction",
+      "desc": "Exploit multi-node topology (num_nodes parameter): perform per-node local reductions first (if ranks share nodes, aggregate via shared memory or fast intra-node collectives), then run the 8-step iteration only across node representatives, finally broadcast within nodes. Reduces cross-node traffic by factor of ranks-per-node but adds 2+ extra dispatches for intra-node aggregation/broadcast.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with 8 dispatches",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.006154"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused buffer preparation, batched all-reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.901034"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-scatter then all-gather pattern",
+      "sim": 6864.671428571428,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined two-phase with intermediate checkpoints",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.901742"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical intra-node then inter-node reduction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 6864.671428571428,
+  "final_code": "def r66b_walsh_b1p5_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size\n    BETA = 1.5\n    N = 16384\n    \n    # Create index vector and sign patterns\n    idx = torch.arange(N, device=x.device)\n    v = (1 - 2 * (idx % 2)).to(x.dtype)\n    u = (1 - 2 * ((idx // 2) % 2)).to(x.dtype)\n    \n    # Step 1: Initial all_reduce to get sum s\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Step 2: Perform 7 local iterations without communication\n    # Each iteration computes:\n    #   buf = s + BETA * u * (v * s).mean()\n    #   acc = all_reduce(buf) / W\n    #   s = acc - BETA * u * (v * acc).mean()\n    #\n    # Strategy: Use reduce_scatter to partition the work, compute locally, then all_gather\n    \n    # Compute the transformation: buf = s + BETA * u * (v * s).mean()\n    buf = s + BETA * u * (v * s).mean()\n    \n    # Use reduce_scatter to partition buf across ranks\n    # Each rank gets a shard of size N/W\n    shard_size = N // W\n    buf_shard = xm.reduce_scatter(xm.REDUCE_SUM, buf, scale=1.0/W, scatter_dim=0, shard_count=W)\n    \n    # Extract the corresponding u and v patterns for this shard\n    start_idx = rank * shard_size\n    end_idx = start_idx + shard_size\n    idx_shard = torch.arange(start_idx, end_idx, device=x.device)\n    v_shard = (1 - 2 * (idx_shard % 2)).to(x.dtype)\n    u_shard = (1 - 2 * ((idx_shard // 2) % 2)).to(x.dtype)\n    \n    # Perform 6 more local iterations on the shard\n    # Note: We need global mean, so we need to communicate\n    # This strategy doesn't work well because mean requires global information\n    \n    # Fallback: Just perform the iterations with all_reduce as in reference\n    acc = buf\n    for _ in range(6):\n        acc = xm.all_reduce(xm.REDUCE_SUM, acc)\n        acc = acc / W\n        s = acc - BETA * u * (v * acc).mean()\n        buf = s + BETA * u * (v * s).mean()\n        acc = buf\n    \n    # Final all_reduce\n    acc = xm.all_reduce(xm.REDUCE_SUM, acc)\n    acc = acc / W\n    s = acc\n    \n    return s"
+}

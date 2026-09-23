@@ -1,0 +1,78 @@
+{
+  "pipeline": "overlay",
+  "problem": "r67b_vself_b0p3_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6643.4,
+  "strategies": [
+    {
+      "name": "Naive Sequential All-Reduce Chain",
+      "desc": "Execute 8 dependent all_reduce operations sequentially with interleaved local compute (v-projection and inverse operations). Total 8 all_reduce dispatches on full 16384-element tensors. Represents the baseline reference: no fusion, maximum correctness clarity, but highest dispatch overhead."
+    },
+    {
+      "name": "Fused Local Compute Per Iteration",
+      "desc": "Combine all local operations (v creation, elementwise multiply, mean, scaling) into fused kernels between each all_reduce, reducing from ~40 local ops to ~8 compound ops. Still 8 all_reduce dispatches but lower host-device round-trips for local work. Trades kernel fusion complexity for reduced dispatch overhead on local operations."
+    },
+    {
+      "name": "Pipelined Dual-Buffer All-Reduce",
+      "desc": "Split the 16384 tensor into two 8192-element chunks and pipeline all_reduce operations across chunks: while chunk A is in iteration i all_reduce, chunk B computes local ops for iteration i-1. Requires 16 all_reduce dispatches (2\u00d78) but exposes communication-computation overlap. Trades increased collective count for potential latency hiding."
+    },
+    {
+      "name": "Vectorized v-Projection Accumulation",
+      "desc": "Precompute and materialize all 8 intermediate buf tensors using vectorized operations, then batch the all_reduce calls if framework supports async dispatch with dependency tracking. Still 8 all_reduce operations but minimizes sequential blocking by preparing payloads eagerly. Optimizes for async-capable runtime with out-of-order execution."
+    },
+    {
+      "name": "Reduced-Precision Intermediate Iterations",
+      "desc": "Perform iterations 2-7 in lower precision (fp16/bf16) to reduce all_reduce payload by 2\u00d7, then use full precision only for first and final iteration to preserve accuracy. Requires 8 all_reduce dispatches with mixed sizes: 2\u00d7 at 16384\u00d7fp32, 6\u00d7 at 16384\u00d7fp16. Trades numerical stability risk for 25% reduction in total communication volume.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Naive Sequential All-Reduce Chain",
+      "sim": 6643.4,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Local Compute Per Iteration",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.001231"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Dual-Buffer All-Reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.001231"
+    },
+    {
+      "stage": "impl",
+      "name": "Vectorized v-Projection Accumulation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902330"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduced-Precision Intermediate Iterations",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    },
+    {
+      "stage": "refine:Naive Sequential All-Reduce Chain",
+      "round": 2,
+      "sim": 6643.4
+    },
+    {
+      "stage": "refine:Naive Sequential All-Reduce Chain",
+      "round": 3,
+      "sim": 6643.4
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 6643.4,
+  "final_code": "def r67b_vself_b0p3_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Naive Sequential All-Reduce Chain strategy.\n    Executes 8 dependent all_reduce operations sequentially with interleaved\n    local compute (v-projection and inverse operations).\n    \"\"\"\n    W = world_size\n    BETA = 0.3\n    N = 16384\n    \n    # Preserve input dtype\n    dtype = x.dtype\n    \n    # Create the fixed sign vector v (alternating +1, -1)\n    idx = torch.arange(N, device=x.device)\n    v = (1 - 2 * (idx % 2)).to(dtype)\n    \n    # Initial all_reduce to get sum across all ranks\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Iteration 1\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    \n    # Iteration 2\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    \n    # Iteration 3\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    \n    # Iteration 4\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    \n    # Iteration 5\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    \n    # Iteration 6\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    \n    # Iteration 7\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    \n    return s"
+}

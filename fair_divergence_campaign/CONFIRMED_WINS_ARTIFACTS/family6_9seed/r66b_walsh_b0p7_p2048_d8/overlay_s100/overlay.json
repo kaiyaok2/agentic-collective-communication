@@ -1,0 +1,68 @@
+{
+  "pipeline": "overlay",
+  "problem": "r66b_walsh_b0p7_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6646.2,
+  "strategies": [
+    {
+      "name": "Baseline Sequential All-Reduce Chain",
+      "desc": "Executes 8 dependent all-reduce operations sequentially with local compute (sign vector operations, mean, scaling) between each. Dispatch count = 8 all-reduces. Represents the straightforward reference: no fusion, maximal latency from round-trip synchronization, but simplest correctness guarantee and minimal per-rank memory."
+    },
+    {
+      "name": "Pipelined Overlapped Compute-Communication",
+      "desc": "Interleaves local computation for iteration i+1 with the all-reduce for iteration i by pre-computing sign patterns and reordering independent ops. Dispatch count = 8 all-reduces but with overlapped local work. Trades code complexity for hiding fixed-cost arithmetic (vector multiplies, mean reductions) behind network transfer latency."
+    },
+    {
+      "name": "Chunked Vector All-Reduce Pipeline",
+      "desc": "Splits the 16384-element vector into independent chunks (e.g., 4 chunks of 4096), runs all 8 iterations on chunk 0, then chunk 1, etc., enabling better cache locality and potential device-level pipelining. Dispatch count = 8 all-reduces per chunk but processes smaller payloads. Trades increased total sync overhead for improved memory hierarchy utilization."
+    },
+    {
+      "name": "Fused Buffer All-Reduce Batching",
+      "desc": "Accumulates multiple iteration buffers into a single concatenated payload and issues one large all-reduce covering multiple logical iterations, then separates results locally. Dispatch count = reduced (e.g., 2-4 all-reduces instead of 8) by batching 2-4 iterations per collective. Trades larger per-dispatch payload and post-processing overhead for fewer synchronization round-trips."
+    },
+    {
+      "name": "Hierarchical Two-Level Reduction Tree",
+      "desc": "Exploits multi-node topology by first performing intra-node all-reduce (within each node's devices) then inter-node all-reduce at reduced world size, repeated for each of the 8 dependent steps. Dispatch count = 16 all-reduces (8 iterations \u00d7 2 levels) but with smaller world sizes per collective. Trades increased dispatch count for reduced per-collective latency via hierarchical aggregation trees.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Baseline Sequential All-Reduce Chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.002872"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Overlapped Compute-Communication",
+      "sim": 6637.8,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Chunked Vector All-Reduce Pipeline",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.002872"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Buffer All-Reduce Batching",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.002872"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level Reduction Tree",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902003"
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 6637.8,
+  "final_code": "def r66b_walsh_b0p7_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size\n    BETA = 0.7\n    N = 16384\n    dtype = x.dtype\n    \n    # Pre-compute fixed sign vectors once\n    idx = torch.arange(N, device=x.device)\n    v = (1 - 2 * (idx % 2)).to(dtype)\n    u = (1 - 2 * ((idx // 2) % 2)).to(dtype)\n    \n    # Pre-compute constant terms that can be reused\n    u_beta = BETA * u\n    \n    # Initial all-reduce for sum\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Iteration 0: compute buf and launch all-reduce\n    buf = s + u_beta * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    \n    # Iterations 1-6: pipeline compute with communication\n    for _ in range(6):\n        # Update s from previous acc\n        s = acc - u_beta * (v * acc).mean()\n        \n        # Compute next buffer (local computation)\n        buf = s + u_beta * (v * s).mean()\n        \n        # Launch all-reduce while local compute is done\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n        acc = acc / W\n    \n    # Final iteration: no need to compute next buffer\n    s = acc\n    \n    return s"
+}

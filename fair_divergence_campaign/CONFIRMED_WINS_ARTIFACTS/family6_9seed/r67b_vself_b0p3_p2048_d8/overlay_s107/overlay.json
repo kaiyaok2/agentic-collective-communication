@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r67b_vself_b0p3_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6643.4,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with scalar broadcasts",
+      "desc": "Perform 8 sequential all_reduce operations on the full vector (16384 elements each), interleaved with local elementwise operations computing the v-projection and mean. Uses 8 all_reduce dispatches with maximum payload per dispatch. Represents the baseline reference: highest per-dispatch bandwidth utilization but no overlap opportunity."
+    },
+    {
+      "name": "Scalar-only dependent all-reduce chain",
+      "desc": "After initial vector all_reduce, extract only the scalar projection (v*s).mean() and perform 7 dependent all_reduce operations on single scalar values, then reconstruct final vector locally. Uses 1 vector all_reduce + 7 scalar all_reduces (8 total dispatches). Trades massive payload reduction (16384\u21921) for increased local computation and potential numerical drift from iterative reconstruction."
+    },
+    {
+      "name": "Split-vector independent all-reduce batching",
+      "desc": "Decompose the vector into independent even/odd indices (corresponding to v's structure), compute separate trajectories for +1 and -1 components, perform parallel all_reduce operations where dependencies allow. Uses 8-12 all_reduce dispatches on half-size payloads (8192 elements). Exploits v's alternating structure for potential fusion and reduced critical path length."
+    },
+    {
+      "name": "Pipelined dual-buffer all-reduce",
+      "desc": "Overlap computation of iteration i+1's local ops (v-projection, scaling) with all_reduce dispatch of iteration i by maintaining two rotating buffers. Still requires 8 all_reduce dispatches but hides local compute latency behind communication. Represents latency-hiding through software pipelining without changing operation count."
+    },
+    {
+      "name": "Fused buffer all-reduce with metadata views",
+      "desc": "Concatenate all 8 iterations' worth of intermediate states into a single large tensor (8\u00d716384 elements), perform fewer all_reduce operations on multi-iteration batches, then slice results using zero-copy views. Uses 2-4 all_reduce dispatches with 2-4\u00d7 larger payloads. Trades increased memory footprint and payload size for dramatic reduction in dispatch overhead.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with scalar broadcasts",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902330"
+    },
+    {
+      "stage": "impl",
+      "name": "Scalar-only dependent all-reduce chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.001231"
+    },
+    {
+      "stage": "impl",
+      "name": "Split-vector independent all-reduce batching",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: TypeError: len() of a 0-d tensor"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined dual-buffer all-reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'TrackedTensor' object has no"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused buffer all-reduce with metadata views",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.001231"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 6643.4,
+  "final_code": "def r67b_vself_b0p3_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size; BETA = 0.3; N = 16384\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    idx = torch.arange(N)\n    v = (1 - 2 * (idx % 2)).to(s.dtype)\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    return s\n",
+  "fell_back_to_baseline": true
+}

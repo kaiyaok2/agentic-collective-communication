@@ -1,0 +1,15 @@
+[shim] kiss AnthropicModel._create_message patched -> /tmp/tokens.jsonl
+[shim] kiss client -> AnthropicBedrock (us-east-1)
+[kiss] baseline r67b_vself_b0p4_p2048_d8: {'ok': True, 'sim_time_us': 6643.4, 'num_ops': 70, 'num_all_gather': 0, 'num_all_reduce': 8, 'num_collective_permute': 0, 'num_reduce_scatter': 0}
+[kiss] agent error: KISS Error: Agent fair-r67b_vself_b0p4_p2048_d8 budget exceeded.
+{
+  "pipeline": "sorcar",
+  "problem": "r67b_vself_b0p4_p2048_d8",
+  "gate": "fp32",
+  "wall_seconds": 256.5575969219208,
+  "baseline_sim_time_us": 6643.4,
+  "best_sim_time_us": 5800.942857142856,
+  "best_name": "kiss_28",
+  "n_score_calls": 28,
+  "n_ok": 4
+}

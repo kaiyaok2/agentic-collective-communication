@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r66b_walsh_b0p7_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6646.2,
+  "strategies": [
+    {
+      "name": "Baseline Sequential All-Reduce Chain",
+      "desc": "Executes 8 all_reduce operations sequentially with interleaved local compute (sign vector multiplications, mean, scaling). Dispatch count = 8 all_reduce calls. Represents the reference implementation with no structural optimization\u2014maximizes latency due to sequential dependencies but simplest to implement and verify."
+    },
+    {
+      "name": "Pipelined Two-Phase Bulk All-Reduce",
+      "desc": "Splits the 8 iterations into two phases of 4, computing intermediate buffers locally and batching communication. First phase: compute 4 buf_i values locally, concatenate, single all_reduce of 4\u00d7 payload, then unpack and apply inverse transforms. Second phase: repeat for remaining 4 iterations. Dispatch count = 2 (plus initial s all_reduce = 3 total). Trades larger per-dispatch payload (4\u00d7 tensor size) for fewer dispatches."
+    },
+    {
+      "name": "Overlapped Compute-Communication with Async",
+      "desc": "Issue all_reduce on iteration i while computing local operations (v*s, mean, u scaling) for iteration i+1 in parallel. Uses non-blocking collectives where available or manual orchestration of compute/communication overlap. Dispatch count = 8, but wall-clock time reduced by hiding compute latency behind communication. Requires careful buffer management to avoid race conditions."
+    },
+    {
+      "name": "Fused All-Reduce with Custom Reduction Op",
+      "desc": "Define a custom reduction operator that embeds the s \u2192 buf transform (add BETA*u*mean(v*s)) directly into the all_reduce kernel, then apply inverse transform locally. Executes 8 fused all_reduce operations with embedded local compute. Dispatch count = 8, but each dispatch does more work server-side, potentially reducing round-trip overhead and memory bandwidth."
+    },
+    {
+      "name": "Tensor-Stacked Vectorized Multi-Iteration",
+      "desc": "Reshape computation to process multiple iterations simultaneously by stacking state vectors into a 2D tensor (iterations \u00d7 elements). Compute all 8 buf transformations as batched operations, issue a single all_reduce on the stacked tensor, then unpack. Dispatch count = 1 (plus initial s all_reduce = 2 total). Maximizes payload size (8\u00d7 original) but minimizes dispatch overhead; requires careful handling of cross-iteration dependencies.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Baseline Sequential All-Reduce Chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.002872"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Two-Phase Bulk All-Reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.001142"
+    },
+    {
+      "stage": "impl",
+      "name": "Overlapped Compute-Communication with Async",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902003"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused All-Reduce with Custom Reduction Op",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.002872"
+    },
+    {
+      "stage": "impl",
+      "name": "Tensor-Stacked Vectorized Multi-Iteration",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902003"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 6646.2,
+  "final_code": "def r66b_walsh_b0p7_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size; BETA = 0.7; N = 16384\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    idx = torch.arange(N)\n    v = (1 - 2 * (idx % 2)).to(s.dtype)\n    u = (1 - 2 * ((idx // 2) % 2)).to(s.dtype)\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - BETA * u * (v * acc).mean()\n    buf = s + BETA * u * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    return s\n",
+  "fell_back_to_baseline": true
+}

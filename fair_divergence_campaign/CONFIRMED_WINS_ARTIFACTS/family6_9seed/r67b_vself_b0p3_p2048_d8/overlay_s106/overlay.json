@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r67b_vself_b0p3_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6643.4,
+  "strategies": [
+    {
+      "name": "Sequential All-Reduce with Local Computation",
+      "desc": "Performs 8 sequential all_reduce operations with local element-wise operations (v*s product, mean, scaling) between each collective. Total 8 all_reduce dispatches. Straightforward translation of the reference with no optimization, maximizing clarity but incurring full dispatch overhead."
+    },
+    {
+      "name": "Fused Buffer Preparation All-Reduce",
+      "desc": "Fuses the computation of buf = s + BETA * v * (v * s).mean() locally before each all_reduce, then performs the inverse transformation after receiving acc. Still 8 all_reduce dispatches but reduces local compute fragmentation by batching the forward transformation, mean computation, and backward projection into larger compute kernels between collectives."
+    },
+    {
+      "name": "Scalar-Vector Split Communication",
+      "desc": "Recognizes that (v * s).mean() is a scalar; performs one all_reduce on the full vector s (16384 elements), then 7 all_reduce operations on just the scalar projection values. Total 8 dispatches but last 7 have payload size 1, dramatically reducing communication volume at the cost of reconstructing intermediate s vectors from scalar coefficients."
+    },
+    {
+      "name": "Two-Stage Pipelined Iteration Unroll",
+      "desc": "Unrolls the 8 iterations into 2 groups of 4, performing all buffer preparations for 4 iterations, issuing 4 back-to-back all_reduce calls to enable hardware pipelining, then processing all 4 results. Total 8 dispatches but collectives are clustered to allow network pipeline fill and overlapped local compute."
+    },
+    {
+      "name": "Alternating Vector and Projection All-Reduce",
+      "desc": "Decomposes each iteration into two all_reduce operations: one summing the v-component coefficient (scalar) and one summing the orthogonal residual, exploiting the structure that updates lie in span{v, v_perp}. Total 16 dispatches with mixed scalar/vector payloads, trading dispatch count for reduced per-dispatch data volume and potential numerical stability improvements.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential All-Reduce with Local Computation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902330"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Buffer Preparation All-Reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.001231"
+    },
+    {
+      "stage": "impl",
+      "name": "Scalar-Vector Split Communication",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.001231"
+    },
+    {
+      "stage": "impl",
+      "name": "Two-Stage Pipelined Iteration Unroll",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902330"
+    },
+    {
+      "stage": "impl",
+      "name": "Alternating Vector and Projection All-Reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902330"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 6643.4,
+  "final_code": "def r67b_vself_b0p3_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size; BETA = 0.3; N = 16384\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    idx = torch.arange(N)\n    v = (1 - 2 * (idx % 2)).to(s.dtype)\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    return s\n",
+  "fell_back_to_baseline": true
+}

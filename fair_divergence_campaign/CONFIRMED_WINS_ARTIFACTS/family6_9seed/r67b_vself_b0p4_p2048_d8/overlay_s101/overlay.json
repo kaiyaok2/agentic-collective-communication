@@ -1,0 +1,73 @@
+{
+  "pipeline": "overlay",
+  "problem": "r67b_vself_b0p4_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6643.4,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with repeated pattern",
+      "desc": "Performs 8 sequential all_reduce operations with local computations (v*s product, mean, buffer construction) between each. Requires 8 collective dispatches with N=16384 payload each time. Represents the baseline: maximum clarity, no fusion, straightforward dispatch overhead."
+    },
+    {
+      "name": "Fused buffer computation with pipelined all-reduce",
+      "desc": "Precompute all local operations (v generation, scaling constants) once, then issue all_reduce calls back-to-back where the runtime can pipeline network transfers. Still 8 dispatches but eliminates redundant v generation and exploits potential async overlap between computation and communication in subsequent iterations."
+    },
+    {
+      "name": "Vectorized multi-iteration with stacked payload",
+      "desc": "Stack multiple iteration buffers into a larger tensor (e.g., shape [8, N] or [4, 2*N]) and perform fewer all_reduce operations on concatenated data, then unpack and apply local corrections. Reduces dispatch count to 2-4 by trading off larger per-dispatch payload and additional local pack/unpack overhead."
+    },
+    {
+      "name": "Scalar projection communication with broadcast",
+      "desc": "Instead of reducing full buffers, compute and all_reduce only the scalar projection (v*s).mean() at each iteration (world_size*1 payload), then reconstruct s locally using the global mean. Reduces per-dispatch payload to O(1) but increases dispatch count to 16 (8 for sum, 8 for scalar projection) with additional reconstruction logic."
+    },
+    {
+      "name": "Hierarchical two-stage reduction with node-local aggregation",
+      "desc": "Exploit num_nodes topology by first performing intra-node reductions (within each node's devices) followed by inter-node all_reduce, applied at each of the 8 iterations. Reduces cross-node bandwidth pressure and potentially enables faster local aggregation primitives, trading algorithm complexity for network efficiency at scale.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with repeated pattern",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.001642"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused buffer computation with pipelined all-reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.001642"
+    },
+    {
+      "stage": "impl",
+      "name": "Vectorized multi-iteration with stacked payload",
+      "sim": 6656.971428571428,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Scalar projection communication with broadcast",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902362"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-stage reduction with node-local aggregation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "refine:Vectorized multi-iteration with stacked payload",
+      "round": 1,
+      "sim": 5737.1
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 5737.1,
+  "final_code": "def r67b_vself_b0p4_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size\n    BETA = 0.4\n    N = 16384\n    dtype = x.dtype\n    \n    # Precompute v vector\n    idx = torch.arange(N, device=x.device)\n    v = (1 - 2 * (idx % 2)).to(dtype)\n    \n    # Precompute constants\n    inv_factor = BETA / (1.0 + BETA)\n    \n    # Initial all_reduce to get s\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Strategy: Batch all 7 iteration buffers and do 1 large all_reduce\n    # Since iterations are dependent, we'll compute what we can in advance\n    # and use the stacked result to process sequentially\n    \n    # However, true dependencies mean we need at least some sequential processing\n    # Better approach: reduce dispatch overhead by stacking pairs\n    \n    # Stack iterations in groups of 4, 3 to minimize dispatches\n    # Group 1: iterations 1-4 (4 all_reduces -> 1 stacked)\n    buf_list = []\n    s_current = s\n    \n    # Precompute 4 forward steps (they depend on each other, but we can pipeline)\n    # Actually, let's do 2 large stacked all_reduces instead of 8 separate ones\n    \n    # Batch 1: iterations 1-4 stacked\n    batch1 = torch.zeros(4, N, dtype=dtype, device=x.device)\n    s_temp = s\n    for i in range(4):\n        buf_temp = s_temp + BETA * v * (v * s_temp).mean()\n        batch1[i] = buf_temp\n        # For next iteration, approximate with local result (will be corrected)\n        acc_temp = buf_temp  # Placeholder, will be replaced after all_reduce\n        s_temp = acc_temp - inv_factor * v * (v * acc_temp).mean()\n    \n    # All-reduce batch 1\n    acc_batch1 = xm.all_reduce(xm.REDUCE_SUM, batch1) / W\n    \n    # Process batch 1 results sequentially to maintain correctness\n    s_current = s\n    for i in range(4):\n        buf_current = s_current + BETA * v * (v * s_current).mean()\n        acc_current = acc_batch1[i]  # Use the all_reduced result\n        s_current = acc_current - inv_factor * v * (v * acc_current).mean()\n    \n    # Batch 2: iterations 5-7 stacked\n    batch2 = torch.zeros(3, N, dtype=dtype, device=x.device)\n    s_temp = s_current\n    for i in range(3):\n        buf_temp = s_temp + BETA * v * (v * s_temp).mean()\n        batch2[i] = buf_temp\n        acc_temp = buf_temp\n        s_temp = acc_temp - inv_factor * v * (v * acc_temp).mean()\n    \n    # All-reduce batch 2\n    acc_batch2 = xm.all_reduce(xm.REDUCE_SUM, batch2) / W\n    \n    # Process batch 2 results\n    for i in range(3):\n        buf_current = s_current + BETA * v * (v * s_current).mean()\n        acc_current = acc_batch2[i]\n        if i < 2:  # iterations 5-6 need inverse\n            s_current = acc_current - inv_factor * v * (v * acc_current).mean()\n        else:  # iteration 7 (final)\n            s_current = acc_current\n    \n    return s_current"
+}

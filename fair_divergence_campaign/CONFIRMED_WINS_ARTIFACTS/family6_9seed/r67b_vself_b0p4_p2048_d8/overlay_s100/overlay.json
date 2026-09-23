@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r67b_vself_b0p4_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6643.4,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with local fixpoint",
+      "desc": "Performs 8 sequential all_reduce operations with local computation of the v-projection between each. Each iteration computes buf = s + BETA*v*(v*s).mean(), all-reduces, divides by W, then reverses the projection. 8 all_reduce dispatches (one per iteration). Baseline reference structure with no optimization."
+    },
+    {
+      "name": "Fused buffer preparation, batched collectives",
+      "desc": "Pre-computes the alternating sign vector v once, then fuses all local arithmetic (projection, scaling, addition) before each all_reduce to minimize intermediate tensors. Still 8 all_reduce dispatches but reduces per-dispatch overhead by eliminating redundant v construction and improving memory locality through operator fusion."
+    },
+    {
+      "name": "Pipelined dual-buffer ring all-reduce",
+      "desc": "Splits the 16384 elements into chunks and overlaps communication of chunk i+1 with computation (v-projection) of chunk i using two buffers. Requires custom ring all-reduce implementation or interleaved all_reduce calls on tensor slices. Total dispatches increase (8 iterations \u00d7 K chunks) but individual payloads shrink, potentially improving network utilization."
+    },
+    {
+      "name": "Hierarchical reduce with scalar side-channel",
+      "desc": "Observes that (v*s).mean() is a single scalar that could be communicated separately. Performs all_reduce on s (1 dispatch), then all_reduce on the scalar (v*s).mean() (1 dispatch), reconstructs s iteratively using only the scalars for remaining 7 iterations. Reduces to 2 + 7 = 9 dispatches but with 7 scalar-only collectives that are much cheaper than vector collectives."
+    },
+    {
+      "name": "Algebraic reformulation with coupled state",
+      "desc": "Treats the 8-step recurrence as a matrix power or coupled dynamical system, attempting to collapse multiple iterations analytically before dispatching collectives. Pre-multiplies initial x by a precomputed transformation matrix, performs fewer (potentially 3-4) all_reduce operations on augmented state vectors (packing s and projection scalars together), then post-processes. Fewer dispatches with moderately larger payloads and additional local computation.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with local fixpoint",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902362"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused buffer preparation, batched collectives",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.001642"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined dual-buffer ring all-reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902362"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical reduce with scalar side-channel",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.001641"
+    },
+    {
+      "stage": "impl",
+      "name": "Algebraic reformulation with coupled state",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902362"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 6643.4,
+  "final_code": "def r67b_vself_b0p4_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size; BETA = 0.4; N = 16384\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    idx = torch.arange(N)\n    v = (1 - 2 * (idx % 2)).to(s.dtype)\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    return s\n",
+  "fell_back_to_baseline": true
+}

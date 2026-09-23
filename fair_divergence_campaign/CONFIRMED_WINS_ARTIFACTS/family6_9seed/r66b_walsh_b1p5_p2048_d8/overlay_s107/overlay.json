@@ -1,0 +1,68 @@
+{
+  "pipeline": "overlay",
+  "problem": "r66b_walsh_b1p5_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6646.2,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with scalar accumulation",
+      "desc": "Perform 8 sequential all-reduce operations as shown in the reference, with local compute (vector ops, mean reduction) between each dispatch. Total 8 all-reduce dispatches. This is the baseline: maximizes dispatches but keeps each payload at size 16384, trading off latency for straightforward implementation."
+    },
+    {
+      "name": "Batched all-reduce with stacked buffers",
+      "desc": "Stack all 8 iteration buffers into a single tensor of shape (8, 16384) and issue a single all-reduce on the concatenated payload. Perform all local compute (vector multiply, mean, scaling) in batched form on the stacked result, then extract final answer. Reduces to 1 dispatch with 8\u00d7 larger payload, trading bandwidth for latency."
+    },
+    {
+      "name": "Chunked pipeline with overlapped compute",
+      "desc": "Split the 16384-element vector into C chunks (e.g., 4 or 8), issue all-reduce on chunk[i] while computing local ops (v*s, mean, u-scaling) on chunk[i-1]. Requires 8 \u00d7 C dispatches but enables compute-communication overlap. Balances dispatch count against pipeline depth, hiding local arithmetic latency."
+    },
+    {
+      "name": "Fused buffer preparation with single all-reduce loop",
+      "desc": "Pre-compute u and v masks once, then unroll the 8-iteration loop into explicit statements but fuse consecutive buffer computations where algebraically possible (e.g., combine multiple BETA*u*(v*s).mean() terms). Still 8 all-reduce dispatches but fewer local ops between them, reducing kernel launch overhead and improving cache locality."
+    },
+    {
+      "name": "Hierarchical reduction with node-local aggregation",
+      "desc": "Exploit the multi-node topology (224 ranks across multiple nodes): first perform intra-node all-reduce (e.g., 8 or 28 ranks per node), compute intermediate Walsh transforms locally, then inter-node all-reduce, followed by broadcast. Reduces cross-node traffic from 8 full all-reduces to ~2-3 cross-node operations plus local reductions, optimizing for inter-node bandwidth constraints.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with scalar accumulation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.006154"
+    },
+    {
+      "stage": "impl",
+      "name": "Batched all-reduce with stacked buffers",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.901565"
+    },
+    {
+      "stage": "impl",
+      "name": "Chunked pipeline with overlapped compute",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.006154"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused buffer preparation with single all-reduce loop",
+      "sim": 6646.2,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical reduction with node-local aggregation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 6646.2,
+  "final_code": "def r66b_walsh_b1p5_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size\n    BETA = 1.5\n    N = 16384\n    \n    # Pre-compute u and v masks once (fused buffer preparation)\n    idx = torch.arange(N, device=x.device)\n    v = (1 - 2 * (idx % 2)).to(x.dtype)\n    u = (1 - 2 * ((idx // 2) % 2)).to(x.dtype)\n    \n    # Pre-compute reciprocal for efficiency\n    inv_W = 1.0 / W\n    \n    # Initial sum\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Unrolled 7 iterations with fused operations\n    # Each iteration: compute buffer with fused mean, all-reduce, update s with fused mean\n    \n    # Iteration 1\n    vs_mean = (v * s).mean()\n    buf = s + BETA * u * vs_mean\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc * inv_W\n    vacc_mean = (v * acc).mean()\n    s = acc - BETA * u * vacc_mean\n    \n    # Iteration 2\n    vs_mean = (v * s).mean()\n    buf = s + BETA * u * vs_mean\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc * inv_W\n    vacc_mean = (v * acc).mean()\n    s = acc - BETA * u * vacc_mean\n    \n    # Iteration 3\n    vs_mean = (v * s).mean()\n    buf = s + BETA * u * vs_mean\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc * inv_W\n    vacc_mean = (v * acc).mean()\n    s = acc - BETA * u * vacc_mean\n    \n    # Iteration 4\n    vs_mean = (v * s).mean()\n    buf = s + BETA * u * vs_mean\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc * inv_W\n    vacc_mean = (v * acc).mean()\n    s = acc - BETA * u * vacc_mean\n    \n    # Iteration 5\n    vs_mean = (v * s).mean()\n    buf = s + BETA * u * vs_mean\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc * inv_W\n    vacc_mean = (v * acc).mean()\n    s = acc - BETA * u * vacc_mean\n    \n    # Iteration 6\n    vs_mean = (v * s).mean()\n    buf = s + BETA * u * vs_mean\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc * inv_W\n    vacc_mean = (v * acc).mean()\n    s = acc - BETA * u * vacc_mean\n    \n    # Iteration 7 (final, no s update needed after)\n    vs_mean = (v * s).mean()\n    buf = s + BETA * u * vs_mean\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    s = acc * inv_W\n    \n    return s"
+}
