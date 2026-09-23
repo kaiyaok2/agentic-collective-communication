@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r60d_b16_L5_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6906.771428571429,
+  "strategies": [
+    {
+      "name": "Masked All-Reduce with Sequential Dependency",
+      "desc": "Performs 8 sequential all-reduce operations where each rank masks its contribution to only the 5 blocks in its window, followed by per-block scaling. Uses 8 all-reduce dispatches with intermediate buffer allocation and masking operations. Trades compute (masking/scaling) for maintaining the dependency chain structure, with ~8 collective dispatches."
+    },
+    {
+      "name": "Fused Window Computation with Single Scaling Pass",
+      "desc": "Computes all block coverage counts upfront, then performs all 8 all-reduces with a single final scaling operation instead of scaling after each reduce. Uses 8 all-reduce dispatches but reduces total compute by batching the division operations into one pass at the end, eliminating 6 intermediate scaling loops."
+    },
+    {
+      "name": "Hierarchical Reduce-Scatter + All-Gather Pattern",
+      "desc": "Decomposes each masked all-reduce into a reduce-scatter phase (where each rank owns a subset of blocks) followed by all-gather to reconstruct full vector. Uses 16 dispatches (8 RS + 8 AG) but enables better pipelining and smaller per-dispatch payload sizes, exploiting potential hardware parallelism between scatter/gather phases."
+    },
+    {
+      "name": "Block-Interleaved Pipeline with Overlap",
+      "desc": "Reorders operations to process blocks in an interleaved pattern across the 8 dependent stages, launching all-reduces on subsets of blocks before others complete. Uses 8 all-reduce dispatches but restructures data layout and launch order to maximize opportunities for overlapping communication with local masking/scaling computation."
+    },
+    {
+      "name": "Pre-Aggregated Mask with Single All-Reduce Chain",
+      "desc": "Pre-computes a single composite mask tensor representing all 8 dependency stages, then performs the 8 all-reduces on increasingly accumulated masked buffers where each stage adds its contribution. Uses 8 all-reduce dispatches but eliminates redundant buffer allocations by reusing accumulated state, trading memory footprint for dispatch efficiency.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Masked All-Reduce with Sequential Dependency",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=10.285735"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Window Computation with Single Scaling Pass",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=10.285735"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Reduce-Scatter + All-Gather Pattern",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=10.285735"
+    },
+    {
+      "stage": "impl",
+      "name": "Block-Interleaved Pipeline with Overlap",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=10.285735"
+    },
+    {
+      "stage": "impl",
+      "name": "Pre-Aggregated Mask with Single All-Reduce Chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=10.285735"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 6906.771428571429,
+  "final_code": "def r60d_b16_L5_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 2048; W = world_size\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    c = [0]*16\n    for r in range(W):\n        st = (r + 2) % 16\n        ks = set((st + 1*j) % 16 for j in range(5))\n        for b in ks:\n            c[b] += 1\n    B = 16; OFF = 2\n    start = (rank + OFF) % B\n    keep = set((start + 1*j) % B for j in range(5))\n    buf = torch.zeros_like(s)\n    for b in range(16):\n        if b in keep:\n            buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(16):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n    s = acc\n    B = 16; OFF = 2\n    start = (rank + OFF) % B\n    keep = set((start + 1*j) % B for j in range(5))\n    buf = torch.zeros_like(s)\n    for b in range(16):\n        if b in keep:\n            buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(16):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n    s = acc\n    B = 16; OFF = 2\n    start = (rank + OFF) % B\n    keep = set((start + 1*j) % B for j in range(5))\n    buf = torch.zeros_like(s)\n    for b in range(16):\n        if b in keep:\n            buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(16):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n    s = acc\n    B = 16; OFF = 2\n    start = (rank + OFF) % B\n    keep = set((start + 1*j) % B for j in range(5))\n    buf = torch.zeros_like(s)\n    for b in range(16):\n        if b in keep:\n            buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(16):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n    s = acc\n    B = 16; OFF = 2\n    start = (rank + OFF) % B\n    keep = set((start + 1*j) % B for j in range(5))\n    buf = torch.zeros_like(s)\n    for b in range(16):\n        if b in keep:\n            buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(16):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n    s = acc\n    B = 16; OFF = 2\n    start = (rank + OFF) % B\n    keep = set((start + 1*j) % B for j in range(5))\n    buf = torch.zeros_like(s)\n    for b in range(16):\n        if b in keep:\n            buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(16):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n    s = acc\n    B = 16; OFF = 2\n    start = (rank + OFF) % B\n    keep = set((start + 1*j) % B for j in range(5))\n    buf = torch.zeros_like(s)\n    for b in range(16):\n        if b in keep:\n            buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    s = acc\n    return s\n",
+  "fell_back_to_baseline": true
+}

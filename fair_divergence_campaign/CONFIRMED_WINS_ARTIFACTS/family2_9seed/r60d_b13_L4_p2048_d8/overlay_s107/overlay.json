@@ -1,0 +1,68 @@
+{
+  "pipeline": "overlay",
+  "problem": "r60d_b13_L4_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6828.4571428571435,
+  "strategies": [
+    {
+      "name": "Baseline Repeated Selective All-Reduce",
+      "desc": "Performs 8 sequential all-reduce dispatches where each dispatch zeros out non-selected blocks, all-reduces the full tensor, then divides by coverage counts. Uses 8 all-reduce dispatches with full tensor payload (13*2048 elements) each time. Straightforward but maximal dispatch count and redundant communication of zeros."
+    },
+    {
+      "name": "Fused Multi-Round with Single Normalization",
+      "desc": "Precompute all 7 rounds of block selections and coverage counts once, then perform 7 all-reduces on selective buffers sequentially, followed by a single final normalization pass that applies all accumulated scaling factors. Uses 7 all-reduce dispatches plus local compute; trades multiple division operations for batched normalization to reduce memory bandwidth."
+    },
+    {
+      "name": "Block-Parallel Reduce-Scatter then All-Gather",
+      "desc": "Decompose into reduce-scatter phase (each rank accumulates responsibility for specific blocks across rounds) followed by all-gather to broadcast results. Uses 2-4 collective dispatches by leveraging built-in partitioning semantics of reduce-scatter/all-gather instead of masking. Reduces total communication volume by avoiding redundant zero transmission."
+    },
+    {
+      "name": "Hierarchical Two-Level Aggregation",
+      "desc": "Exploit 224-rank topology by first performing intra-group all-reduces (e.g., 28 groups of 8 or 14 groups of 16) for the 7 dependent rounds, then inter-group aggregation for final result. Uses 14-16 dispatches (7 rounds \u00d7 2 levels) but with smaller per-dispatch groups, potentially better network utilization on multi-node hierarchical interconnects."
+    },
+    {
+      "name": "Pipelined Overlapped Block Streaming",
+      "desc": "Partition the 13 blocks into independent streams and pipeline the 7 all-reduce rounds such that while round i processes blocks A, round i+1 begins on blocks B. Uses 7+ dispatches but with smaller per-dispatch payloads (subsets of blocks) and opportunities for compute-communication overlap through asynchronous collective launches, hiding latency behind computation.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Baseline Repeated Selective All-Reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=6.914697"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Multi-Round with Single Normalization",
+      "sim": 6828.4571428571435,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Block-Parallel Reduce-Scatter then All-Gather",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=9.219596"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level Aggregation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=9.219596"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Overlapped Block Streaming",
+      "sim": 6828.4571428571435,
+      "ok": true,
+      "err": null
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6828.4571428571435,
+  "final_code": "def r60d_b13_L4_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 2048\n    B = 13\n    OFF = 2\n    W = world_size\n    L = 4\n    \n    # Precompute coverage counts for all blocks across all ranks\n    c = [0] * B\n    for r in range(W):\n        start = (r + OFF) % B\n        keep = set((start + 1*j) % B for j in range(L))\n        for b in keep:\n            c[b] += 1\n    \n    # Initial all-reduce to get sum across all ranks\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Perform 7 rounds of selective all-reduces\n    for round_idx in range(7):\n        # Determine which blocks this rank keeps\n        start = (rank + OFF) % B\n        keep = set((start + 1*j) % B for j in range(L))\n        \n        # Create selective buffer\n        buf = torch.zeros_like(s)\n        for b in range(B):\n            if b in keep:\n                buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n        \n        # All-reduce the selective buffer\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n        \n        # For rounds 0-5, normalize by coverage counts\n        # For round 6 (last round), skip normalization\n        if round_idx < 6:\n            for b in range(B):\n                acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n        \n        s = acc\n    \n    return s"
+}

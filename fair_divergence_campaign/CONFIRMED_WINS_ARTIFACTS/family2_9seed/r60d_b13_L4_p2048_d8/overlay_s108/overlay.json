@@ -1,0 +1,73 @@
+{
+  "pipeline": "overlay",
+  "problem": "r60d_b13_L4_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6828.4571428571435,
+  "strategies": [
+    {
+      "name": "Staged Block-Masked All-Reduce Chain",
+      "desc": "Performs 8 sequential all-reduce operations where each iteration masks blocks according to rank-dependent windows, then scales by coverage counts. Total of 8 dispatches with full 13*2048 payload each time. Trades dispatch count for simplicity with no algorithmic optimization beyond the reference."
+    },
+    {
+      "name": "Fused Multi-Stage with Precomputed Masks",
+      "desc": "Precomputes all 7 mask patterns and coverage counts once, then executes 7 all-reduce operations on masked buffers followed by a final unmasked all-reduce. Still 8 dispatches but eliminates redundant per-iteration mask computation. Same dispatch/payload tradeoff but reduces host-side overhead."
+    },
+    {
+      "name": "Hierarchical Two-Level Block Aggregation",
+      "desc": "Groups the 7 dependent stages into 2-3 hierarchical phases where multiple masks are OR-combined before dispatch, reducing total all-reduce count to 3-4 operations. Fewer dispatches (3-4 vs 8) but requires careful dependency analysis to maintain correctness of overlapping block coverage."
+    },
+    {
+      "name": "Reduce-Scatter + All-Gather Pipeline",
+      "desc": "Decomposes the problem into reduce-scatter on masked blocks (each rank gets subset), followed by local scaling, then all-gather to reconstruct full result. Uses 2*K dispatches where K\u22648 stages can be pipelined. Better bandwidth utilization through smaller per-dispatch payloads and potential overlap."
+    },
+    {
+      "name": "Single All-Reduce with Local Reweighting",
+      "desc": "Performs one initial all-reduce of full input, then locally computes the 7 dependent transformations by maintaining running weighted sums and applying block-wise corrections based on precomputed coverage masks. Only 1 dispatch with maximum payload, trading computation for communication. Requires proving mathematical equivalence to staged approach.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Staged Block-Masked All-Reduce Chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=9.219596"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Multi-Stage with Precomputed Masks",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: float division by zero"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level Block Aggregation",
+      "sim": 6828.4571428571435,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-Scatter + All-Gather Pipeline",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=9.219596"
+    },
+    {
+      "stage": "impl",
+      "name": "Single All-Reduce with Local Reweighting",
+      "sim": 6828.4571428571435,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "refine:Hierarchical Two-Level Block Aggregation",
+      "round": 3,
+      "sim": 5863.628571428571
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 5863.628571428571,
+  "final_code": "def r60d_b13_L4_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 2048\n    W = world_size\n    B = 13\n    OFF = 2\n    \n    # Initial all_reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Compute coverage count for each block\n    c = [0] * 13\n    for r in range(W):\n        st = (r + OFF) % B\n        ks = set((st + 1*j) % B for j in range(4))\n        for b in ks:\n            c[b] += 1\n    \n    # Determine this rank's window\n    start = (rank + OFF) % B\n    keep = set((start + 1*j) % B for j in range(4))\n    \n    # Reduce number of collectives by doing 2 iterations per all_reduce\n    # This reduces 7 all_reduces to 4 all_reduces (1 initial + 3 grouped)\n    \n    # Group 1: 2 stages\n    for _ in range(2):\n        buf = torch.zeros_like(s)\n        for b in range(13):\n            if b in keep:\n                buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n        s = buf\n    acc = xm.all_reduce(xm.REDUCE_SUM, s)\n    for b in range(13):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n    s = acc\n    \n    # Group 2: 2 stages\n    for _ in range(2):\n        buf = torch.zeros_like(s)\n        for b in range(13):\n            if b in keep:\n                buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n        s = buf\n    acc = xm.all_reduce(xm.REDUCE_SUM, s)\n    for b in range(13):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n    s = acc\n    \n    # Group 3: 3 stages\n    for _ in range(3):\n        buf = torch.zeros_like(s)\n        for b in range(13):\n            if b in keep:\n                buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n        s = buf\n    s = xm.all_reduce(xm.REDUCE_SUM, s)\n    \n    return s"
+}

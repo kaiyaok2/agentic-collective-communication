@@ -1,0 +1,68 @@
+{
+  "pipeline": "overlay",
+  "problem": "r60d_b16_L5_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6906.771428571429,
+  "strategies": [
+    {
+      "name": "Baseline Repeated Masked All-Reduce",
+      "desc": "Performs 8 sequential all-reduce operations where each iteration masks blocks based on rank-dependent windows, followed by per-block scaling. Results in 8 all-reduce dispatches with full-sized payloads (16*2048 elements each). Trades simplicity and correctness for maximum dispatch overhead, serving as the reference point."
+    },
+    {
+      "name": "Fused Block-Level Reduce-Scatter Ring",
+      "desc": "Decomposes the problem into 16 block-wise reduce-scatter operations followed by all-gather, exploiting the fact that different ranks contribute to different block subsets. Uses approximately 32 dispatches (16 RS + 16 AG) but with smaller per-dispatch payloads (2048 elements). Trades increased dispatch count for reduced per-operation bandwidth and potential pipeline parallelism."
+    },
+    {
+      "name": "Hierarchical Two-Level All-Reduce",
+      "desc": "Exploits multi-node structure by performing intra-node all-reduce on masked blocks, then inter-node all-reduce, then intra-node broadcast. Reduces cross-node traffic by aggregating within nodes first. Uses approximately 24 dispatches (8 iterations \u00d7 3 operations) but reduces inter-node bandwidth by factor of cores-per-node."
+    },
+    {
+      "name": "Pre-Computed Overlap Matrix Broadcast",
+      "desc": "Each rank computes which blocks it contributes to, performs a single all-reduce on its full tensor, then uses broadcast or all-gather to exchange block ownership metadata, finally applying local weighted sum. Uses 2-3 dispatches (1 all-reduce + 1-2 metadata exchanges) with full payloads but eliminates iterative dependency chain."
+    },
+    {
+      "name": "Pipelined Windowed All-Reduce Stream",
+      "desc": "Splits the 8 dependent all-reduce operations into overlapping stages where computation on iteration i+1's masking happens concurrently with communication of iteration i's data. Uses asynchronous dispatch if available, maintaining 8 logical all-reduce operations but hiding latency through computation-communication overlap. Same 8 dispatches but improved wall-clock time.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Baseline Repeated Masked All-Reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=10.285735"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Block-Level Reduce-Scatter Ring",
+      "sim": 6906.771428571429,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level All-Reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=10.285735"
+    },
+    {
+      "stage": "impl",
+      "name": "Pre-Computed Overlap Matrix Broadcast",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=nan"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Windowed All-Reduce Stream",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 6906.771428571429,
+  "final_code": "def r60d_b16_L5_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 2048\n    B = 16\n    OFF = 2\n    L = 5\n    W = world_size\n    dtype = x.dtype\n    \n    # Compute count array: how many ranks contribute to each block\n    c = [0] * B\n    for r in range(W):\n        st = (r + OFF) % B\n        ks = set((st + 1*j) % B for j in range(L))\n        for b in ks:\n            c[b] += 1\n    \n    # Determine which blocks this rank owns\n    start = (rank + OFF) % B\n    keep = set((start + 1*j) % B for j in range(L))\n    \n    # Phase 1: Reduce-scatter using block-wise masking\n    # Each rank reduces only its owned blocks across all ranks\n    # We'll do this in multiple rounds to simulate reduce-scatter behavior\n    \n    # Step 1: Initial all-reduce to get sum of all data\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Step 2: Perform 7 rounds of selective reduction (8 dependent ops total including first)\n    for iteration in range(7):\n        # Each rank zeros out blocks it doesn't own\n        buf = torch.zeros_like(s)\n        for b in range(B):\n            if b in keep:\n                buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n        \n        # All-reduce to sum up owned blocks\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n        \n        # Scale by count (except on last iteration)\n        if iteration < 6:\n            for b in range(B):\n                acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n        \n        s = acc\n    \n    return s"
+}

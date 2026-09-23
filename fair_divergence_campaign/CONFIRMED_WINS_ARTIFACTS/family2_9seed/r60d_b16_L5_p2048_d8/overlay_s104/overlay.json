@@ -1,0 +1,68 @@
+{
+  "pipeline": "overlay",
+  "problem": "r60d_b16_L5_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6906.771428571429,
+  "strategies": [
+    {
+      "name": "Baseline Repeated Masked All-Reduce",
+      "desc": "Performs 8 sequential all-reduce operations (1 initial sum + 7 masked iterations) where each rank zeros out blocks outside its window, then divides by coverage counts. 8 collective dispatches with full 16*2048 payload each time. Straightforward but maximal dispatch overhead."
+    },
+    {
+      "name": "Fused Loop with Precomputed Masks",
+      "desc": "Precomputes all 8 mask tensors and coverage counts once, then executes 8 all-reduces with optimized tensor indexing (avoiding per-block loops via advanced indexing or view operations). Still 8 dispatches but reduces local compute overhead between collectives, trading memory for CPU cycles."
+    },
+    {
+      "name": "Hierarchical Two-Level Block Aggregation",
+      "desc": "First performs 4 all-reduces operating on 8-block chunks (merging adjacent mask patterns), then 4 all-reduces on refined 4-block chunks. Exploits potential spatial locality and reduces per-iteration local copy overhead by operating on coarser granularity initially. Still 8 dispatches but different payload access patterns."
+    },
+    {
+      "name": "Pipelined Scatter-Reduce-Gather with Buffering",
+      "desc": "Decomposes each iteration into reduce-scatter (each rank owns 1/W of blocks), local compute on owned slices, then all-gather. Increases dispatch count to ~16-24 but enables smaller per-dispatch payloads and potential overlap of communication with the dependent computation chain. Trades dispatch count for bandwidth efficiency."
+    },
+    {
+      "name": "Sliding Window with Incremental Updates",
+      "desc": "Recognizes that consecutive iterations have overlapping block windows (rank-dependent 5-block window shifts by stride 1 modulo 16). Maintains running state and performs incremental all-reduce only on blocks entering/leaving the window (2 blocks change per iteration). Reduces effective payload to ~2/16 of full tensor per iteration after initial full all-reduce, lowering bandwidth at cost of complex bookkeeping.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Baseline Repeated Masked All-Reduce",
+      "sim": 6906.771428571429,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Loop with Precomputed Masks",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: float division by zero"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level Block Aggregation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=10.285735"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Scatter-Reduce-Gather with Buffering",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=10.285735"
+    },
+    {
+      "stage": "impl",
+      "name": "Sliding Window with Incremental Updates",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=10.285735"
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 6906.771428571429,
+  "final_code": "def r60d_b16_L5_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 2048\n    B = 16\n    OFF = 2\n    L = 5\n    W = world_size\n    \n    # Compute coverage counts for each block\n    c = [0] * B\n    for r in range(W):\n        start = (r + OFF) % B\n        keep = set((start + 1*j) % B for j in range(L))\n        for b in keep:\n            c[b] += 1\n    \n    # Initial all-reduce to sum all input tensors\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Perform 7 masked iterations\n    for iteration in range(7):\n        # Compute which blocks this rank keeps\n        start = (rank + OFF) % B\n        keep = set((start + 1*j) % B for j in range(L))\n        \n        # Create buffer with masked values (zero out blocks outside window)\n        buf = torch.zeros_like(s)\n        for b in range(B):\n            if b in keep:\n                buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n        \n        # All-reduce the masked buffer\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n        \n        # Divide by coverage counts (except on last iteration)\n        if iteration < 6:\n            for b in range(B):\n                acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n        \n        s = acc\n    \n    return s"
+}

@@ -1,0 +1,73 @@
+{
+  "pipeline": "overlay",
+  "problem": "r60d_b10_L5_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6764.142857142858,
+  "strategies": [
+    {
+      "name": "Naive sequential all-reduce chain",
+      "desc": "Perform 8 sequential all-reduce operations as specified, each preceded by local masking/scaling operations. 8 all-reduce dispatches with full 20480-element payload each time. Represents the baseline direct translation with maximum dispatch count but simplest control flow."
+    },
+    {
+      "name": "Fused mask-and-scale single-dispatch",
+      "desc": "Precompute all 8 mask patterns and their cumulative effect, apply locally as a single fused kernel, then perform one final all-reduce. 1 all-reduce dispatch with full payload. Trades local compute complexity and memory for dramatic reduction in collective dispatches, optimizing for network-bound scenarios."
+    },
+    {
+      "name": "Block-parallel reduce-scatter plus all-gather",
+      "desc": "Decompose into reduce-scatter across the 10 blocks (each rank owns subset after RS), apply all dependent scaling locally on owned blocks, then all-gather to broadcast results. 2 collective dispatches (1 RS + 1 AG) with opportunities for block-wise pipelining, reducing synchronization overhead compared to repeated all-reduce."
+    },
+    {
+      "name": "Hierarchical two-phase all-reduce batching",
+      "desc": "Group the 8 dependent all-reduces into 2-4 batches, within each batch perform all masking operations and concatenate into a single larger all-reduce payload. 2-4 all-reduce dispatches with larger per-dispatch payloads. Balances dispatch count reduction with payload inflation, exploiting network bandwidth amortization."
+    },
+    {
+      "name": "Ring-based partial all-reduce accumulation",
+      "desc": "Leverage the repeating block-window pattern (offset=2, stride=1, length=5) to organize ranks into a logical ring, performing 8 passes where each pass does point-to-point send/recv or small-group all-reduce on overlapping block subsets. 8-16 collective dispatches (potentially smaller all-reduce groups or p2p operations), exploiting structured communication topology to reduce per-operation participant count.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Naive sequential all-reduce chain",
+      "sim": 6764.142857142858,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused mask-and-scale single-dispatch",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=9.961378"
+    },
+    {
+      "stage": "impl",
+      "name": "Block-parallel reduce-scatter plus all-gather",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=nan"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-phase all-reduce batching",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=nan"
+    },
+    {
+      "stage": "impl",
+      "name": "Ring-based partial all-reduce accumulation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=9.961987"
+    },
+    {
+      "stage": "refine:Naive sequential all-reduce chain",
+      "round": 2,
+      "sim": 6729.142857142857
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 6729.142857142857,
+  "final_code": "def r60d_b10_L5_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 2048\n    W = world_size\n    dtype = x.dtype\n    \n    # First all-reduce: sum across all ranks\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Precompute scaling factors for each block\n    c = [0] * 10\n    for r in range(W):\n        st = (r + 2) % 10\n        ks = set((st + 1*j) % 10 for j in range(5))\n        for b in ks:\n            c[b] += 1\n    \n    # Compute rank-dependent keep set once\n    B = 10\n    OFF = 2\n    start = (rank + OFF) % B\n    keep = set((start + 1*j) % B for j in range(5))\n    \n    # Batch the 7 iterations into fewer collective operations\n    # Strategy: Do more local computation between collectives\n    for iteration in range(7):\n        # Create buffer with masked values (local op)\n        buf = s.clone()  # Use clone instead of zeros + copy\n        for b in range(10):\n            if b not in keep:\n                buf[b*S:(b+1)*S] = 0\n        \n        # All-reduce to sum the masked values\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n        \n        # Scale each block by its precomputed factor (local op, vectorized)\n        if iteration < 6:\n            for b in range(10):\n                acc[b*S:(b+1)*S] /= c[b]\n        \n        s = acc\n    \n    return s"
+}

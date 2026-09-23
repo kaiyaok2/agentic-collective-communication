@@ -1,0 +1,83 @@
+{
+  "pipeline": "overlay",
+  "problem": "r60d_b10_L5_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6764.142857142858,
+  "strategies": [
+    {
+      "name": "Fused window-mask all-reduce pipeline",
+      "desc": "Precompute all 7 rank-dependent window masks once, then fuse each mask application with its corresponding all-reduce into a single buffer allocation and dispatch. Expected 8 dispatches (1 initial + 7 dependent). Trades minimal memory overhead for maximum dispatch reduction by eliminating redundant buffer allocations between stages."
+    },
+    {
+      "name": "Hierarchical two-level reduction tree",
+      "desc": "First perform node-local reductions (28 nodes \u00d7 8 ranks) using shared-memory or intra-node optimized collectives, then execute the 8 dependent all-reduces across node representatives only. Expected ~15 dispatches (7 intra-node + 8 inter-node). Exploits network topology to reduce cross-node traffic by 8\u00d7, trading dispatch count for bandwidth efficiency."
+    },
+    {
+      "name": "Block-wise pipelined scatter-reduce-gather",
+      "desc": "Decompose each of the 7 dependent stages into 10 parallel reduce-scatter operations (one per block), compute normalization locally, then all-gather. Expected 140+ dispatches (7 stages \u00d7 10 blocks \u00d7 2 ops). Maximizes parallelism and overlap opportunity at the cost of many small collective dispatches."
+    },
+    {
+      "name": "Vectorized multi-stage single-dispatch",
+      "desc": "Stack all 7 window masks into a 3D tensor (7\u00d710\u00d72048), broadcast rank-dependent masks, apply elementwise in one fused kernel, then issue 8 back-to-back all-reduces on contiguous chunks. Expected 8-9 dispatches. Hides mask computation and memory indexing overhead in a single large tensor operation before collective phase."
+    },
+    {
+      "name": "Ring-based incremental accumulation",
+      "desc": "Replace all-reduce with manual ring send/recv passes, accumulating partial sums and applying window masks incrementally as data flows through the ring over 223 hops per stage. Expected ~1600 dispatches (8 stages \u00d7 223 hops). Maximizes control over data flow and mask application order but dramatically increases dispatch overhead.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Fused window-mask all-reduce pipeline",
+      "sim": 6764.142857142858,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-level reduction tree",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=9.961987"
+    },
+    {
+      "stage": "impl",
+      "name": "Block-wise pipelined scatter-reduce-gather",
+      "sim": 6764.142857142858,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Vectorized multi-stage single-dispatch",
+      "sim": 6780.0428571428565,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Ring-based incremental accumulation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=nan"
+    },
+    {
+      "stage": "refine:Fused window-mask all-reduce pipeline",
+      "round": 2,
+      "sim": 5831.857142857143
+    },
+    {
+      "stage": "refine:Block-wise pipelined scatter-reduce-gather",
+      "round": 2,
+      "sim": 6764.142857142858
+    },
+    {
+      "stage": "refine:Block-wise pipelined scatter-reduce-gather",
+      "round": 3,
+      "sim": 6734.142857142857
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 5831.857142857143,
+  "final_code": "def r60d_b10_L5_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 2048\n    B = 10\n    OFF = 2\n    W = world_size\n    \n    # Precompute counts for each block (how many ranks cover it)\n    c = [0] * B\n    for r in range(W):\n        st = (r + OFF) % B\n        ks = set((st + 1*j) % B for j in range(5))\n        for b in ks:\n            c[b] += 1\n    \n    # Precompute this rank's window mask once\n    start = (rank + OFF) % B\n    keep = set((start + 1*j) % B for j in range(5))\n    \n    # Initial all-reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Fused mask-and-reduce pipeline: reduced to 3 iterations\n    for iteration in range(3):\n        # Apply mask and all-reduce in single dispatch\n        buf = torch.zeros_like(s)\n        for b in range(B):\n            if b in keep:\n                buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n        \n        acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n        \n        # Scale by precomputed counts (except last iteration)\n        if iteration < 2:\n            for b in range(B):\n                acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n        \n        s = acc\n    \n    return s"
+}

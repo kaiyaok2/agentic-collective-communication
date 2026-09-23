@@ -1,0 +1,68 @@
+{
+  "pipeline": "overlay",
+  "problem": "r60d_b16_L5_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6906.771428571429,
+  "strategies": [
+    {
+      "name": "Naive sequential all-reduce chain",
+      "desc": "Performs 8 sequential all-reduce operations with selective masking and averaging in between, exactly as shown in the reference. Uses 8 all-reduce dispatches with full 32KB payload each time. Represents the baseline: maximum correctness with no optimization, highest dispatch count and redundant communication."
+    },
+    {
+      "name": "Fused mask-and-scale with bulk all-reduce",
+      "desc": "Pre-compute all 7 mask patterns and scale factors, apply them to create 7 intermediate buffers locally, then concatenate into a single tensor and dispatch one large all-reduce followed by local unpacking and averaging. Uses 2 dispatches (initial sum + fused bulk reduce) with ~7x payload but eliminates 6 dispatches, trading memory for latency."
+    },
+    {
+      "name": "Hierarchical two-level reduce with node-awareness",
+      "desc": "Exploit num_nodes parameter to perform intra-node all-reduce first (smaller world size), then inter-node all-reduce, applying the 8-stage dependent masking at the inter-node level only. Uses 2-3x the dispatches but with smaller effective world sizes, reducing per-dispatch latency through hierarchical decomposition."
+    },
+    {
+      "name": "Pipelined overlapping window all-reduce",
+      "desc": "Partition the 16 blocks into independent subsets that can be reduced in parallel, dispatch 2-4 concurrent all-reduces on disjoint block ranges, then perform dependency resolution with smaller follow-up all-reduces only on boundary blocks. Uses 3-5 dispatches with smaller payloads, exploiting potential hardware parallelism in collective scheduler."
+    },
+    {
+      "name": "Reduce-scatter then all-gather pattern",
+      "desc": "Replace the masked all-reduce pattern with reduce-scatter (each rank owns specific blocks) followed by 7 dependent reduce-scatter operations on owned blocks, then final all-gather to broadcast results. Uses 9 dispatches (1 initial + 7 reduce-scatter + 1 all-gather) but with ~1/W payload per reduce-scatter, minimizing total bytes communicated.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Naive sequential all-reduce chain",
+      "sim": 6906.771428571429,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused mask-and-scale with bulk all-reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: float division by zero"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-level reduce with node-awareness",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=10.285735"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined overlapping window all-reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=nan"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-scatter then all-gather pattern",
+      "sim": 6906.771428571429,
+      "ok": true,
+      "err": null
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6906.771428571429,
+  "final_code": "def r60d_b16_L5_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 2048\n    W = world_size\n    \n    # First all-reduce: sum all ranks' input\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Precompute counts for each block\n    c = [0] * 16\n    for r in range(W):\n        st = (r + 2) % 16\n        ks = set((st + 1*j) % 16 for j in range(5))\n        for b in ks:\n            c[b] += 1\n    \n    # Determine which blocks this rank keeps\n    B = 16\n    OFF = 2\n    start = (rank + OFF) % B\n    keep = set((start + 1*j) % B for j in range(5))\n    \n    # Perform 7 iterations of mask-reduce-average\n    for iteration in range(7):\n        # Create buffer with selective masking\n        buf = torch.zeros_like(s)\n        for b in range(16):\n            if b in keep:\n                buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n        \n        # All-reduce the masked buffer\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n        \n        # Average each block by its count (skip on last iteration)\n        if iteration < 6:\n            for b in range(16):\n                acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n        \n        s = acc\n    \n    return s"
+}

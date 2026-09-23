@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r60d_b13_L4_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6828.4571428571435,
+  "strategies": [
+    {
+      "name": "Fused mask-and-scale all-reduce chain",
+      "desc": "Seven sequential all-reduces where each dispatch applies both the rank-dependent mask (zeroing non-kept blocks) and the per-block scaling factor in-place before the collective. Dispatch count = 8 total (1 initial full all-reduce + 7 masked). Trades computation (mask+scale fusion) for minimal buffer allocations."
+    },
+    {
+      "name": "Pre-computed mask tensor broadcast",
+      "desc": "Compute the entire 13-block overlap count array once, broadcast the c[b] values as metadata, then perform 8 all-reduces with a single fused mask-multiply kernel per iteration. Dispatch count = 8 all-reduces. Reduces redundant per-block scaling overhead by hoisting the division constants, trading setup cost for cleaner hot-path."
+    },
+    {
+      "name": "Block-interleaved reduce-scatter then all-gather",
+      "desc": "Replace each masked all-reduce with a reduce-scatter on only the 4 kept blocks (producing partial sums), followed by an all-gather to reconstruct the full 13-block tensor with zeros in non-kept positions. Dispatch count = 1 initial AR + 7\u00d72 = 15 collectives. Smaller per-dispatch payload (4/13 of data) but doubled collective count per iteration."
+    },
+    {
+      "name": "Pipelined double-buffered iteration",
+      "desc": "Allocate two buffers and overlap the mask-preparation of iteration i+1 with the all-reduce of iteration i using asynchronous dispatch and explicit wait barriers between dependent steps. Dispatch count = 8 all-reduces with pipeline latency hiding. Trades memory (2\u00d7 buffer) for reduced bubble time in back-to-back dependent collectives."
+    },
+    {
+      "name": "Single all-reduce with rank-offset indexing",
+      "desc": "Flatten the 7 mask-and-reduce iterations into a single all-reduce on a (7\u00d713\u00d72048) tensor where each of the 7 \"time slices\" holds the appropriately masked data, then locally reduce across the time dimension with weighted scaling. Dispatch count = 2 (initial + single mega-AR). Larger payload (7\u00d7 data volume) but eliminates 6 round-trips by batching dependency chain into one collective.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Fused mask-and-scale all-reduce chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=6.914697"
+    },
+    {
+      "stage": "impl",
+      "name": "Pre-computed mask tensor broadcast",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=nan"
+    },
+    {
+      "stage": "impl",
+      "name": "Block-interleaved reduce-scatter then all-gather",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=9.219596"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined double-buffered iteration",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'TrackedTensor' object has no"
+    },
+    {
+      "stage": "impl",
+      "name": "Single all-reduce with rank-offset indexing",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=nan"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 6828.4571428571435,
+  "final_code": "def r60d_b13_L4_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 2048; W = world_size\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    c = [0]*13\n    for r in range(W):\n        st = (r + 2) % 13\n        ks = set((st + 1*j) % 13 for j in range(4))\n        for b in ks:\n            c[b] += 1\n    B = 13; OFF = 2\n    start = (rank + OFF) % B\n    keep = set((start + 1*j) % B for j in range(4))\n    buf = torch.zeros_like(s)\n    for b in range(13):\n        if b in keep:\n            buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(13):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n    s = acc\n    B = 13; OFF = 2\n    start = (rank + OFF) % B\n    keep = set((start + 1*j) % B for j in range(4))\n    buf = torch.zeros_like(s)\n    for b in range(13):\n        if b in keep:\n            buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(13):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n    s = acc\n    B = 13; OFF = 2\n    start = (rank + OFF) % B\n    keep = set((start + 1*j) % B for j in range(4))\n    buf = torch.zeros_like(s)\n    for b in range(13):\n        if b in keep:\n            buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(13):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n    s = acc\n    B = 13; OFF = 2\n    start = (rank + OFF) % B\n    keep = set((start + 1*j) % B for j in range(4))\n    buf = torch.zeros_like(s)\n    for b in range(13):\n        if b in keep:\n            buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(13):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n    s = acc\n    B = 13; OFF = 2\n    start = (rank + OFF) % B\n    keep = set((start + 1*j) % B for j in range(4))\n    buf = torch.zeros_like(s)\n    for b in range(13):\n        if b in keep:\n            buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(13):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n    s = acc\n    B = 13; OFF = 2\n    start = (rank + OFF) % B\n    keep = set((start + 1*j) % B for j in range(4))\n    buf = torch.zeros_like(s)\n    for b in range(13):\n        if b in keep:\n            buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(13):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n    s = acc\n    B = 13; OFF = 2\n    start = (rank + OFF) % B\n    keep = set((start + 1*j) % B for j in range(4))\n    buf = torch.zeros_like(s)\n    for b in range(13):\n        if b in keep:\n            buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    s = acc\n    return s\n",
+  "fell_back_to_baseline": true
+}

@@ -1,0 +1,83 @@
+{
+  "pipeline": "overlay",
+  "problem": "r60d_b10_L5_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6764.142857142858,
+  "strategies": [
+    {
+      "name": "Fused block-mask all-reduce chain",
+      "desc": "Performs 8 all-reduce operations (1 initial full sum + 7 masked window operations) with pre-computed block masks and count arrays, exactly as in the reference. Each all-reduce dispatches once (8 total dispatches). Trades multiple dispatches for correctness of dependent overlapping-window semantics where each block accumulates contributions only from ranks whose windows cover it."
+    },
+    {
+      "name": "Hierarchical two-level reduce-scatter gather",
+      "desc": "First reduce-scatter the 10 blocks across a virtual ring topology (224 ranks), then locally compute window masks and scaling, followed by all-gather to reconstruct. Reduces dispatch count to 2-3 collectives (reduce-scatter + all-gather) by exploiting the fact that block-window patterns are regular mod-10. Trades structural simplicity for complex addressing logic and potential load imbalance."
+    },
+    {
+      "name": "Pipelined split all-reduce batches",
+      "desc": "Partition the 7 dependent mask-and-scale operations into 2-3 batches where each batch fuses multiple consecutive all-reduces into a single larger payload (e.g., concatenate buffers from iterations 2-4, then 5-7). Reduces dispatches from 8 to 3-4 by batching, but requires careful dependency tracking to ensure correctness of the cumulative scaling factors across iterations."
+    },
+    {
+      "name": "Block-wise independent all-reduce streams",
+      "desc": "Decompose into 10 independent all-reduce operations (one per block), each summing only the ranks whose windows cover that block, using rank-subgroup collectives. Dispatch count equals 10 (one per block), but each operates on smaller payload (2048 elements) and can leverage sub-communicator optimizations. Trades global synchronization for parallel narrow collectives."
+    },
+    {
+      "name": "Materialize-once broadcast of scaling metadata",
+      "desc": "Perform single initial all-reduce for full sum (dispatch 1), then compute all 10 block coverage counts via a single all-reduce on a 10-element metadata vector (dispatch 2), followed by 6 additional masked all-reduces for the dependent window operations (dispatches 3-8). Total 8 dispatches but hoists invariant computation (count array) into a separate small-payload collective, potentially enabling better overlap.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Fused block-mask all-reduce chain",
+      "sim": 6764.142857142858,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-level reduce-scatter gather",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=nan"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined split all-reduce batches",
+      "sim": 6764.142857142858,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Block-wise independent all-reduce streams",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=nan"
+    },
+    {
+      "stage": "impl",
+      "name": "Materialize-once broadcast of scaling metadata",
+      "sim": 6754.186854771206,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "refine:Materialize-once broadcast of scaling metadata",
+      "round": 2,
+      "sim": 7338.178571428563
+    },
+    {
+      "stage": "refine:Fused block-mask all-reduce chain",
+      "round": 2,
+      "sim": 5831.857142857143
+    },
+    {
+      "stage": "refine:Fused block-mask all-reduce chain",
+      "round": 3,
+      "sim": 5602.714285714285
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 5602.714285714285,
+  "final_code": "def r60d_b10_L5_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 2048\n    B = 10\n    OFF = 2\n    L = 5\n    W = world_size\n    \n    # Pre-compute count array: how many ranks' windows cover each block\n    c = [0] * B\n    for r in range(W):\n        start = (r + OFF) % B\n        keep = set((start + 1 * j) % B for j in range(L))\n        for b in keep:\n            c[b] += 1\n    \n    # Initial full all-reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Compute this rank's window\n    start = (rank + OFF) % B\n    keep = set((start + 1 * j) % B for j in range(L))\n    \n    # Reduced to 2 masked window all-reduce operations\n    for iteration in range(2):\n        buf = torch.zeros_like(s)\n        for b in range(B):\n            if b in keep:\n                buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n        \n        acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n        \n        # Scale by counts (skip division on last iteration)\n        if iteration < 1:\n            for b in range(B):\n                acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n        \n        s = acc\n    \n    return s"
+}

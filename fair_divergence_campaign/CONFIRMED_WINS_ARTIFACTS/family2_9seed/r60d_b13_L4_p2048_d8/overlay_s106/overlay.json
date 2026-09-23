@@ -1,0 +1,68 @@
+{
+  "pipeline": "overlay",
+  "problem": "r60d_b13_L4_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6828.4571428571435,
+  "strategies": [
+    {
+      "name": "Baseline Repeated Masked All-Reduce",
+      "desc": "Performs 8 sequential all-reduce operations (1 initial full sum + 7 masked iterations) where each rank selectively contributes only its 4-block window and divides by block coverage counts. This is the reference implementation with 8 dispatches, trading simplicity for maximum dispatch overhead but minimal local computation between collectives."
+    },
+    {
+      "name": "Fused Block-Windowed Reduce-Scatter + All-Gather",
+      "desc": "Replaces the 7 masked all-reduces with a reduce-scatter that partitions the 13 blocks across ranks (with padding/modulo addressing), followed by local scaling and an all-gather to broadcast results. Reduces dispatches to 3 total (initial AR + RS + AG), trading increased local memory operations and padding overhead for fewer collective calls."
+    },
+    {
+      "name": "Hierarchical Two-Level All-Reduce Chain",
+      "desc": "Exploits potential node topology by first performing intra-node all-reduces on subsets of the data, then inter-node all-reduces, repeating for each of the 7 dependent iterations. At world_size=224 this creates 4-8 dispatches depending on grouping strategy, balancing between baseline's 8 dispatches and more aggressive fusion while respecting hardware locality."
+    },
+    {
+      "name": "Pre-Computed Scaling with Single Broadcast",
+      "desc": "Recognizes that block coverage counts are rank-independent and deterministic; computes the final scaled result locally using only the initial all-reduce sum, then performs 7 iterations of: zero non-window blocks, all-reduce, accumulate. Remains at 8 dispatches but eliminates redundant division operations across all ranks, reducing compute between dispatches."
+    },
+    {
+      "name": "Pipelined Chunked All-Reduce with Async",
+      "desc": "Splits each of the 13 blocks into sub-chunks and pipelines the 7 dependent all-reduce iterations by overlapping communication of chunk i+1 with local masking/scaling of chunk i using asynchronous collective launches. Total logical dispatches remain high (8\u00d713=104 micro-ops) but wall-clock time decreases through improved network utilization and compute-communication overlap.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Baseline Repeated Masked All-Reduce",
+      "sim": 6828.4571428571435,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Block-Windowed Reduce-Scatter + All-Gather",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=7.247902"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level All-Reduce Chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'TrackedTensor' object has no"
+    },
+    {
+      "stage": "impl",
+      "name": "Pre-Computed Scaling with Single Broadcast",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=16.829050"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Chunked All-Reduce with Async",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=nan"
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 6828.4571428571435,
+  "final_code": "def r60d_b13_L4_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 2048\n    W = world_size\n    B = 13\n    OFF = 2\n    \n    # Step 1: Initial full all-reduce sum\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Compute coverage counts for each block\n    c = [0] * 13\n    for r in range(W):\n        st = (r + OFF) % B\n        ks = set((st + 1*j) % B for j in range(4))\n        for b in ks:\n            c[b] += 1\n    \n    # Determine which blocks this rank should keep\n    start = (rank + OFF) % B\n    keep = set((start + 1*j) % B for j in range(4))\n    \n    # Perform 7 masked all-reduce iterations\n    for iteration in range(7):\n        # Create buffer with only kept blocks\n        buf = torch.zeros_like(s)\n        for b in range(13):\n            if b in keep:\n                buf[b*S:(b+1)*S] = s[b*S:(b+1)*S]\n        \n        # All-reduce the masked buffer\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n        \n        # Divide by coverage counts (skip on last iteration)\n        if iteration < 6:\n            for b in range(13):\n                acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / c[b]\n        \n        s = acc\n    \n    return s"
+}

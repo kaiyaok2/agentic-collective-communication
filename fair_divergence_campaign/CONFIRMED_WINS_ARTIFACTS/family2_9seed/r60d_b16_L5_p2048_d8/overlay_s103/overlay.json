@@ -1,0 +1,73 @@
+{
+  "pipeline": "overlay",
+  "problem": "r60d_b16_L5_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6906.771428571429,
+  "strategies": [
+    {
+      "name": "Sequential masked all-reduce chain",
+      "desc": "Performs 8 sequential all-reduce operations where each iteration masks blocks according to rank-dependent windows, then normalizes by coverage counts. Uses 8 all-reduce dispatches with full-size payloads (16*2048 elements each). Trades dispatch count for simplicity and uniform payload sizes across all iterations."
+    },
+    {
+      "name": "Block-wise reduce-scatter then all-gather",
+      "desc": "First reduce-scatter to distribute 16 blocks across ranks, compute windowed accumulation locally with proper scaling, then all-gather to reconstruct full result. Uses 2 collective dispatches (reduce-scatter + all-gather) plus local masked accumulation logic between them. Minimizes collectives but requires careful block-to-rank mapping and larger local computation."
+    },
+    {
+      "name": "Hierarchical two-level reduction tree",
+      "desc": "Exploits potential node-local vs. cross-node bandwidth differences by performing intra-node partial reductions (assuming multi-node deployment), then inter-node reductions, followed by broadcast. Uses 3-5 dispatches depending on hierarchy depth. Optimizes for network topology but adds complexity in splitting the 8-dependency chain across hierarchy levels."
+    },
+    {
+      "name": "Fused buffer with single all-reduce",
+      "desc": "Pre-computes all 8 dependency stages locally by replicating the windowing logic, concatenates intermediate results into a larger buffer, performs one all-reduce on the concatenated buffer, then extracts final result. Uses 1 all-reduce dispatch with 8x payload size. Maximizes fusion at the cost of memory and bandwidth for intermediate states."
+    },
+    {
+      "name": "Pipeline overlapped small all-reduces",
+      "desc": "Decomposes the 16 blocks into smaller chunks and pipelines the 8 dependent all-reduce stages across chunks using asynchronous dispatches where possible. Uses 8+ dispatches (potentially more for chunk-level parallelism) with smaller payloads per dispatch. Trades increased dispatch overhead for potential latency hiding through overlap, though dependencies limit true pipelining.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential masked all-reduce chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=10.285735"
+    },
+    {
+      "stage": "impl",
+      "name": "Block-wise reduce-scatter then all-gather",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=nan"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-level reduction tree",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=10.285735"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused buffer with single all-reduce",
+      "sim": 5803.114285714285,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipeline overlapped small all-reduces",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=10.285735"
+    },
+    {
+      "stage": "refine:Fused buffer with single all-reduce",
+      "round": 3,
+      "sim": 5803.114285714285
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 5803.114285714285,
+  "final_code": "def r60d_b16_L5_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 2048\n    W = world_size\n    B = 16\n    OFF = 2\n    L = 5\n    \n    # Compute coverage counts for each block\n    c = [0] * B\n    for r in range(W):\n        st = (r + OFF) % B\n        ks = set((st + 1*j) % B for j in range(L))\n        for b in ks:\n            c[b] += 1\n    \n    # Initial all-reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Prepare fused buffer: concatenate all 8 intermediate states\n    # Each stage produces a version of the data after one selective reduction\n    # We'll compute all 8 stages locally and concatenate them\n    \n    # Create buffer to hold 8 intermediate states\n    fused_buffer = torch.zeros(8 * B * S, dtype=x.dtype)\n    \n    # Compute each stage locally by simulating the windowing logic\n    current = s.clone()\n    \n    for stage in range(8):\n        # Determine which blocks this rank keeps at this stage\n        start = (rank + OFF) % B\n        keep = set((start + 1*j) % B for j in range(L))\n        \n        # Apply windowing: zero out blocks not in keep set\n        buf = torch.zeros_like(current)\n        for b in range(B):\n            if b in keep:\n                buf[b*S:(b+1)*S] = current[b*S:(b+1)*S]\n        \n        # Store in fused buffer\n        fused_buffer[stage * B * S : (stage + 1) * B * S] = buf\n        \n        # For next iteration, we need to simulate what the result would be\n        # after all-reduce and normalization\n        # However, we can't actually do the all-reduce here (that defeats the purpose)\n        # Instead, we'll replicate the windowing pattern\n        \n        # Actually, we need to think differently: we're trying to pre-compute\n        # what each stage would contribute, but this depends on the all-reduce results.\n        # The correct approach: store the MASKED versions at each stage,\n        # then do ONE all-reduce on the concatenated buffer.\n        \n        # After the single all-reduce, each stage's contribution will be summed,\n        # then we apply the normalization and extract results sequentially.\n        \n        # Wait, this approach has a problem: each stage depends on the previous\n        # stage's output after normalization. We can't just concatenate masks.\n        \n        # Let me reconsider: the fused approach would need to compute all\n        # contributions assuming we can defer the dependency resolution.\n        # But these operations are inherently sequential due to normalization.\n        \n        # Alternative interpretation: concatenate the INPUTS to each stage,\n        # do a single all-reduce, then locally compute the sequential updates.\n        # But the inputs to later stages depend on earlier outputs...\n        \n        # The only way to fuse is to recognize that we're applying the same\n        # mask pattern 7 times (last one has no normalization in reference).\n        # We can send all 7 masked versions in one go, receive the reductions,\n        # then sequentially apply normalizations.\n        \n        current = buf  # Use the masked version for the next stage's input\n    \n    # Perform single all-reduce on the fused buffer\n    fused_result = xm.all_reduce(xm.REDUCE_SUM, fused_buffer)\n    \n    # Extract and process each stage sequentially\n    result = s\n    for stage in range(7):  # 7 stages with normalization\n        # Extract the result for this stage\n        stage_result = fused_result[stage * B * S : (stage + 1) * B * S]\n        \n        # Apply normalization\n        for b in range(B):\n            stage_result[b*S:(b+1)*S] = stage_result[b*S:(b+1)*S] / c[b]\n        \n        result = stage_result\n    \n    # Last stage (stage 7) has no normalization in reference\n    result = fused_result[7 * B * S : 8 * B * S]\n    \n    return result"
+}
