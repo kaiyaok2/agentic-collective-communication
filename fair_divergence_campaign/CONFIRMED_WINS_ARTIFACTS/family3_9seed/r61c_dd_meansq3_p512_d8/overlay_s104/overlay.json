@@ -1,0 +1,73 @@
+{
+  "pipeline": "overlay",
+  "problem": "r61c_dd_meansq3_p512_d8",
+  "gate": "fp32",
+  "baseline_sim": 6838.414285714285,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with loop fusion",
+      "desc": "Uses 8 sequential all-reduce operations identical to the reference implementation, but fuses all block-wise local computations (factor calculation, multiplication, division) into single-pass vectorized operations to minimize kernel launches. Total 8 all-reduce dispatches with intermediate computation overhead reduced through tensor operation fusion."
+    },
+    {
+      "name": "Block-parallel reduce-scatter then all-gather",
+      "desc": "Replace each all-reduce with a reduce-scatter (producing 1/world_size fraction per rank) followed by local computation on owned blocks, then all-gather to broadcast results. Uses 16 collective dispatches (8 reduce-scatter + 8 all-gather) but reduces per-dispatch payload size and enables better load balancing across ranks for the data-dependent computations."
+    },
+    {
+      "name": "Hierarchical two-level all-reduce batching",
+      "desc": "Batch multiple iterations by computing factors speculatively, pack 2-4 consecutive iteration buffers into larger tensors, and issue fewer but larger all-reduces. Uses 4 dispatches handling 2 iterations each, trading increased memory footprint and speculative computation cost against reduced collective overhead at world size 224."
+    },
+    {
+      "name": "Pipelined overlapped compute-communication",
+      "desc": "Issue all-reduce for iteration i+1's buffer while computing factors and transformations for iteration i's result using asynchronous dispatch and double-buffering. Maintains 8 all-reduce calls but overlaps communication latency with local arithmetic, requiring explicit synchronization barriers between pipeline stages."
+    },
+    {
+      "name": "All-to-all block distribution approach",
+      "desc": "Distribute the 8 blocks across subsets of ranks using all-to-all, let each rank own specific blocks through all iterations (computing factors locally after initial sum), then final all-to-all to restore layout. Uses 2 all-to-all dispatches plus 8 all-reduce operations only on 1/8th of ranks per block, reducing total communication volume.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with loop fusion",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.337943"
+    },
+    {
+      "stage": "impl",
+      "name": "Block-parallel reduce-scatter then all-gather",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.337943"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-level all-reduce batching",
+      "sim": 6941.899999999999,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined overlapped compute-communication",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.337943"
+    },
+    {
+      "stage": "impl",
+      "name": "All-to-all block distribution approach",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "refine:Hierarchical two-level all-reduce batching",
+      "round": 3,
+      "sim": 6838.414285714285
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 6838.414285714285,
+  "final_code": "def r61c_dd_meansq3_p512_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 512\n    B = 8\n    dtype = x.dtype\n    \n    # Initial all-reduce to get the global sum\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Process 7 dependent iterations sequentially\n    # Each iteration: compute factors, multiply, all-reduce, divide\n    \n    for iteration in range(7):\n        # Compute all factors for this iteration\n        factors = []\n        for b in range(B):\n            sb = s[b*S:(b+1)*S]\n            factor = 1.0 + 3.0*(sb*sb).mean()\n            factors.append(factor)\n        \n        # Apply factors to all blocks\n        buf = s.clone()\n        for b in range(B):\n            buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * factors[b]\n        \n        # All-reduce\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n        \n        # Divide by world_size and factors (combined into final step)\n        if iteration < 6:\n            # For iterations 0-5, we need to divide by both world_size and the factors\n            for b in range(B):\n                acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * factors[b])\n        else:\n            # For iteration 6 (last), just divide by world_size\n            acc = acc / world_size\n        \n        s = acc\n    \n    return s"
+}

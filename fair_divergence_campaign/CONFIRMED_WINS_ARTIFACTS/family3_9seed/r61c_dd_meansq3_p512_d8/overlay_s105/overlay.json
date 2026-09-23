@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r61c_dd_meansq3_p512_d8",
+  "gate": "fp32",
+  "baseline_sim": 6838.414285714285,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with per-iteration normalization",
+      "desc": "Performs 8 dependent all-reduce operations sequentially, where each iteration computes data-dependent factors from the previous result, applies them, all-reduces, then normalizes. This is the reference implementation with 8 all-reduce dispatches (one initial + 7 iterative). Trades maximum dispatch count for simplest correctness guarantee."
+    },
+    {
+      "name": "Fused factor computation with vectorized operations",
+      "desc": "Maintains the 8 sequential all-reduce structure but fuses all 8 block-factor computations into a single vectorized operation per iteration, eliminating intermediate buffers and loops. Still 8 all-reduce dispatches but reduces local computation overhead through tensor operations instead of Python loops. Optimizes compute density without changing communication pattern."
+    },
+    {
+      "name": "Pipelined reduce-scatter then all-gather chain",
+      "desc": "Decomposes each all-reduce into reduce-scatter followed by all-gather to enable overlapping communication with the data-dependent factor computation on partial results. Uses 16 collective dispatches (8 RS + 8 AG) but allows factor computation to proceed on scattered chunks while next RS is in flight. Trades dispatch count for latency hiding through pipeline parallelism."
+    },
+    {
+      "name": "Block-parallel all-reduce with late synchronization",
+      "desc": "Recognizes that the 8 blocks are independent within each iteration and issues 8 smaller all-reduce operations in parallel (or batched) per iteration, computing factors independently per block. Requires 64 total all-reduce dispatches (8 blocks \u00d7 8 iterations) but each operates on 512 elements instead of 4096. Trades message count for smaller per-message latency and potential batch coalescing."
+    },
+    {
+      "name": "Logarithmic recursive doubling with factor broadcasting",
+      "desc": "Replaces flat all-reduce with a recursive-doubling tree pattern (log\u2082(224) \u2248 8 stages) where each rank exchanges partial results and factors with peers, computing updated factors at each tree level. Approximately 8\u00d78=64 point-to-point exchanges replacing 8 all-reduces. Trades collective simplicity for reduced algorithmic communication volume in large world-size regimes.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with per-iteration normalization",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.337943"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused factor computation with vectorized operations",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.337943"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined reduce-scatter then all-gather chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=nan"
+    },
+    {
+      "stage": "impl",
+      "name": "Block-parallel all-reduce with late synchronization",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.337943"
+    },
+    {
+      "stage": "impl",
+      "name": "Logarithmic recursive doubling with factor broadcasting",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.337938"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 6838.414285714285,
+  "final_code": "def r61c_dd_meansq3_p512_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 512; B = 8\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    f = []\n    for b in range(B):\n        sb = s[b*S:(b+1)*S]\n        f.append(1.0 + 3.0*(sb*sb).mean())\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    f = []\n    for b in range(B):\n        sb = s[b*S:(b+1)*S]\n        f.append(1.0 + 3.0*(sb*sb).mean())\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    f = []\n    for b in range(B):\n        sb = s[b*S:(b+1)*S]\n        f.append(1.0 + 3.0*(sb*sb).mean())\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    f = []\n    for b in range(B):\n        sb = s[b*S:(b+1)*S]\n        f.append(1.0 + 3.0*(sb*sb).mean())\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    f = []\n    for b in range(B):\n        sb = s[b*S:(b+1)*S]\n        f.append(1.0 + 3.0*(sb*sb).mean())\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    f = []\n    for b in range(B):\n        sb = s[b*S:(b+1)*S]\n        f.append(1.0 + 3.0*(sb*sb).mean())\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    f = []\n    for b in range(B):\n        sb = s[b*S:(b+1)*S]\n        f.append(1.0 + 3.0*(sb*sb).mean())\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / world_size\n    s = acc\n    return s\n",
+  "fell_back_to_baseline": true
+}
