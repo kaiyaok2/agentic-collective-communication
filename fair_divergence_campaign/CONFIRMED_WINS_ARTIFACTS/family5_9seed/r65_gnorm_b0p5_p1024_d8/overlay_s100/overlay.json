@@ -1,0 +1,83 @@
+{
+  "pipeline": "overlay",
+  "problem": "r65_gnorm_b0p5_p1024_d8",
+  "gate": "fp32",
+  "baseline_sim": 6855.042857142857,
+  "strategies": [
+    {
+      "name": "Sequential All-Reduce with Scalar Broadcast",
+      "desc": "Perform 8 all-reduce operations sequentially as shown in the reference implementation, dispatching each all-reduce independently (8 dispatches total). This is the baseline approach with no optimization, representing maximum clarity and simplicity at the cost of 8 network round-trips and no opportunity for overlapping computation or communication."
+    },
+    {
+      "name": "Fused Local Computation Between All-Reduces",
+      "desc": "Keep the 8 all-reduce structure but fuse all local element-wise operations (division, absolute value, mean, scalar computations) into minimal kernel launches between each all-reduce dispatch. This reduces total dispatches from ~40+ (if each local op is separate) to exactly 8 all-reduce dispatches plus 8 fused local computation kernels (16 total), trading off kernel fusion complexity for reduced dispatch overhead."
+    },
+    {
+      "name": "Pipelined All-Reduce with Tensor Chunking",
+      "desc": "Split the input tensor (8*1024 elements) into independent chunks and pipeline the 8 all-reduce stages across chunks, allowing the k-th all-reduce on chunk i to overlap with the (k+1)-th all-reduce on chunk i-1. This maintains 8 logical all-reduce stages but increases total all-reduce dispatches to 8*num_chunks while enabling communication-computation overlap, trading increased message count for reduced wall-clock time."
+    },
+    {
+      "name": "Hierarchical Two-Level All-Reduce Chain",
+      "desc": "Exploit potential node-level structure by replacing each of the 8 global all-reduces with a two-level pattern: intra-node reduce-scatter followed by inter-node all-reduce followed by intra-node all-gather. This increases dispatch count from 8 to 24 (3 operations \u00d7 8 stages) but optimizes for network topology, reducing inter-node bandwidth pressure by leveraging faster intra-node interconnects."
+    },
+    {
+      "name": "Batched Metadata with Single-Reduction Approximation",
+      "desc": "Approximate the iterative normalization by pre-computing or estimating convergence behavior, then batch multiple normalization steps into fewer all-reduce calls (e.g., 2-3 instead of 8) with adjusted correction factors computed locally. This drastically reduces all-reduce dispatches to 2-4 at the cost of numerical precision or requiring problem-specific calibration, representing an accuracy-speed tradeoff.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential All-Reduce with Scalar Broadcast",
+      "sim": 6855.042857142857,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Local Computation Between All-Reduces",
+      "sim": 6855.042857142857,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined All-Reduce with Tensor Chunking",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.009828"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level All-Reduce Chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Batched Metadata with Single-Reduction Approximation",
+      "sim": 5633.7,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "refine:Sequential All-Reduce with Scalar Broadcast",
+      "round": 1,
+      "sim": 6855.042857142857
+    },
+    {
+      "stage": "refine:Sequential All-Reduce with Scalar Broadcast",
+      "round": 2,
+      "sim": 6855.042857142857
+    },
+    {
+      "stage": "refine:Sequential All-Reduce with Scalar Broadcast",
+      "round": 3,
+      "sim": 6855.042857142857
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 5633.7,
+  "final_code": "def r65_gnorm_b0p5_p1024_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Batched Metadata with Single-Reduction Approximation:\n    Reduces 8 all_reduce operations to 2-3 by approximating the iterative \n    convergence pattern and batching multiple normalization steps.\n    \"\"\"\n    W = world_size\n    BETA = 0.5\n    dtype = x.dtype\n    \n    # First all_reduce: get the global sum\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Initial normalization\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Second all_reduce: get the averaged normalized result\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    \n    # Now approximate the remaining 6 iterations locally\n    # The pattern is: normalize -> average -> repeat\n    # Each iteration follows: A = acc.abs().mean(), M = A/(1-BETA*A), gr = 1+BETA*M, \n    # s = acc*gr, g = 1+BETA*s.abs().mean(), buf = s/g, acc = sum(buf)/W\n    \n    # We approximate by unrolling the iterations locally without all_reduce\n    # Key insight: after averaging, all ranks have identical data, so we can\n    # simulate the iterations locally since all_reduce(identical_data) = W * identical_data\n    \n    # Simulate iterations 2-7 (6 iterations)\n    for _ in range(6):\n        A = acc.abs().mean()\n        # Avoid division by zero\n        denom = 1.0 - BETA * A\n        if denom.abs().item() < 1e-10:\n            M = A * 10000.0  # Large value approximation\n        else:\n            M = A / denom\n        gr = 1.0 + BETA * M\n        s = acc * gr\n        g = 1.0 + BETA * s.abs().mean()\n        buf = s / g\n        # Since all ranks have identical acc, all_reduce(buf)/W would give buf\n        # (because sum of W identical values divided by W = the value itself)\n        acc = buf\n    \n    # Final result\n    s = acc\n    \n    return s.to(dtype)"
+}

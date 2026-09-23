@@ -1,0 +1,88 @@
+{
+  "pipeline": "overlay",
+  "problem": "r65_gnorm_b0p5_p1024_d8",
+  "gate": "fp32",
+  "baseline_sim": 6855.042857142857,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with scalar reduction",
+      "desc": "Performs 8 separate all-reduce operations sequentially as in the reference, alternating between vector all-reduces (for summing x or buf) and implicit scalar reductions (via .mean() operations). Dispatch count: 8 all-reduces. Represents the baseline with maximum clarity but no optimization\u2014each normalization step depends on the previous all-reduce completing."
+    },
+    {
+      "name": "Fused buffer concatenation multi-pass",
+      "desc": "Concatenate intermediate scalars (g, A, M values) across iterations into a single tensor and perform batched all-reduces where possible, reducing dispatch count by bundling scalar exchanges. Dispatch count: ~5-6 all-reduces (1 initial vector + 4-5 fused scalar+vector). Trades memory layout complexity for fewer network round-trips by packing multiple reduction targets."
+    },
+    {
+      "name": "Pipelined overlapping computation-communication",
+      "desc": "Initiate the next all-reduce asynchronously while computing local normalization operations (abs, mean, division) from the previous step, exploiting potential async dispatch in xm. Dispatch count: 8 all-reduces but overlapped. Represents latency hiding through pipeline parallelism\u2014computation of iteration i overlaps with communication of iteration i+1."
+    },
+    {
+      "name": "Hierarchical two-stage reduction",
+      "desc": "Exploit multi-node topology by performing intra-node reductions (across num_devices) followed by inter-node reductions, restructuring each of the 8 dependent passes into node-local then global phases. Dispatch count: 16 collectives (8 iterations \u00d7 2 stages). Trades dispatch count for bandwidth efficiency on hierarchical network topologies where node-local links are faster."
+    },
+    {
+      "name": "Tensor stacking with single wide all-reduce",
+      "desc": "Stack all intermediate results (s, buf, acc across 7 iterations) into a single wide tensor of shape (7*8*1024,) and perform one large all-reduce, then unpack and apply normalization in sequence. Dispatch count: 1 all-reduce + 6 additional for dependent normalizations = 7 total. Amortizes latency overhead across larger payload but requires careful dependency management since normalization steps are inherently sequential.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with scalar reduction",
+      "sim": 6855.042857142857,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused buffer concatenation multi-pass",
+      "sim": 6737.287806919643,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined overlapping computation-communication",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.070095"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-stage reduction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer modulo by zero"
+    },
+    {
+      "stage": "impl",
+      "name": "Tensor stacking with single wide all-reduce",
+      "sim": 6855.042857142857,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "refine:Fused buffer concatenation multi-pass",
+      "round": 1,
+      "sim": 6609.485714285714
+    },
+    {
+      "stage": "refine:Fused buffer concatenation multi-pass",
+      "round": 2,
+      "sim": 6609.485714285714
+    },
+    {
+      "stage": "refine:Sequential all-reduce with scalar reduction",
+      "round": 2,
+      "sim": 6869.742857142857
+    },
+    {
+      "stage": "refine:Sequential all-reduce with scalar reduction",
+      "round": 3,
+      "sim": 6862.742857142857
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6609.485714285714,
+  "final_code": "def r65_gnorm_b0p5_p1024_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size\n    BETA = 0.5\n    dtype = x.dtype\n    \n    # First all-reduce: sum of x\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Unroll the loop to minimize dispatch overhead\n    # Do 5 full iterations, then 1 final simplified iteration\n    \n    for iteration in range(5):\n        # Compute g = 1.0 + BETA * s.abs().mean()\n        g = 1.0 + BETA * s.abs().mean()\n        buf = s / g\n        \n        # All-reduce buf\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf) / W\n        \n        # Compute next s\n        A = acc.abs().mean()\n        M = A / (1.0 - BETA * A)\n        gr = 1.0 + BETA * M\n        s = acc * gr\n    \n    # Final iteration (6th): no need to compute A, M, gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf) / W\n    \n    return acc"
+}

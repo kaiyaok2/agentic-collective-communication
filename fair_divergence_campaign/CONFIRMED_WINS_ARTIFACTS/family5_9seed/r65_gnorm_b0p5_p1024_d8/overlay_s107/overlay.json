@@ -1,0 +1,88 @@
+{
+  "pipeline": "overlay",
+  "problem": "r65_gnorm_b0p5_p1024_d8",
+  "gate": "fp32",
+  "baseline_sim": 6855.042857142857,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with scalar normalization",
+      "desc": "Performs 8 dependent all-reduce operations sequentially, each followed by local scalar computations (mean, abs, division). Uses 8 all-reduce dispatches with minimal payload (8*1024 elements each). Represents the baseline: maximum dispatch count but simplest logic with no fusion opportunities."
+    },
+    {
+      "name": "Fused local-op batching between collectives",
+      "desc": "Groups multiple local scalar operations (abs, mean, division, multiplication) into single kernel launches between each all-reduce. Uses 8 all-reduce dispatches but reduces local operation overhead by batching elementwise ops. Represents a compute-fusion tradeoff: same collective count but lower CPU/accelerator kernel launch overhead."
+    },
+    {
+      "name": "Pipelined dual-buffer all-reduce overlap",
+      "desc": "Attempts to overlap computation of normalization scalars for iteration i+1 while all-reduce i is in flight, using double-buffering on intermediate tensors. Still requires 8 all-reduce dispatches but hides latency of scalar computation behind communication. Represents latency-hiding through pipeline parallelism at the cost of 2x memory for buffers."
+    },
+    {
+      "name": "Hierarchical two-stage reduction with node-local fusion",
+      "desc": "Exploits multi-node structure by performing intra-node reductions first, computing intermediate normalization locally within each node, then inter-node all-reduce. Reduces cross-node all-reduce count from 8 to potentially 4-6 by fusing some iterations at node level. Represents topology-aware optimization trading uniform algorithm for network-tier-specific dispatch counts."
+    },
+    {
+      "name": "Vectorized all-reduce with auxiliary scalar channel",
+      "desc": "Packs the main tensor data alongside running scalar statistics (sum of abs values, counts) into extended payloads for each all-reduce, allowing parallel reduction of both data and metadata. Uses 8 all-reduce dispatches but each carries slightly larger payload (8*1024 + O(1) scalars). Represents payload-enlargement tradeoff: same dispatch count but amortizes scalar reductions into vector collectives.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with scalar normalization",
+      "sim": 6855.042857142857,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused local-op batching between collectives",
+      "sim": 6855.042857142857,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined dual-buffer all-reduce overlap",
+      "sim": 6855.042857142857,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-stage reduction with node-local fusion",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Vectorized all-reduce with auxiliary scalar channel",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.544793"
+    },
+    {
+      "stage": "refine:Sequential all-reduce with scalar normalization",
+      "round": 1,
+      "sim": 6868.342857142857
+    },
+    {
+      "stage": "refine:Sequential all-reduce with scalar normalization",
+      "round": 2,
+      "sim": 6860.642857142857
+    },
+    {
+      "stage": "refine:Sequential all-reduce with scalar normalization",
+      "round": 3,
+      "sim": 6834.0428571428565
+    },
+    {
+      "stage": "refine:Fused local-op batching between collectives",
+      "round": 3,
+      "sim": 5872.814285714286
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 5872.814285714286,
+  "final_code": "def r65_gnorm_b0p5_p1024_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size\n    BETA = 0.5\n    dtype = x.dtype\n    \n    # First all-reduce: sum x across all ranks\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Fused local ops: compute normalization and apply\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Second all-reduce: sum normalized buffer\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    \n    # Fused local ops: average, compute abs mean, compute multiplier, scale, normalize\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Third all-reduce\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    \n    # Fused local ops\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Fourth all-reduce\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    \n    # Final fused local ops\n    acc = acc / W\n    s = acc\n    \n    return s"
+}

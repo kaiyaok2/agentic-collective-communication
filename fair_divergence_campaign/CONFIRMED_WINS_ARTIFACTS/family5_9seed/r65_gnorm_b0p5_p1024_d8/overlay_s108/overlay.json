@@ -1,0 +1,83 @@
+{
+  "pipeline": "overlay",
+  "problem": "r65_gnorm_b0p5_p1024_d8",
+  "gate": "fp32",
+  "baseline_sim": 6855.042857142857,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with local normalization",
+      "desc": "Performs 8 all-reduce operations sequentially as shown in the reference implementation, computing local normalization (division by g) between each all-reduce. This results in 8 collective dispatches with minimal local computation fusion. Represents the baseline trade-off of simplicity and correctness versus dispatch overhead."
+    },
+    {
+      "name": "Fused local-op batching between collectives",
+      "desc": "Groups all local arithmetic operations (division, abs, mean, multiplication) between consecutive all-reduces into single fused kernel launches to minimize device synchronization overhead. Still performs 8 all-reduce dispatches but reduces local-op dispatch count from ~40 to ~8. Trades implementation complexity for reduced non-collective dispatch overhead."
+    },
+    {
+      "name": "Pipelined all-reduce with computation overlap",
+      "desc": "Splits the tensor into chunks and pipelines the all-reduce operations with normalization computation, so that while chunk N is being reduced, chunk N-1's normalization is computed. Maintains 8 logical all-reduce phases but overlaps communication with computation. Trades increased memory footprint and complexity for potential latency hiding."
+    },
+    {
+      "name": "Two-phase hierarchical reduction with cached intermediates",
+      "desc": "Exploits the iterative structure by caching intermediate sums and scalar statistics, then performs intra-node reductions followed by inter-node reductions to minimize cross-node traffic. Restructures the 8 sequential all-reduces into hierarchical patterns (e.g., 2-stage per iteration). Trades algorithmic restructuring for reduced network diameter traversals."
+    },
+    {
+      "name": "Vectorized multi-iteration with single-buffer reuse",
+      "desc": "Pre-allocates a single buffer and chains all 8 iterations through in-place operations, maximizing memory locality and minimizing allocations. Each iteration overwrites the previous result using strided access patterns. Results in 8 all-reduce dispatches but minimal memory traffic. Trades buffer management complexity for cache efficiency and reduced memory bandwidth.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with local normalization",
+      "sim": 6855.042857142857,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused local-op batching between collectives",
+      "sim": 6855.042857142857,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined all-reduce with computation overlap",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.544793"
+    },
+    {
+      "stage": "impl",
+      "name": "Two-phase hierarchical reduction with cached intermediates",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.070095"
+    },
+    {
+      "stage": "impl",
+      "name": "Vectorized multi-iteration with single-buffer reuse",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    },
+    {
+      "stage": "refine:Sequential all-reduce with local normalization",
+      "round": 1,
+      "sim": 6855.042857142857
+    },
+    {
+      "stage": "refine:Sequential all-reduce with local normalization",
+      "round": 2,
+      "sim": 6855.042857142857
+    },
+    {
+      "stage": "refine:Fused local-op batching between collectives",
+      "round": 3,
+      "sim": 6855.042857142857
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6855.042857142857,
+  "final_code": "def r65_gnorm_b0p5_p1024_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size\n    BETA = 0.5\n    dtype = x.dtype\n    \n    # First all-reduce: sum across all ranks\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Iteration 1\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    \n    # Iteration 2\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    \n    # Iteration 3\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    \n    # Iteration 4\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    \n    # Iteration 5\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    \n    # Iteration 6\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    \n    # Iteration 7 (final)\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    \n    return s"
+}

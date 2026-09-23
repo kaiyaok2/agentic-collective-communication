@@ -1,0 +1,93 @@
+{
+  "pipeline": "overlay",
+  "problem": "r65_gnorm_b2p0_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6877.900000000001,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with local fusion",
+      "desc": "Perform 7 all-reduce operations sequentially as in the reference, but fuse all local scalar computations (abs, mean, division, multiplication) between collectives into single kernel launches. Expected 7 collective dispatches plus 7 fused local-op dispatches. Trades off simplicity and correctness guarantee against potential latency from sequential dependency chain."
+    },
+    {
+      "name": "Pipelined all-reduce with speculative computation",
+      "desc": "Overlap communication of all-reduce i with local computation from all-reduce i-1 by issuing non-blocking collectives and interleaving mark_step boundaries. Expected 7 all-reduce dispatches with reduced wall-clock time through pipeline parallelism. Trades increased complexity and potential memory pressure for hiding communication latency behind computation."
+    },
+    {
+      "name": "Hierarchical two-level reduction tree",
+      "desc": "Exploit multi-node topology by performing intra-node reductions first (across 28 nodes with 8 devices each), then inter-node reductions, repeating the 7-iteration pattern at each level. Expected ~14 collective dispatches (7 node-local + 7 inter-node) with smaller per-dispatch payloads at the inter-node level. Trades dispatch count for bandwidth efficiency on cross-node links."
+    },
+    {
+      "name": "Batched scalar all-reduce aggregation",
+      "desc": "After initial full-tensor all-reduce, pack all subsequent scalar values (g, A, M, gr) from iterations 2-7 into a single small buffer and perform one vector all-reduce instead of 6 separate ones. Expected 2 collective dispatches (1 full tensor + 1 packed scalars) plus speculation/correction logic. Trades algorithm restructuring complexity for dramatic reduction in collective count."
+    },
+    {
+      "name": "Reduce-scatter plus all-gather decomposition",
+      "desc": "Replace each all-reduce with a reduce-scatter followed by all-gather, computing local normalization on scattered chunks before gathering. Expected 14 collective dispatches (7 RS + 7 AG pairs) with smaller per-rank payloads during reduction phase. Trades dispatch count for better bandwidth utilization and potential overlap opportunities between RS and AG phases.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with local fusion",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined all-reduce with speculative computation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockXM' object has no attrib"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-level reduction tree",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.417277"
+    },
+    {
+      "stage": "impl",
+      "name": "Batched scalar all-reduce aggregation",
+      "sim": 7109.599999999999,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-scatter plus all-gather decomposition",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.417277"
+    },
+    {
+      "stage": "refine:Sequential all-reduce with local fusion",
+      "round": 1,
+      "sim": 6882.1
+    },
+    {
+      "stage": "refine:Sequential all-reduce with local fusion",
+      "round": 2,
+      "sim": 6882.1
+    },
+    {
+      "stage": "refine:Sequential all-reduce with local fusion",
+      "round": 3,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Batched scalar all-reduce aggregation",
+      "round": 1,
+      "sim": 6527.985714285714
+    },
+    {
+      "stage": "refine:Batched scalar all-reduce aggregation",
+      "round": 3,
+      "sim": 6553.185714285714
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6527.985714285714,
+  "final_code": "def r65_gnorm_b2p0_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size\n    BETA = 2.0\n    dtype = x.dtype\n    \n    # First all-reduce: get initial sum\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Compute first g locally\n    g = 1.0 + BETA * s.abs().mean()\n    \n    # Do all 6 iterations with all-reduces\n    acc = s\n    for iteration in range(6):\n        # Fuse the division and all-reduce preparation\n        buf = acc / g\n        \n        # All-reduce\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n        acc = acc / W\n        \n        # Fuse all local operations for next iteration\n        if iteration < 5:\n            # Compute all scalars in one go to maximize local work\n            acc_abs = acc.abs()\n            A = acc_abs.mean()\n            M = A / (1.0 - BETA * A)\n            gr = 1.0 + BETA * M\n            acc = acc * gr\n            \n            # Pre-compute g for next iteration to fuse operations\n            g = 1.0 + BETA * acc_abs.mean() * gr\n        else:\n            # Last iteration - no need to prepare for next\n            pass\n    \n    return acc"
+}

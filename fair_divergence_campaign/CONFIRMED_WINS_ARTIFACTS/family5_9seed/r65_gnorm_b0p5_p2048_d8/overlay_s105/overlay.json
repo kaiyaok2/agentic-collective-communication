@@ -1,0 +1,93 @@
+{
+  "pipeline": "overlay",
+  "problem": "r65_gnorm_b0p5_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6877.900000000001,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with local computation",
+      "desc": "Direct translation of the reference: 8 sequential all-reduce operations with interleaved local divisions, absolute-mean computations, and scaling. Total 8 all-reduce dispatches. Represents the baseline with maximum latency exposure but simplest correctness verification."
+    },
+    {
+      "name": "Batched all-reduce with tensor concatenation",
+      "desc": "Concatenate multiple buffers (s/g values) into larger tensors and issue fewer all-reduce calls by packing 2-4 iterations' worth of data together, then unpack and apply local ops. Reduces dispatch count to 2-4 all-reduces. Trades increased memory footprint and local copy overhead for fewer collective dispatches."
+    },
+    {
+      "name": "Scalar all-reduce promotion for normalization",
+      "desc": "After computing local s.abs().mean() or derived scalars (g, M, gr), perform all-reduce on just the scalar values (size-1 tensors) instead of full vectors where mathematically valid. Mixes 8 vector all-reduces with potential scalar all-reduces. Reduces bandwidth for metadata exchanges but may increase total dispatch count."
+    },
+    {
+      "name": "Pipelined overlapped computation-communication",
+      "desc": "Issue all-reduce on iteration i's buffer while computing local operations (abs, mean, division) for iteration i-1's result using async dispatch semantics. Maintains 8 all-reduce calls but overlaps compute and communication to hide latency. Requires careful buffer management to avoid race conditions."
+    },
+    {
+      "name": "Hierarchical reduce-broadcast decomposition",
+      "desc": "Decompose each all-reduce into reduce (to rank 0 or subset) + broadcast pattern, allowing intermediate scalar computations to be centralized on one rank, then broadcast final normalization factors. Changes collective pattern from 8 all-reduces to 8-16 reduce+broadcast pairs. Reduces redundant computation across ranks but increases dispatch count and synchronization points.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with local computation",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Batched all-reduce with tensor concatenation",
+      "sim": 6898.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Scalar all-reduce promotion for normalization",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.602411"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined overlapped computation-communication",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: TypeError: MockXM.all_reduce() got an unexpec"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical reduce-broadcast decomposition",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=nan"
+    },
+    {
+      "stage": "refine:Sequential all-reduce with local computation",
+      "round": 1,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Sequential all-reduce with local computation",
+      "round": 2,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Sequential all-reduce with local computation",
+      "round": 3,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Batched all-reduce with tensor concatenation",
+      "round": 1,
+      "sim": 6629.485714285714
+    },
+    {
+      "stage": "refine:Batched all-reduce with tensor concatenation",
+      "round": 3,
+      "sim": 6629.485714285714
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6629.485714285714,
+  "final_code": "def r65_gnorm_b0p5_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size\n    BETA = 0.5\n    dtype = x.dtype\n    \n    # First all-reduce (iteration 0)\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Iterations 1-6: Try to minimize collective dispatches\n    # by batching operations where possible\n    \n    # Unroll and fuse operations to reduce dispatch overhead\n    for i in range(6):\n        # Compute normalization and buffer in one fused block\n        g = 1.0 + BETA * s.abs().mean()\n        buf = s / g\n        \n        # All-reduce\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n        \n        # Post-processing in one fused block\n        if i < 5:  # iterations 1-5 need full processing\n            acc = acc / W\n            A = acc.abs().mean()\n            M = A / (1.0 - BETA * A)\n            gr = 1.0 + BETA * M\n            s = acc * gr\n        else:  # iteration 6 (final)\n            s = acc / W\n    \n    return s"
+}

@@ -1,0 +1,93 @@
+{
+  "pipeline": "overlay",
+  "problem": "r65_gnorm_b0p5_p1024_d8",
+  "gate": "fp32",
+  "baseline_sim": 6855.042857142857,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with local fusion",
+      "desc": "Perform 8 sequential all-reduce operations (7 intermediate + 1 final) exactly as in the reference, but fuse all local scalar computations (abs, mean, division, multiplication) between collectives into single kernel launches. Expected 8 all-reduce dispatches plus 7 fused local-compute kernels. Trades off simplicity and correctness guarantee for moderate dispatch count."
+    },
+    {
+      "name": "Pipelined dual-buffer overlapping collectives",
+      "desc": "Maintain two buffers and issue the next all-reduce on buffer B while computing local normalization ops on buffer A's result, overlapping communication with computation across the 8 dependent stages. Expected 8 all-reduce dispatches with reduced wall-clock time through async dispatch and compute/comm overlap. Trades increased memory footprint for lower latency."
+    },
+    {
+      "name": "Hierarchical two-level reduction tree",
+      "desc": "Exploit multi-node structure by performing intra-node reductions (if num_nodes > 1) followed by inter-node reductions at each of the 8 stages, replacing each global all-reduce with a reduce-scatter + all-gather pair or node-local + cross-node pattern. Expected 16 collective dispatches (2 per stage) but with smaller per-dispatch payload on cross-node links. Trades dispatch count for reduced cross-node bandwidth pressure."
+    },
+    {
+      "name": "Vectorized batch all-reduce with metadata",
+      "desc": "Pack intermediate scalar metadata (g, A, M, gr values) across iterations into a small auxiliary tensor and perform a single metadata all-reduce after every 2-3 stages, while batching the main buffer all-reduces where dependency chains permit. Expected 8-10 total dispatches by amortizing metadata synchronization. Trades algorithmic complexity for fewer dispatches."
+    },
+    {
+      "name": "Aggressive local approximation with correction",
+      "desc": "Perform the first 4-6 normalization stages using only local rank's statistics (skipping intermediate all-reduces), accumulate error terms, then perform 2-3 all-reduces at the end with correction factors to converge to the true result. Expected 3-4 all-reduce dispatches total. Trades numerical stability and guaranteed correctness for minimal collective overhead.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with local fusion",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.070095"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined dual-buffer overlapping collectives",
+      "sim": 6855.042857142857,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-level reduction tree",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Vectorized batch all-reduce with metadata",
+      "sim": 6855.042857142857,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Aggressive local approximation with correction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.062002"
+    },
+    {
+      "stage": "refine:Pipelined dual-buffer overlapping collectives",
+      "round": 2,
+      "sim": 6244.371428571429
+    },
+    {
+      "stage": "refine:Pipelined dual-buffer overlapping collectives",
+      "round": 3,
+      "sim": 5879.257142857144
+    },
+    {
+      "stage": "refine:Vectorized batch all-reduce with metadata",
+      "round": 1,
+      "sim": 6855.042857142857
+    },
+    {
+      "stage": "refine:Vectorized batch all-reduce with metadata",
+      "round": 2,
+      "sim": 6855.042857142857
+    },
+    {
+      "stage": "refine:Vectorized batch all-reduce with metadata",
+      "round": 3,
+      "sim": 6855.042857142857
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 5879.257142857144,
+  "final_code": "def r65_gnorm_b0p5_p1024_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size\n    BETA = 0.5\n    dtype = x.dtype\n    \n    # Aggressive reduction: Use only 3 all-reduces total for 8 stages\n    \n    # Stage 0: Initial all-reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    g = 1.0 + BETA * s.abs().mean()\n    buffer = s / g\n    \n    # Stages 1-5: Single all-reduce with 5 local iterations\n    acc = xm.all_reduce(xm.REDUCE_SUM, buffer)\n    acc = acc / W\n    \n    for local_iter in range(5):\n        A = acc.abs().mean()\n        M = A / (1.0 - BETA * A)\n        gr = 1.0 + BETA * M\n        s = acc * gr\n        g = 1.0 + BETA * s.abs().mean()\n        acc = s / g\n    \n    # Stages 6-7: Final all-reduce with 2 local iterations\n    acc = xm.all_reduce(xm.REDUCE_SUM, acc)\n    acc = acc / W\n    \n    for local_iter in range(2):\n        A = acc.abs().mean()\n        M = A / (1.0 - BETA * A)\n        gr = 1.0 + BETA * M\n        s = acc * gr\n        g = 1.0 + BETA * s.abs().mean()\n        acc = s / g\n    \n    return acc"
+}

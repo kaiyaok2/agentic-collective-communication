@@ -1,0 +1,83 @@
+{
+  "pipeline": "overlay",
+  "problem": "r65_gnorm_b2p0_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6877.900000000001,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with scalar broadcast",
+      "desc": "Perform 8 sequential all-reduce operations exactly as in the reference, with local computation between each. Total 8 all-reduce dispatches. Straightforward but high latency due to sequential dependencies and no overlap opportunity."
+    },
+    {
+      "name": "Fused buffer all-reduce with stacked tensors",
+      "desc": "Stack all intermediate buffers into a single 2D tensor and perform one all-reduce per iteration on concatenated state. Reduces dispatches to 8 all-reduces but with larger payloads (multiple vectors). Trades per-dispatch size for fewer total dispatches."
+    },
+    {
+      "name": "Pipelined two-phase reduction tree",
+      "desc": "Split the 8 iterations into two phases of 4, performing hierarchical aggregation within each phase before cross-phase communication. Uses 2 all-reduces for initial aggregation plus 6 for iterations, potentially enabling better compute-communication overlap through batching."
+    },
+    {
+      "name": "Scalar metadata all-reduce with local reconstruction",
+      "desc": "First all-reduce computes full sum s, then use all-reduce only for scalar statistics (mean absolute values) in subsequent iterations, broadcasting 7 scalars instead of full vectors. Trades 7 vector all-reduces for 7 scalar all-reduces plus one vector all-reduce, dramatically reducing payload."
+    },
+    {
+      "name": "Ring-based progressive normalization with chunking",
+      "desc": "Divide the 8-iteration dependency chain by pre-computing partial statistics and using reduce-scatter followed by all-gather patterns for each normalization step. Uses 16 dispatches (2 per iteration) but enables better network utilization through structured ring communication and smaller simultaneous payloads.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with scalar broadcast",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused buffer all-reduce with stacked tensors",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.417277"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined two-phase reduction tree",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.417277"
+    },
+    {
+      "stage": "impl",
+      "name": "Scalar metadata all-reduce with local reconstruction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.484955"
+    },
+    {
+      "stage": "impl",
+      "name": "Ring-based progressive normalization with chunking",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.417277"
+    },
+    {
+      "stage": "refine:Sequential all-reduce with scalar broadcast",
+      "round": 1,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Sequential all-reduce with scalar broadcast",
+      "round": 2,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Sequential all-reduce with scalar broadcast",
+      "round": 3,
+      "sim": 6258.657142857142
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 6258.657142857142,
+  "final_code": "def r65_gnorm_b2p0_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size\n    BETA = 2.0\n    dtype = x.dtype\n    \n    # First all-reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    \n    # Unroll and combine iterations to reduce collectives\n    # Do 3 double-iterations instead of 6 single iterations\n    for _ in range(3):\n        # First sub-iteration (local)\n        A = acc.abs().mean()\n        M = A / (1.0 - BETA * A)\n        gr = 1.0 + BETA * M\n        s = acc * gr\n        g = 1.0 + BETA * s.abs().mean()\n        acc_local = s / g\n        \n        # Second sub-iteration (local)\n        A = acc_local.abs().mean()\n        M = A / (1.0 - BETA * A)\n        gr = 1.0 + BETA * M\n        s = acc_local * gr\n        g = 1.0 + BETA * s.abs().mean()\n        buf = s / g\n        \n        # Single all-reduce for both iterations\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n        acc = acc / W\n    \n    s = acc\n    return s"
+}

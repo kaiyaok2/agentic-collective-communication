@@ -1,0 +1,93 @@
+{
+  "pipeline": "overlay",
+  "problem": "r65_gnorm_b2p0_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6877.900000000001,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with scalar broadcasts",
+      "desc": "Perform 8 all-reduce operations sequentially as in the reference, where each iteration computes a global sum, derives a scalar normalization factor locally, applies it, and repeats. This requires 8 all-reduce dispatches (one per iteration) with full tensor payloads. Represents the baseline: straightforward correctness with no fusion, highest dispatch count but simplest logic."
+    },
+    {
+      "name": "Fused scalar all-reduce for normalization factors",
+      "desc": "Instead of computing normalization scalars (g values) independently on each rank after all-reduce, bundle multiple scalar statistics (mean absolute values) into a small tensor and all-reduce them together in fewer dispatches. This reduces the number of all-reduce calls by combining the statistics communication, trading off slightly more complex bookkeeping for fewer dispatches (approximately 8 tensor all-reduces + 1-2 scalar all-reduces)."
+    },
+    {
+      "name": "Pipelined tensor and scalar interleaving",
+      "desc": "Overlap computation of local statistics (abs, mean) with pending all-reduce operations by issuing the next all-reduce before fully consuming the previous result. Use async dispatch semantics to hide latency: launch all-reduce on tensor while computing next normalization factor. Maintains 8 all-reduce dispatches but improves wall-clock time through better pipeline utilization and reduced bubble time."
+    },
+    {
+      "name": "Hierarchical reduce-scatter then all-gather pattern",
+      "desc": "Replace each all-reduce with a reduce-scatter followed by all-gather, allowing ranks to compute partial normalization on sharded data before reassembling. Each iteration does reduce-scatter on tensor chunks, computes local normalization on the shard, then all-gathers the normalized result. This doubles the collective count (16 dispatches) but reduces per-dispatch payload size and enables better memory locality."
+    },
+    {
+      "name": "Batched multi-iteration with stacked tensors",
+      "desc": "Stack intermediate tensors across multiple iterations into a single larger tensor dimension and perform vectorized all-reduce operations on the batch. Instead of 8 separate all-reduces on shape (16384,), perform fewer all-reduces on concatenated/stacked shapes like (8, 16384) or (128, 1024), then apply normalization in vectorized form. Reduces dispatch count to 2-4 while increasing per-dispatch payload, trading memory for latency.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with scalar broadcasts",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused scalar all-reduce for normalization factors",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined tensor and scalar interleaving",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical reduce-scatter then all-gather pattern",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.417277"
+    },
+    {
+      "stage": "impl",
+      "name": "Batched multi-iteration with stacked tensors",
+      "sim": 6898.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "refine:Sequential all-reduce with scalar broadcasts",
+      "round": 1,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Sequential all-reduce with scalar broadcasts",
+      "round": 3,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Fused scalar all-reduce for normalization factors",
+      "round": 1,
+      "sim": 6886.299999999999
+    },
+    {
+      "stage": "refine:Fused scalar all-reduce for normalization factors",
+      "round": 2,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Fused scalar all-reduce for normalization factors",
+      "round": 3,
+      "sim": 6877.900000000001
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6877.900000000001,
+  "final_code": "def r65_gnorm_b2p0_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Sequential all-reduce with scalar broadcasts strategy.\n    Performs 8 all-reduce operations sequentially, where each iteration:\n    1. Computes a global sum via all-reduce\n    2. Derives a scalar normalization factor locally\n    3. Applies the normalization\n    4. Repeats for the next iteration\n    \n    This is the baseline approach with no fusion optimization.\n    \"\"\"\n    W = world_size\n    BETA = 2.0\n    dtype = x.dtype\n    \n    # Iteration 1\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    \n    # Iterations 2-7\n    for _ in range(6):\n        A = acc.abs().mean()\n        M = A / (1.0 - BETA * A)\n        gr = 1.0 + BETA * M\n        s = acc * gr\n        g = 1.0 + BETA * s.abs().mean()\n        buf = s / g\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n        acc = acc / W\n    \n    # Final result\n    s = acc\n    return s"
+}

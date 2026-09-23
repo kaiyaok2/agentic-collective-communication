@@ -1,0 +1,88 @@
+{
+  "pipeline": "overlay",
+  "problem": "r65_gnorm_b0p5_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6877.900000000001,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce chain baseline",
+      "desc": "Seven sequential all-reduce operations (one initial sum, six iterative normalization rounds) with local compute (division, abs, mean) between each. Dispatch count = 7 all-reduces + local ops. Represents the straightforward implementation with no fusion or overlapping\u2014highest latency but simplest correctness verification."
+    },
+    {
+      "name": "Fused local-compute between collectives",
+      "desc": "Same seven all-reduces but fuse all local scalar operations (division by W, abs, mean, reconstruction of gr, normalization) into single kernel launches between collectives to reduce dispatch overhead. Dispatch count = 7 all-reduces + 7 fused kernels. Trades kernel fusion complexity for reduced launch latency."
+    },
+    {
+      "name": "Pipelined dual-buffer all-reduce overlap",
+      "desc": "Split tensor into chunks and pipeline: while chunk[i] is in all-reduce, compute local normalization on chunk[i-1]. Requires careful dependency tracking across the 7-stage chain. Dispatch count remains ~7 all-reduces but overlaps communication with computation. Hides compute latency behind network time."
+    },
+    {
+      "name": "Hierarchical two-level reduction tree",
+      "desc": "If num_nodes > 1, perform intra-node reductions (aggregating across cores_per_device) followed by inter-node all-reduces. Each of 7 stages uses reduce-scatter + all-gather pattern within nodes, then cross-node sync. Dispatch count = 14-21 operations (2-3\u00d7 per stage). Optimizes for multi-node bandwidth topology."
+    },
+    {
+      "name": "Batched all-reduce with reconstruction",
+      "desc": "Batch multiple normalization coefficients (g, gr, M values) into auxiliary tensors and perform joint all-reduce operations where possible, reconstructing intermediate normalized values from broadcasted scalars. Dispatch count = 4-5 all-reduces by reducing scalar synchronization points. Trades numerical precision stability for fewer collectives.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce chain baseline",
+      "sim": 6629.485714285714,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused local-compute between collectives",
+      "sim": 6629.485714285714,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined dual-buffer all-reduce overlap",
+      "sim": 11739.2,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-level reduction tree",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Batched all-reduce with reconstruction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.043275"
+    },
+    {
+      "stage": "refine:Sequential all-reduce chain baseline",
+      "round": 1,
+      "sim": 6629.485714285714
+    },
+    {
+      "stage": "refine:Sequential all-reduce chain baseline",
+      "round": 3,
+      "sim": 6629.485714285714
+    },
+    {
+      "stage": "refine:Fused local-compute between collectives",
+      "round": 1,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Fused local-compute between collectives",
+      "round": 2,
+      "sim": 6877.900000000001
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6629.485714285714,
+  "final_code": "def r65_gnorm_b0p5_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Sequential all-reduce chain baseline.\n    \n    This is a straightforward implementation that performs 7 all-reduce operations\n    sequentially with local compute operations in between. No fusion or overlapping.\n    \n    The computation follows the reference implementation exactly:\n    1. Initial all-reduce to compute sum s\n    2. Six iterations of normalization rounds, each consisting of:\n       - Divide by normalization factor g\n       - All-reduce sum\n       - Divide by world_size\n       - Compute mean absolute value and update factor\n       - Reconstruct s\n    \"\"\"\n    W = world_size\n    BETA = 0.5\n    dtype = x.dtype\n    \n    # Initial all-reduce: compute sum across all ranks\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Iteration 1\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    \n    # Iteration 2\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    \n    # Iteration 3\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    \n    # Iteration 4\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    \n    # Iteration 5\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    \n    # Iteration 6\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    \n    return s"
+}

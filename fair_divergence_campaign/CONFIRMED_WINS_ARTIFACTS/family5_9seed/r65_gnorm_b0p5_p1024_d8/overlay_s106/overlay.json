@@ -1,0 +1,78 @@
+{
+  "pipeline": "overlay",
+  "problem": "r65_gnorm_b0p5_p1024_d8",
+  "gate": "fp32",
+  "baseline_sim": 6855.042857142857,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with local normalization",
+      "desc": "Performs 8 sequential all-reduce operations with local division and normalization computations between each collective. Each all-reduce operates on the full (8*1024,) tensor. Expected 8 dispatches. Represents the baseline reference: straightforward implementation with maximal clarity but no fusion or overlap optimizations."
+    },
+    {
+      "name": "Fused normalization computation batches",
+      "desc": "Groups the 7 normalization iterations into computation batches that can be fused between all-reduce calls, computing multiple A, M, gr values together where dependencies allow. Still 8 all-reduce dispatches but reduces local kernel launches by batching scalar computations (mean, abs, division) into single vectorized operations. Trades complexity for reduced local compute overhead."
+    },
+    {
+      "name": "Reduce-scatter then all-gather pattern",
+      "desc": "Transforms each all-reduce into a reduce-scatter followed by all-gather, operating on (8*1024)/W-sized chunks per rank. Doubles collective count to 16 dispatches but enables potential overlap of local normalization compute during the gather phase. Optimizes for bandwidth efficiency when network topology favors scatter/gather over all-reduce."
+    },
+    {
+      "name": "Pipelined micro-batching across vector chunks",
+      "desc": "Splits the (8*1024,) tensor into independent chunks (e.g., 8 chunks of 1024 each), launching all-reduce on chunk[i] while computing local normalization for chunk[i-1]. Maintains 8 logical iterations but pipelines 8\u00d7(number of chunks) smaller all-reduce operations. Hides local compute latency behind network transfers at cost of increased dispatch count."
+    },
+    {
+      "name": "Two-level hierarchical reduction with node-local aggregation",
+      "desc": "Exploits multi-node topology by performing intra-node reductions (across local devices) followed by inter-node all-reduce, then broadcasting within nodes. For 224 ranks, performs node-local operations cheaply via shared memory, reducing cross-node traffic. Expected ~8\u00d73 = 24 dispatches (local reduce + global AR + local bcast per iteration) but much lower inter-node bandwidth consumption.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with local normalization",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.070095"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused normalization computation batches",
+      "sim": 6855.042857142857,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-scatter then all-gather pattern",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.070095"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined micro-batching across vector chunks",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.544793"
+    },
+    {
+      "stage": "impl",
+      "name": "Two-level hierarchical reduction with node-local aggregation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "refine:Fused normalization computation batches",
+      "round": 2,
+      "sim": 6855.042857142857
+    },
+    {
+      "stage": "refine:Fused normalization computation batches",
+      "round": 3,
+      "sim": 6244.371428571429
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 6244.371428571429,
+  "final_code": "def r65_gnorm_b0p5_p1024_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size\n    BETA = 0.5\n    dtype = x.dtype\n    \n    # Initial all-reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Batch 1: First normalization\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    \n    # Batch 2-7: Process in pairs to reduce collective calls\n    # Unroll loop to do 2 iterations per all-reduce where possible\n    for i in range(3):\n        # First iteration of pair\n        A = acc.abs().mean()\n        M = A / (1.0 - BETA * A)\n        gr = 1.0 + BETA * M\n        s = acc * gr\n        g = 1.0 + BETA * s.abs().mean()\n        buf = s / g\n        \n        # Second iteration of pair (local computation only)\n        A_local = buf.abs().mean()\n        M_local = A_local / (1.0 - BETA * A_local)\n        gr_local = 1.0 + BETA * M_local\n        s_local = buf * gr_local\n        g_local = 1.0 + BETA * s_local.abs().mean()\n        buf_final = s_local / g_local\n        \n        # Single all-reduce for both iterations\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf_final)\n        acc = acc / W\n    \n    return acc"
+}

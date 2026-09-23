@@ -1,0 +1,83 @@
+{
+  "pipeline": "overlay",
+  "problem": "r65_gnorm_b2p0_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6877.900000000001,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with local normalization",
+      "desc": "Performs 7 all-reduce operations sequentially (one initial sum, six iterative normalizations) with all local operations (division, abs, mean, arithmetic) between each collective. Dispatch count: 7 all-reduces. Represents the baseline reference implementation with no fusion or overlapping\u2014maximizes clarity, minimizes per-dispatch complexity."
+    },
+    {
+      "name": "Fused local computation batching",
+      "desc": "Groups multiple local scalar operations (abs, mean, division, multiplication) into single fused kernels between all-reduces to reduce launch overhead. Still 7 all-reduce dispatches but reduces local compute dispatches from ~30+ to ~10-12 by batching element-wise ops and reductions. Trades kernel fusion complexity for lower dispatch count on local operations."
+    },
+    {
+      "name": "Pipelined all-reduce with double buffering",
+      "desc": "Overlaps computation of normalization factors for iteration N with the all-reduce communication of iteration N-1 using asynchronous dispatch and double-buffered tensors. Still 7 all-reduces but exploits communication-computation overlap. Reduces wall-clock time at the cost of 2x memory for ping-pong buffers and explicit synchronization points."
+    },
+    {
+      "name": "Hierarchical two-level reduction tree",
+      "desc": "Exploits potential intra-node vs inter-node bandwidth differences by performing local reductions within each node first, then global reductions across nodes for each of the 7 iterations. Uses 14 total collectives (7 intra-node + 7 inter-node per iteration) but may reduce latency if intra-node is significantly faster. Increases dispatch count but optimizes for NUMA/network topology."
+    },
+    {
+      "name": "Vectorized metadata all-reduce bundling",
+      "desc": "Packs all scalar metadata (g, A, M, gr values across iterations) into a single small tensor and performs one collective gather/broadcast after computing them locally in a speculative/pipelined fashion, then reconstructs results. Reduces 7 separate all-reduces to 1-2 by trading correctness (must handle dependencies carefully) for aggressive batching of small-payload collectives.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with local normalization",
+      "sim": 6629.485714285714,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused local computation batching",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined all-reduce with double buffering",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-level reduction tree",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Vectorized metadata all-reduce bundling",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.484955"
+    },
+    {
+      "stage": "refine:Fused local computation batching",
+      "round": 1,
+      "sim": 6132.657142857143
+    },
+    {
+      "stage": "refine:Fused local computation batching",
+      "round": 2,
+      "sim": 5968.242857142857
+    },
+    {
+      "stage": "refine:Fused local computation batching",
+      "round": 3,
+      "sim": 6139.828571428571
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 5968.242857142857,
+  "final_code": "def r65_gnorm_b2p0_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size\n    BETA = 2.0\n    dtype = x.dtype\n    \n    # Iteration 0: Initial all-reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Fused local ops: compute g, divide, and prepare for all-reduce\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Single all-reduce with extended local computation\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    \n    # Extended local iteration block (unrolled loop for more local ops)\n    for i in range(2):\n        A = acc.abs().mean()\n        M = A / (1.0 - BETA * A)\n        gr = 1.0 + BETA * M\n        s = acc * gr\n        g = 1.0 + BETA * s.abs().mean()\n        acc = s / g\n    \n    # Second all-reduce\n    acc = xm.all_reduce(xm.REDUCE_SUM, acc)\n    acc = acc / W\n    \n    # More local iterations\n    for i in range(2):\n        A = acc.abs().mean()\n        M = A / (1.0 - BETA * A)\n        gr = 1.0 + BETA * M\n        s = acc * gr\n        g = 1.0 + BETA * s.abs().mean()\n        acc = s / g\n    \n    # Final all-reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, acc)\n    s = s / W\n    \n    return s"
+}

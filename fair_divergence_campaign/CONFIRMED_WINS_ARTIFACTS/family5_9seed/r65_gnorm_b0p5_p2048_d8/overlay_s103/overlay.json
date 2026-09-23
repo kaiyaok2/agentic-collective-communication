@@ -1,0 +1,98 @@
+{
+  "pipeline": "overlay",
+  "problem": "r65_gnorm_b0p5_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6877.900000000001,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with local computation",
+      "desc": "Performs 8 sequential all-reduce operations (7 intermediate + 1 final) with local arithmetic (division, abs, mean) between each collective. Results in exactly 8 collective dispatches with minimal payload (16384 elements each). This is the reference baseline with no fusion or overlap."
+    },
+    {
+      "name": "Fused local-op batching between collectives",
+      "desc": "Groups multiple local arithmetic operations (division, scaling, mean computation) into fused kernels between each all-reduce to reduce kernel launch overhead. Still 8 all-reduce dispatches but fewer total kernel launches for local computation. Trades kernel fusion complexity for reduced dispatch overhead on compute ops."
+    },
+    {
+      "name": "Pipelined computation with async collectives",
+      "desc": "Overlaps local computation from iteration i with all-reduce from iteration i-1 by marking collectives as non-blocking and using explicit synchronization only when results are needed. Maintains 8 all-reduce operations but exploits communication-computation overlap to hide latency. Requires careful dependency tracking."
+    },
+    {
+      "name": "Hierarchical reduction with node-local aggregation",
+      "desc": "Exploits multi-node topology (num_nodes parameter) by performing intra-node reductions first, then inter-node all-reduce, repeated for each of the 8 iterations. Increases total collective count (16 dispatches: 8\u00d72 levels) but reduces inter-node traffic and may leverage faster intra-node interconnects if available."
+    },
+    {
+      "name": "Vectorized iteration state accumulation",
+      "desc": "Packs multiple iteration states into a larger tensor and performs batched all-reduce operations where mathematically sound (e.g., reducing independent scalar statistics together). Reduces number of all-reduce calls from 8 to 4-6 by bundling dependent scalar values (g, A, M) into small auxiliary tensors. Increases per-dispatch payload minimally but halves synchronization points.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with local computation",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused local-op batching between collectives",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined computation with async collectives",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical reduction with node-local aggregation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Vectorized iteration state accumulation",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "refine:Sequential all-reduce with local computation",
+      "round": 1,
+      "sim": 7129.9
+    },
+    {
+      "stage": "refine:Sequential all-reduce with local computation",
+      "round": 2,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Sequential all-reduce with local computation",
+      "round": 3,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Fused local-op batching between collectives",
+      "round": 1,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Fused local-op batching between collectives",
+      "round": 2,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Fused local-op batching between collectives",
+      "round": 3,
+      "sim": 6877.900000000001
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6877.900000000001,
+  "final_code": "def r65_gnorm_b0p5_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Sequential all-reduce with local computation baseline.\n    Performs 8 sequential all-reduce operations with local arithmetic between each.\n    This is the reference baseline with no fusion or overlap.\n    \"\"\"\n    W = world_size\n    BETA = 0.5\n    dtype = x.dtype\n    \n    # First all-reduce: sum x across all ranks\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Second all-reduce\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Third all-reduce\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Fourth all-reduce\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Fifth all-reduce\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Sixth all-reduce\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Seventh all-reduce\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Eighth (final) all-reduce\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    \n    return s"
+}

@@ -1,0 +1,93 @@
+{
+  "pipeline": "overlay",
+  "problem": "r65_gnorm_b2p0_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6877.900000000001,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with local normalization",
+      "desc": "Execute 8 all-reduce operations sequentially as shown in the reference, each preceded by local compute (division, abs, mean). Total 8 all-reduce dispatches with minimal payload (8*2048 elements each). Represents the baseline: maximum dispatch count but simplest control flow and smallest per-dispatch memory footprint."
+    },
+    {
+      "name": "Fused scalar all-reduce for normalization constants",
+      "desc": "After the first all-reduce of x, compute all intermediate scalar normalizers (g, A, M, gr) locally using fixed-point iteration or approximation, then perform fewer all-reduces by batching multiple normalization steps. Reduces dispatch count to ~4-5 all-reduces by trading mathematical exactness for communication efficiency, accepting approximate intermediate global statistics."
+    },
+    {
+      "name": "Pipelined two-phase blocking with batched scalars",
+      "desc": "Group the 8 iterations into 2-4 phases where each phase performs one vector all-reduce followed by one all-reduce of a packed scalar tensor containing multiple normalization statistics (A, M values). Approximately 12-16 total dispatches (alternating vector and scalar all-reduces), trading dispatch count for better pipeline utilization by overlapping compute of next iteration's local operations."
+    },
+    {
+      "name": "Hierarchical reduce-scatter then all-gather pattern",
+      "desc": "Replace initial all-reduce with reduce-scatter to partition intermediate results across ranks, perform local normalization iterations on shards (8 iterations local to each shard), then all-gather final result. Approximately 2 major collective dispatches plus potential intra-node synchronization, trading increased local computation and memory indexing complexity for fewer global synchronization points."
+    },
+    {
+      "name": "Tensor-stacked iteration with single concatenated all-reduce",
+      "desc": "Allocate a buffer holding all 8 iteration states (shape [8, 8*2048]), perform all local normalization computations to populate intermediate states, then execute a single large all-reduce on the concatenated tensor followed by local selection/projection. Exactly 1 all-reduce dispatch with 8\u00d7 payload size, maximizing computation-communication overlap at the cost of memory footprint and inability to use true dependencies between iterations.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with local normalization",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused scalar all-reduce for normalization constants",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.484955"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined two-phase blocking with batched scalars",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical reduce-scatter then all-gather pattern",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.417277"
+    },
+    {
+      "stage": "impl",
+      "name": "Tensor-stacked iteration with single concatenated all-reduce",
+      "sim": 5760.271428571428,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "refine:Tensor-stacked iteration with single concatenated all-reduce",
+      "round": 1,
+      "sim": 5772.171428571428
+    },
+    {
+      "stage": "refine:Tensor-stacked iteration with single concatenated all-reduce",
+      "round": 3,
+      "sim": 5760.271428571428
+    },
+    {
+      "stage": "refine:Sequential all-reduce with local normalization",
+      "round": 1,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Sequential all-reduce with local normalization",
+      "round": 2,
+      "sim": 6882.1
+    },
+    {
+      "stage": "refine:Sequential all-reduce with local normalization",
+      "round": 3,
+      "sim": 6877.900000000001
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 5760.271428571428,
+  "final_code": "def r65_gnorm_b2p0_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size\n    BETA = 2.0\n    dtype = x.dtype\n    \n    # Allocate buffer to hold all 8 iteration states\n    # Each iteration produces a vector of size 8*2048\n    buffer = torch.zeros((8, x.shape[0]), dtype=dtype, device=x.device)\n    \n    # Iteration 0: Initial all-reduce of x\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    buffer[0] = buf\n    \n    # Iterations 1-6: Intermediate iterations\n    for i in range(1, 7):\n        # Local computation using previous buffer state\n        prev = buffer[i-1]\n        A = prev.abs().mean()\n        M = A / (1.0 - BETA * A)\n        gr = 1.0 + BETA * M\n        s_local = prev * gr\n        g_local = 1.0 + BETA * s_local.abs().mean()\n        buf_local = s_local / g_local\n        buffer[i] = buf_local\n    \n    # Iteration 7: Final iteration (no normalization needed, just store)\n    prev = buffer[6]\n    A = prev.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s_local = prev * gr\n    g_local = 1.0 + BETA * s_local.abs().mean()\n    buf_local = s_local / g_local\n    buffer[7] = buf_local\n    \n    # Single concatenated all-reduce on entire buffer\n    # Flatten buffer to 1D for all-reduce\n    flat_buffer = buffer.reshape(-1)\n    reduced_flat = xm.all_reduce(xm.REDUCE_SUM, flat_buffer)\n    reduced_buffer = reduced_flat.reshape(8, x.shape[0])\n    \n    # Average by world_size and extract final result\n    reduced_buffer = reduced_buffer / W\n    \n    # The final result is at index 7\n    s = reduced_buffer[7]\n    \n    return s"
+}

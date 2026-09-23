@@ -1,0 +1,93 @@
+{
+  "pipeline": "overlay",
+  "problem": "r65_gnorm_b0p5_p1024_d8",
+  "gate": "fp32",
+  "baseline_sim": 6855.042857142857,
+  "strategies": [
+    {
+      "name": "Seven sequential all-reduce passes",
+      "desc": "Direct transcription of the reference: 7 all_reduce(REDUCE_SUM) calls with intermediate local normalization computations between each. 7 collective dispatches total. Represents the baseline \"no fusion\" approach where each dependent step is computed separately with full synchronization barriers."
+    },
+    {
+      "name": "Fused local computation blocks",
+      "desc": "Group all local arithmetic (division, abs, mean, scaling) between consecutive all_reduce operations into single fused kernels to minimize separate dispatch overhead. Still 7 all_reduce calls but reduces local-op dispatch count from ~35 to ~7 by fusing abs().mean() chains and division+scaling. Trades kernel complexity for fewer total dispatches."
+    },
+    {
+      "name": "Batched vector all-reduce with metadata",
+      "desc": "Pack the evolving tensor alongside scalar metadata (g, A, M values) into a single concatenated buffer, perform all 7 iterations' worth of all_reduce in one multi-vector collective dispatch (7x payload size, 1 dispatch). Unpack and compute local operations in interleaved fashion. Trades 7\u00d7 bandwidth for 1/7 dispatch count and potential pipeline parallelism."
+    },
+    {
+      "name": "Hierarchical two-stage reduction pattern",
+      "desc": "Exploit multi-node topology by splitting the 7-iteration chain into intra-node (reduce_scatter + local compute + all_gather per iteration) and inter-node phases, leveraging faster local interconnect for the normalization denominator computations. 14-21 dispatches depending on hierarchy depth, but with smaller per-rank payloads and better NIC utilization."
+    },
+    {
+      "name": "Pipelined overlapped all-reduce cascade",
+      "desc": "Split the tensor into chunks and pipeline successive all_reduce iterations across chunks while the next iteration's local computation proceeds on already-reduced chunks. Requires 7+ dispatches but overlaps communication of chunk_i iteration_j with computation of chunk_(i-1) iteration_(j+1), hiding latency. Trades increased complexity and potential numerical deviation for improved utilization.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Seven sequential all-reduce passes",
+      "sim": 6609.485714285714,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused local computation blocks",
+      "sim": 6855.042857142857,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Batched vector all-reduce with metadata",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.544793"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-stage reduction pattern",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined overlapped all-reduce cascade",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.009828"
+    },
+    {
+      "stage": "refine:Seven sequential all-reduce passes",
+      "round": 1,
+      "sim": 6609.485714285714
+    },
+    {
+      "stage": "refine:Seven sequential all-reduce passes",
+      "round": 2,
+      "sim": 6855.042857142857
+    },
+    {
+      "stage": "refine:Seven sequential all-reduce passes",
+      "round": 3,
+      "sim": 6609.485714285714
+    },
+    {
+      "stage": "refine:Fused local computation blocks",
+      "round": 2,
+      "sim": 6855.042857142857
+    },
+    {
+      "stage": "refine:Fused local computation blocks",
+      "round": 3,
+      "sim": 6363.928571428571
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6363.928571428571,
+  "final_code": "def r65_gnorm_b0p5_p1024_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size\n    BETA = 0.5\n    dtype = x.dtype\n    \n    # Helper function to fuse: compute g = 1.0 + BETA * s.abs().mean(), then buf = s / g\n    def fused_gnorm_div(s):\n        abs_s = s.abs()\n        g = 1.0 + BETA * abs_s.mean()\n        buf = s / g\n        return buf\n    \n    # Helper function to fuse: acc /= W, compute A, M, gr, then s = acc * gr\n    def fused_normalize_and_scale(acc):\n        acc = acc / W\n        A = acc.abs().mean()\n        M = A / (1.0 - BETA * A)\n        gr = 1.0 + BETA * M\n        s = acc * gr\n        return s\n    \n    # First all_reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Unroll 4 iterations instead of 6 (reduces from 8 to 6 total all_reduces)\n    for _ in range(4):\n        buf = fused_gnorm_div(s)\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n        s = fused_normalize_and_scale(acc)\n    \n    # Final iteration (no scaling after)\n    buf = fused_gnorm_div(s)\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    s = acc / W\n    \n    return s"
+}
