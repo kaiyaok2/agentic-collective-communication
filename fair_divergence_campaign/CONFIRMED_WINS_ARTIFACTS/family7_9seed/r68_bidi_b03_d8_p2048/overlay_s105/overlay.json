@@ -1,0 +1,73 @@
+{
+  "pipeline": "overlay",
+  "problem": "r68_bidi_b03_d8_p2048",
+  "gate": "fp32",
+  "baseline_sim": 18396.42222222234,
+  "strategies": [
+    {
+      "name": "Naive Sequential All-Reduce Chain",
+      "desc": "Directly follows the reference implementation with 8 sequential all_reduce calls, each preceded by forward bidiagonal coupling and followed by backward decoupling. Total 8 all_reduce dispatches with full vector (W*S) payload each time. Represents the baseline: maximum simplicity, no optimization, highest latency due to serialized collectives."
+    },
+    {
+      "name": "Fused Coupling with Bucketed All-Reduce",
+      "desc": "Pre-compute all forward couplings and backward decouplings in local memory, then batch multiple all_reduce operations using xm's bucket/barrier mechanisms to overlap computation with communication. Expected 8 all_reduce dispatches but with potential for pipelined execution if xm supports async collectives. Trades increased local memory footprint for reduced bubble time between stages."
+    },
+    {
+      "name": "Reduce-Scatter then All-Gather Pattern",
+      "desc": "Replace each all_reduce with a reduce_scatter followed by all_gather, applying bidiagonal coupling only to the locally-owned shard between the two phases. This changes 8 all_reduce (each O(W*S)) into 16 collectives (8 reduce_scatter + 8 all_gather, each still O(W*S) total but with different bandwidth utilization). May reduce contention on large world sizes by localizing intermediate coupling operations."
+    },
+    {
+      "name": "Hierarchical Two-Level Reduction Tree",
+      "desc": "Exploit potential multi-node topology (224 ranks likely spans multiple nodes) by decomposing each all_reduce into intra-node reduction followed by inter-node all_reduce and broadcast back. Apply bidiagonal coupling at the appropriate level (node-aggregated or global). Expected 8 stages \u00d7 3 collectives per stage = 24 dispatches, but each operates on smaller groups with lower latency."
+    },
+    {
+      "name": "Single All-Reduce with Staged Local Recomputation",
+      "desc": "Perform only the first all_reduce to gather full initial vector, then locally simulate the remaining 7 stages by computing what each rank's contribution would be at each stage and accumulating. Requires O(W) local computation but reduces to 1 collective dispatch. Trades computation (7 avoided all_reduce) for increased arithmetic intensity and eliminates inter-stage communication latency.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Naive Sequential All-Reduce Chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.191291"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Coupling with Bucketed All-Reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.191291"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-Scatter then All-Gather Pattern",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.621510"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level Reduction Tree",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.621510"
+    },
+    {
+      "stage": "impl",
+      "name": "Single All-Reduce with Staged Local Recomputation",
+      "sim": 3474984.4285714286,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "refine:Single All-Reduce with Staged Local Recomputation",
+      "round": 1,
+      "sim": 7739.828571428624
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 7739.828571428624,
+  "final_code": "def r68_bidi_b03_d8_p2048_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 2048\n    W = world_size\n    dtype = x.dtype\n    \n    # Precompute b coefficients as a tensor for vectorization\n    b_vals = torch.tensor([0.3 + 0.1 * (r % 4) for r in range(W-1)], \n                          dtype=dtype, device=x.device)\n    \n    # Step 1: Single all_reduce to gather full initial vector\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Reshape for easier vectorized operations\n    result = s.view(W, S)\n    \n    # Process 7 intermediate stages\n    for stage in range(7):\n        # Apply bidiagonal coupling - vectorized\n        # buf[r] = (result[r] + b[r]*result[r+1]) / W for r < W-1\n        # buf[W-1] = result[W-1] / W\n        \n        buf = result.clone()\n        buf[:-1] = (result[:-1] + b_vals.unsqueeze(1) * result[1:]) / W\n        buf[-1] = result[-1] / W\n        \n        # After all_reduce, we'd sum W copies, so multiply back\n        result = buf * W\n        \n        # Undo coupling - vectorized backward pass\n        # result[r] = result[r] - b[r]*result[r+1] for r in reverse\n        for r in range(W - 2, -1, -1):\n            result[r] = result[r] - b_vals[r] * result[r+1]\n    \n    # Final coupling without undo\n    buf = result.clone()\n    buf[:-1] = (result[:-1] + b_vals.unsqueeze(1) * result[1:]) / W\n    buf[-1] = result[-1] / W\n    result = buf * W\n    \n    # Flatten back\n    return result.view(W * S)"
+}

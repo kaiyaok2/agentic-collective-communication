@@ -1,0 +1,15 @@
+
+def r68_bidi_b02_d8_p2048_fn(x, rank, world_size, num_devices,
+                 cores_per_device, xm, torch, num_nodes=1):
+    S = 2048; W = world_size
+    s = xm.all_reduce(xm.REDUCE_SUM, x)
+    
+    if W > 1:
+        s_reshaped = s.reshape(W, S)
+        # Use broadcasting without explicit view
+        b = torch.tensor([[0.2 + 0.1*(r % 3)] for r in range(W-1)], 
+                        device=s.device, dtype=s.dtype)
+        s_reshaped[:(W-1)] = s_reshaped[:(W-1)] + b * s_reshaped[1:W]
+        s = s_reshaped.reshape(-1)
+    
+    return s

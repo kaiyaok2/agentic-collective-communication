@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r68_bidi_b02_d8_p2048",
+  "gate": "fp32",
+  "baseline_sim": 18396.42222222234,
+  "strategies": [
+    {
+      "name": "Naive Sequential All-Reduce Loop",
+      "desc": "Direct translation of the reference code using 8 sequential all-reduce operations with interleaved local bidiagonal coupling/decoupling transformations. 8 all-reduce dispatches total. Represents the baseline: simplest structure, maximum dispatches, no optimization for communication-computation overlap or fusion."
+    },
+    {
+      "name": "Fused Coupling with Batched All-Reduce",
+      "desc": "Precompute all 8 coupling transformations locally, stack the 8 transformed buffers into a single tensor of shape (8, W*S), dispatch one batched all-reduce, then locally apply all 8 decoupling transformations in sequence. 1 all-reduce dispatch with 8x payload size. Trades communication count for larger single message and sequential local compute phases."
+    },
+    {
+      "name": "Reduce-Scatter + All-Gather Pipeline",
+      "desc": "Replace each all-reduce with a reduce-scatter (producing local shard) followed by all-gather (broadcasting result). Apply coupling/decoupling only to local shard between phases, leveraging smaller intermediate payloads. 16 collective dispatches (8 RS + 8 AG). Reduces per-rank memory pressure and enables potential pipelining of scatter/gather phases across stages."
+    },
+    {
+      "name": "Hierarchical Two-Level Reduction",
+      "desc": "Exploit multi-node topology by performing intra-node all-reduce (partial sum across cores_per_device or devices per node), apply coupling transformation once per node, then inter-node all-reduce, followed by broadcast and final decoupling. Approximately 16-24 dispatches depending on hierarchy depth. Optimizes for network topology by reducing cross-node traffic volume."
+    },
+    {
+      "name": "Ring-Based Incremental Aggregation",
+      "desc": "Implement custom ring-allreduce pattern using point-to-point send/recv primitives (or all-to-all with structured indexing) where each rank incrementally accumulates partial sums and applies coupling transformations in-flight during ring traversal phases. 8 * (2*W-1) message dispatches in worst case, but messages are S-sized instead of W*S. Trades dispatch count for dramatically smaller per-message payload and potential latency hiding.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Naive Sequential All-Reduce Loop",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.953033"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Coupling with Batched All-Reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.906066"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-Scatter + All-Gather Pipeline",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: RuntimeError: The size of tensor a (2048) mus"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level Reduction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Ring-Based Incremental Aggregation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.519665"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 18396.42222222234,
+  "final_code": "def r68_bidi_b02_d8_p2048_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 2048; W = world_size\n    b = [0.2 + 0.1*(r % 3) for r in range(W)]\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    return s\n",
+  "fell_back_to_baseline": true
+}

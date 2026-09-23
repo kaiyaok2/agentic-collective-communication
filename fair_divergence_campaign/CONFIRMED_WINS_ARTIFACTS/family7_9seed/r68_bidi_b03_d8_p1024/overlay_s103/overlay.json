@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r68_bidi_b03_d8_p1024",
+  "gate": "fp32",
+  "baseline_sim": 18344.20000000012,
+  "strategies": [
+    {
+      "name": "Naive sequential 8-stage all-reduce",
+      "desc": "Implements the reference algorithm directly: 8 consecutive all-reduce dispatches, each preceded by a bidiagonal coupling loop and followed by an inverse coupling loop. Results in 8 all-reduce dispatches with full W*S payload each time. Maximizes readability and correctness verification but offers no optimization beyond the reference."
+    },
+    {
+      "name": "Fused coupling with vectorized operations",
+      "desc": "Reduces local computation overhead by vectorizing the coupling/decoupling loops using torch tensor operations instead of explicit Python loops, but keeps 8 separate all-reduce dispatches. Same 8 dispatches as naive approach but potentially faster local computation through SIMD operations and reduced Python interpreter overhead."
+    },
+    {
+      "name": "Hierarchical two-level reduce-scatter + all-gather",
+      "desc": "Replaces each all-reduce with reduce-scatter followed by all-gather to exploit potential intra-node bandwidth advantages. Each of 8 stages becomes 2 dispatches (16 total), but each dispatch handles smaller payloads (W*S/W = S per rank after scatter). Trades dispatch count for smaller per-dispatch data movement and potential parallelism."
+    },
+    {
+      "name": "Pipelined overlapping stages with buffers",
+      "desc": "Allocates multiple buffers to overlap communication of stage i with local computation (coupling/decoupling) of stage i+1. Uses asynchronous all-reduce calls where available to hide latency. Still 8 all-reduce dispatches but attempts to overlap their execution, trading memory (extra buffers) for potential wall-clock speedup."
+    },
+    {
+      "name": "Ring-based custom all-reduce per stage",
+      "desc": "Implements each all-reduce as an explicit ring algorithm using point-to-point send/recv operations, allowing fine-grained control over chunk sizes and pipelining within each stage. Increases total dispatches significantly (8 * W send/recv pairs \u2248 1792 ops) but exposes opportunities for micro-batching and custom bandwidth utilization patterns.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Naive sequential 8-stage all-reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.033118"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused coupling with vectorized operations",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.033118"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-level reduce-scatter + all-gather",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: RuntimeError: The size of tensor a (1024) mus"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined overlapping stages with buffers",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.033118"
+    },
+    {
+      "stage": "impl",
+      "name": "Ring-based custom all-reduce per stage",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.367686"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 18344.20000000012,
+  "final_code": "def r68_bidi_b03_d8_p1024_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 1024; W = world_size\n    b = [0.3 + 0.1*(r % 5) for r in range(W)]\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    return s\n",
+  "fell_back_to_baseline": true
+}

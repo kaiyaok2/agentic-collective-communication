@@ -1,0 +1,68 @@
+{
+  "pipeline": "overlay",
+  "problem": "r68_bidi_b03_d8_p2048",
+  "gate": "fp32",
+  "baseline_sim": 18396.42222222234,
+  "strategies": [
+    {
+      "name": "Naive Sequential All-Reduce Loop",
+      "desc": "Direct transcription of the reference: 8 sequential all-reduce dispatches, each preceded by local bidiagonal coupling and followed by local uncoupling. 8 all-reduce dispatches total. Maximizes dispatch count but simplest logic; no fusion or overlap opportunities exploited."
+    },
+    {
+      "name": "Fused Local Ops Per Stage",
+      "desc": "Merge the uncoupling of stage i with the coupling of stage i+1 into a single kernel/tensor operation before each all-reduce (except first and last). Still 8 all-reduce dispatches but reduces local compute dispatches from ~24 to ~9 by fusing adjacent inverse-then-forward transforms."
+    },
+    {
+      "name": "Reduce-Scatter + All-Gather Decomposition",
+      "desc": "Replace each all-reduce with reduce-scatter (each rank holds 1/W of result) followed by all-gather. Enables pipelined communication: start all-gather of stage i while computing local ops for stage i+1. 16 collective dispatches (8 RS + 8 AG) but exploits communication-computation overlap at world_size=224."
+    },
+    {
+      "name": "Butterfly All-Reduce with Coupling Injection",
+      "desc": "Use hierarchical/recursive-doubling all-reduce pattern where bidiagonal coupling is injected at log-stages. Each of 8 stages performs log\u2082(224)\u22488 point-to-point rounds with coupling applied during reduction tree. ~64 collective dispatches but smaller per-hop payloads and better network utilization on mesh topology."
+    },
+    {
+      "name": "Bucketed Pipeline with Async Dispatch",
+      "desc": "Split the 224\u00d72048 global tensor into smaller chunks (e.g., 32 sub-buckets), pipeline all 8 stages through each bucket asynchronously. Issue all-reduce on bucket k of stage i while computing local ops on bucket k+1 of stage i or bucket k of stage i+1. 8\u00d732=256 dispatches but each operates on 1/32 payload, hiding latency through deep pipelining.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Naive Sequential All-Reduce Loop",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.621510"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Local Ops Per Stage",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=3.122991"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-Scatter + All-Gather Decomposition",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.621510"
+    },
+    {
+      "stage": "impl",
+      "name": "Butterfly All-Reduce with Coupling Injection",
+      "sim": 18396.42222222234,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Bucketed Pipeline with Async Dispatch",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.621510"
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 18396.42222222234,
+  "final_code": "def r68_bidi_b03_d8_p2048_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 2048\n    W = world_size\n    dtype = x.dtype\n    \n    # Precompute bidiagonal coupling coefficients\n    b = [0.3 + 0.1 * (r % 4) for r in range(W)]\n    \n    # Stage 1: Initial all-reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Stages 2-8: Apply bidiagonal coupling, undo previous, and reduce\n    for stage in range(7):\n        # Undo previous stage's coupling (except for first iteration after stage 1)\n        if stage > 0:\n            for r in range(W - 2, -1, -1):\n                s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r] * s[(r+1)*S:(r+2)*S]\n        \n        # Apply bidiagonal coupling: buf[r] = (s[r] + b[r]*s[r+1]) / W\n        buf = s / W\n        for r in range(W - 1):\n            buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r] * s[(r+1)*S:(r+2)*S]) / W\n        \n        # All-reduce the coupled result\n        s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    \n    return s"
+}
