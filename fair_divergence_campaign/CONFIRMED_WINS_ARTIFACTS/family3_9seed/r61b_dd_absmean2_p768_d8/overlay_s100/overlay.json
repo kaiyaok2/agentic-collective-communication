@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r61b_dd_absmean2_p768_d8",
+  "gate": "fp32",
+  "baseline_sim": 7941.728571428572,
+  "strategies": [
+    {
+      "name": "Baseline Sequential All-Reduce Chain",
+      "desc": "Performs 8 sequential all-reduce operations as specified, with local compute (abs, mean, scale) between each. Total dispatch count: 8 all-reduces. This is the reference implementation with no structural optimization, trading maximum latency for simplicity and correctness verification."
+    },
+    {
+      "name": "Fused Multi-Block All-Reduce Batching",
+      "desc": "Groups multiple iterations into fewer all-reduce calls by packing scaling factors as metadata or auxiliary tensors, then broadcasting them separately. Reduces dispatch count from 8 to ~4-5 by computing multiple scaling factors locally and amortizing communication. Trades increased local memory footprint for reduced collective overhead."
+    },
+    {
+      "name": "Pipelined Reduce-Scatter + All-Gather",
+      "desc": "Decomposes each all-reduce into reduce-scatter followed by all-gather, allowing overlap of computation (abs/mean calculation) on partial results with communication of other blocks. Uses ~16 dispatches (8 RS + 8 AG) but enables pipeline parallelism where local ops on scattered chunks overlap with ongoing collectives, reducing wall-clock time."
+    },
+    {
+      "name": "Hierarchical Two-Level All-Reduce",
+      "desc": "Exploits the 224-rank topology (likely 28 nodes \u00d7 8 devices) by performing intra-node all-reduce followed by inter-node all-reduce for each iteration. Reduces cross-node traffic by 8\u00d7 per iteration. Total dispatches: 16 (8 intra-node + 8 inter-node), trading dispatch count for bandwidth efficiency on slower inter-node links."
+    },
+    {
+      "name": "Block-Strided Concurrent Dispatch",
+      "desc": "Reorders computation to issue multiple non-dependent all-reduces concurrently by pre-computing scaling factors on stale/intermediate data, then correcting with lightweight compensation terms. Achieves ~2-3 concurrent in-flight all-reduces via careful dependency relaxation. Trades numerical precision control for latency hiding through collective overlap.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Baseline Sequential All-Reduce Chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.792961"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Multi-Block All-Reduce Batching",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.792961"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Reduce-Scatter + All-Gather",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.792961"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level All-Reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Block-Strided Concurrent Dispatch",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.792961"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 7941.728571428572,
+  "final_code": "def r61b_dd_absmean2_p768_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 768; B = 8\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    f = []\n    for b in range(B):\n        sb = s[b*S:(b+1)*S]\n        f.append(1.0 + 2.0*sb.abs().mean())\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    f = []\n    for b in range(B):\n        sb = s[b*S:(b+1)*S]\n        f.append(1.0 + 2.0*sb.abs().mean())\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    f = []\n    for b in range(B):\n        sb = s[b*S:(b+1)*S]\n        f.append(1.0 + 2.0*sb.abs().mean())\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    f = []\n    for b in range(B):\n        sb = s[b*S:(b+1)*S]\n        f.append(1.0 + 2.0*sb.abs().mean())\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    f = []\n    for b in range(B):\n        sb = s[b*S:(b+1)*S]\n        f.append(1.0 + 2.0*sb.abs().mean())\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    f = []\n    for b in range(B):\n        sb = s[b*S:(b+1)*S]\n        f.append(1.0 + 2.0*sb.abs().mean())\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    f = []\n    for b in range(B):\n        sb = s[b*S:(b+1)*S]\n        f.append(1.0 + 2.0*sb.abs().mean())\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / world_size\n    s = acc\n    return s\n",
+  "fell_back_to_baseline": true
+}

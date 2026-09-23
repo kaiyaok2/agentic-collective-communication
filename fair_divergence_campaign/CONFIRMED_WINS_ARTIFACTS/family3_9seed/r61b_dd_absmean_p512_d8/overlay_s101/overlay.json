@@ -1,0 +1,78 @@
+{
+  "pipeline": "overlay",
+  "problem": "r61b_dd_absmean_p512_d8",
+  "gate": "fp32",
+  "baseline_sim": 7936.0142857142855,
+  "strategies": [
+    {
+      "name": "Baseline Sequential All-Reduce Chain",
+      "desc": "Performs 8 sequential all-reduce operations with local compute (abs, mean, scale) between each. Dispatches 8 all-reduces total. Represents the naive approach with maximum dispatch count but simplest logic\u2014no optimization, just faithful iteration of the dependent computation pattern."
+    },
+    {
+      "name": "Fused Local Computation Per Iteration",
+      "desc": "Merges all per-block local operations (abs, mean, multiply, divide) into single vectorized kernels before/after each all-reduce to minimize graph fragmentation. Still 8 all-reduce dispatches but reduces intermediate tensor allocations and potential XLA recompilations. Trades code complexity for better memory locality and fewer local-op dispatches."
+    },
+    {
+      "name": "Batched All-Reduce with Metadata Encoding",
+      "desc": "Encodes scaling factors as auxiliary channels or concatenated metadata tensors, performing fewer all-reduces (e.g., 4 instead of 8) by batching pairs of dependent iterations and unpacking results. Reduces all-reduce dispatch count by ~50% at cost of increased payload size and local unpacking overhead."
+    },
+    {
+      "name": "Pipelined Reduce-Scatter + All-Gather",
+      "desc": "Replaces each all-reduce with reduce-scatter followed by all-gather, allowing computation on partial results during the scatter phase. Theoretically 16 collective dispatches but enables overlapping communication with local abs/mean computation on scattered chunks. Trades dispatch count for potential latency hiding."
+    },
+    {
+      "name": "Hierarchical Two-Level All-Reduce",
+      "desc": "Exploits multi-node topology (world_size=224 suggests 28 or 32 nodes): first performs intra-node reductions, then inter-node, then broadcasts back. Reduces cross-node traffic by performing local aggregation first. Increases dispatch count per iteration (2-3x) but reduces per-dispatch payload and leverages faster intra-node interconnect.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Baseline Sequential All-Reduce Chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1941375135619901030400.000000"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Local Computation Per Iteration",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=3.489543"
+    },
+    {
+      "stage": "impl",
+      "name": "Batched All-Reduce with Metadata Encoding",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=3.489543"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Reduce-Scatter + All-Gather",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=3.489543"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level All-Reduce",
+      "sim": 7936.0142857142855,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "refine:Hierarchical Two-Level All-Reduce",
+      "round": 2,
+      "sim": 6731.614285714286
+    },
+    {
+      "stage": "refine:Hierarchical Two-Level All-Reduce",
+      "round": 3,
+      "sim": 6740.714285714285
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 6731.614285714286,
+  "final_code": "def r61b_dd_absmean_p512_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 512\n    B = 8\n    dtype = x.dtype\n    \n    # Initial all-reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Reshape for more efficient batch operations\n    s_reshaped = s.view(B, S)\n    \n    # Process iterations 1-6 with batched operations\n    for iteration in range(6):\n        # Compute all factors at once using vectorized operations\n        # abs().mean(dim=1) computes mean for each batch element\n        f = 1.0 + s_reshaped.abs().mean(dim=1, keepdim=True)  # Shape: (B, 1)\n        \n        # Scale all batches at once with broadcasting\n        buf = s_reshaped * f\n        \n        # Single all-reduce for this iteration\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf.view(-1))\n        acc_reshaped = acc.view(B, S)\n        \n        # Unscale all batches at once\n        s_reshaped = acc_reshaped / (world_size * f)\n    \n    # Final iteration (iteration 7) - no unscaling by factors\n    f = 1.0 + s_reshaped.abs().mean(dim=1, keepdim=True)\n    buf = s_reshaped * f\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf.view(-1))\n    acc = acc / world_size\n    \n    return acc"
+}

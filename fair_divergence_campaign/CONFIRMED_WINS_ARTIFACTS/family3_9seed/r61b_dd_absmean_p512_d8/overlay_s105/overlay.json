@@ -1,0 +1,78 @@
+{
+  "pipeline": "overlay",
+  "problem": "r61b_dd_absmean_p512_d8",
+  "gate": "fp32",
+  "baseline_sim": 7936.0142857142855,
+  "strategies": [
+    {
+      "name": "Baseline Sequential All-Reduce Chain",
+      "desc": "Performs 8 sequential all-reduce operations (1 initial sum + 7 dependent iterations), each followed by local abs-mean computation and element-wise scaling per block. Total ~8 collective dispatches with full 4096-element payload each time. Represents the reference pattern with no optimization\u2014maximum latency due to sequential dependencies."
+    },
+    {
+      "name": "Fused Local Computation Between Collectives",
+      "desc": "Same 8 all-reduce structure but fuses all per-block operations (abs, mean, multiply, divide) into single kernel launches between collectives to reduce local dispatch overhead. Still 8 collective dispatches but minimizes host-device round-trips for local ops. Trades implementation complexity for reduced local dispatch count while keeping collective count unchanged."
+    },
+    {
+      "name": "Pipelined Block-Level Parallelism",
+      "desc": "Overlap independent block computations by launching all 8 blocks' local operations in parallel (vectorized or per-block streams), then batch the scaled results into each all-reduce. Still 8 collectives but hides local computation latency behind parallel execution. Exploits block-independence within each iteration to improve throughput on multi-core Trainium devices."
+    },
+    {
+      "name": "Hierarchical Two-Stage Reduction",
+      "desc": "Decompose the 224 ranks into groups (e.g., 28 groups of 8, or 14 nodes \u00d7 16 ranks/node), perform intra-group all-reduce for each of the 8 iterations, then inter-group all-reduce. Total ~16 collectives (8 intra + 8 inter) with smaller payloads. Reduces per-collective latency at cost of doubled collective count; wins if network topology favors hierarchical communication."
+    },
+    {
+      "name": "Approximate Early Convergence Cutoff",
+      "desc": "After initial all-reduce, check if scaling factors converge (change below threshold) across iterations and terminate early, performing only K<7 dependent iterations. Ranges from 2 to 8 total collectives depending on convergence. Trades exactness guarantees for latency reduction; requires tolerance parameter and per-iteration convergence check, but can dramatically reduce collective count in practice.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Baseline Sequential All-Reduce Chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=3.489543"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Local Computation Between Collectives",
+      "sim": 8172.614285714286,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Block-Level Parallelism",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=3.489543"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Stage Reduction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Approximate Early Convergence Cutoff",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.922822"
+    },
+    {
+      "stage": "refine:Fused Local Computation Between Collectives",
+      "round": 1,
+      "sim": 7356.714285714286
+    },
+    {
+      "stage": "refine:Fused Local Computation Between Collectives",
+      "round": 3,
+      "sim": 8583.114285714284
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 7356.714285714286,
+  "final_code": "def r61b_dd_absmean_p512_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 512\n    B = 8\n    dtype = x.dtype\n    \n    # Initial all-reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # 6 iterations of the dependent all-reduce pattern\n    for iteration in range(6):\n        # Compute factors with more local work\n        f = torch.zeros(B, dtype=dtype, device=x.device)\n        temp_abs = s.abs()  # Compute abs once for all blocks\n        \n        for b in range(B):\n            sb = temp_abs[b*S:(b+1)*S]\n            # Add more local computation to amortize collective cost\n            f[b] = 1.0 + sb.mean()\n            # Extra local ops to increase local work\n            f[b] = f[b] * 1.0 + 0.0\n        \n        # Vectorized multiplication instead of loop\n        f_expanded = torch.repeat_interleave(f, S)\n        buf = s * f_expanded\n        \n        # All-reduce\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n        \n        # Vectorized division\n        divisor = world_size * f_expanded\n        acc = acc / divisor\n        \n        s = acc\n    \n    # Final iteration (7th) - same pattern with vectorized ops\n    f = torch.zeros(B, dtype=dtype, device=x.device)\n    temp_abs = s.abs()\n    \n    for b in range(B):\n        sb = temp_abs[b*S:(b+1)*S]\n        f[b] = 1.0 + sb.mean()\n        f[b] = f[b] * 1.0 + 0.0\n    \n    f_expanded = torch.repeat_interleave(f, S)\n    buf = s * f_expanded\n    \n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    \n    # Final normalization (no per-block factor division, just world_size)\n    acc = acc / world_size\n    \n    return acc"
+}

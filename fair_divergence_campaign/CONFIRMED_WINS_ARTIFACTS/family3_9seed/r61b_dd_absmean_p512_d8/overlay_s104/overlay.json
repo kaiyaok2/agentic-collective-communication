@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r61b_dd_absmean_p512_d8",
+  "gate": "fp32",
+  "baseline_sim": 7936.0142857142855,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with loop fusion",
+      "desc": "Perform 8 dependent all-reduce operations sequentially (9 total: 1 initial + 7 iterations + 1 final), each on the full 4096-element tensor, with local compute (abs, mean, scale) fused between collectives. This matches the reference implementation structure with 9 all-reduce dispatches and represents the baseline: maximum dependency chain length but simplest logic."
+    },
+    {
+      "name": "Block-parallel pipelined all-reduce chain",
+      "desc": "Split the 8 blocks across partial results and pipeline the dependency chain by interleaving all-reduce calls for different blocks, using 8 separate all-reduce operations per iteration (64 total AR calls). This increases dispatch count dramatically but exposes potential parallelism across blocks, trading collective count for reduced per-payload size (512 elements each) and potential overlap."
+    },
+    {
+      "name": "Vectorized scale-factor all-gather approach",
+      "desc": "After initial sum all-reduce, compute all 8 scale factors locally, broadcast/all-gather only the 8-element factor vector in each iteration (8 small all-reduce ops on scalars), then apply scaling locally. Uses 1 full all-reduce + 7 tiny all-reduces + 1 final all-reduce (9 total) but with dramatically smaller payload for 7 of them, trading communication volume for similar dispatch count."
+    },
+    {
+      "name": "Fused buffer with interleaved metadata",
+      "desc": "Pack the 8 per-block scale factors into an auxiliary 8-element header prepended/appended to the main buffer, performing single all-reduce on 4104-element tensors (4096 data + 8 factors) per iteration. Reduces to 9 all-reduce dispatches on slightly larger payloads, trading 0.2% communication overhead for eliminating separate factor exchange and enabling better fusion."
+    },
+    {
+      "name": "Hierarchical two-stage factorization reduction",
+      "desc": "Group the 8 iterations into 2 stages of 4 iterations each, computing intermediate scale products locally and performing only 5 all-reduces total (initial + 2 per stage + final). Exploits associativity of the scaling operation to reduce collective count by 44%, trading numerical precision risk and complex local bookkeeping for fewer network round-trips.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with loop fusion",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=3.489543"
+    },
+    {
+      "stage": "impl",
+      "name": "Block-parallel pipelined all-reduce chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=3.489543"
+    },
+    {
+      "stage": "impl",
+      "name": "Vectorized scale-factor all-gather approach",
+      "sim": null,
+      "ok": false,
+      "err": "sandbox_exec returned None"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused buffer with interleaved metadata",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=3.489543"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-stage factorization reduction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=3.489543"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 7936.0142857142855,
+  "final_code": "def r61b_dd_absmean_p512_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 512; B = 8\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    f = []\n    for b in range(B):\n        sb = s[b*S:(b+1)*S]\n        f.append(1.0 + sb.abs().mean())\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    f = []\n    for b in range(B):\n        sb = s[b*S:(b+1)*S]\n        f.append(1.0 + sb.abs().mean())\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    f = []\n    for b in range(B):\n        sb = s[b*S:(b+1)*S]\n        f.append(1.0 + sb.abs().mean())\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    f = []\n    for b in range(B):\n        sb = s[b*S:(b+1)*S]\n        f.append(1.0 + sb.abs().mean())\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    f = []\n    for b in range(B):\n        sb = s[b*S:(b+1)*S]\n        f.append(1.0 + sb.abs().mean())\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    f = []\n    for b in range(B):\n        sb = s[b*S:(b+1)*S]\n        f.append(1.0 + sb.abs().mean())\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    f = []\n    for b in range(B):\n        sb = s[b*S:(b+1)*S]\n        f.append(1.0 + sb.abs().mean())\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / world_size\n    s = acc\n    return s\n",
+  "fell_back_to_baseline": true
+}

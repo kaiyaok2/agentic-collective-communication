@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r61b_dd_absmean2_p768_d8",
+  "gate": "fp32",
+  "baseline_sim": 7941.728571428572,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with per-iteration scaling",
+      "desc": "Performs 8 sequential all-reduce operations where each iteration computes the scaling factor from the previous result, applies it, and reduces. This is the reference approach with 8 all-reduce dispatches (one per dependency chain step). Represents the baseline: straightforward dependency resolution with maximum dispatch count but minimal local computation between collectives."
+    },
+    {
+      "name": "Fused scale-factor all-gather with final reduce",
+      "desc": "Instead of all-reducing scaled data 8 times, performs 8 all-gather operations to collect scale factors across ranks (each factor is a single scalar per block), then applies all 8 transformations locally on gathered data, followed by a single final all-reduce. Reduces dispatches from 8 to 9 all-gathers + 1 all-reduce (but all-gather of scalars is tiny), trading collective count for more local computation and better overlap potential."
+    },
+    {
+      "name": "Pipelined block-parallel dual-buffer execution",
+      "desc": "Partitions the 8 blocks across a logical pipeline where early blocks begin their dependency chain while later blocks are still in earlier stages, using separate buffers to avoid write-after-read hazards. Issues multiple all-reduce operations concurrently (up to hardware limit) by interleaving block computations. Maintains 8 total all-reduce passes but overlaps communication across blocks, reducing wall-time latency through pipeline parallelism at the cost of higher memory footprint."
+    },
+    {
+      "name": "Hierarchical two-stage reduction with mid-point fusion",
+      "desc": "Groups the 8 dependent reductions into two stages of 4, performing the first 4 reductions with independent all-reduce calls, then fusing the scale-factor computations for steps 5-8 into vectorized operations before issuing the final 4 all-reduces. Results in 8 dispatches but with better instruction-level parallelism and cache locality in the middle phase, trading structural simplicity for compute efficiency."
+    },
+    {
+      "name": "Reduce-scatter then all-gather decomposition",
+      "desc": "Decomposes each all-reduce into reduce-scatter followed by all-gather, allowing each rank to compute scale factors on only its partition (1/224th of data) in the scattered state, then all-gather the transformed results. For 8 iterations this yields 16 dispatches but with 224\u00d7 smaller intermediate payloads during the compute-heavy scale-factor phase, optimizing for bandwidth-limited regimes where smaller message size outweighs dispatch overhead.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with per-iteration scaling",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.792961"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused scale-factor all-gather with final reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.792961"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined block-parallel dual-buffer execution",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.792961"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-stage reduction with mid-point fusion",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.792961"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-scatter then all-gather decomposition",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.792961"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 7941.728571428572,
+  "final_code": "def r61b_dd_absmean2_p768_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 768; B = 8\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    f = []\n    for b in range(B):\n        sb = s[b*S:(b+1)*S]\n        f.append(1.0 + 2.0*sb.abs().mean())\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    f = []\n    for b in range(B):\n        sb = s[b*S:(b+1)*S]\n        f.append(1.0 + 2.0*sb.abs().mean())\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    f = []\n    for b in range(B):\n        sb = s[b*S:(b+1)*S]\n        f.append(1.0 + 2.0*sb.abs().mean())\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    f = []\n    for b in range(B):\n        sb = s[b*S:(b+1)*S]\n        f.append(1.0 + 2.0*sb.abs().mean())\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    f = []\n    for b in range(B):\n        sb = s[b*S:(b+1)*S]\n        f.append(1.0 + 2.0*sb.abs().mean())\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    f = []\n    for b in range(B):\n        sb = s[b*S:(b+1)*S]\n        f.append(1.0 + 2.0*sb.abs().mean())\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(B):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / (world_size * f[b])\n    s = acc\n    f = []\n    for b in range(B):\n        sb = s[b*S:(b+1)*S]\n        f.append(1.0 + 2.0*sb.abs().mean())\n    buf = s.clone()\n    for b in range(B):\n        buf[b*S:(b+1)*S] = s[b*S:(b+1)*S] * f[b]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / world_size\n    s = acc\n    return s\n",
+  "fell_back_to_baseline": true
+}
