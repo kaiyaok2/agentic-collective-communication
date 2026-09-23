@@ -1,0 +1,73 @@
+{
+  "pipeline": "overlay",
+  "problem": "r63_gmean_b1p0_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6614.0,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce chain baseline",
+      "desc": "Performs 8 sequential all-reduce operations with intermediate local mean computations and scalar additions, exactly as in the seed library. Total of 8 all-reduce dispatches, each on full tensor of size 8*2048. Represents the baseline with maximum dispatch overhead but simplest structure and minimal local computation fusion."
+    },
+    {
+      "name": "Fused local operations between all-reduces",
+      "desc": "Keep 8 all-reduce operations but fuse all local operations (mean computation, scalar broadcast, addition, division) into single kernels between each all-reduce to minimize local dispatch overhead. Still 8 all-reduce dispatches but reduces local kernel launches from ~24-32 down to ~8-16, trading off no collective communication for better local compute efficiency."
+    },
+    {
+      "name": "Hierarchical two-level reduction pattern",
+      "desc": "Exploit the structure by grouping operations: perform initial all-reduce for sum(x), then batch multiple dependent iterations by accumulating local transformations before synchronizing. Could reduce to 4-5 all-reduce operations by computing 2 iterations worth of local ops between syncs, trading increased local computation and numerical precision concerns for fewer collective dispatches."
+    },
+    {
+      "name": "Reduce-scatter and all-gather decomposition",
+      "desc": "Replace some all-reduce operations with reduce-scatter followed by all-gather pairs to partition the 8*2048 tensor across ranks during intermediate steps. Approximately 8-10 total collective dispatches but with smaller per-rank working sets (8*2048/224) during the scatter phase, potentially better cache locality and memory bandwidth utilization despite additional collectives."
+    },
+    {
+      "name": "Pipelined overlapped all-reduce execution",
+      "desc": "Split the 8*2048 tensor into chunks (e.g., 8 chunks of 2048) and pipeline the 8 dependent all-reduce operations across chunks, launching the next chunk's all-reduce while previous chunks compute local operations. Increases total collectives to ~64 dispatches but each operates on 1/8th payload, enabling computation-communication overlap and potentially hiding latency through pipelining.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce chain baseline",
+      "sim": 6614.0,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused local operations between all-reduces",
+      "sim": 6614.0,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-level reduction pattern",
+      "sim": 6614.0,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-scatter and all-gather decomposition",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.906452"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined overlapped all-reduce execution",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.020653"
+    },
+    {
+      "stage": "refine:Fused local operations between all-reduces",
+      "round": 1,
+      "sim": 5788.342857142857
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 5788.342857142857,
+  "final_code": "def r63_gmean_b1p0_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Reduced collective dispatch strategy.\n    \n    Minimizes the number of all-reduce operations by doing more local\n    computation between collectives. Groups iterations to reduce dispatch overhead.\n    \"\"\"\n    W = world_size\n    BETA = 1.0\n    dtype = x.dtype\n    \n    # First all-reduce: sum input x across all ranks\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Do 3 iterations locally, then sync\n    for _ in range(3):\n        buf = s + BETA * s.mean()\n        s = buf - buf.mean() / 2.0\n    \n    # All-reduce after local iterations\n    acc = xm.all_reduce(xm.REDUCE_SUM, s)\n    s = acc / W\n    \n    # Do 3 more iterations locally, then sync\n    for _ in range(3):\n        buf = s + BETA * s.mean()\n        s = buf - buf.mean() / 2.0\n    \n    # All-reduce after local iterations\n    acc = xm.all_reduce(xm.REDUCE_SUM, s)\n    s = acc / W\n    \n    # Final iteration\n    buf = s + BETA * s.mean()\n    \n    # Final all-reduce\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    s = acc / W\n    \n    return s"
+}

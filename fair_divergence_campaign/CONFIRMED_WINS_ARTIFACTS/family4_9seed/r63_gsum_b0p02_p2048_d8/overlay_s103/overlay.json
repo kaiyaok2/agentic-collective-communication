@@ -1,0 +1,73 @@
+{
+  "pipeline": "overlay",
+  "problem": "r63_gsum_b0p02_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6614.0,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with iterative refinement",
+      "desc": "Performs 8 sequential all-reduce operations where each iteration computes s, adds BETA*sum(s), all-reduces, averages by world_size, then corrects via inversion formula. Uses 8 all-reduce dispatches (one per dependency step) with intermediate local sum() operations. Baseline approach trading dispatch count for simplicity."
+    },
+    {
+      "name": "Fused buffer preparation with batched all-reduce",
+      "desc": "Pre-computes all 8 \"buf = s + BETA * s.sum()\" transformations locally by maintaining a running estimate, then issues all 8 all-reduce operations in rapid succession to allow backend batching/pipelining. Uses 8 all-reduce dispatches but structures them to be dispatch-consecutive. Trades accuracy of intermediate estimates for potential collective overlap."
+    },
+    {
+      "name": "Concatenated payload single all-reduce",
+      "desc": "Concatenates 8 copies of the input vector (each representing one iteration's state) into a single tensor of shape (8, 16384), performs one all-reduce on the full payload, then locally applies the 8-step iterative transformation on slices. Uses 1 all-reduce dispatch with 8x larger payload, trading bandwidth for dispatch overhead reduction."
+    },
+    {
+      "name": "Hierarchical two-stage reduction tree",
+      "desc": "Exploits multi-node structure by performing intra-node reductions first (within each node's devices), then inter-node reductions, repeating for all 8 dependency steps but with reduced world-size collectives where applicable. Uses 16 dispatches (8 steps \u00d7 2 hierarchy levels) but with smaller average payload fan-out. Optimizes for network topology."
+    },
+    {
+      "name": "Allgather-reduce-scatter decomposition with local accumulation",
+      "desc": "Decomposes each all-reduce into allgather (gathering rank contributions) followed by local reduction and scatter, allowing fusion of the \"+BETA*sum()\" operation during the local reduction phase. Uses 16 dispatches (8 \u00d7 [allgather + reduce-scatter]) but eliminates separate sum() synchronization. Trades collective count for fine-grained fusion opportunities.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with iterative refinement",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.285136"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused buffer preparation with batched all-reduce",
+      "sim": 6840.871428571429,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Concatenated payload single all-reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.285136"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-stage reduction tree",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Allgather-reduce-scatter decomposition with local accumulation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=19216310747529216.000000"
+    },
+    {
+      "stage": "refine:Fused buffer preparation with batched all-reduce",
+      "round": 2,
+      "sim": 5435.971428571428
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 5435.971428571428,
+  "final_code": "def r63_gsum_b0p02_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size\n    BETA = 0.02\n    CORRECTION_FACTOR = 1.0 / (1.0 + BETA * x.shape[0])\n    \n    # Start with initial all-reduce to get s0\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Pre-compute all 8 buffer transformations using running estimate\n    buffers = []\n    s_estimate = s.clone()\n    \n    for i in range(8):\n        # Compute buffer for this iteration\n        buf = s_estimate + BETA * s_estimate.sum()\n        buffers.append(buf)\n        \n        # Estimate next s\n        acc_estimate = s_estimate + BETA * s_estimate.sum()\n        s_estimate = acc_estimate - BETA * acc_estimate.sum() * CORRECTION_FACTOR\n    \n    # Stack all 8 buffers into a single tensor and do ONE all-reduce\n    # Shape: (8, *x.shape)\n    stacked_buffers = torch.stack(buffers, dim=0)\n    \n    # Single batched all-reduce for all 8 iterations\n    stacked_accs = xm.all_reduce(xm.REDUCE_SUM, stacked_buffers)\n    stacked_accs = stacked_accs / W\n    \n    # Apply corrections sequentially to get final result\n    s = stacked_accs[0]\n    s = s - BETA * s.sum() * CORRECTION_FACTOR\n    \n    for i in range(1, 8):\n        s = stacked_accs[i]\n        if i < 7:  # Apply correction for all but the last\n            s = s - BETA * s.sum() * CORRECTION_FACTOR\n    \n    return s"
+}

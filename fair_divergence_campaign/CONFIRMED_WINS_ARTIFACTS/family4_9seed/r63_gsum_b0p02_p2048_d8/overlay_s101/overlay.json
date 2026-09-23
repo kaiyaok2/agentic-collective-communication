@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r63_gsum_b0p02_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6614.0,
+  "strategies": [
+    {
+      "name": "Sequential iterative all-reduce refinement",
+      "desc": "Performs 8 sequential all-reduce operations where each iteration refines the estimate by computing s + BETA*sum(s), reducing, averaging by world_size, and correcting. 8 all-reduce dispatches total with 16384 floats each. Baseline reference pattern trading latency for simplicity."
+    },
+    {
+      "name": "Fused scalar-vector all-reduce pairs",
+      "desc": "Each iteration fuses the scalar sum(s) and vector s into a single all-reduce payload by concatenating [s, sum(s)] into size 16385, then splitting after reduction. 8 all-reduce dispatches but each carries one extra scalar, eliminating separate scalar reductions while increasing payload marginally."
+    },
+    {
+      "name": "Batched multi-iteration all-reduce pipeline",
+      "desc": "Decomposes the 8 iterations into groups (e.g., 4 pairs or 2 quads) where intermediate s values are stacked and reduced together in fewer, larger all-reduce calls. Reduces dispatch count to 2-4 by batching iterations, trading increased payload size (2-4x) and local buffering for lower launch overhead."
+    },
+    {
+      "name": "Reduce-scatter plus all-gather factorization",
+      "desc": "Each iteration uses reduce-scatter to distribute chunks of s+BETA*sum(s) across ranks, performs local division and correction, then all-gathers to reconstruct full vector. 16 collective dispatches (8 reduce-scatter + 8 all-gather) with smaller per-rank payloads (~16384/224 floats), exploiting bandwidth parallelism at cost of more launches."
+    },
+    {
+      "name": "Hierarchical two-level tree reduction",
+      "desc": "Exploits multi-node topology by performing intra-node reductions first (assuming multiple devices per node), then inter-node all-reduce, repeated 8 times. If num_nodes > 1, reduces cross-node bandwidth pressure; otherwise degenerates to sequential. 8-16 dispatches depending on hierarchy depth, optimizing for network topology awareness.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential iterative all-reduce refinement",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.382905"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused scalar-vector all-reduce pairs",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.285136"
+    },
+    {
+      "stage": "impl",
+      "name": "Batched multi-iteration all-reduce pipeline",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=19216310747529216.000000"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-scatter plus all-gather factorization",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.285136"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-level tree reduction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 6614.0,
+  "final_code": "def r63_gsum_b0p02_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size; BETA = 0.02\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    buf = s + BETA * (s.sum())\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    if True:\n        s = acc - 0.02 * acc.sum() / (1.0 + 0.02 * 16384)\n    buf = s + BETA * (s.sum())\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    if True:\n        s = acc - 0.02 * acc.sum() / (1.0 + 0.02 * 16384)\n    buf = s + BETA * (s.sum())\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    if True:\n        s = acc - 0.02 * acc.sum() / (1.0 + 0.02 * 16384)\n    buf = s + BETA * (s.sum())\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    if True:\n        s = acc - 0.02 * acc.sum() / (1.0 + 0.02 * 16384)\n    buf = s + BETA * (s.sum())\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    if True:\n        s = acc - 0.02 * acc.sum() / (1.0 + 0.02 * 16384)\n    buf = s + BETA * (s.sum())\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    if True:\n        s = acc - 0.02 * acc.sum() / (1.0 + 0.02 * 16384)\n    buf = s + BETA * (s.sum())\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    return s\n",
+  "fell_back_to_baseline": true
+}

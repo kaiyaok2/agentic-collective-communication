@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r63_gsum_b0p02_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6614.0,
+  "strategies": [
+    {
+      "name": "Iterative refine with scalar extraction",
+      "desc": "Uses 8 sequential all_reduce calls on full vectors (16384 elements each), where each iteration refines the result by computing a scalar sum locally, broadcasting it implicitly through the vector operation, then all-reducing again. 8 all_reduce dispatches on large payloads. Trades high dispatch count and bandwidth for algorithmic simplicity."
+    },
+    {
+      "name": "Fused buffer with pre-packed scalars",
+      "desc": "Pack the local scalar sum(s) as an extra element appended to the vector before each all_reduce, creating buffers of size 16385. Reduces the need for separate scalar all_reduces by piggybacking scalar communication on vector payloads. Still 8 all_reduce dispatches but each carries both vector and scalar data, reducing total communication volume slightly."
+    },
+    {
+      "name": "Separate vector and scalar channels",
+      "desc": "Split communication into two streams: one all_reduce chain for the vector data (possibly fewer iterations by caching intermediate results) and parallel all_reduce operations on scalars only (single element). Exploits potential hardware parallelism between small and large message collectives. Approximately 8-16 dispatches depending on overlap opportunities."
+    },
+    {
+      "name": "Algebraic reformulation with single sweep",
+      "desc": "Mathematically rewrite the 8 dependent operations as a single matrix-vector system or closed-form geometric series, then perform one all_reduce on the original vector and one all_reduce on its sum. Reduces to 2-3 all_reduce dispatches by avoiding iterative refinement entirely. Trades numerical stability considerations for massive dispatch reduction."
+    },
+    {
+      "name": "Hierarchical reduction with chunking",
+      "desc": "Divide the 16384-element vector into smaller chunks, perform independent all_reduce operations on each chunk in the first phase, then combine chunk results with the scalar coupling term in a second phase. Enables better cache locality and potential pipelining across chunks. Total dispatches similar (8-10) but smaller per-dispatch payloads may improve latency on hierarchical network topologies.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Iterative refine with scalar extraction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.382905"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused buffer with pre-packed scalars",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1717273416957952.000000"
+    },
+    {
+      "stage": "impl",
+      "name": "Separate vector and scalar channels",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=3.213871"
+    },
+    {
+      "stage": "impl",
+      "name": "Algebraic reformulation with single sweep",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=24121338977824276480.000000"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical reduction with chunking",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.382905"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 6614.0,
+  "final_code": "def r63_gsum_b0p02_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size; BETA = 0.02\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    buf = s + BETA * (s.sum())\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    if True:\n        s = acc - 0.02 * acc.sum() / (1.0 + 0.02 * 16384)\n    buf = s + BETA * (s.sum())\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    if True:\n        s = acc - 0.02 * acc.sum() / (1.0 + 0.02 * 16384)\n    buf = s + BETA * (s.sum())\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    if True:\n        s = acc - 0.02 * acc.sum() / (1.0 + 0.02 * 16384)\n    buf = s + BETA * (s.sum())\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    if True:\n        s = acc - 0.02 * acc.sum() / (1.0 + 0.02 * 16384)\n    buf = s + BETA * (s.sum())\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    if True:\n        s = acc - 0.02 * acc.sum() / (1.0 + 0.02 * 16384)\n    buf = s + BETA * (s.sum())\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    if True:\n        s = acc - 0.02 * acc.sum() / (1.0 + 0.02 * 16384)\n    buf = s + BETA * (s.sum())\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    return s\n",
+  "fell_back_to_baseline": true
+}

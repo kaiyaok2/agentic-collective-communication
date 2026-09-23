@@ -1,0 +1,68 @@
+{
+  "pipeline": "overlay",
+  "problem": "r63_gsum_b0p02_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6614.0,
+  "strategies": [
+    {
+      "name": "Iterative all-reduce with scalar broadcast",
+      "desc": "Performs 8 sequential all-reduce operations where each iteration computes s = all_reduce(x), then buf = s + BETA * sum(s), then all_reduce(buf) averaged by world_size, with correction steps between iterations. This matches the reference implementation with 16 total all-reduce dispatches (2 per iteration for vector and implicit scalar reductions). Highest dispatch count but simplest structure."
+    },
+    {
+      "name": "Fused buffer preparation with batched all-reduce",
+      "desc": "Pre-compute all 8 iterations' local buf = s + BETA * sum(s) operations and stack them into a single tensor of shape (8, 16384), then dispatch a single large all-reduce on the batched payload. Reduces from 16 to 1 all-reduce dispatch by trading off larger payload (8x) and requires careful unrolling of the iterative dependency chain into explicit matrix operations. Amortizes dispatch overhead across iterations."
+    },
+    {
+      "name": "Reduce-scatter followed by all-gather pattern",
+      "desc": "Decompose the problem into reduce-scatter to distribute chunks of the vector sum across ranks, perform local computation of the s + BETA*sum(s) transform on local shards for all 8 iterations, then all-gather to reconstruct full result. Approximately 16 collective dispatches (8 RS + 8 AG pairs) but each operates on 1/W of the data, potentially better for network topology exploitation at large world_size."
+    },
+    {
+      "name": "Hierarchical two-level reduction tree",
+      "desc": "Exploit multi-node topology by first performing intra-node all-reduce operations (within each node's local devices), then inter-node all-reduce on node representatives, followed by intra-node broadcast. For 8 dependent iterations, this creates roughly 24 dispatches (3 per iteration) but each intra-node operation is faster due to shared memory/NVLink, trading dispatch count for per-dispatch latency reduction."
+    },
+    {
+      "name": "Pipelined overlapping with double buffering",
+      "desc": "Split each of the 8 iterations into async all-reduce launches with explicit synchronization barriers only where data dependencies require, using separate buffer allocations for odd/even iterations to enable overlap of communication for iteration i+1 with local computation (sum, scaling) for iteration i. Still 16 all-reduce dispatches but exploits async execution to hide latency, trading memory footprint (2x buffers) for wall-clock time.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Iterative all-reduce with scalar broadcast",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.285136"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused buffer preparation with batched all-reduce",
+      "sim": 5425.471428571428,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-scatter followed by all-gather pattern",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.285136"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-level reduction tree",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined overlapping with double buffering",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: TypeError: MockXM.all_reduce() got an unexpec"
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 5425.471428571428,
+  "final_code": "def r63_gsum_b0p02_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size\n    BETA = 0.02\n    D = 8  # number of iterations\n    N = x.shape[0]  # 16384\n    \n    dtype = x.dtype\n    \n    # Initial all-reduce to get s_0\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # We need to compute D iterations of:\n    # buf_i = s_i + BETA * sum(s_i)\n    # acc_i = all_reduce(buf_i) / W\n    # s_{i+1} = acc_i - BETA * sum(acc_i) / (1 + BETA * N)\n    \n    # The strategy is to batch all buffers together, but there's a dependency:\n    # each s_{i+1} depends on s_i through the all-reduce.\n    # We can analytically solve the recurrence or approximate it.\n    \n    # Let's denote g_i = sum(s_i) (scalar)\n    # buf_i = s_i + BETA * g_i (broadcast scalar to vector)\n    # After all_reduce: acc_i = sum_ranks(buf_i) / W = sum_ranks(s_i)/W + BETA*g_i\n    #                        = s_i + BETA*g_i (since s_i is already all-reduced)\n    # Then: s_{i+1} = acc_i - BETA * sum(acc_i) / (1 + BETA * N)\n    #              = s_i + BETA*g_i - BETA*(g_i + BETA*g_i*N) / (1 + BETA*N)\n    #              = s_i + BETA*g_i - BETA*g_i*(1 + BETA*N) / (1 + BETA*N)\n    #              = s_i + BETA*g_i - BETA*g_i = s_i\n    \n    # Wait, this analysis shows s doesn't change. Let me reconsider.\n    \n    # Actually, the batching strategy requires us to prepare all buffers upfront,\n    # which breaks the dependency. Instead, we'll use a mathematical fusion:\n    # Stack all D buffers and do one large all-reduce.\n    \n    # Prepare all D iterations' buffers assuming s doesn't change much\n    # (or use an iterative refinement with fewer syncs)\n    \n    # For simplicity and correctness, let's compute all iterations but batch\n    # the all-reduces where possible. Stack multiple buffers:\n    \n    buffers = []\n    current_s = s\n    \n    for i in range(D):\n        buf = current_s + BETA * current_s.sum()\n        buffers.append(buf)\n        # For batching, we need to predict the next s, but it depends on all-reduce\n        # So let's compute it assuming we'll get the all-reduced result\n        # This creates a circular dependency that we resolve by stacking\n        \n        # Compute what s would be after this iteration (locally)\n        # acc = all_reduce(buf) / W = buf (since buf is same on all ranks after s is synced)\n        acc = buf  # approximation for batching\n        current_s = acc - BETA * acc.sum() / (1.0 + BETA * N)\n    \n    # Stack all buffers into a single tensor (D, N)\n    stacked_buffers = torch.stack(buffers, dim=0)\n    \n    # Single batched all-reduce\n    stacked_acc = xm.all_reduce(xm.REDUCE_SUM, stacked_buffers)\n    stacked_acc = stacked_acc / W\n    \n    # Extract the final result (last iteration)\n    final_acc = stacked_acc[-1]\n    \n    # Apply the final correction (no more iterations, so return as s)\n    s = final_acc\n    \n    return s"
+}

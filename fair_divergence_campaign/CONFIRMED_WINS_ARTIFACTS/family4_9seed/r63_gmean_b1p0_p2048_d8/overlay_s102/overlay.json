@@ -1,0 +1,78 @@
+{
+  "pipeline": "overlay",
+  "problem": "r63_gmean_b1p0_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6614.0,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with scalar mean broadcast",
+      "desc": "Perform 8 sequential all-reduce operations as in the reference, where each iteration computes a local mean, adds it to the buffer, then all-reduces. Expected 8 all-reduce dispatches. This is the baseline: highest dispatch count but simplest structure with no fusion opportunities."
+    },
+    {
+      "name": "Fused buffer preparation with batched collectives",
+      "desc": "Concatenate multiple \"buf = s + BETA * s.mean()\" preparations into a single tensor before dispatching all-reduces, reducing tensor allocation overhead. Still requires 8 all-reduce dispatches but fuses local operations. Trades memory layout complexity for fewer local kernel launches."
+    },
+    {
+      "name": "Two-stage reduction with intermediate accumulation",
+      "desc": "Split the 8 dependent all-reduces into two phases of 4, where phase-1 results are accumulated locally, then phase-2 operates on the accumulated state. Expected ~5-6 all-reduce dispatches by eliminating some intermediate communication rounds. Reduces latency at the cost of numerical precision sensitivity."
+    },
+    {
+      "name": "Hierarchical reduction with node-local aggregation",
+      "desc": "Exploit the num_nodes parameter (if >1) to first perform local reductions within nodes, then cross-node all-reduces, repeating for all 8 iterations. Expected 8*(1+log(nodes)) dispatches but with smaller payloads for cross-node traffic. Optimizes for multi-node bandwidth-limited scenarios."
+    },
+    {
+      "name": "Pipelined all-reduce with async dispatch",
+      "desc": "Issue multiple all-reduce operations asynchronously (non-blocking) where dependencies allow, overlapping computation of local means with network communication from prior iterations. Expected 8 all-reduce dispatches but with reduced wall-clock time through pipeline parallelism. Trades code complexity for latency hiding.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with scalar mean broadcast",
+      "sim": 6614.0,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused buffer preparation with batched collectives",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.004220"
+    },
+    {
+      "stage": "impl",
+      "name": "Two-stage reduction with intermediate accumulation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.906452"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical reduction with node-local aggregation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined all-reduce with async dispatch",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.906452"
+    },
+    {
+      "stage": "refine:Sequential all-reduce with scalar mean broadcast",
+      "round": 1,
+      "sim": 6614.0
+    },
+    {
+      "stage": "refine:Sequential all-reduce with scalar mean broadcast",
+      "round": 2,
+      "sim": 6614.0
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 6614.0,
+  "final_code": "def r63_gmean_b1p0_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Sequential all-reduce with scalar mean broadcast.\n    Performs 8 sequential all-reduce operations where each iteration:\n    1. Computes local mean of current tensor\n    2. Adds BETA * mean to the tensor\n    3. All-reduces the result\n    4. Divides by world_size\n    5. Subtracts correction term (except last iteration)\n    \n    This follows the reference implementation exactly.\n    \"\"\"\n    W = world_size\n    BETA = 1.0\n    \n    # First all-reduce: sum x across all ranks\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Iteration 1\n    buf = s + BETA * (s.mean())\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - 1.0 * acc.mean() / (1.0 + 1.0)\n    \n    # Iteration 2\n    buf = s + BETA * (s.mean())\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - 1.0 * acc.mean() / (1.0 + 1.0)\n    \n    # Iteration 3\n    buf = s + BETA * (s.mean())\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - 1.0 * acc.mean() / (1.0 + 1.0)\n    \n    # Iteration 4\n    buf = s + BETA * (s.mean())\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - 1.0 * acc.mean() / (1.0 + 1.0)\n    \n    # Iteration 5\n    buf = s + BETA * (s.mean())\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - 1.0 * acc.mean() / (1.0 + 1.0)\n    \n    # Iteration 6\n    buf = s + BETA * (s.mean())\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - 1.0 * acc.mean() / (1.0 + 1.0)\n    \n    # Iteration 7 (final)\n    buf = s + BETA * (s.mean())\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    \n    return s"
+}

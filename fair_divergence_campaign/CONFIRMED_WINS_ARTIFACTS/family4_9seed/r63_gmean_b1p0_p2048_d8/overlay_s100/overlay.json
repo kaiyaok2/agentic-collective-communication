@@ -1,0 +1,98 @@
+{
+  "pipeline": "overlay",
+  "problem": "r63_gmean_b1p0_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6614.0,
+  "strategies": [
+    {
+      "name": "Direct sequential all-reduce chain",
+      "desc": "Executes 8 all-reduce operations sequentially as in the reference, each on the full tensor (8*2048 elements). Total 8 dispatches. Represents the baseline: straightforward but no overlap or fusion, maximizing latency from sequential dependencies."
+    },
+    {
+      "name": "Fused buffer preparation batching",
+      "desc": "Pre-compute multiple \"buf = s + BETA * s.mean()\" operations locally before dispatching all-reduces, then issue all-reduces in rapid succession to enable backend batching/pipelining. Still 8 dispatches but tighter spacing may allow hardware to overlap communication. Trades off potential numerical drift for reduced bubble time between collectives."
+    },
+    {
+      "name": "Scalar mean extraction hierarchy",
+      "desc": "After initial all-reduce of x, extract scalar mean via separate all-reduce on a single-element tensor (s.mean()), then broadcast/reconstruct locally for remaining 7 iterations. Changes communication pattern to 1 large all-reduce (8*2048) + 8 scalar all-reduces (1 element each) = 9 total dispatches but drastically smaller payloads for 8 of them, trading dispatch count for bandwidth."
+    },
+    {
+      "name": "Chunk-wise independent reduction",
+      "desc": "Split the 8*2048 tensor into chunks, perform independent all-reduce sequences per chunk with local mean computation, then combine. For example, 8 chunks of 2048 elements each undergo their own reduction chains in parallel (via async dispatch), then final reconciliation. Potentially 8*8=64 dispatches but high overlap opportunity if backend supports concurrent collectives."
+    },
+    {
+      "name": "Accumulator pre-aggregation with deferred mean",
+      "desc": "Accumulate the sum components (s) across iterations locally without immediately computing means, dispatch a single batched all-reduce or multiple pipelined all-reduces on stacked/concatenated intermediate states, then unroll the mean adjustments locally post-communication. Reduces dispatches to ~2-4 by amortizing communication over multiple logical reduction steps, trading local memory for fewer round-trips.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Direct sequential all-reduce chain",
+      "sim": 6614.0,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused buffer preparation batching",
+      "sim": 6614.0,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Scalar mean extraction hierarchy",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.906452"
+    },
+    {
+      "stage": "impl",
+      "name": "Chunk-wise independent reduction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.020653"
+    },
+    {
+      "stage": "impl",
+      "name": "Accumulator pre-aggregation with deferred mean",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.895099"
+    },
+    {
+      "stage": "refine:Direct sequential all-reduce chain",
+      "round": 1,
+      "sim": 6614.0
+    },
+    {
+      "stage": "refine:Direct sequential all-reduce chain",
+      "round": 2,
+      "sim": 6614.0
+    },
+    {
+      "stage": "refine:Direct sequential all-reduce chain",
+      "round": 3,
+      "sim": 6614.0
+    },
+    {
+      "stage": "refine:Fused buffer preparation batching",
+      "round": 1,
+      "sim": 6614.0
+    },
+    {
+      "stage": "refine:Fused buffer preparation batching",
+      "round": 2,
+      "sim": 6614.0
+    },
+    {
+      "stage": "refine:Fused buffer preparation batching",
+      "round": 3,
+      "sim": 6618.900000000001
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6614.0,
+  "final_code": "def r63_gmean_b1p0_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Direct sequential all-reduce chain strategy.\n    Executes 8 all-reduce operations sequentially, each on the full tensor.\n    This is the baseline implementation with no overlap or fusion.\n    \"\"\"\n    W = world_size\n    BETA = 1.0\n    \n    # Iteration 1\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    buf = s + BETA * (s.mean())\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - 1.0 * acc.mean() / (1.0 + 1.0)\n    \n    # Iteration 2\n    buf = s + BETA * (s.mean())\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - 1.0 * acc.mean() / (1.0 + 1.0)\n    \n    # Iteration 3\n    buf = s + BETA * (s.mean())\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - 1.0 * acc.mean() / (1.0 + 1.0)\n    \n    # Iteration 4\n    buf = s + BETA * (s.mean())\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - 1.0 * acc.mean() / (1.0 + 1.0)\n    \n    # Iteration 5\n    buf = s + BETA * (s.mean())\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - 1.0 * acc.mean() / (1.0 + 1.0)\n    \n    # Iteration 6\n    buf = s + BETA * (s.mean())\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - 1.0 * acc.mean() / (1.0 + 1.0)\n    \n    # Iteration 7\n    buf = s + BETA * (s.mean())\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    \n    return s"
+}

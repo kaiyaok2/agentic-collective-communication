@@ -1,0 +1,93 @@
+{
+  "pipeline": "overlay",
+  "problem": "r63_gmean_b1p0_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6614.0,
+  "strategies": [
+    {
+      "name": "Sequential All-Reduce Chain (Baseline)",
+      "desc": "Performs 8 sequential all-reduce operations with interleaved local mean computations and scalar broadcasts, exactly as shown in the reference. Each all-reduce is dispatched separately (8 total dispatches). Represents the naive approach with maximum dispatch overhead but simplest correctness verification."
+    },
+    {
+      "name": "Fused Buffer Preparation with Batched Dispatch",
+      "desc": "Pre-compute all local mean values and prepare multiple (s + BETA * mean(s)) buffers before issuing collectives, then dispatch all 8 all-reduces back-to-back to enable potential XLA fusion and overlap. Still 8 dispatches but improves pipeline utilization by removing compute-communication interleaving and allowing backend batching optimizations."
+    },
+    {
+      "name": "Hierarchical Two-Level Reduction Tree",
+      "desc": "Exploit the 224-rank topology (e.g., 28 nodes \u00d7 8 devices) by first performing 4 all-reduces within node-local subgroups, then 4 cross-node all-reduces with different process groups. Requires 8 total collectives but with smaller payloads or reduced diameter per operation, trading collective complexity for lower per-hop latency."
+    },
+    {
+      "name": "Scalar Accumulator with Single Final Broadcast",
+      "desc": "Since every iteration computes s.mean() (a scalar reduction), maintain a single scalar accumulator across the 8 dependent steps using all-reduce on scalars (tiny payload), then perform one final vector all-reduce only on the original summed s. Reduces to ~8 scalar all-reduces + 1 vector all-reduce (9 dispatches) but with drastically smaller bandwidth for 8 operations."
+    },
+    {
+      "name": "Pipelined Chunk-Decomposed All-Reduce Sequence",
+      "desc": "Partition the 8\u00d72048 tensor into sub-chunks and pipeline the 8-stage reduction across chunks using non-blocking collectives, overlapping communication of chunk i at stage k with computation of chunk i+1 at stage k-1. Maintains 8 logical stages but issues O(8\u00d7num_chunks) smaller dispatches to hide latency behind arithmetic, trading dispatch count for overlap.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential All-Reduce Chain (Baseline)",
+      "sim": 6614.0,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Buffer Preparation with Batched Dispatch",
+      "sim": 6614.0,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level Reduction Tree",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.906452"
+    },
+    {
+      "stage": "impl",
+      "name": "Scalar Accumulator with Single Final Broadcast",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.004154"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Chunk-Decomposed All-Reduce Sequence",
+      "sim": 10900.4,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "refine:Sequential All-Reduce Chain (Baseline)",
+      "round": 1,
+      "sim": 6634.3
+    },
+    {
+      "stage": "refine:Sequential All-Reduce Chain (Baseline)",
+      "round": 2,
+      "sim": 6775.7
+    },
+    {
+      "stage": "refine:Sequential All-Reduce Chain (Baseline)",
+      "round": 3,
+      "sim": 6614.0
+    },
+    {
+      "stage": "refine:Fused Buffer Preparation with Batched Dispatch",
+      "round": 1,
+      "sim": 6614.0
+    },
+    {
+      "stage": "refine:Fused Buffer Preparation with Batched Dispatch",
+      "round": 3,
+      "sim": 6614.0
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6614.0,
+  "final_code": "def r63_gmean_b1p0_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Sequential All-Reduce Chain (Baseline)\n    \n    Performs 8 sequential all-reduce operations with interleaved local mean \n    computations and scalar broadcasts. Each all-reduce is dispatched separately \n    (8 total dispatches). This is the naive approach with maximum dispatch \n    overhead but simplest correctness verification.\n    \"\"\"\n    W = world_size\n    BETA = 1.0\n    \n    # Preserve input dtype\n    dtype = x.dtype\n    \n    # First all-reduce: sum across all ranks\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Iteration 1\n    buf = s + BETA * (s.mean())\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - 1.0 * acc.mean() / (1.0 + 1.0)\n    \n    # Iteration 2\n    buf = s + BETA * (s.mean())\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - 1.0 * acc.mean() / (1.0 + 1.0)\n    \n    # Iteration 3\n    buf = s + BETA * (s.mean())\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - 1.0 * acc.mean() / (1.0 + 1.0)\n    \n    # Iteration 4\n    buf = s + BETA * (s.mean())\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - 1.0 * acc.mean() / (1.0 + 1.0)\n    \n    # Iteration 5\n    buf = s + BETA * (s.mean())\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - 1.0 * acc.mean() / (1.0 + 1.0)\n    \n    # Iteration 6\n    buf = s + BETA * (s.mean())\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - 1.0 * acc.mean() / (1.0 + 1.0)\n    \n    # Iteration 7 (final)\n    buf = s + BETA * (s.mean())\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    \n    return s"
+}

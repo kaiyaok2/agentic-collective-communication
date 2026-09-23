@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r63_gsum_b0p02_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6614.0,
+  "strategies": [
+    {
+      "name": "Iterative all-reduce with scalar broadcast",
+      "desc": "Performs 8 sequential all_reduce operations where each iteration does: (1) all_reduce the vector, (2) local sum to scalar, (3) implicit broadcast via adding scalar to all elements, (4) correction step. Total ~8 all_reduce dispatches on full vector. Matches reference structure but clearly separates the iteration pattern."
+    },
+    {
+      "name": "Fused buffer preparation with batched all-reduce",
+      "desc": "Prepares all 8 iteration buffers locally (computing s + BETA * sum(s) for each step using previous result), then dispatches all 8 all_reduce operations before applying corrections. Requires 8 all_reduce dispatches but enables potential async overlap and backend batching. Trades memory (8 buffers) for potential pipeline parallelism."
+    },
+    {
+      "name": "Scalar-only side channel with vector all-reduce",
+      "desc": "Splits communication into two channels: (1) all_reduce the main vector once at start, (2) extract scalar sums and perform 8 lightweight all_reduce operations on scalars (size-1 tensors), (3) reconstruct final result locally. Total 9 dispatches but 8 are tiny scalar dispatches with minimal bandwidth cost."
+    },
+    {
+      "name": "Hierarchical reduction with intermediate checkpoints",
+      "desc": "Groups the 8 iterations into 2-4 macro-steps, performing partial all_reduce+correction within each group, then a final correction pass. For example, 2 groups of 4 iterations each. Reduces total dispatches to 4-6 by amortizing correction overhead, trading numerical precision sensitivity for fewer collective calls."
+    },
+    {
+      "name": "Algebraic reformulation with single all-reduce",
+      "desc": "Mathematically reformulates the 8-iteration dependency chain to express the final result as a closed-form function of the initial all_reduce sum and its total sum. Performs 1 all_reduce on a size-2 payload [x, sum(x)] or 2 all_reduce operations (one for vector, one for scalar), then computes the 8-step recurrence locally. Minimizes dispatches to 1-2 at cost of complex local computation.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Iterative all-reduce with scalar broadcast",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.285136"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused buffer preparation with batched all-reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.285136"
+    },
+    {
+      "stage": "impl",
+      "name": "Scalar-only side channel with vector all-reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.285136"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical reduction with intermediate checkpoints",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=114.650932"
+    },
+    {
+      "stage": "impl",
+      "name": "Algebraic reformulation with single all-reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.382905"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 6614.0,
+  "final_code": "def r63_gsum_b0p02_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size; BETA = 0.02\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    buf = s + BETA * (s.sum())\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    if True:\n        s = acc - 0.02 * acc.sum() / (1.0 + 0.02 * 16384)\n    buf = s + BETA * (s.sum())\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    if True:\n        s = acc - 0.02 * acc.sum() / (1.0 + 0.02 * 16384)\n    buf = s + BETA * (s.sum())\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    if True:\n        s = acc - 0.02 * acc.sum() / (1.0 + 0.02 * 16384)\n    buf = s + BETA * (s.sum())\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    if True:\n        s = acc - 0.02 * acc.sum() / (1.0 + 0.02 * 16384)\n    buf = s + BETA * (s.sum())\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    if True:\n        s = acc - 0.02 * acc.sum() / (1.0 + 0.02 * 16384)\n    buf = s + BETA * (s.sum())\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    if True:\n        s = acc - 0.02 * acc.sum() / (1.0 + 0.02 * 16384)\n    buf = s + BETA * (s.sum())\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    return s\n",
+  "fell_back_to_baseline": true
+}
