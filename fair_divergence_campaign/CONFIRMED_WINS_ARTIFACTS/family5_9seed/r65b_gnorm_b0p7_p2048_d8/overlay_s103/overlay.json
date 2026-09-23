@@ -1,0 +1,93 @@
+{
+  "pipeline": "overlay",
+  "problem": "r65b_gnorm_b0p7_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6877.900000000001,
+  "strategies": [
+    {
+      "name": "Sequential All-Reduce with Scalar Broadcasts",
+      "desc": "Each iteration performs one all_reduce on the full vector, followed by local computation of the scalar normalizer g, then divides locally. Uses 7 vector all_reduce operations (initial sum + 6 dependent iterations) with all scalar computations done locally. Dispatch count: 7 collectives. Represents the baseline: minimal communication volume but maximum latency due to sequential dependencies."
+    },
+    {
+      "name": "Fused All-Reduce with Auxiliary Scalar Channel",
+      "desc": "Bundle each vector all_reduce with a subsequent all_reduce of the scalar g value computed from the previous step, reducing round-trips by overlapping scalar broadcast with next iteration's setup. Uses 7 vector all_reduces + 6 scalar all_reduces = 13 total collectives, but enables partial pipelining. Tradeoff: more dispatches but reduced critical-path latency through early scalar availability."
+    },
+    {
+      "name": "Batched Multi-Tensor All-Reduce per Iteration",
+      "desc": "Concatenate the vector payload with its corresponding scalar(s) into a single buffer per iteration, performing one all_reduce per iteration on the combined tensor. Uses 7 all_reduce operations on slightly larger payloads (vector + padding for scalars). Tradeoff: fewer dispatches (7 vs 13) with negligible payload increase, better dispatch amortization."
+    },
+    {
+      "name": "Two-Phase Reduction with Cached Intermediates",
+      "desc": "Split into phase 1 (all_reduce of x, compute first g) and phase 2 (loop over 6 iterations). Within phase 2, attempt to fuse consecutive local operations (division, mean, reconstruction) before each all_reduce. Still requires 7 all_reduce dispatches but maximizes compute fusion between collectives. Tradeoff: same collective count but better compute-communication overlap through batched local ops."
+    },
+    {
+      "name": "Hierarchical Reduce-Scatter + All-Gather Chain",
+      "desc": "Replace each all_reduce with a reduce_scatter followed by local computation on the shard, then all_gather to reconstruct. For 224 ranks, each rank processes 1/224 of the vector during normalization computation, then gathers. Uses 14 collectives (7 RS + 7 AG) but each operates on smaller effective payload during the reduction phase. Tradeoff: more dispatches but exploits bandwidth-compute overlap and reduces per-rank memory pressure.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential All-Reduce with Scalar Broadcasts",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused All-Reduce with Auxiliary Scalar Channel",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Batched Multi-Tensor All-Reduce per Iteration",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.778719"
+    },
+    {
+      "stage": "impl",
+      "name": "Two-Phase Reduction with Cached Intermediates",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Reduce-Scatter + All-Gather Chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.123512"
+    },
+    {
+      "stage": "refine:Sequential All-Reduce with Scalar Broadcasts",
+      "round": 2,
+      "sim": 6919.9
+    },
+    {
+      "stage": "refine:Sequential All-Reduce with Scalar Broadcasts",
+      "round": 3,
+      "sim": 7297.899999999996
+    },
+    {
+      "stage": "refine:Fused All-Reduce with Auxiliary Scalar Channel",
+      "round": 1,
+      "sim": 6921.10497000558
+    },
+    {
+      "stage": "refine:Fused All-Reduce with Auxiliary Scalar Channel",
+      "round": 2,
+      "sim": 6925.30497000558
+    },
+    {
+      "stage": "refine:Fused All-Reduce with Auxiliary Scalar Channel",
+      "round": 3,
+      "sim": 7140.4
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6877.900000000001,
+  "final_code": "def r65b_gnorm_b0p7_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Sequential All-Reduce with Scalar Broadcasts\n    \n    Performs 8 dependent all_reduce operations where each iteration:\n    1. All-reduces the full vector\n    2. Computes scalar normalizer g locally\n    3. Divides locally\n    \n    This minimizes communication volume but has maximum latency due to\n    sequential dependencies.\n    \"\"\"\n    BETA = 0.7\n    W = world_size\n    dtype = x.dtype\n    \n    # Iteration 0: Initial all-reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Iteration 1\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Iteration 2\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Iteration 3\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Iteration 4\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Iteration 5\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Iteration 6\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Iteration 7 (final)\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    \n    return s"
+}

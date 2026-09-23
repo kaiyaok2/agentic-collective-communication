@@ -1,0 +1,78 @@
+{
+  "pipeline": "overlay",
+  "problem": "r65b_gnorm_b1p5_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6877.900000000001,
+  "strategies": [
+    {
+      "name": "Naive Sequential All-Reduce Chain",
+      "desc": "Directly implements the reference: 8 sequential all-reduce dispatches (1 initial + 7 iterative) with local compute between each. Dispatch count = 8. This is the baseline with maximum latency but simplest structure\u2014each all-reduce waits for the previous iteration's local normalization computation to complete."
+    },
+    {
+      "name": "Pipelined Dual-Buffer All-Reduce Overlap",
+      "desc": "Split x into two independent halves, start all-reduce on chunk A while computing local ops for chunk B from the previous iteration. Uses 16 all-reduce dispatches (8 iterations \u00d7 2 chunks) but overlaps communication with computation. Tradeoff: doubles collective count but hides ~50% of compute latency behind network transfers."
+    },
+    {
+      "name": "Hierarchical Two-Level Reduction (Intra+Inter Node)",
+      "desc": "Exploit multi-node topology by performing intra-node reductions (smaller groups) followed by inter-node reductions for each of the 8 iterations. Dispatch count = 16 (8 iterations \u00d7 2 levels). Reduces per-dispatch payload on inter-node link but adds a reduction level; beneficial if intra-node bandwidth >> inter-node bandwidth."
+    },
+    {
+      "name": "Fused Scalar All-Reduce for Normalization",
+      "desc": "Instead of all-reducing full tensors in iterations 2-7, all-reduce only the scalar statistics (mean of absolute values) and reconstruct locally. Dispatch count = 1 (initial full tensor) + 7 (scalars only) = 8, but payload drops from 16384 floats to 1 float for 7/8 dispatches. Massive bandwidth savings at cost of redundant local computation."
+    },
+    {
+      "name": "Batched Multi-Tensor All-Reduce with Staging",
+      "desc": "Accumulate multiple iteration buffers in a single flattened tensor and dispatch one large all-reduce covering iterations in groups (e.g., 2+2+2+2 or 4+4). Dispatch count = 4-5 instead of 8. Increases per-dispatch payload and requires careful staging of dependent computations, but amortizes collective launch overhead across iterations.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Naive Sequential All-Reduce Chain",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Dual-Buffer All-Reduce Overlap",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.625159"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level Reduction (Intra+Inter Node)",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Scalar All-Reduce for Normalization",
+      "sim": 7017.616378348213,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Batched Multi-Tensor All-Reduce with Staging",
+      "sim": 6955.757142857144,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "refine:Naive Sequential All-Reduce Chain",
+      "round": 3,
+      "sim": 6886.299999999999
+    },
+    {
+      "stage": "refine:Batched Multi-Tensor All-Reduce with Staging",
+      "round": 3,
+      "sim": 6907.999999999999
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6877.900000000001,
+  "final_code": "def r65b_gnorm_b1p5_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Naive Sequential All-Reduce Chain: 8 sequential all-reduce dispatches \n    (1 initial + 7 iterative) with local compute between each.\n    \n    Computes the result using 8 dependent all_reduce operations as per reference.\n    Final result = elementwise SUM of x across ranks (s), divided elementwise \n    by the global scalar (1 + 1.5 times the mean of the absolute values of s).\n    \"\"\"\n    W = world_size\n    BETA = 1.5\n    \n    # Preserve input dtype\n    dtype = x.dtype\n    \n    # Initial all-reduce: sum x across all ranks\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Iteration 1\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    \n    # Iteration 2\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    \n    # Iteration 3\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    \n    # Iteration 4\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    \n    # Iteration 5\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    \n    # Iteration 6\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    \n    # Iteration 7 (final)\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    \n    return s"
+}

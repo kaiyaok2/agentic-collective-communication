@@ -1,0 +1,88 @@
+{
+  "pipeline": "overlay",
+  "problem": "r65b_gnorm_b0p3_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6877.900000000001,
+  "strategies": [
+    {
+      "name": "Baseline Sequential All-Reduce Chain",
+      "desc": "Execute 8 all-reduce operations sequentially with interleaved local computations (abs, mean, division) exactly as shown in the reference. 8 collective dispatches total. Represents the straightforward approach with no fusion or overlap, highest dispatch count but simplest correctness reasoning."
+    },
+    {
+      "name": "Fused Scalar All-Reduce Pipeline",
+      "desc": "Replace each full-vector all-reduce (except the first) with a scalar all-reduce on the mean absolute value, then broadcast the global normalization factor. Uses 1 vector all-reduce + 7 scalar all-reduces (or 1 vector + 7 all-reduce on size-1 tensors). Reduces per-dispatch payload size dramatically for iterations 2-8, trading off total dispatch count for much smaller message sizes."
+    },
+    {
+      "name": "Batched Multi-Tensor Concatenation",
+      "desc": "Accumulate multiple iteration buffers locally, then concatenate and dispatch a single large all-reduce carrying multiple vectors/scalars packed together, followed by local unpacking and element-wise operations. Reduces total dispatches to 2-3 by batching communication at the cost of larger intermediate memory footprint and complex packing/unpacking logic."
+    },
+    {
+      "name": "Two-Stage Hierarchical Reduction",
+      "desc": "Exploit potential multi-node topology by performing intra-node reductions (within each node's devices) followed by inter-node reductions for each of the 8 iterations. Total 16 dispatches but smaller per-dispatch participant count and message routing. Balances network topology awareness against increased dispatch overhead."
+    },
+    {
+      "name": "Overlapped Compute-Communication Pipeline",
+      "desc": "Issue the next all-reduce asynchronously while computing local operations (abs, mean, division, multiplication) from the previous iteration's result, using explicit marking/wait primitives if available. Still 8 dispatches but attempts to hide local computation latency within communication time, trading synchronization complexity for potential wall-clock speedup.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Baseline Sequential All-Reduce Chain",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Scalar All-Reduce Pipeline",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.508058"
+    },
+    {
+      "stage": "impl",
+      "name": "Batched Multi-Tensor Concatenation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.394173"
+    },
+    {
+      "stage": "impl",
+      "name": "Two-Stage Hierarchical Reduction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Overlapped Compute-Communication Pipeline",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "refine:Baseline Sequential All-Reduce Chain",
+      "round": 1,
+      "sim": 7014.400000000001
+    },
+    {
+      "stage": "refine:Baseline Sequential All-Reduce Chain",
+      "round": 2,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Overlapped Compute-Communication Pipeline",
+      "round": 1,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Overlapped Compute-Communication Pipeline",
+      "round": 3,
+      "sim": 7015.099999999999
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6877.900000000001,
+  "final_code": "def r65b_gnorm_b0p3_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Baseline Sequential All-Reduce Chain\n    Execute 8 all-reduce operations sequentially with interleaved local computations.\n    \"\"\"\n    W = world_size\n    BETA = 0.3\n    \n    # Preserve input dtype\n    dtype = x.dtype\n    \n    # All-reduce 1: Sum x across all ranks\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # All-reduce 2\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # All-reduce 3\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # All-reduce 4\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # All-reduce 5\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # All-reduce 6\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # All-reduce 7\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # All-reduce 8 (final)\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    \n    return s"
+}

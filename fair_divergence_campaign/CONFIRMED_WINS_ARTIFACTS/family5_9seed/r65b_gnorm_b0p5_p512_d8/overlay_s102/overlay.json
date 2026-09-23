@@ -1,0 +1,88 @@
+{
+  "pipeline": "overlay",
+  "problem": "r65b_gnorm_b0p5_p512_d8",
+  "gate": "fp32",
+  "baseline_sim": 6843.614285714285,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce chain baseline",
+      "desc": "Direct transcription of the seed algorithm: 8 sequential all-reduce dispatches (7 all-reduce-sum + 1 final all-reduce-sum), each preceded by local element-wise operations (abs, mean, division). Total ~8 all-reduce dispatches. Represents the straightforward approach with no fusion or overlapping; highest dispatch count but simplest logic."
+    },
+    {
+      "name": "Fused local-op batching between collectives",
+      "desc": "Group all local elementwise operations (division, abs, mean, scalar computation) into single fused kernels between each all-reduce, reducing kernel launch overhead. Still 8 all-reduce dispatches but reduces local dispatch count from ~40+ to ~8-16. Trades kernel fusion complexity for lower host-side dispatch overhead while maintaining identical communication pattern."
+    },
+    {
+      "name": "Vectorized state packing (multi-tensor)",
+      "desc": "Pack intermediate scalars (g, A, M, gr) alongside tensor data into a single padded buffer, performing one all-reduce per iteration that simultaneously reduces both the modified tensor and broadcasts control scalars. Reduces 8 all-reduces to potentially 7 by embedding scalar broadcast into tensor all-reduce. Larger payload per dispatch but fewer total dispatches."
+    },
+    {
+      "name": "Two-stage hierarchical reduction (intra+inter node)",
+      "desc": "With num_nodes potentially >1 at world_size=224, decompose each all-reduce into intra-node reduce-scatter + local ops + intra-node all-gather, followed by inter-node all-reduce on smaller representative data. Increases total collective count to ~16-24 but reduces cross-node bandwidth pressure by exploiting faster intra-node links and smaller inter-node payloads."
+    },
+    {
+      "name": "Pipeline overlapped all-reduce with double-buffering",
+      "desc": "Split the 4096-element tensor into chunks (e.g., 8\u00d7512), launching the next iteration's all-reduce on chunk_i while computing local ops for chunk_{i-1}. Uses asynchronous all-reduce with explicit wait barriers and alternating buffers. Maintains 8 logical all-reduce steps but overlaps communication with computation, trading memory (2x buffers) and complexity for reduced wall-clock latency.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce chain baseline",
+      "sim": 6843.614285714285,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused local-op batching between collectives",
+      "sim": 6843.614285714285,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Vectorized state packing (multi-tensor)",
+      "sim": 6975.616378348213,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Two-stage hierarchical reduction (intra+inter node)",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipeline overlapped all-reduce with double-buffering",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.475241"
+    },
+    {
+      "stage": "refine:Sequential all-reduce chain baseline",
+      "round": 1,
+      "sim": 6843.614285714285
+    },
+    {
+      "stage": "refine:Sequential all-reduce chain baseline",
+      "round": 2,
+      "sim": 6843.614285714285
+    },
+    {
+      "stage": "refine:Fused local-op batching between collectives",
+      "round": 2,
+      "sim": 6844.314285714287
+    },
+    {
+      "stage": "refine:Fused local-op batching between collectives",
+      "round": 3,
+      "sim": 6843.614285714285
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6843.614285714285,
+  "final_code": "def r65b_gnorm_b0p5_p512_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Sequential all-reduce chain baseline.\n    Direct transcription: 8 sequential all-reduce dispatches with local operations.\n    No fusion or overlapping - straightforward implementation.\n    \"\"\"\n    W = world_size\n    BETA = 0.5\n    dtype = x.dtype\n    \n    # Round 1: Initial all-reduce of x\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    \n    # Rounds 2-7: Iterative normalization steps\n    for _ in range(6):\n        A = acc.abs().mean()\n        M = A / (1.0 - BETA * A)\n        gr = 1.0 + BETA * M\n        s = acc * gr\n        g = 1.0 + BETA * s.abs().mean()\n        buf = s / g\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n        acc = acc / W\n    \n    # Final result\n    s = acc\n    return s"
+}

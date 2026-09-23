@@ -1,0 +1,78 @@
+{
+  "pipeline": "overlay",
+  "problem": "r65b_gnorm_b3p0_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6877.900000000001,
+  "strategies": [
+    {
+      "name": "Sequential All-Reduce with Scalar Broadcasts",
+      "desc": "Uses 8 all-reduce operations (7 for iterative normalization + 1 initial sum) plus 6 scalar all-reduces to broadcast the normalization constants (g values) computed locally. Total ~14 dispatches. Trades more collectives for simpler computation by making normalization constants global immediately."
+    },
+    {
+      "name": "Fused Local Computation Between All-Reduces",
+      "desc": "Uses exactly 8 all-reduce operations as specified, but maximizes fusion of all local elementwise operations (division, abs, mean, multiply) between dispatches. 8 dispatches total. Reference implementation strategy\u2014minimizes dispatch count by keeping all local ops CPU-side between collectives."
+    },
+    {
+      "name": "Pipelined Dual-Buffer All-Reduce Chain",
+      "desc": "Splits the 16,384-element vector into 2 chunks and pipelines the 8 all-reduce stages across chunks, overlapping communication of chunk[i] with computation of chunk[i-1]. 16 dispatches (8 stages \u00d7 2 chunks) but reduced critical path latency through overlap."
+    },
+    {
+      "name": "Reduce-Scatter + All-Gather Decomposition",
+      "desc": "Decomposes each of the 8 all-reduce operations into reduce-scatter followed by all-gather, allowing local normalization on scattered chunks before gathering. 16 dispatches (8 iterations \u00d7 2 ops). Trades dispatch count for smaller per-rank payload in intermediate steps (16384/224 elements)."
+    },
+    {
+      "name": "Hierarchical Two-Level Aggregation",
+      "desc": "Exploits multi-node topology by performing intra-node all-reduce (within each node's devices) followed by inter-node all-reduce, repeated 8 times. ~16 dispatches (8 iterations \u00d7 2 levels). Optimizes for network topology by reducing cross-node traffic volume and latency.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential All-Reduce with Scalar Broadcasts",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=nan"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Local Computation Between All-Reduces",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Dual-Buffer All-Reduce Chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.003791"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-Scatter + All-Gather Decomposition",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.128558"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level Aggregation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "refine:Fused Local Computation Between All-Reduces",
+      "round": 2,
+      "sim": 6898.2
+    },
+    {
+      "stage": "refine:Fused Local Computation Between All-Reduces",
+      "round": 3,
+      "sim": 6877.900000000001
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 6877.900000000001,
+  "final_code": "def r65b_gnorm_b3p0_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Fused Local Computation Between All-Reduces strategy.\n    Uses exactly 8 all-reduce operations with all local operations fused between them.\n    Minimizes dispatch count by keeping local ops CPU-side between collectives.\n    \"\"\"\n    W = world_size\n    BETA = 3.0\n    dtype = x.dtype\n    \n    # All-reduce 1: Sum x across all ranks\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Fused local ops: compute divisor and normalize\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # All-reduce 2: Sum normalized values and average\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    \n    # Fused local ops: compute correction factor and apply\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # All-reduce 3: Sum and average\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    \n    # Fused local ops: correction and normalization\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # All-reduce 4: Sum and average\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    \n    # Fused local ops: correction and normalization\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # All-reduce 5: Sum and average\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    \n    # Fused local ops: correction and normalization\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # All-reduce 6: Sum and average\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    \n    # Fused local ops: correction and normalization\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # All-reduce 7: Sum and average\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    \n    # Fused local ops: correction and normalization\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # All-reduce 8: Final sum and average\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    \n    # Final result\n    s = acc\n    \n    return s"
+}

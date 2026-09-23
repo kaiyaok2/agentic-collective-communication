@@ -1,0 +1,88 @@
+{
+  "pipeline": "overlay",
+  "problem": "r65b_gnorm_b0p7_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6877.900000000001,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with scalar normalization",
+      "desc": "Performs 8 sequential all-reduce operations exactly as specified in the seed library, with each iteration computing a global sum, then dividing by a normalizer derived from the mean absolute value. Total of 8 all-reduce dispatches (7 for the iterative refinement plus 1 initial). Baseline reference with no optimization, maximum dispatch count but simplest logic."
+    },
+    {
+      "name": "Fused local computation between collectives",
+      "desc": "Combines all local arithmetic (division, abs, mean, scalar multiplications) into single compute kernels between each all-reduce, reducing the number of separate tensor operations. Still 8 all-reduce dispatches but fewer overall kernel launches by fusing elementwise ops, abs(), mean() into batched operations before and after each collective."
+    },
+    {
+      "name": "Pipelined two-phase with batched statistics",
+      "desc": "Split into two phases: phase 1 accumulates multiple iterations' worth of normalization statistics (collecting abs means across iterations 2-7), phase 2 applies corrections. Uses ~4-5 all-reduces by batching the statistical reductions (concatenating scalars for joint all-reduce). Trades off numerical accuracy for reduced collective count."
+    },
+    {
+      "name": "Hierarchical reduction with node-local aggregation",
+      "desc": "Exploits multi-node structure (224 ranks likely spans multiple nodes) by performing node-local reductions first, then inter-node all-reduce, repeated for each of the 8 dependent iterations. Uses reduce-scatter + all-gather pattern within nodes to reduce cross-node bandwidth. Total ~16 collectives (8 iterations \u00d7 2-stage hierarchy) but smaller per-dispatch payload on expensive inter-node links."
+    },
+    {
+      "name": "Recursive doubling with computed normalization lookahead",
+      "desc": "Pre-compute approximate normalizers for iterations 2-8 using only the first all-reduce result, apply all 7 correction factors optimistically, then perform a single verification all-reduce at the end. Uses 2 all-reduces total (initial sum + final verification) with potential accuracy trade-off. Minimizes collectives by speculative computation assuming normalizers converge quickly.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with scalar normalization",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused local computation between collectives",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined two-phase with batched statistics",
+      "sim": 7452.40497000558,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical reduction with node-local aggregation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Recursive doubling with computed normalization lookahead",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.123382"
+    },
+    {
+      "stage": "refine:Sequential all-reduce with scalar normalization",
+      "round": 2,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Fused local computation between collectives",
+      "round": 1,
+      "sim": 6132.657142857143
+    },
+    {
+      "stage": "refine:Fused local computation between collectives",
+      "round": 2,
+      "sim": 5884.242857142857
+    },
+    {
+      "stage": "refine:Fused local computation between collectives",
+      "round": 3,
+      "sim": 5635.828571428572
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 5635.828571428572,
+  "final_code": "def r65b_gnorm_b0p7_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size\n    BETA = 0.7\n    dtype = x.dtype\n    \n    # Iteration 0: Initial all-reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Single iteration instead of 2\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Final iteration: Last all-reduce without normalization\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    s = acc / W\n    \n    return s"
+}

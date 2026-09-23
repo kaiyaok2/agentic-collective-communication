@@ -1,0 +1,88 @@
+{
+  "pipeline": "overlay",
+  "problem": "r65b_gnorm_b3p0_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6877.900000000001,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with local fusion",
+      "desc": "Perform 8 sequential all-reduce operations exactly as in the reference, but fuse all local arithmetic operations (division, abs, mean, scalar multiplication) between consecutive all-reduces into single compute kernels. Expected 8 collective dispatches with minimized local-op dispatches through operator fusion, trading implementation complexity for reduced launch overhead."
+    },
+    {
+      "name": "Pipelined two-stage hierarchical reduction",
+      "desc": "Decompose world_size=224 into node-local (intra-node) and cross-node (inter-node) reduction groups, performing the 8-iteration sequence first within nodes then across nodes, or interleaving node-local and global steps. Expected 16 collective dispatches (8 intra + 8 inter) but with smaller payloads on cross-node operations, trading collective count for reduced network pressure on expensive inter-node links."
+    },
+    {
+      "name": "Batched multi-tensor all-reduce",
+      "desc": "Pack multiple iteration states (current s, intermediate buffers, scalars g/M/gr) into a single tensor and issue fewer, larger all-reduce operations that carry state for multiple logical iterations simultaneously. Expected 4-6 collective dispatches by batching 2-3 logical iterations per physical all-reduce, trading memory footprint and complexity for halved collective dispatch overhead."
+    },
+    {
+      "name": "Reduce-scatter + all-gather decomposition",
+      "desc": "Replace each all-reduce with reduce-scatter followed by all-gather, allowing each rank to compute its assigned slice of the normalization denominators independently before broadcasting. Expected 16 collective dispatches (8 RS + 8 AG pairs) but enables partial computation overlap and potentially better bandwidth utilization through smaller per-step payloads."
+    },
+    {
+      "name": "Scalar-broadcast optimization with single vector all-reduce",
+      "desc": "Observe that g, A, M, gr are scalars derived from vector statistics; perform only the first all-reduce on the full vector, then exchange only scalar statistics (mean, sum) via cheaper all-reduce on size-1 tensors for iterations 2-8, reconstructing the final result from accumulated scalars. Expected 1 large + 7 tiny collective dispatches, minimizing bandwidth at the cost of numerical precision and increased local computation.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with local fusion",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined two-stage hierarchical reduction",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Batched multi-tensor all-reduce",
+      "sim": 6961.9,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-scatter + all-gather decomposition",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.128558"
+    },
+    {
+      "stage": "impl",
+      "name": "Scalar-broadcast optimization with single vector all-reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.128558"
+    },
+    {
+      "stage": "refine:Sequential all-reduce with local fusion",
+      "round": 1,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Sequential all-reduce with local fusion",
+      "round": 2,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Sequential all-reduce with local fusion",
+      "round": 3,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Pipelined two-stage hierarchical reduction",
+      "round": 1,
+      "sim": 6877.900000000001
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6877.900000000001,
+  "final_code": "def r65b_gnorm_b3p0_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size\n    BETA = 3.0\n    dtype = x.dtype\n    \n    # First all-reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Fused local ops: compute g, divide, and prepare for next all-reduce\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Iterations 2-7: Each iteration does all-reduce followed by fused local ops\n    for i in range(6):\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n        # Fused: divide by W, compute A, M, gr, s, g, buf\n        acc = acc / W\n        A = acc.abs().mean()\n        M = A / (1.0 - BETA * A)\n        gr = 1.0 + BETA * M\n        s = acc * gr\n        g = 1.0 + BETA * s.abs().mean()\n        buf = s / g\n    \n    # Final all-reduce (8th)\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    # Final fused ops: just divide by W\n    s = acc / W\n    \n    return s"
+}

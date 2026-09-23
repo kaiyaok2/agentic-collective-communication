@@ -1,0 +1,98 @@
+{
+  "pipeline": "overlay",
+  "problem": "r65b_gnorm_b0p5_p512_d8",
+  "gate": "fp32",
+  "baseline_sim": 6843.614285714285,
+  "strategies": [
+    {
+      "name": "Sequential All-Reduce Chain (Baseline)",
+      "desc": "Executes 8 dependent all-reduce operations sequentially, each followed by local computation of normalization factors and tensor updates. This is the reference implementation with 8 all-reduce dispatches. Represents the straightforward approach with no optimization, highest latency due to full synchronization at each step."
+    },
+    {
+      "name": "Pipelined Scalar-Broadcast for Normalization",
+      "desc": "Separates vector all-reduces from scalar synchronization by using all-reduce for the main tensors and separate scalar all-reduces (or broadcast after local reduction) for the normalization factors g, M, gr. Total ~15 dispatches (8 vector + 7 scalar) but smaller scalar payloads may reduce overall latency if scalar collectives are optimized differently."
+    },
+    {
+      "name": "Batched Multi-Tensor All-Reduce",
+      "desc": "Concatenates multiple intermediate buffers into a single tensor payload and issues fewer, larger all-reduce operations where dependency chains permit. For example, batch iterations 1-2, 3-4, 5-6 into 3 large all-reduces plus local unpacking. Reduces dispatch count to ~4-5 all-reduces with increased per-dispatch payload and local compute overhead."
+    },
+    {
+      "name": "Reduce-Scatter + All-Gather Decomposition",
+      "desc": "Decomposes each all-reduce into reduce-scatter followed by all-gather, enabling partial result computation on sharded data during the scatter phase. With 224 ranks and 4096-element tensor, each rank processes ~18 elements locally between collectives. Total ~16 dispatches (8 RS + 8 AG) but exposes opportunities for computation-communication overlap."
+    },
+    {
+      "name": "Hierarchical Two-Level Reduction",
+      "desc": "Exploits multi-node topology by performing intra-node all-reduce (across devices within each node) followed by inter-node all-reduce (across node representatives), then broadcasting back within nodes. With num_nodes parameter available, reduces cross-node bandwidth pressure. Total ~24 dispatches (8 iterations \u00d7 3 collectives) but significantly lower inter-node traffic.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential All-Reduce Chain (Baseline)",
+      "sim": 6843.614285714285,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Scalar-Broadcast for Normalization",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=nan"
+    },
+    {
+      "stage": "impl",
+      "name": "Batched Multi-Tensor All-Reduce",
+      "sim": 6843.614285714285,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-Scatter + All-Gather Decomposition",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.791644"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level Reduction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "refine:Sequential All-Reduce Chain (Baseline)",
+      "round": 1,
+      "sim": 6843.614285714285
+    },
+    {
+      "stage": "refine:Sequential All-Reduce Chain (Baseline)",
+      "round": 2,
+      "sim": 6843.614285714285
+    },
+    {
+      "stage": "refine:Sequential All-Reduce Chain (Baseline)",
+      "round": 3,
+      "sim": 6369.614285714285
+    },
+    {
+      "stage": "refine:Batched Multi-Tensor All-Reduce",
+      "round": 1,
+      "sim": 6843.614285714285
+    },
+    {
+      "stage": "refine:Batched Multi-Tensor All-Reduce",
+      "round": 2,
+      "sim": 6843.614285714285
+    },
+    {
+      "stage": "refine:Batched Multi-Tensor All-Reduce",
+      "round": 3,
+      "sim": 6843.614285714285
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6369.614285714285,
+  "final_code": "def r65b_gnorm_b0p5_p512_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Optimized All-Reduce with Reduced Dispatches\n    \n    Reduces the number of collective dispatches by batching multiple\n    iteration buffers together in fewer all-reduce operations.\n    \"\"\"\n    W = world_size\n    BETA = 0.5\n    dtype = x.dtype\n    \n    # First all-reduce: sum x across all ranks\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Process iterations 1-7 with batched all-reduces\n    # Group iterations into batches of 2 to reduce dispatches from 7 to 4\n    \n    # Batch 1: Iterations 1-2\n    buffers = []\n    for _ in range(2):\n        g = 1.0 + BETA * s.abs().mean()\n        buf = s / g\n        buffers.append(buf)\n        # Compute next s optimistically (will be corrected after all-reduce)\n        A_local = buf.abs().mean()\n        M_local = A_local / (1.0 - BETA * A_local)\n        gr = 1.0 + BETA * M_local\n        s = buf * gr\n    \n    # Stack and all-reduce together\n    stacked = torch.stack(buffers, dim=0)\n    reduced = xm.all_reduce(xm.REDUCE_SUM, stacked)\n    \n    # Process results\n    for i in range(2):\n        acc = reduced[i] / W\n        A = acc.abs().mean()\n        M = A / (1.0 - BETA * A)\n        gr = 1.0 + BETA * M\n        s = acc * gr\n    \n    # Batch 2: Iterations 3-4\n    buffers = []\n    for _ in range(2):\n        g = 1.0 + BETA * s.abs().mean()\n        buf = s / g\n        buffers.append(buf)\n        A_local = buf.abs().mean()\n        M_local = A_local / (1.0 - BETA * A_local)\n        gr = 1.0 + BETA * M_local\n        s = buf * gr\n    \n    stacked = torch.stack(buffers, dim=0)\n    reduced = xm.all_reduce(xm.REDUCE_SUM, stacked)\n    \n    for i in range(2):\n        acc = reduced[i] / W\n        A = acc.abs().mean()\n        M = A / (1.0 - BETA * A)\n        gr = 1.0 + BETA * M\n        s = acc * gr\n    \n    # Batch 3: Iterations 5-6\n    buffers = []\n    for _ in range(2):\n        g = 1.0 + BETA * s.abs().mean()\n        buf = s / g\n        buffers.append(buf)\n        A_local = buf.abs().mean()\n        M_local = A_local / (1.0 - BETA * A_local)\n        gr = 1.0 + BETA * M_local\n        s = buf * gr\n    \n    stacked = torch.stack(buffers, dim=0)\n    reduced = xm.all_reduce(xm.REDUCE_SUM, stacked)\n    \n    for i in range(2):\n        acc = reduced[i] / W\n        A = acc.abs().mean()\n        M = A / (1.0 - BETA * A)\n        gr = 1.0 + BETA * M\n        s = acc * gr\n    \n    # Iteration 7 (final)\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    \n    return s"
+}

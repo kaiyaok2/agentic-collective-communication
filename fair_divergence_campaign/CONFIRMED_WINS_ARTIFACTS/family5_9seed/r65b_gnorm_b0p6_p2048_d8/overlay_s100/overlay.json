@@ -1,0 +1,78 @@
+{
+  "pipeline": "overlay",
+  "problem": "r65b_gnorm_b0p6_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6877.900000000001,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce chain baseline",
+      "desc": "Seven all-reduce operations executed sequentially with interleaved local scalar computations (mean, abs, division). Expected 7 dispatches. This is the reference implementation with no optimizations\u2014straightforward but maximum latency due to serial dependencies."
+    },
+    {
+      "name": "Fused scalar broadcast with payload",
+      "desc": "After each all-reduce, append the computed scalar (g or M) to the next all-reduce payload, broadcasting metadata alongside the vector data in a single dispatch. Expected 7 dispatches but eliminates redundant scalar computations across ranks by piggybacking scalars on vector payloads."
+    },
+    {
+      "name": "Two-phase reduce-scatter then all-gather",
+      "desc": "Use reduce-scatter to partition the sum across ranks (depth-1), perform local normalization on shards in parallel, then all-gather to reconstruct. Repeat pattern for subsequent iterations. Expected ~14 dispatches (2 per iteration) but enables partial overlap of communication with local compute on smaller chunks."
+    },
+    {
+      "name": "Hierarchical node-local then cross-node",
+      "desc": "If multi-node, first perform all-reduce within each node (lower latency), compute local normalizations, then perform cross-node all-reduce on aggregated results. Expected 7-14 dispatches depending on topology, trades off intra-node bandwidth for reduced cross-node traffic."
+    },
+    {
+      "name": "Pipelined async dispatch with batching",
+      "desc": "Issue multiple all-reduce operations asynchronously before synchronization points, batching independent scalar reductions into single vector all-reduce where possible (pack g/M/A scalars). Expected 4-5 dispatches by fusing scalar exchanges and overlapping communication with local abs/mean computations.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce chain baseline",
+      "sim": 6629.485714285714,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused scalar broadcast with payload",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: TypeError: len() of a 0-d tensor"
+    },
+    {
+      "stage": "impl",
+      "name": "Two-phase reduce-scatter then all-gather",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.208153"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical node-local then cross-node",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined async dispatch with batching",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "refine:Sequential all-reduce chain baseline",
+      "round": 2,
+      "sim": 6633.685714285714
+    },
+    {
+      "stage": "refine:Pipelined async dispatch with batching",
+      "round": 2,
+      "sim": 7173.7
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6629.485714285714,
+  "final_code": "def r65b_gnorm_b0p6_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Sequential all-reduce chain baseline.\n    Seven all-reduce operations executed sequentially with interleaved local scalar computations.\n    Expected 7 dispatches (one per all-reduce).\n    \"\"\"\n    W = world_size\n    BETA = 0.6\n    \n    # First all-reduce: sum x across all ranks\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Second all-reduce\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Third all-reduce\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Fourth all-reduce\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Fifth all-reduce\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Sixth all-reduce\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Seventh all-reduce\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    \n    return s"
+}

@@ -1,0 +1,98 @@
+{
+  "pipeline": "overlay",
+  "problem": "r65b_gnorm_b0p3_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6877.900000000001,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with scalar exchange",
+      "desc": "Performs 8 sequential all-reduce operations on the full vector (16384 elements), interleaved with 6 additional all-reduce operations on scalar values (the computed g normalization factors). Total ~14 collective dispatches. Trades more dispatches for simpler logic and no buffering complexity."
+    },
+    {
+      "name": "Fused vector-scalar all-reduce pairs",
+      "desc": "Concatenates each normalized vector with its scalar g value into a single buffer [vector | scalar] before each all-reduce, then splits after. Reduces from ~14 to 7 collective dispatches by fusing vector and scalar communication. Larger payload per dispatch but fewer kernel launches."
+    },
+    {
+      "name": "Pipelined two-phase with overlapped compute",
+      "desc": "Splits the 8 iterations into two phases of 4, issuing all-reduce operations asynchronously where possible to overlap communication with local normalization computations. Still 8 vector all-reduces but exploits async dispatch to hide latency. Requires careful ordering to maintain dependencies."
+    },
+    {
+      "name": "Hierarchical reduction with pre-aggregation",
+      "desc": "Groups the 8 dependent all-reduces into a tree structure where intermediate results are locally accumulated before collective operations. Computes multiple normalization steps purely locally when possible, reducing total all-reduce count from 8 to potentially 4-5 by batching independent operations."
+    },
+    {
+      "name": "Reference sequential implementation",
+      "desc": "Direct translation of the seed library with 7 all-reduce operations on full vectors (8*2048 elements each). No fusion or optimization, purely sequential execution of normalize-reduce-scale pattern. Baseline with 7 dispatches and maximum simplicity for correctness validation.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with scalar exchange",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.186631"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused vector-scalar all-reduce pairs",
+      "sim": 7057.904970005581,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined two-phase with overlapped compute",
+      "sim": 6629.485714285714,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical reduction with pre-aggregation",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Reference sequential implementation",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "refine:Pipelined two-phase with overlapped compute",
+      "round": 1,
+      "sim": 6629.485714285714
+    },
+    {
+      "stage": "refine:Pipelined two-phase with overlapped compute",
+      "round": 2,
+      "sim": 6730.985714285714
+    },
+    {
+      "stage": "refine:Pipelined two-phase with overlapped compute",
+      "round": 3,
+      "sim": 6629.485714285714
+    },
+    {
+      "stage": "refine:Hierarchical reduction with pre-aggregation",
+      "round": 1,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Hierarchical reduction with pre-aggregation",
+      "round": 2,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Hierarchical reduction with pre-aggregation",
+      "round": 3,
+      "sim": 6877.900000000001
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6629.485714285714,
+  "final_code": "def r65b_gnorm_b0p3_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size\n    BETA = 0.3\n    dtype = x.dtype\n    \n    # Phase 1: Process first 4 iterations with overlapping\n    # Iteration 0\n    s0 = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Iteration 1\n    g0 = 1.0 + BETA * s0.abs().mean()\n    buf0 = s0 / g0\n    acc0 = xm.all_reduce(xm.REDUCE_SUM, buf0)\n    \n    # Iteration 2\n    acc0 = acc0 / W\n    A0 = acc0.abs().mean()\n    M0 = A0 / (1.0 - BETA * A0)\n    gr0 = 1.0 + BETA * M0\n    s1 = acc0 * gr0\n    g1 = 1.0 + BETA * s1.abs().mean()\n    buf1 = s1 / g1\n    acc1 = xm.all_reduce(xm.REDUCE_SUM, buf1)\n    \n    # Iteration 3\n    acc1 = acc1 / W\n    A1 = acc1.abs().mean()\n    M1 = A1 / (1.0 - BETA * A1)\n    gr1 = 1.0 + BETA * M1\n    s2 = acc1 * gr1\n    g2 = 1.0 + BETA * s2.abs().mean()\n    buf2 = s2 / g2\n    acc2 = xm.all_reduce(xm.REDUCE_SUM, buf2)\n    \n    # Phase 2: Process next 4 iterations with overlapping\n    # Iteration 4\n    acc2 = acc2 / W\n    A2 = acc2.abs().mean()\n    M2 = A2 / (1.0 - BETA * A2)\n    gr2 = 1.0 + BETA * M2\n    s3 = acc2 * gr2\n    g3 = 1.0 + BETA * s3.abs().mean()\n    buf3 = s3 / g3\n    acc3 = xm.all_reduce(xm.REDUCE_SUM, buf3)\n    \n    # Iteration 5\n    acc3 = acc3 / W\n    A3 = acc3.abs().mean()\n    M3 = A3 / (1.0 - BETA * A3)\n    gr3 = 1.0 + BETA * M3\n    s4 = acc3 * gr3\n    g4 = 1.0 + BETA * s4.abs().mean()\n    buf4 = s4 / g4\n    acc4 = xm.all_reduce(xm.REDUCE_SUM, buf4)\n    \n    # Iteration 6\n    acc4 = acc4 / W\n    A4 = acc4.abs().mean()\n    M4 = A4 / (1.0 - BETA * A4)\n    gr4 = 1.0 + BETA * M4\n    s5 = acc4 * gr4\n    g5 = 1.0 + BETA * s5.abs().mean()\n    buf5 = s5 / g5\n    acc5 = xm.all_reduce(xm.REDUCE_SUM, buf5)\n    \n    # Iteration 7 (final)\n    acc5 = acc5 / W\n    s = acc5\n    \n    return s"
+}

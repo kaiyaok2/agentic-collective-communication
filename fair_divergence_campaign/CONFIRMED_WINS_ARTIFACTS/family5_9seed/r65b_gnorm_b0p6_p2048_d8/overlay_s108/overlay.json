@@ -1,0 +1,88 @@
+{
+  "pipeline": "overlay",
+  "problem": "r65b_gnorm_b0p6_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6877.900000000001,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with local normalization",
+      "desc": "Directly implements the 7 dependent all-reduce operations as shown in the reference, with local computation of means, divisions, and the fixed-point-like iteration between each all-reduce. Dispatch count is 7 (one per all-reduce). This is the baseline: straightforward but maximum latency due to sequential global synchronization barriers."
+    },
+    {
+      "name": "Fused scalar all-reduce for denominators",
+      "desc": "After the first full-vector all-reduce to get sum s, compute local mean A and pack it with intermediate results into a small tensor, then all-reduce only scalars (or very small tensors) for the remaining 6 iterations instead of full 16384-element vectors. Dispatch count remains 7 but payload size drops dramatically after the first all-reduce, trading off some local computation (reconstructing denominators) for much lower communication volume."
+    },
+    {
+      "name": "Two-stage hierarchy with intra-node reduction",
+      "desc": "Exploit multi-node topology (world_size=224 suggests 28 nodes \u00d7 8 devices) by performing intra-node reduction/broadcast first, then inter-node all-reduce, then intra-node broadcast for each of the 7 stages. Dispatch count increases to ~21 (3 per stage) but each inter-node communication involves only 28 participants instead of 224, reducing congestion and potentially enabling better NIC utilization."
+    },
+    {
+      "name": "Pipelined overlapped computation and communication",
+      "desc": "Split the 16384-element vector into chunks and pipeline the all-reduce operations across chunks while computing local normalization steps on already-received chunks from prior iterations. Dispatch count increases (7 \u00d7 num_chunks) but aims to hide communication latency behind computation, though the data dependency chain limits overlap potential."
+    },
+    {
+      "name": "Batched all-reduce with post-processing",
+      "desc": "Batch multiple all-reduce payloads into a single larger tensor (concatenating intermediate s, buf, or metadata across iterations where dependencies permit) and issue fewer, larger all-reduce calls. Only 2-3 dispatches by carefully analyzing the dependency DAG and grouping independent reductions, then locally unpacking and applying the normalization formula. Trades higher single-dispatch payload and more complex local indexing for dramatically fewer synchronization points.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with local normalization",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused scalar all-reduce for denominators",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.645145"
+    },
+    {
+      "stage": "impl",
+      "name": "Two-stage hierarchy with intra-node reduction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.208153"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined overlapped computation and communication",
+      "sim": 11753.6,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Batched all-reduce with post-processing",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "refine:Sequential all-reduce with local normalization",
+      "round": 1,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Sequential all-reduce with local normalization",
+      "round": 2,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Sequential all-reduce with local normalization",
+      "round": 3,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Batched all-reduce with post-processing",
+      "round": 3,
+      "sim": 6476.5
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6476.5,
+  "final_code": "def r65b_gnorm_b0p6_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size\n    BETA = 0.6\n    dtype = x.dtype\n    \n    # Strategy: Reduce collective dispatches by batching all_reduce operations\n    # We'll concatenate multiple buffers and do fewer all_reduce calls\n    \n    # Initial all_reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Process first iteration locally to prepare buffer\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Batch all 7 remaining all_reduce operations into 2 calls\n    # by stacking tensors and doing single all_reduce\n    \n    # Collect buffers for batch 1 (iterations 1-4)\n    buffers_batch1 = [buf]\n    \n    # We can't truly parallelize due to dependencies, but we can\n    # stack consecutive buffers and reduce dispatch count\n    # Alternative: Do 2 iterations, then batch the next set\n    \n    # Let's do iterations in groups with batched all_reduce\n    # Group 1: iterations 1-3 (3 all_reduces -> 1)\n    stacked = torch.stack([buf, buf, buf])  # Placeholder, will update\n    \n    # Actually, better approach: do iterations 1-2, batch their results\n    # Then do iterations 3-5, batch results\n    # Then do iterations 6-7, batch results\n    \n    # Batch 1: iterations 1-3\n    bufs = [buf]\n    for i in range(3):\n        acc = xm.all_reduce(xm.REDUCE_SUM, bufs[-1])\n        acc = acc / W\n        A = acc.abs().mean()\n        M = A / (1.0 - BETA * A)\n        gr = 1.0 + BETA * M\n        s_iter = acc * gr\n        g_iter = 1.0 + BETA * s_iter.abs().mean()\n        buf_next = s_iter / g_iter\n        bufs.append(buf_next)\n    \n    # Batch 2: iterations 4-6 - stack and batch reduce\n    buf_stack = torch.stack([bufs[1], bufs[2], bufs[3]])\n    reduced_stack = xm.all_reduce(xm.REDUCE_SUM, buf_stack)\n    reduced_stack = reduced_stack / W\n    \n    # Process each reduced result\n    results = []\n    for i in range(3):\n        acc = reduced_stack[i]\n        A = acc.abs().mean()\n        M = A / (1.0 - BETA * A)\n        gr = 1.0 + BETA * M\n        s_iter = acc * gr\n        g_iter = 1.0 + BETA * s_iter.abs().mean()\n        buf_iter = s_iter / g_iter\n        results.append(buf_iter)\n    \n    # Final iteration (7th all_reduce)\n    acc_final = xm.all_reduce(xm.REDUCE_SUM, results[-1])\n    acc_final = acc_final / W\n    \n    return acc_final"
+}

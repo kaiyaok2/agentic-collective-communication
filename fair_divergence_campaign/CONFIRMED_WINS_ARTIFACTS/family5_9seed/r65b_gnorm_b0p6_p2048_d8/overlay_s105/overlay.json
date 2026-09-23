@@ -1,0 +1,93 @@
+{
+  "pipeline": "overlay",
+  "problem": "r65b_gnorm_b0p6_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6877.900000000001,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce chain baseline",
+      "desc": "Direct translation of the seed: 7 all-reduce dispatches (1 initial sum + 6 iterative updates) with local scalar computations between each. Each all-reduce operates on the full (8*2048,) tensor. Represents the naive approach with 7 collective dispatches and maximum synchronization overhead but simplest control flow."
+    },
+    {
+      "name": "Fused scalar broadcast with all-reduce",
+      "desc": "Compute local statistics (mean of abs) and use all-reduce on scalars separately from vector all-reduces, then broadcast denominators. Splits the 7 all-reduces into ~7 vector all-reduces + ~6 scalar all-reduces = 13 total dispatches but each scalar all-reduce has O(1) payload instead of O(16K), reducing total bandwidth by concentrating synchronization on small metadata."
+    },
+    {
+      "name": "Pipelined two-phase reduction aggregation",
+      "desc": "Split the 6 dependent iterations into batches: compute multiple local g values optimistically, then issue back-to-back all-reduces for multiple iterations before correcting. Uses speculative computation to overlap 2-3 all-reduces in flight simultaneously, trading ~7-10 dispatches for reduced bubble time via asynchronous dispatch queueing."
+    },
+    {
+      "name": "Chunked tensor with independent iteration",
+      "desc": "Partition the (8*2048,) tensor into 6-8 independent chunks and process each through the 7-step reduction independently in parallel. Issues 7 * num_chunks all-reduces but each on smaller payload (e.g., 7*8 = 56 dispatches on 2048-element chunks). Trades dispatch count for potential parallelism if xm runtime can overlap non-conflicting reductions."
+    },
+    {
+      "name": "Hierarchical reduce-scatter then all-gather",
+      "desc": "Replace some all-reduce calls with reduce-scatter followed by local computation on sharded results, then all-gather at the end. Approximately 3 reduce-scatter + 3 all-reduce + 1 all-gather = 7 dispatches, but reduce-scatter and all-gather have different bandwidth patterns (\u221aW vs log W latency) that may benefit the 224-rank topology with multi-node structure.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce chain baseline",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused scalar broadcast with all-reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.366976"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined two-phase reduction aggregation",
+      "sim": 6629.485714285714,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Chunked tensor with independent iteration",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.012962"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical reduce-scatter then all-gather",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.208153"
+    },
+    {
+      "stage": "refine:Pipelined two-phase reduction aggregation",
+      "round": 1,
+      "sim": 6671.4857142857145
+    },
+    {
+      "stage": "refine:Pipelined two-phase reduction aggregation",
+      "round": 2,
+      "sim": 6730.985714285714
+    },
+    {
+      "stage": "refine:Pipelined two-phase reduction aggregation",
+      "round": 3,
+      "sim": 6216.657142857143
+    },
+    {
+      "stage": "refine:Sequential all-reduce chain baseline",
+      "round": 1,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Sequential all-reduce chain baseline",
+      "round": 2,
+      "sim": 6877.900000000001
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6216.657142857143,
+  "final_code": "def r65b_gnorm_b0p6_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size\n    BETA = 0.6\n    dtype = x.dtype\n    \n    # Combine iterations to reduce collective count\n    # Instead of 7 separate all_reduces, we'll use fewer by doing more local work\n    \n    # Initial all_reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Do 2 iterations locally before next all_reduce\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # All_reduce for iteration 1-2\n    acc1 = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc1 = acc1 / W\n    \n    # Local compute for iterations 1-2\n    A1 = acc1.abs().mean()\n    M1 = A1 / (1.0 - BETA * A1)\n    gr1 = 1.0 + BETA * M1\n    s1 = acc1 * gr1\n    g1 = 1.0 + BETA * s1.abs().mean()\n    buf1 = s1 / g1\n    \n    A1b = buf1.abs().mean()\n    M1b = A1b / (1.0 - BETA * A1b)\n    gr1b = 1.0 + BETA * M1b\n    s1b = buf1 * gr1b\n    g1b = 1.0 + BETA * s1b.abs().mean()\n    buf1b = s1b / g1b\n    \n    # All_reduce for iteration 3-4\n    acc2 = xm.all_reduce(xm.REDUCE_SUM, buf1b)\n    acc2 = acc2 / W\n    \n    # Local compute for iterations 3-4\n    A2 = acc2.abs().mean()\n    M2 = A2 / (1.0 - BETA * A2)\n    gr2 = 1.0 + BETA * M2\n    s2 = acc2 * gr2\n    g2 = 1.0 + BETA * s2.abs().mean()\n    buf2 = s2 / g2\n    \n    A2b = buf2.abs().mean()\n    M2b = A2b / (1.0 - BETA * A2b)\n    gr2b = 1.0 + BETA * M2b\n    s2b = buf2 * gr2b\n    g2b = 1.0 + BETA * s2b.abs().mean()\n    buf2b = s2b / g2b\n    \n    # All_reduce for iteration 5-6\n    acc3 = xm.all_reduce(xm.REDUCE_SUM, buf2b)\n    acc3 = acc3 / W\n    \n    # Local compute for iterations 5-6\n    A3 = acc3.abs().mean()\n    M3 = A3 / (1.0 - BETA * A3)\n    gr3 = 1.0 + BETA * M3\n    s3 = acc3 * gr3\n    g3 = 1.0 + BETA * s3.abs().mean()\n    buf3 = s3 / g3\n    \n    # Final all_reduce\n    acc_final = xm.all_reduce(xm.REDUCE_SUM, buf3)\n    acc_final = acc_final / W\n    \n    return acc_final"
+}

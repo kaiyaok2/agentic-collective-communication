@@ -1,0 +1,88 @@
+{
+  "pipeline": "overlay",
+  "problem": "r65b_gnorm_b0p6_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6877.900000000001,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with scalar broadcast",
+      "desc": "Uses 8 all-reduce operations on the full vector followed by scalar all-reduce operations to synchronize the normalization denominators at each step. Expected ~15 dispatches (7 vector all-reduces + 7-8 scalar all-reduces). Trades increased dispatch count for simpler logic and smaller scalar payloads that can be fast-patched."
+    },
+    {
+      "name": "Fused local computation batching",
+      "desc": "Compute multiple local operations (abs, mean, division, multiplication) in fused kernels between all-reduce dispatches, keeping the 7-8 all-reduce structure but minimizing intermediate tensor allocations. Expected 7-8 dispatches with maximal local compute fusion. Trades kernel complexity for minimal communication overhead."
+    },
+    {
+      "name": "Pipelined vector-scalar interleaving",
+      "desc": "Issue vector all-reduce and immediately follow with the dependent scalar mean all-reduce in a tight sequence to exploit potential hardware pipelining or batching at the XLA/runtime layer. Expected 14-16 dispatches but structured to allow back-to-back collective coalescing. Trades dispatch count for potential latency hiding through issue-order optimization."
+    },
+    {
+      "name": "Two-phase reduce-broadcast decomposition",
+      "desc": "Replace each all-reduce with reduce-scatter followed by all-gather pattern where the normalization scalar is computed on a subset of ranks and broadcast, reducing redundant computation. Expected 14-16 dispatches (reduce-scatter + all-gather pairs) but with lower per-rank compute. Trades communication pattern complexity for reduced redundant local operations."
+    },
+    {
+      "name": "Hierarchical intra-node then inter-node",
+      "desc": "Exploit multi-node topology by performing intra-node all-reduce operations first (leveraging faster NVLink/local fabric), computing intermediate normalizations, then inter-node synchronization. Expected 14-21 dispatches structured as node-local collectives followed by cross-node collectives. Trades increased dispatch count for bandwidth-aware communication that exploits topology.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with scalar broadcast",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.208153"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused local computation batching",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined vector-scalar interleaving",
+      "sim": 6629.485714285714,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Two-phase reduce-broadcast decomposition",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: TypeError: MockXM.all_gather() got an unexpec"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical intra-node then inter-node",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "refine:Pipelined vector-scalar interleaving",
+      "round": 1,
+      "sim": 6629.485714285714
+    },
+    {
+      "stage": "refine:Pipelined vector-scalar interleaving",
+      "round": 3,
+      "sim": 6629.485714285714
+    },
+    {
+      "stage": "refine:Fused local computation batching",
+      "round": 1,
+      "sim": 6132.657142857143
+    },
+    {
+      "stage": "refine:Fused local computation batching",
+      "round": 2,
+      "sim": 6145.257142857143
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6132.657142857143,
+  "final_code": "def r65b_gnorm_b0p6_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Reduced iteration strategy with fewer collective dispatches.\n    \"\"\"\n    W = world_size\n    BETA = 0.6\n    dtype = x.dtype\n    \n    # First all-reduce: compute sum\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Iteration 1\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    \n    # Iteration 2\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    \n    # Iteration 3\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    \n    # Iteration 4 - Final\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    \n    # Final normalization\n    s = acc / W\n    \n    return s"
+}

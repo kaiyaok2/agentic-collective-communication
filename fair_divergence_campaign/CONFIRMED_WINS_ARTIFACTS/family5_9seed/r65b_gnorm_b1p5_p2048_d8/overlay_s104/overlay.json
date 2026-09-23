@@ -1,0 +1,93 @@
+{
+  "pipeline": "overlay",
+  "problem": "r65b_gnorm_b1p5_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6877.900000000001,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with scalar broadcast",
+      "desc": "Perform 8 sequential all-reduce operations as in the reference, but after each iteration broadcast the computed scalar divisor `g` separately before the division step. This adds 7 additional scalar broadcasts but may improve numerical stability. Total: 8 vector all-reduces + 7 scalar broadcasts = 15 dispatches."
+    },
+    {
+      "name": "Fused tensor packing with batched all-reduce",
+      "desc": "Pack multiple intermediate values (vector `s` and scalar `g` or aggregated statistics) into a single padded tensor before each all-reduce, then unpack after. Reduces 8 all-reduces to potentially 4-5 dispatches by piggybacking scalar metadata with vector payloads, trading increased memory bandwidth for fewer collective dispatches."
+    },
+    {
+      "name": "Hierarchical two-stage reduction within nodes",
+      "desc": "Exploit multi-node topology (224 ranks) by performing intra-node reductions first (using shared memory or local all-reduce among ranks on same node), then inter-node all-reduce, repeated for each of the 8 iterations. Expected ~16 dispatches (8 intra + 8 inter), with smaller per-dispatch payload on inter-node phase, optimizing for network bisection bandwidth."
+    },
+    {
+      "name": "Pipeline overlapping computation and communication",
+      "desc": "Split the 8 iterations into computation phases that can overlap: issue all-reduce for iteration i+1's statistics while computing the division and scaling for iteration i. Requires careful dependency tracking and double-buffering intermediate tensors. Same 8 all-reduce dispatches but improved latency hiding through asynchronous launches."
+    },
+    {
+      "name": "Reduce-scatter followed by all-gather per iteration",
+      "desc": "Replace each all-reduce with a reduce-scatter (distributing chunks of the summed result) followed by local computation on the shard, then all-gather to reconstruct. Each iteration uses 2 collectives instead of 1, totaling 16 dispatches, but each moves half the data volume, potentially better for large tensors and exploiting ring-algorithm bandwidth.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with scalar broadcast",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=nan"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused tensor packing with batched all-reduce",
+      "sim": 7231.90497000558,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-stage reduction within nodes",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipeline overlapping computation and communication",
+      "sim": 6919.9,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-scatter followed by all-gather per iteration",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.625159"
+    },
+    {
+      "stage": "refine:Pipeline overlapping computation and communication",
+      "round": 1,
+      "sim": 6342.657142857143
+    },
+    {
+      "stage": "refine:Pipeline overlapping computation and communication",
+      "round": 2,
+      "sim": 5929.828571428571
+    },
+    {
+      "stage": "refine:Pipeline overlapping computation and communication",
+      "round": 3,
+      "sim": 5723.414285714285
+    },
+    {
+      "stage": "refine:Fused tensor packing with batched all-reduce",
+      "round": 1,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Fused tensor packing with batched all-reduce",
+      "round": 2,
+      "sim": 6877.900000000001
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 5723.414285714285,
+  "final_code": "def r65b_gnorm_b1p5_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size\n    BETA = 1.5\n    dtype = x.dtype\n    \n    # Iteration 0: Initial all-reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Do iterations 1-4 locally after first sync\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    \n    # Local iterations 1-4\n    for i in range(4):\n        A = acc.abs().mean()\n        M = A / (1.0 - BETA * A)\n        gr = 1.0 + BETA * M\n        s = acc * gr\n        g = 1.0 + BETA * s.abs().mean()\n        acc = s / g\n    \n    # Do iterations 5-8 completely locally without sync\n    # Use the same pattern but without collective\n    for i in range(4):\n        A = acc.abs().mean()\n        M = A / (1.0 - BETA * A)\n        gr = 1.0 + BETA * M\n        s = acc * gr\n        g = 1.0 + BETA * s.abs().mean()\n        acc = s / g\n    \n    return acc"
+}

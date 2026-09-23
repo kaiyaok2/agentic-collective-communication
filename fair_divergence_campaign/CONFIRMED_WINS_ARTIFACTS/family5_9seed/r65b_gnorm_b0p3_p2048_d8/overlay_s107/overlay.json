@@ -1,0 +1,78 @@
+{
+  "pipeline": "overlay",
+  "problem": "r65b_gnorm_b0p3_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6877.900000000001,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with scalar all-reduce",
+      "desc": "Perform 8 sequential all-reduce operations on the full vector (16384 elements) as shown in the reference, but extract the scalar mean and broadcast it via a separate small all-reduce after each vector all-reduce. This yields 8 vector all-reduces + 6 scalar all-reduces = 14 total dispatches. Tradeoff: straightforward implementation with moderate dispatch count but no overlap opportunity."
+    },
+    {
+      "name": "Fused local computation batching",
+      "desc": "Batch multiple local operations (division, abs, mean) between consecutive all-reduces to maximize compute fusion before each collective dispatch. Structurally identical 8 all-reduce operations but reorder and fuse local ops to minimize kernel launches. Same 8 dispatches as reference but better local compute efficiency through operation fusion."
+    },
+    {
+      "name": "Two-stage hierarchical reduction",
+      "desc": "Split the 224 ranks into groups (e.g., 28 groups of 8), perform intra-group all-reduce for each of the 8 iterations, then inter-group all-reduce. This creates 8 \u00d7 2 = 16 all-reduce dispatches but each operates on smaller communication domains, potentially reducing latency on multi-node topology. Tradeoff: more dispatches but exploits hierarchical network structure."
+    },
+    {
+      "name": "Pipelined vector chunking",
+      "desc": "Divide the 16384-element vector into K chunks and pipeline the 8 dependent all-reduce iterations across chunks, allowing overlap between communication of chunk i and computation on chunk i-1. Requires K \u00d7 8 all-reduce dispatches on smaller payloads. Tradeoff: increased dispatch count but enables comm/compute overlap and better network utilization."
+    },
+    {
+      "name": "Scalar-only reduction with reconstruction",
+      "desc": "After the first full all-reduce to get sum s, extract only scalar statistics (mean of abs values) and perform the remaining 7 iterations as scalar all-reduces (single float), then reconstruct the final vector using locally stored intermediate results. This yields 1 vector all-reduce + 7 scalar all-reduces = 8 total dispatches. Tradeoff: minimal communication volume and dispatch count but requires careful local state management.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with scalar all-reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.508058"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused local computation batching",
+      "sim": 6882.1,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Two-stage hierarchical reduction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.508058"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined vector chunking",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.005694"
+    },
+    {
+      "stage": "impl",
+      "name": "Scalar-only reduction with reconstruction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.394173"
+    },
+    {
+      "stage": "refine:Fused local computation batching",
+      "round": 2,
+      "sim": 6134.757142857143
+    },
+    {
+      "stage": "refine:Fused local computation batching",
+      "round": 3,
+      "sim": 6132.657142857143
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 6132.657142857143,
+  "final_code": "def r65b_gnorm_b0p3_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size\n    BETA = 0.3\n    dtype = x.dtype\n    \n    # First all-reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Iteration 1\n    s_abs = s.abs()\n    g = 1.0 + BETA * s_abs.mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc_scaled = acc / W\n    A = acc_scaled.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc_scaled * gr\n    \n    # Iteration 2\n    s_abs = s.abs()\n    g = 1.0 + BETA * s_abs.mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc_scaled = acc / W\n    A = acc_scaled.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc_scaled * gr\n    \n    # Iteration 3\n    s_abs = s.abs()\n    g = 1.0 + BETA * s_abs.mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc_scaled = acc / W\n    A = acc_scaled.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc_scaled * gr\n    \n    # Iteration 4\n    s_abs = s.abs()\n    g = 1.0 + BETA * s_abs.mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    s = acc / W\n    \n    return s"
+}

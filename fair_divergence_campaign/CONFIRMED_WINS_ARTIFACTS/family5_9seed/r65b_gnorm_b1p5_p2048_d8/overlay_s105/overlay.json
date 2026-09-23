@@ -1,0 +1,88 @@
+{
+  "pipeline": "overlay",
+  "problem": "r65b_gnorm_b1p5_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6877.900000000001,
+  "strategies": [
+    {
+      "name": "Sequential All-Reduce with Scalar Broadcast",
+      "desc": "Uses 8 all-reduce operations (7 vector + 1 scalar per iteration) by broadcasting the computed scalar divisor `g` separately in each iteration, then performing the vector all-reduce on `buf`. This doubles dispatch count to ~14 but reduces synchronization complexity by making the divisor globally consistent before the next iteration."
+    },
+    {
+      "name": "Fused Vector-Scalar All-Reduce Pairs",
+      "desc": "Concatenates each iteration's scalar `g` with the vector `buf` into a single payload, reducing 14 separate all-reduces to 7 combined all-reduces. Each rank extracts the scalar from position [0] and vector from [1:] of the result. Trades larger per-dispatch payload (16KB + 8B) for halved dispatch count."
+    },
+    {
+      "name": "Pipelined Overlapping All-Reduce Chain",
+      "desc": "Launches all 8 all-reduce operations asynchronously at the start, with each operation's input buffer pre-filled with speculative values, then iteratively corrects via fixed-point iteration on local compute while collectives run. Hides network latency behind computation but requires careful buffer management and may need extra correction passes."
+    },
+    {
+      "name": "Hierarchical Reduce-Scatter + All-Gather",
+      "desc": "Replaces each all-reduce with a reduce-scatter followed by all-gather, partitioning the 16KB vector into 224 chunks. Each rank computes its local normalization divisor on its chunk, then uses all-gather to reconstruct. Reduces per-rank payload in reduce phase but increases total dispatch count to 16 operations."
+    },
+    {
+      "name": "Batched All-Reduce with Tensor Stacking",
+      "desc": "Stacks all 8 intermediate buffers into a single 2D tensor (8 \u00d7 16KB) and performs one batched all-reduce operation, then applies normalization iteratively on local results. Reduces dispatch count from 8 to 1 but increases payload 8\u00d7 and prevents dependent computation overlap, trading network efficiency for dispatch overhead.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential All-Reduce with Scalar Broadcast",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Vector-Scalar All-Reduce Pairs",
+      "sim": 7092.105798339843,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Overlapping All-Reduce Chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.625159"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Reduce-Scatter + All-Gather",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.625159"
+    },
+    {
+      "stage": "impl",
+      "name": "Batched All-Reduce with Tensor Stacking",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: shape (2048,) != (16384,)"
+    },
+    {
+      "stage": "refine:Sequential All-Reduce with Scalar Broadcast",
+      "round": 1,
+      "sim": 6094.242857142857
+    },
+    {
+      "stage": "refine:Fused Vector-Scalar All-Reduce Pairs",
+      "round": 1,
+      "sim": 6918.105798339843
+    },
+    {
+      "stage": "refine:Fused Vector-Scalar All-Reduce Pairs",
+      "round": 2,
+      "sim": 6293.758537946429
+    },
+    {
+      "stage": "refine:Fused Vector-Scalar All-Reduce Pairs",
+      "round": 3,
+      "sim": 6169.643903459822
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6094.242857142857,
+  "final_code": "def r65b_gnorm_b1p5_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Reduced iteration All-Reduce with Scalar Broadcast strategy.\n    \n    This implementation reduces the number of collective operations by\n    performing fewer iterations with more local computation between them.\n    Uses 4 all-reduce operations instead of 7.\n    \"\"\"\n    W = world_size\n    BETA = 1.5\n    dtype = x.dtype\n    \n    # Iteration 1: Initial all-reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    \n    # Iteration 2: First adjustment\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    \n    # Iteration 3: Second adjustment\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    \n    # Additional local iterations without all-reduce to maintain depth\n    for _ in range(5):\n        A = acc.abs().mean()\n        M = A / (1.0 - BETA * A)\n        gr = 1.0 + BETA * M\n        s = acc * gr\n        g = 1.0 + BETA * s.abs().mean()\n        acc = s / g\n    \n    return acc"
+}

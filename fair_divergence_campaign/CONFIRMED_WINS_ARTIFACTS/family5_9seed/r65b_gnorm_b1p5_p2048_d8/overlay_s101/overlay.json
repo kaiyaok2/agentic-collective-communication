@@ -1,0 +1,78 @@
+{
+  "pipeline": "overlay",
+  "problem": "r65b_gnorm_b1p5_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6877.900000000001,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with scalar fusions",
+      "desc": "Directly follows the reference pattern: 8 all-reduce dispatches (1 initial + 7 iterations), each preceded by local scalar computations (mean, abs, division). Represents the baseline with 8 dispatches but straightforward correctness verification. No optimization applied; pure sequential execution matching the dependency chain."
+    },
+    {
+      "name": "Pipelined all-reduce with async overlapping",
+      "desc": "Issue all-reduce operations asynchronously where possible, overlapping communication with subsequent local scalar computation on prior results. Uses xm async dispatch capabilities to hide latency between dependent stages. Expected 8 all-reduce dispatches but with reduced wall-clock time through pipeline fill. Trades code complexity for lower end-to-end latency."
+    },
+    {
+      "name": "Hierarchical two-stage reduction per iteration",
+      "desc": "For world_size=224 with potential multi-node topology, split each all-reduce into intra-node + inter-node stages using node-aware collectives or manual reduce-scatter/all-gather decomposition. Each of 8 iterations becomes 2 smaller collectives (16 total dispatches). Reduces per-dispatch payload and exploits faster intra-node bandwidth, trading dispatch count for better network utilization."
+    },
+    {
+      "name": "Batched scalar gather and broadcast",
+      "desc": "Instead of computing scalar g locally then implicitly synchronizing via next all-reduce, explicitly gather all 224 local scalar values (g, A, M) in one all-gather per iteration, compute consensus values, then broadcast. Converts implicit sync into explicit smaller-payload scalar collectives. 8 iterations \u00d7 2 collectives = 16 dispatches, but tiny payloads (scalars vs 16K floats)."
+    },
+    {
+      "name": "Fused buffer with stacked all-reduce",
+      "desc": "Concatenate intermediate buffers across multiple iterations into a single tensor and issue one large all-reduce covering multiple stages where dependencies allow (first iteration is independent). After initial all-reduce, unpack and compute 7 dependent iterations normally. Reduces cold-start overhead from 8 to ~1-2 large dispatches plus 6-7 follow-ons. Larger initial payload but fewer dispatch overheads.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with scalar fusions",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined all-reduce with async overlapping",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-stage reduction per iteration",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Batched scalar gather and broadcast",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.625159"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused buffer with stacked all-reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.277073"
+    },
+    {
+      "stage": "refine:Sequential all-reduce with scalar fusions",
+      "round": 1,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Sequential all-reduce with scalar fusions",
+      "round": 2,
+      "sim": 6877.900000000001
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6877.900000000001,
+  "final_code": "def r65b_gnorm_b1p5_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Sequential all-reduce with scalar fusions.\n    Directly follows the reference pattern: 8 all-reduce dispatches \n    (1 initial + 7 iterations), each preceded by local scalar computations.\n    \"\"\"\n    W = world_size\n    BETA = 1.5\n    \n    # Preserve input dtype\n    dtype = x.dtype\n    \n    # Initial all-reduce: sum x across all ranks\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # First normalization\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Iteration 1\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Iteration 2\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Iteration 3\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Iteration 4\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Iteration 5\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Iteration 6\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Iteration 7 (final)\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    \n    return s"
+}

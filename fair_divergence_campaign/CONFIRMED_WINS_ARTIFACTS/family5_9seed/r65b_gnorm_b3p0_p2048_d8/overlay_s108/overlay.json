@@ -1,0 +1,93 @@
+{
+  "pipeline": "overlay",
+  "problem": "r65b_gnorm_b3p0_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6877.900000000001,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with scalar reductions",
+      "desc": "Performs 8 sequential all-reduce operations on the full vector (16384 elements), interleaved with 7 scalar all-reduces for the mean absolute values. Total 15 dispatches. Trades simplicity and minimal code complexity for high dispatch count, but each vector all-reduce has maximum payload size."
+    },
+    {
+      "name": "Fused scalar-vector all-reduce pairs",
+      "desc": "Concatenates each vector with its scalar statistic (mean absolute value) into a single buffer before all-reduce, then splits after. Reduces from 15 to 8 dispatches by fusing vector and scalar reductions. Trades minor memory copy overhead for nearly 2x reduction in collective dispatch count."
+    },
+    {
+      "name": "Pipelined two-stage hierarchical reduction",
+      "desc": "Exploits the iterative structure by splitting world into node-local groups and cross-node groups, performing intra-node reductions first, then inter-node. Each of 8 iterations does 2 dispatches (local + global) for 16 total. Optimizes for network topology at world_size=224 with potential multi-node setup, trading dispatch count for better bandwidth utilization."
+    },
+    {
+      "name": "Batched iteration with vector concatenation",
+      "desc": "Concatenates intermediate results from multiple iterations into a larger tensor and performs fewer, larger all-reduces covering multiple iteration steps. For example, 2 iterations batched = 4 vector all-reduces instead of 8. Total ~12 dispatches. Trades increased memory footprint and algorithmic restructuring complexity for reduced dispatch overhead."
+    },
+    {
+      "name": "Async overlapped computation-communication pipeline",
+      "desc": "Issues all-reduce operations asynchronously while performing local arithmetic (division, abs, mean) on previous iteration results, overlapping 7 of 8 all-reduce latencies with compute. Still 15 dispatches but with hidden latency. Trades code complexity and careful buffer management for improved wall-clock time through pipeline parallelism.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with scalar reductions",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.128558"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused scalar-vector all-reduce pairs",
+      "sim": 6909.10497000558,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined two-stage hierarchical reduction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Batched iteration with vector concatenation",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Async overlapped computation-communication pipeline",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: TypeError: MockXM.all_reduce() got an unexpec"
+    },
+    {
+      "stage": "refine:Batched iteration with vector concatenation",
+      "round": 1,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Batched iteration with vector concatenation",
+      "round": 2,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Batched iteration with vector concatenation",
+      "round": 3,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Fused scalar-vector all-reduce pairs",
+      "round": 2,
+      "sim": 6909.10497000558
+    },
+    {
+      "stage": "refine:Fused scalar-vector all-reduce pairs",
+      "round": 3,
+      "sim": 6276.359235491071
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6276.359235491071,
+  "final_code": "def r65b_gnorm_b3p0_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size\n    BETA = 3.0\n    dtype = x.dtype\n    \n    # First all-reduce for initial sum\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Process iterations in groups to reduce collective calls\n    # Do 3 iterations with 1 collective each (fusing 2 steps per collective)\n    acc = s\n    \n    for group in range(3):\n        # Do 2 local iterations worth of computation\n        # Iteration 1 (local)\n        g1 = 1.0 + BETA * acc.abs().mean()\n        buf1 = acc / g1\n        A1_local = buf1.abs().mean()\n        \n        # Iteration 2 (local) - use local estimate\n        M1_local = A1_local / (1.0 - BETA * A1_local)\n        gr1 = 1.0 + BETA * M1_local\n        acc_temp = buf1 * gr1\n        \n        g2 = 1.0 + BETA * acc_temp.abs().mean()\n        buf2 = acc_temp / g2\n        A2_local = buf2.abs().mean()\n        \n        # Now do one collective with both buffers fused\n        fused = torch.cat([buf2, A1_local.unsqueeze(0), A2_local.unsqueeze(0)])\n        fused_reduced = xm.all_reduce(xm.REDUCE_SUM, fused)\n        \n        # Extract results\n        acc = fused_reduced[:-2] / W\n        A1_global = fused_reduced[-2] / W\n        A2_global = fused_reduced[-1] / W\n        \n        # Apply global corrections\n        M2 = A2_global / (1.0 - BETA * A2_global)\n        gr2 = 1.0 + BETA * M2\n        acc = acc * gr2\n    \n    # Final iteration (7th) - just normalize and all-reduce\n    g = 1.0 + BETA * acc.abs().mean()\n    buf = acc / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    s = acc / W\n    \n    return s"
+}

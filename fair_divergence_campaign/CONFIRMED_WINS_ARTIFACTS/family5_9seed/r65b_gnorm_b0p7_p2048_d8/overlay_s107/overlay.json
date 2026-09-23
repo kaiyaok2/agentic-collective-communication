@@ -1,0 +1,83 @@
+{
+  "pipeline": "overlay",
+  "problem": "r65b_gnorm_b0p7_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6877.900000000001,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with scalar broadcasts",
+      "desc": "Performs 8 all-reduce operations sequentially as shown in the reference, with each iteration computing local scalar statistics (mean of absolute values), then dividing/multiplying the tensor before the next all-reduce. Total 8 all-reduce dispatches (7 intermediate + 1 final). This is the baseline reference pattern trading simplicity for maximum dispatch count."
+    },
+    {
+      "name": "Fused statistic all-reduce pairs",
+      "desc": "After each vector all-reduce, immediately pack the computed scalar statistic (mean abs value or derived M value) with the next vector payload into a single buffer, performing dual all-reduce (one for vector continuation, one for scalar broadcast) in merged dispatches. Reduces to approximately 8 dispatches but with heterogeneous payloads (vector+scalar), trading buffer management complexity for potential dispatch reduction."
+    },
+    {
+      "name": "Pipelined two-phase with batched scalars",
+      "desc": "Split into two phases: (1) perform first 4 all-reduces collecting all intermediate scalar statistics locally, (2) all-reduce a length-4 scalar vector to broadcast all statistics, then (3) perform remaining all-reduces using pre-fetched global scalars. Approximately 4-6 dispatches total (4 vector ARs + 1 scalar AR + potential final AR), trading increased local computation and buffering for fewer network dispatches."
+    },
+    {
+      "name": "Hierarchical reduction with intra-node fusion",
+      "desc": "Exploit multi-node topology (224 ranks suggests 28 nodes \u00d7 8 devices): first reduce within each 8-device node using local collectives, compute statistics on node-reduced results, then perform inter-node all-reduce iterations (8 dependent steps at node level). Approximately 16 dispatches (8 intra-node + 8 inter-node), trading two-level hierarchy management for better bandwidth utilization per dispatch stage."
+    },
+    {
+      "name": "Tensor-stacked iteration with single unroll",
+      "desc": "Stack all 8 iteration states as a single [8, 16384] tensor, perform a single all-reduce on the stacked tensor, then apply all 8 division/scaling operations as batched element-wise ops across the stacked dimension, extracting the final slice. Reduces to 1 all-reduce dispatch with 8\u00d7 payload size, trading massive memory footprint and complex indexing logic for minimal dispatch overhead.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with scalar broadcasts",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused statistic all-reduce pairs",
+      "sim": 7027.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined two-phase with batched scalars",
+      "sim": 7107.603313337054,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical reduction with intra-node fusion",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.123512"
+    },
+    {
+      "stage": "impl",
+      "name": "Tensor-stacked iteration with single unroll",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.778719"
+    },
+    {
+      "stage": "refine:Sequential all-reduce with scalar broadcasts",
+      "round": 1,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Sequential all-reduce with scalar broadcasts",
+      "round": 2,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Sequential all-reduce with scalar broadcasts",
+      "round": 3,
+      "sim": 6258.657142857142
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6258.657142857142,
+  "final_code": "def r65b_gnorm_b0p7_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size\n    BETA = 0.7\n    dtype = x.dtype\n    \n    # First all-reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Iterations with 2x unrolling (reduce to 3 more all-reduces)\n    for _ in range(3):\n        # First sub-iteration\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n        acc = acc / W\n        A = acc.abs().mean()\n        M = A / (1.0 - BETA * A)\n        gr = 1.0 + BETA * M\n        s = acc * gr\n        g = 1.0 + BETA * s.abs().mean()\n        buf = s / g\n        \n        # Second sub-iteration (local only, no all-reduce)\n        A = buf.abs().mean()\n        M = A / (1.0 - BETA * A)\n        gr = 1.0 + BETA * M\n        s = buf * gr\n        g = 1.0 + BETA * s.abs().mean()\n        buf = s / g\n    \n    # Final all-reduce\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    \n    return s"
+}

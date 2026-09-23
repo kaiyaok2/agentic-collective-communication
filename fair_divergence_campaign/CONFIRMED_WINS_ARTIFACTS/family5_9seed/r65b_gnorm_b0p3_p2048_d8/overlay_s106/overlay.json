@@ -1,0 +1,78 @@
+{
+  "pipeline": "overlay",
+  "problem": "r65b_gnorm_b0p3_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6877.900000000001,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with scalar broadcast",
+      "desc": "Performs 8 dependent all-reduce operations sequentially as shown in the reference, where each iteration computes a global mean (via all-reduce SUM), normalizes by a data-dependent denominator, and feeds into the next iteration. Total of 8 all-reduce dispatches. Represents the baseline: straightforward correctness with maximum dispatch overhead but simple dependency chain."
+    },
+    {
+      "name": "Fused local computation between collectives",
+      "desc": "Identical structure to Strategy 1 but aggressively fuses all local operations (division, abs, mean, scaling) between consecutive all-reduce calls into single compound kernels to minimize memory traffic. Still 8 all-reduce dispatches but reduces host-device synchronization overhead. Trades implementation complexity for better memory bandwidth utilization between collectives."
+    },
+    {
+      "name": "Pipelined two-stage all-reduce with buffer reuse",
+      "desc": "Splits the 8-iteration chain into overlapping phases where all-reduce N+1 is issued immediately after local computation for iteration N begins, hiding communication latency behind computation. Still 8 dispatches but with better pipeline efficiency. Trades increased buffer management complexity for reduced end-to-end latency through async dispatch overlap."
+    },
+    {
+      "name": "Hierarchical reduce-scatter then all-gather per iteration",
+      "desc": "Replaces each monolithic all-reduce with a reduce-scatter followed by all-gather pair, allowing partial results to be computed on sharded data. Total of 16 collectives (8 RS + 8 AG pairs) but each operates on 1/W of the data initially. Trades increased dispatch count for potentially better network topology utilization and reduced per-dispatch payload in early pipeline stages."
+    },
+    {
+      "name": "Batched metadata all-reduce with vector ops",
+      "desc": "Observes that after first all-reduce, subsequent iterations operate on identical-across-ranks data, so only scalar metadata (the normalizer 'g' or 'M') needs communication. Performs one vector all-reduce (iteration 0), then 7 scalar all-reduce operations on just the normalization constants, with local reconstruction. Reduces to 1 vector + 7 scalar dispatches. Trades numerical precision sensitivity for dramatically reduced communication volume.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with scalar broadcast",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused local computation between collectives",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined two-stage all-reduce with buffer reuse",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical reduce-scatter then all-gather per iteration",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.508058"
+    },
+    {
+      "stage": "impl",
+      "name": "Batched metadata all-reduce with vector ops",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.394171"
+    },
+    {
+      "stage": "refine:Sequential all-reduce with scalar broadcast",
+      "round": 2,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Sequential all-reduce with scalar broadcast",
+      "round": 3,
+      "sim": 6877.900000000001
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6877.900000000001,
+  "final_code": "def r65b_gnorm_b0p3_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Sequential all-reduce with scalar broadcast strategy.\n    Performs 8 dependent all-reduce operations sequentially.\n    \"\"\"\n    W = world_size\n    BETA = 0.3\n    dtype = x.dtype\n    \n    # Iteration 1\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    \n    # Iteration 2\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    \n    # Iteration 3\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    \n    # Iteration 4\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    \n    # Iteration 5\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    \n    # Iteration 6\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    \n    # Iteration 7\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    \n    return s"
+}

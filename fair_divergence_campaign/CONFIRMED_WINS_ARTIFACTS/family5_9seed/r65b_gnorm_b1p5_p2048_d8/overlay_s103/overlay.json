@@ -1,0 +1,88 @@
+{
+  "pipeline": "overlay",
+  "problem": "r65b_gnorm_b1p5_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6877.900000000001,
+  "strategies": [
+    {
+      "name": "Sequential All-Reduce Chain (Baseline)",
+      "desc": "Direct translation of the reference: 8 separate all-reduce dispatches with interleaved local computation (abs, mean, division). 8 collective dispatches total. Represents the naive approach with maximum dispatch overhead but simplest correctness verification and no fusion complexity."
+    },
+    {
+      "name": "Batched Multi-Tensor All-Reduce",
+      "desc": "Pack intermediate scalar metadata (g, A, M values) and vector buffers into a single concatenated tensor per iteration, then perform one all-reduce per iteration that simultaneously reduces both the main buffer and synchronizes scalar statistics across ranks. 7-8 dispatches but each carries multiple logical payloads, trading larger message size for fewer launches."
+    },
+    {
+      "name": "Pipelined Overlapped All-Reduce",
+      "desc": "Split the 16384-element tensor into chunks and issue the all-reduce for chunk i+1 while performing local computation (division, abs, mean) on chunk i. Uses async all-reduce launches to overlap communication with computation. 8+ dispatches but with concurrent execution hiding latency, especially effective at world_size=224 where ring/tree algorithms have high diameter."
+    },
+    {
+      "name": "Fused Local-Op with Reduced-Precision Metadata",
+      "desc": "Merge all local element-wise operations (abs, mean, division) into single kernel launches between collectives, and transmit scalar correction factors (g, M, gr) as fp16/bf16 metadata appended to main buffers. 8 all-reduce dispatches but with fused local ops reducing memory traffic and kernel launch overhead."
+    },
+    {
+      "name": "Hierarchical Two-Level Aggregation",
+      "desc": "Exploit multi-node topology: perform intra-node all-reduce (across devices within each node) followed by inter-node all-reduce on node representatives, then broadcast back within nodes. Requires 8 iterations \u00d7 3 collectives (intra-reduce, inter-reduce, intra-broadcast) = 24 smaller dispatches, but inter-node traffic reduced by node-count factor, optimizing cross-switch bandwidth at 224 ranks.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential All-Reduce Chain (Baseline)",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Batched Multi-Tensor All-Reduce",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Overlapped All-Reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.625159"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Local-Op with Reduced-Precision Metadata",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level Aggregation",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "refine:Sequential All-Reduce Chain (Baseline)",
+      "round": 1,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Sequential All-Reduce Chain (Baseline)",
+      "round": 2,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Sequential All-Reduce Chain (Baseline)",
+      "round": 3,
+      "sim": 6877.900000000001
+    },
+    {
+      "stage": "refine:Batched Multi-Tensor All-Reduce",
+      "round": 3,
+      "sim": 6877.900000000001
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6877.900000000001,
+  "final_code": "def r65b_gnorm_b1p5_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Sequential All-Reduce Chain (Baseline)\n    \n    Direct translation of the reference implementation:\n    - 8 separate all-reduce dispatches\n    - Interleaved local computation (abs, mean, division)\n    - Total: 8 collective dispatches\n    - Naive approach with maximum dispatch overhead but simplest correctness\n    \"\"\"\n    W = world_size\n    BETA = 1.5\n    dtype = x.dtype\n    \n    # First all-reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    \n    # Iterations 2-7 (6 more all-reduces)\n    for _ in range(6):\n        A = acc.abs().mean()\n        M = A / (1.0 - BETA * A)\n        gr = 1.0 + BETA * M\n        s = acc * gr\n        g = 1.0 + BETA * s.abs().mean()\n        buf = s / g\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n        acc = acc / W\n    \n    s = acc\n    return s"
+}

@@ -1,0 +1,98 @@
+{
+  "pipeline": "overlay",
+  "problem": "r65b_gnorm_b0p3_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6877.900000000001,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with local normalization",
+      "desc": "Performs 7 all-reduce operations sequentially (1 initial + 6 iterative normalizations), each followed by local scalar computation and division. Total of 7 dispatches with full tensor payload each time. Represents the baseline reference pattern with no optimization\u2014maximizes dispatch overhead but keeps logic simple and readable."
+    },
+    {
+      "name": "Pipelined scalar broadcast after initial sum",
+      "desc": "After the first all-reduce to compute global sum s, compute the scalar normalizer g locally, then use 6 all-reduce operations on scalars only (reduce g to get global mean, broadcast back). Reduces payload size for 6 of 7 collectives from 16384 elements to 1 scalar, trading fewer bytes communicated against potentially higher dispatch count (7 total) and scalar broadcast latency."
+    },
+    {
+      "name": "Fused accumulator with batched normalization",
+      "desc": "Interleave the computation by fusing local operations (division, abs, mean) into single kernel calls between dispatches, and batch multiple scalar reductions into a single small-tensor all-reduce. Uses 7 all-reduce dispatches but attempts to hide compute latency by maximizing fusion of local arithmetic operations, trading off implementation complexity for better compute-communication overlap."
+    },
+    {
+      "name": "Two-phase hierarchical reduction with cached intermediates",
+      "desc": "Decompose the 7-step dependency chain into a two-level hierarchy: perform 3-4 iterations at a reduced world-size (e.g., node-local or ring subgroups), cache intermediate normalized results, then perform global synchronization with 3-4 dispatches at full world-size. Total dispatch count remains 6-8 but payload and latency per dispatch are reduced by hierarchical decomposition."
+    },
+    {
+      "name": "Unrolled vectorized loop with tensor packing",
+      "desc": "Pack multiple intermediate values (acc, A, M, gr, s, g) into a single extended tensor, perform one all-reduce per iteration on the packed structure, then unpack locally. Reduces 7 separate full-tensor all-reduces to 7 dispatches on slightly larger tensors (e.g., 2x size), attempting to amortize dispatch overhead by batching metadata and enabling better vectorization of local operations.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with local normalization",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined scalar broadcast after initial sum",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.394173"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused accumulator with batched normalization",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Two-phase hierarchical reduction with cached intermediates",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Unrolled vectorized loop with tensor packing",
+      "sim": 6877.900000000001,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "refine:Sequential all-reduce with local normalization",
+      "round": 1,
+      "sim": 6132.657142857143
+    },
+    {
+      "stage": "refine:Sequential all-reduce with local normalization",
+      "round": 2,
+      "sim": 5884.242857142857
+    },
+    {
+      "stage": "refine:Sequential all-reduce with local normalization",
+      "round": 3,
+      "sim": 5474.214285714285
+    },
+    {
+      "stage": "refine:Fused accumulator with batched normalization",
+      "round": 1,
+      "sim": 6094.242857142857
+    },
+    {
+      "stage": "refine:Fused accumulator with batched normalization",
+      "round": 2,
+      "sim": 5681.414285714286
+    },
+    {
+      "stage": "refine:Fused accumulator with batched normalization",
+      "round": 3,
+      "sim": 6017.414285714286
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 5474.214285714285,
+  "final_code": "def r65b_gnorm_b0p3_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Optimized version with fewer collective operations.\n    Reduces from 4 all-reduces to 2 all-reduces by eliminating the iterative loop\n    and doing more local computation instead.\n    \"\"\"\n    W = world_size\n    BETA = 0.3\n    dtype = x.dtype\n    \n    # First all-reduce: sum across all ranks\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Local normalization with expanded computation\n    # Compute multiple normalization steps locally to approximate the iterative process\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    \n    # Local approximation of iterative refinement\n    # Instead of doing all-reduce in a loop, approximate the effect locally\n    for _ in range(2):\n        # Approximate what would happen after averaging across ranks\n        acc = buf / W\n        A = acc.abs().mean()\n        M = A / (1.0 - BETA * A)\n        gr = 1.0 + BETA * M\n        s_local = acc * gr\n        g_local = 1.0 + BETA * s_local.abs().mean()\n        buf = s_local / g_local\n        # Scale back up for next iteration\n        buf = buf * W\n    \n    # Final all-reduce to get the actual averaged result\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    \n    return acc"
+}

@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r65b_gnorm_b0p7_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6877.900000000001,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with scalar feedback",
+      "desc": "Execute 8 all-reduce operations sequentially, each depending on the scalar normalization factor computed from the previous iteration. 8 all-reduce dispatches total. Baseline approach that maximizes correctness clarity but pays full latency cost for each dependent collective."
+    },
+    {
+      "name": "Batched tensor stack with single all-reduce",
+      "desc": "Stack all 8 intermediate buffers into a single tensor [8, 16384] and perform one all-reduce on the combined payload, then unstack and apply scalar corrections locally. Reduces to 1 all-reduce dispatch but increases payload size 8\u00d7 and requires careful indexing to respect dependencies through local computation."
+    },
+    {
+      "name": "Pipelined two-phase with pre-computed denominators",
+      "desc": "Split into two phases: (1) all-reduce the initial sum, then locally compute and all-reduce a vector of the 7 scalar denominators g_i in one shot; (2) apply all corrections locally using broadcasted scalars. 2 all-reduce dispatches trading off increased local computation for fewer network round-trips."
+    },
+    {
+      "name": "Ring-reduce with fused metadata payload",
+      "desc": "Append scalar statistics (mean absolute values) as metadata elements to each buffer, creating tensors of size (16384 + 1), and perform all-reduces on extended payloads. 8 all-reduce dispatches but each carries the normalization scalar in-band, potentially improving cache locality and reducing separate scalar broadcasts."
+    },
+    {
+      "name": "Hierarchical reduce-scatter then all-gather",
+      "desc": "Use reduce-scatter to distribute chunks of the initial sum across ranks, perform the 7 iterative normalizations in parallel on distributed chunks, then all-gather to reconstruct the full result. Transforms 8\u00d7all-reduce into (1 reduce-scatter + 7\u00d7local + 1 all-gather), trading algorithmic complexity for 2-3 collective dispatches.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with scalar feedback",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.123512"
+    },
+    {
+      "stage": "impl",
+      "name": "Batched tensor stack with single all-reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.123512"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined two-phase with pre-computed denominators",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=7.015501"
+    },
+    {
+      "stage": "impl",
+      "name": "Ring-reduce with fused metadata payload",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.778719"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical reduce-scatter then all-gather",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: shape (4, 4096) != (16384,)"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 6877.900000000001,
+  "final_code": "def r65b_gnorm_b0p7_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size; BETA = 0.7\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    A = acc.abs().mean()\n    M = A / (1.0 - BETA * A)\n    gr = 1.0 + BETA * M\n    s = acc * gr\n    g = 1.0 + BETA * s.abs().mean()\n    buf = s / g\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    return s\n",
+  "fell_back_to_baseline": true
+}
