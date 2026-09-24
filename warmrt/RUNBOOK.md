@@ -6,8 +6,8 @@ world_size=224, num_devices=112, cores_per_device=2, num_nodes=7). Start 2026-09
 Overlay code under warm Neuron cache.
 
 ## Staged set
-`warmrt/stage/<fam>/<prob>/{sorcar.py,overlay.py}` — 41 problems (fam1=3, fam2=7,
-fam3=5, fam4=2, fam5=10, fam6=11, fam7=3), each the 9-seed lower-median by sim
+`warmrt/stage/<fam>/<prob>/{sorcar.py,overlay.py}` — 49 problems (fam1=3, fam2=7,
+fam3=5, fam4=2, fam5=10, fam6=11, fam7=11), each the 9-seed lower-median by sim
 (kiss `best_sim_time_us`, overlay `final_sim`). `stage/master_manifest.json` records
 the chosen seeds + sim ratios.
 
