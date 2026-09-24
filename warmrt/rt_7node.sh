@@ -20,9 +20,9 @@ MASTER_ADDR=$MASTER_IP MASTER_PORT=$MASTER_PORT \
 FI_PROVIDER=efa FI_EFA_USE_DEVICE_RDMA=1 FI_EFA_FORK_SAFE=1 PJRT_DEVICE=NEURON \
 NEURON_RT_LOG_LEVEL=ERROR ACC_REPO=/home/ubuntu/agentic-collective-communication \
 PROBLEM=$PROBLEM RUNTIME_FILE=$RUNTIME_FILE N_ITERS=$N_ITERS NUM_NODES=$NNODES"
-TR="timeout 900 torchrun --nnodes=$NNODES --nproc_per_node=$NPROC \
+TR="timeout 3000 torchrun --nnodes=$NNODES --nproc_per_node=$NPROC \
 --rdzv_backend=c10d --rdzv_endpoint=$MASTER_IP:$MASTER_PORT"
-SCRIPT=/home/ubuntu/agentic-collective-communication/warmrt/rt_diverge.py
+SCRIPT_PY=/home/ubuntu/agentic-collective-communication/warmrt/rt_diverge.py
 
 # distribute the candidate file to workers (repo/search already present on each node)
 for i in "${!WARR[@]}"; do
@@ -33,17 +33,61 @@ for i in "${!WARR[@]}"; do
     "$RUNTIME_FILE" ubuntu@"$W":"$RUNTIME_FILE" 2>/dev/null || true
 done
 
+kill_all_torchruns() {
+  pkill -9 -f "torchrun .*rdzv_endpoint=$MASTER_IP:$MASTER_PORT" 2>/dev/null
+  pkill -9 -f "rt_diverge.py" 2>/dev/null
+  for W in "${WARR[@]}"; do
+    ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@"$W" \
+      "pkill -9 -f torchrun 2>/dev/null; pkill -9 -f rt_diverge.py 2>/dev/null" 2>/dev/null || true
+  done
+}
+
 # master = node_rank 0
-bash -c "cd /home/ubuntu && $ENV && $TR --node_rank=0 $SCRIPT" > ${LOG_PREFIX}_r0.log 2>&1 &
+bash -c "cd /home/ubuntu && $ENV && $TR --node_rank=0 $SCRIPT_PY" > ${LOG_PREFIX}_r0.log 2>&1 &
 PIDS=($!)
 # workers = node_rank 1..N-1
 for i in "${!WARR[@]}"; do
   W=${WARR[$i]}; NR=$(( i + 1 ))
   ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@"$W" \
-    "cd /home/ubuntu && $ENV && $TR --node_rank=$NR $SCRIPT" > ${LOG_PREFIX}_r${NR}.log 2>&1 &
+    "cd /home/ubuntu && $ENV && $TR --node_rank=$NR $SCRIPT_PY" > ${LOG_PREFIX}_r${NR}.log 2>&1 &
   PIDS+=($!)
 done
+
+# --- straggler watchdog ---------------------------------------------------
+# A dead peer makes the survivors spin in a barrier-retry loop emitting
+# "Connection refused - retrying" for the full 3000s timeout. That signature
+# NEVER appears during a healthy compile (only when a peer proc is gone), so
+# keying on it is safe: kill early -> a one-node death fails in ~1 min, not 50.
+( 
+  for _ in $(seq 1 120); do
+    sleep 5
+    grep -qE "RT_TIME_MS_PER_ITER" ${LOG_PREFIX}_r*.log 2>/dev/null && break
+    if grep -qE "Connection refused - retrying|CCOM WARN Connect to|Timeout waiting for incoming connection|barrier recv:|Root Cause \(first observed failure\)|torch.distributed.elastic.multiprocessing.api: .*failed" ${LOG_PREFIX}_r*.log 2>/dev/null; then
+      echo "[watchdog] barrier-hang signature -> killing torchruns (dead peer)" >> ${LOG_PREFIX}_r0.log
+      kill_all_torchruns
+      break
+    fi
+  done
+) &
+WATCHDOG_PID=$!
+
 for p in "${PIDS[@]}"; do wait "$p"; done
+kill "$WATCHDOG_PID" 2>/dev/null; wait "$WATCHDOG_PID" 2>/dev/null
+
+# core-settle: guarantee this rep's ranks release the Neuron cores before we
+# return -- the sweep launches the next rep immediately, and a lingering rank
+# (esp. after a watchdog kill) holding a core makes the next rep die with
+# NRT_FAILURE. Best-effort, ~30s cap, master + workers.
+for _ in $(seq 1 15); do
+  nm=$(pgrep -f "rt_diverge\\.py" 2>/dev/null | wc -l)
+  [ "${nm:-0}" -le 0 ] && break
+  pgrep -f "rt_diverge\\.py" | xargs -r kill -9 2>/dev/null
+  sleep 2
+done
+for W in "${WARR[@]}"; do
+  ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@"$W" \
+    "pgrep -f rt_diverge.py | xargs -r kill -9 2>/dev/null" 2>/dev/null || true
+done
 
 # PJRT/Neuron assigns xla ordinal 0 to an arbitrary physical proc, so rank 0's
 # RT_TIME print can land in ANY node's log — grep them all.

@@ -229,7 +229,8 @@ def register_all():
     # B -- cross-collective RS+AG==AR cluster
     _mk_xc("r47_xc_r2", 256, 2, True)   # confirmed at bo4
     _mk_xc("r47_xc_r3", 256, 3, True)
-    _mk_xc("r47_xc_r4", 256, 4, True)
+    # r47_xc_r4 dropped: overlay HW-aborts at 224 ranks (reduce_scatter dim 256 not
+    # divisible by shard_count 224) -> no fair warm-RT pair. Sim-pass / HW-abort.
 
 
 register_all()

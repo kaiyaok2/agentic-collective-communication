@@ -372,6 +372,12 @@ def main():
     ap.add_argument('--fuse', action='store_true',
                     help='F4b+F5 fusion: reduce_scatter raw grads into '
                          'optimizer shards (full ZeRO-1)')
+    ap.add_argument('--coalesce', action='store_true',
+                    help='sorcar+fuse only: drop the intermediate family-site '
+                         'mark_step graph cuts so the sorcar collectives issue '
+                         'back-to-back into one graph (fewer launch stalls). '
+                         'Algebra-preserving; opt-in because it enlarges the '
+                         'per-step graph (HBM-frag risk at 10B).')
     args = ap.parse_args()
     global N_MB
     if args.nmb:
@@ -380,6 +386,11 @@ def main():
     global LAYERS
     if args.layers:
         LAYERS = args.layers
+    # back-to-back collective pipelining: only the fused sorcar path (whose
+    # family sites emit few, small collectives) benefits from issuing them
+    # into one graph; baseline/strat keep their per-slice cuts unchanged so
+    # the comparison and their compile footprints stay exactly as validated.
+    COALESCE = (backend == 'sorcar' and args.fuse and args.coalesce)
 
     dist.init_process_group('xla', init_method='xla://', timeout=timedelta(hours=2))
     rank = xr.global_ordinal()
@@ -567,7 +578,8 @@ def main():
         norm_synced = [xm.all_reduce(xm.REDUCE_SUM, g, groups=tp_groups)
                        / TP for g in norm_synced]   # replicated across TP
 
-        xm.mark_step()   # slice sync graph: norms done
+        if not COALESCE:
+            xm.mark_step()   # slice sync graph: norms done
         if backend == 'sorcar' and args.fuse:
             # F4b+F5 fused: the optimizer reduce_scatter below is the
             # only sync the shard grads need (their sole consumer is
@@ -576,7 +588,8 @@ def main():
         else:
             rest_synced = f4_flat_sync([p.grad for p in shard_rest],
                                        DP, dp_groups, backend)        # F4b
-        xm.mark_step()   # slice sync graph: F4b done
+        if not COALESCE:
+            xm.mark_step()   # slice sync graph: F4b done
         absmax = torch.stack([g.abs().max().float() for g in norm_grads])
         gmax, gmin = f6_clip_stats(absmax, dp_groups, backend)        # F6
         if backend == 'sorcar' and args.fuse:
@@ -592,7 +605,8 @@ def main():
         # (plain DP / replicated optimizer); sorcar runs Adam only on
         # this DP-rank's 1/DP of the chunks (ZeRO-1) and all_gathers
         # each updated chunk. Exact same math.
-        xm.mark_step()   # slice sync graph: F6/F7 done
+        if not COALESCE:
+            xm.mark_step()   # slice sync graph: F6/F7 done
         # build grad CHUNKS without materializing the 1.2GB flat cat
         # (single big fp32 buffer + AR temporaries fragment 16GB HBM)
         grad_srcs = [g.reshape(-1) for g in rest_synced] \
@@ -611,7 +625,8 @@ def main():
         if cur:
             grad_chunks.append(torch.cat(cur).float())
         del grad_srcs, cur
-        xm.mark_step()
+        if not COALESCE:
+            xm.mark_step()
         n_chunks = len(f5_chunks)
         if m_state is None:
             if naive:

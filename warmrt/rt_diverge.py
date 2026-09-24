@@ -55,15 +55,18 @@ for mp in sorted(glob.glob(os.path.join(ACC, "search", "problems_diverge_*.py"))
 
 prob = get_problem(PROBLEM)
 
-# derive per-rank shard length `part` from a tiny world-2 test case
-tc2 = prob.generate_test_case(2)
-full_len2 = tc2["per_rank_args"][0]["x"].numel()
-part = full_len2 // 2
-
-# rank-r input at the real world size, matching _gen_shards: randn(world*part)*(0.3+0.02*r)
+# Build THIS rank's input EXACTLY as the fp32 gate does: generate_test_case(world).
+# (The old world*part reconstruction assumed a shard-per-rank payload and fed a
+#  wrong-shaped, ~112x oversized tensor to FIXED-payload problems -> broadcast/view
+#  crash on both pipelines. Using the gate's own per_rank_args makes RT == gate.)
 torch.manual_seed(1234)
-N = world * part
-x_in = (torch.randn(N) * (0.3 + 0.02 * rank)).to(device)
+_tc = prob.generate_test_case(world)
+_pra = _tc["per_rank_args"]
+assert rank < len(_pra), f"per_rank_args has {len(_pra)} entries < rank {rank} @ world {world}"
+x_in = _pra[rank]["x"].detach().clone().to(device)
+del _tc, _pra
+N = x_in.numel()
+part = N  # per-rank payload (scales with world or fixed, per the problem)
 
 # --- load the candidate function (named {PROBLEM}_fn per the forced signature) ---
 spec = importlib.util.spec_from_file_location("rt_candidate", RUNTIME_FILE)

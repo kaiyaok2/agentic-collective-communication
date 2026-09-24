@@ -6,11 +6,16 @@ set -u
 SCRIPT=$1; BACKEND=$2; TAG=$3; shift 3
 EXTRA="$*"
 NNODES=7
-MASTER=172.31.22.36
-WORKERS=(172.31.29.166 172.31.25.135 172.31.26.169 172.31.25.95 172.31.19.243 172.31.27.250)
-KEY=/home/ubuntu/.ssh/Kaiyao.pem
-VENV=/opt/aws_neuronx_venv_pytorch_2_8
+# Cluster coordinates are env-overridable so the launcher survives CB
+# rotation (private IPs change every reservation). Defaults track the
+# live 7-node CB; export MASTER/WORKERS_STR/KEY/VENV to retarget.
+MASTER=${MASTER:-172.31.22.245}
+WORKERS_STR=${WORKERS_STR:-"172.31.23.213 172.31.18.183 172.31.23.139 172.31.30.141 172.31.29.14 172.31.30.186"}
+read -r -a WORKERS <<< "$WORKERS_STR"
+KEY=${KEY:-/home/ubuntu/.ssh/Kaiyao.pem}
+VENV=${VENV:-/opt/aws_neuronx_venv_pytorch_2_8}
 PORT=${PORT:-29500}
+RUN_TIMEOUT=${RUN_TIMEOUT:-5400}   # per-run wall cap; bump for cold L=48 compile
 STEPS=${STEPS:-30}
 SEED=${SEED:-42}
 CACHE=${CACHE:-/home/ubuntu/neuron_cache_e2e}
@@ -36,13 +41,13 @@ echo "[e2e] $(date -u) launch $TAG backend=$BACKEND port=$PORT args=[$ARGS]"
 NR=1
 for ip in "${WORKERS[@]}"; do
   ssh -i $KEY -o StrictHostKeyChecking=no ubuntu@$ip \
-    "$ENV && cd /home/ubuntu && timeout 5400 torchrun $TRUN --node_rank=$NR /home/ubuntu/$BN $ARGS" \
+    "$ENV && cd /home/ubuntu && timeout $RUN_TIMEOUT torchrun $TRUN --node_rank=$NR /home/ubuntu/$BN $ARGS" \
     > "$LOGD/n${NR}.log" 2>&1 &
   NR=$((NR+1))
 done
 eval "$ENV"
 cd /home/ubuntu
-timeout 5400 torchrun $TRUN --node_rank=0 /home/ubuntu/$BN $ARGS > "$LOGD/n0_master.log" 2>&1
+timeout $RUN_TIMEOUT torchrun $TRUN --node_rank=0 /home/ubuntu/$BN $ARGS > "$LOGD/n0_master.log" 2>&1
 RC=$?
 echo "[e2e] $TAG master_rc=$RC $(date -u)"
 wait

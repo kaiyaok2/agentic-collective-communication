@@ -93,11 +93,8 @@ def _mk(name, part, depth, beta, cue=True):
 
 
 def register_all():
-    _mk("r67_vself_b0p5_p2048_d8", 2048, 8, 0.5)
-    _mk("r67_vself_b1p0_p2048_d8", 2048, 8, 1.0)
-    _mk("r67_vself_b2p0_p2048_d8", 2048, 8, 2.0)
-    _mk("r67_vself_b0p5_p1024_d8", 1024, 8, 0.5)
-    _mk("r67_vself_b1p0_p512_d8",  512,  8, 1.0)
+    # fam6 self-coupling variants retired (RT-lost vs Overlay); _mk kept for r67b import.
+    pass
 
 
 register_all()

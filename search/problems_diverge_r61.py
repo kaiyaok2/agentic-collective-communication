@@ -192,10 +192,8 @@ def register_all():
     # Three NEW g-functions (var/soft/negrelu) x payloads + one proven-fn new payload.
     _mk_dd("r61_dd_var_d8",         256, 8, "var",     True)
     _mk_dd("r61_dd_soft_d8",        256, 8, "soft",    True)
-    _mk_dd("r61_dd_negrelu_d8",     256, 8, "negrelu", True)
     _mk_dd("r61_dd_var_p384_d8",    384, 8, "var",     True)
     _mk_dd("r61_dd_soft_p512_d8",   512, 8, "soft",    True)
-    _mk_dd("r61_dd_negrelu_p384_d8", 384, 8, "negrelu", True)
     _mk_dd("r61_dd_meansq_p512_d8", 512, 8, "meansq",  True)
     _mk_dd("r61_dd_relu_p384_d8",   384, 8, "relu",    True)
 

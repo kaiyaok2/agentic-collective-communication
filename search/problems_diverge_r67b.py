@@ -10,11 +10,7 @@ from .problems_diverge_r67 import _mk  # noqa: reuse self-coupling rank-1 mechan
 
 
 def register_all():
-    _mk("r67b_vself_b0p3_p2048_d8", 2048, 8, 0.3)
     _mk("r67b_vself_b0p4_p2048_d8", 2048, 8, 0.4)
-    _mk("r67b_vself_b0p7_p2048_d8", 2048, 8, 0.7)
-    _mk("r67b_vself_b1p5_p2048_d8", 2048, 8, 1.5)
-    _mk("r67b_vself_b3p0_p2048_d8", 2048, 8, 3.0)
 
 
 register_all()
