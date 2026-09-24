@@ -40,7 +40,8 @@ for KEY in "${KEYS[@]}"; do
 done
 echo "=== sweep done -> $RES ==="
 # quick per-problem sorcar-vs-overlay speedup table
-/opt/aws_neuronx_venv_pytorch_2_9/bin/python - "$RES" <<'PY'
+NEURON_VENV=${NEURON_VENV:-/opt/aws_neuronx_venv_pytorch_2_8}
+$NEURON_VENV/bin/python - "$RES" <<'PY'
 import json,sys,collections
 rows=collections.defaultdict(dict)
 for ln in open(sys.argv[1]):

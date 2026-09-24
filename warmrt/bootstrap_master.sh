@@ -43,6 +43,7 @@ WEOF
 done
 
 echo "[master] torch_xla sanity..."
-/opt/aws_neuronx_venv_pytorch_2_9/bin/python -c "import torch_xla, torch; print('torch', torch.__version__, 'xla OK')"
+NEURON_VENV=${NEURON_VENV:-/opt/aws_neuronx_venv_pytorch_2_8}
+PJRT_DEVICE=NEURON $NEURON_VENV/bin/python -c "import torch; print('torch', torch.__version__)"
 echo "[master] repo HEAD: $(git -C "$REPO" rev-parse --short HEAD)"
 echo "=== bootstrap complete on master + ${#WARR[@]} workers ==="

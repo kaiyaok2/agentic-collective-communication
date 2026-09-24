@@ -8,8 +8,9 @@ LOG_PREFIX=/tmp/rt7_$$
 NPROC=32
 read -r -a WARR <<< "$WORKERS"
 NNODES=$(( ${#WARR[@]} + 1 ))
+NEURON_VENV=${NEURON_VENV:-/opt/aws_neuronx_venv_pytorch_2_8}
 
-ENV="export PATH=/opt/aws_neuronx_venv_pytorch_2_9/bin:\$PATH \
+ENV="export PATH=$NEURON_VENV/bin:\$PATH \
 FI_PROVIDER=efa FI_EFA_USE_DEVICE_RDMA=1 FI_EFA_FORK_SAFE=1 PJRT_DEVICE=NEURON \
 NEURON_RT_LOG_LEVEL=ERROR ACC_REPO=/home/ubuntu/agentic-collective-communication \
 PROBLEM=$PROBLEM RUNTIME_FILE=$RUNTIME_FILE N_ITERS=$N_ITERS NUM_NODES=$NNODES"
