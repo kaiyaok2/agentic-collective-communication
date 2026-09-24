@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r68b_bidi_b018m4_d8_p1024",
+  "gate": "fp32",
+  "baseline_sim": 18344.20000000012,
+  "strategies": [
+    {
+      "name": "Baseline sequential all-reduce stages",
+      "desc": "Eight consecutive all-reduce operations with interleaved local bidiagonal coupling and uncoupling transformations, exactly as shown in the reference. 8 all-reduce dispatches, straightforward but no overlap. Trades simplicity for maximum dispatch overhead at world size 224."
+    },
+    {
+      "name": "Fused coupling with reduce-scatter all-gather",
+      "desc": "Replace each all-reduce with reduce-scatter followed by all-gather, performing local coupling/uncoupling on the scattered shards between the two primitives. 16 collective dispatches (8 RS + 8 AG) but enables rank-local computation on smaller buffers during the scatter phase, potentially better pipeline utilization on Trainium's collective engine."
+    },
+    {
+      "name": "Hierarchical two-level reduction tree",
+      "desc": "Exploit multi-node topology by splitting the 224 ranks into node-local groups, performing intra-node all-reduce for each stage, then inter-node all-reduce, with coupling applied at appropriate granularity. Approximately 16 dispatches (8 stages \u00d7 2 levels) but with smaller per-dispatch participant counts, reducing collective latency on hierarchical interconnect."
+    },
+    {
+      "name": "Pipelined overlapped staging with double-buffering",
+      "desc": "Maintain two buffers and overlap the all-reduce of stage i with the local coupling computation of stage i-1 using asynchronous dispatch and explicit mark_step boundaries. Still 8 all-reduce dispatches but computation/communication overlap reduces wall-clock time, trading memory footprint (2x buffers) for latency hiding."
+    },
+    {
+      "name": "Broadcast-reduce with rank-conditional coupling",
+      "desc": "Each rank computes its locally-coupled shard, then use 8 iterations of all-to-all or personalized broadcast/reduce where rank r sends its coupled shard and receives sum of all ranks' r-th shards. Approximately 8-16 dispatches depending on primitive choice, exploiting the fact that final output is shard-decomposable with rank-specific coupling coefficients.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Baseline sequential all-reduce stages",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.909144"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused coupling with reduce-scatter all-gather",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.259994"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-level reduction tree",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined overlapped staging with double-buffering",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockXM' object has no attrib"
+    },
+    {
+      "stage": "impl",
+      "name": "Broadcast-reduce with rank-conditional coupling",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.909144"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 18344.20000000012,
+  "final_code": "def r68b_bidi_b018m4_d8_p1024_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 1024; W = world_size\n    b = [0.18 + 0.13*(r % 4) for r in range(W)]\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    return s\n",
+  "fell_back_to_baseline": true
+}

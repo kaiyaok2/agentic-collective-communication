@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r68b_bidi_b022m5_d8_p1024",
+  "gate": "fp32",
+  "baseline_sim": 18344.20000000012,
+  "strategies": [
+    {
+      "name": "Baseline Sequential All-Reduce Chain",
+      "desc": "Performs 8 sequential all-reduce operations with interleaved local bidiagonal coupling and inverse operations. Each stage does one all-reduce dispatch (8 total), with local computation in between. Represents the reference trade-off: maximum simplicity, O(8) dispatches, minimal fusion opportunity."
+    },
+    {
+      "name": "Fused Local Computation Blocks",
+      "desc": "Groups all local forward bidiagonal couplings together and all inverse operations together between all-reduces, reducing instruction overhead. Still 8 all-reduce dispatches but consolidates memory access patterns. Trades potential numerical stability for better cache locality and fewer kernel launches for local ops."
+    },
+    {
+      "name": "Pipelined Reduce-Scatter All-Gather Decomposition",
+      "desc": "Decomposes each all-reduce into reduce-scatter followed by all-gather (16 total dispatches for 8 stages), enabling partial overlap of communication with local computation. Doubles dispatch count but each payload is smaller (1/W fraction), potentially better for network topology utilization at world_size=224."
+    },
+    {
+      "name": "Hierarchical Two-Level Reduction",
+      "desc": "Exploits multi-node structure by performing intra-node reductions first, then inter-node, then broadcast back (3 dispatches per stage, 24 total). At world_size=224 with typical node configurations, reduces cross-node bandwidth pressure by aggregating within nodes. Trades more dispatches for better network hierarchy alignment."
+    },
+    {
+      "name": "Chunked Ring-Based All-Reduce",
+      "desc": "Replaces monolithic all-reduce with manual ring algorithm splitting the W*S tensor into chunks, performing reduce-scatter then all-gather phases with point-to-point operations. Increases dispatch count significantly (O(W) sends/recvs per stage) but enables fine-grained pipelining and potentially lower latency at large world_size by avoiding collective synchronization barriers.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Baseline Sequential All-Reduce Chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.909144"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Local Computation Blocks",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.909144"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Reduce-Scatter All-Gather Decomposition",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.283925"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level Reduction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Chunked Ring-Based All-Reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.280012"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 18344.20000000012,
+  "final_code": "def r68b_bidi_b022m5_d8_p1024_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 1024; W = world_size\n    b = [0.22 + 0.11*(r % 5) for r in range(W)]\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    return s\n",
+  "fell_back_to_baseline": true
+}

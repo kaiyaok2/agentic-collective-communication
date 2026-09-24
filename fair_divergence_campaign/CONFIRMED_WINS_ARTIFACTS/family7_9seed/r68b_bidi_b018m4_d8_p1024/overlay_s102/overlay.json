@@ -1,0 +1,73 @@
+{
+  "pipeline": "overlay",
+  "problem": "r68b_bidi_b018m4_d8_p1024",
+  "gate": "fp32",
+  "baseline_sim": 18344.20000000012,
+  "strategies": [
+    {
+      "name": "Naive Loop with 8 All-Reduces",
+      "desc": "Direct translation of the reference: 8 sequential all-reduce dispatches, each followed by local bidiagonal coupling and uncoupling operations. 8 collective dispatches total. Maximizes code simplicity but incurs highest dispatch overhead; no fusion or overlap opportunities exploited."
+    },
+    {
+      "name": "Fused Local Operations Between Collectives",
+      "desc": "Same 8 all-reduce structure but all local operations (division, coupling, uncoupling) are fused into single vectorized kernels per stage to minimize intermediate tensor allocations. Still 8 collective dispatches but reduces host-device synchronization points and memory traffic between local compute phases."
+    },
+    {
+      "name": "Reduce-Scatter + All-Gather Pipeline",
+      "desc": "Replace each all-reduce with reduce-scatter followed by all-gather, allowing each rank to compute only its owned shard's coupling during the scatter phase. 16 collective dispatches (8 RS + 8 AG) but smaller per-dispatch payload (1/W of original) and potential for pipelining communication with local compute on scattered shards."
+    },
+    {
+      "name": "Hierarchical Two-Level Reduction (Intra+Inter Node)",
+      "desc": "Exploit multi-node topology by performing intra-node all-reduce on local cores (224 ranks across multiple nodes), then inter-node all-reduce on node leaders, then broadcast back. Approximately 3*8=24 dispatches but leverages faster intra-node bandwidth and reduces cross-node traffic by factor of cores-per-node."
+    },
+    {
+      "name": "Bucket-Pipelined All-Reduce with Chunking",
+      "desc": "Split the W*S tensor into smaller chunks (e.g., 16-32 chunks) and pipeline all-reduce operations across chunks within each of the 8 stages, overlapping communication of chunk i with local compute (coupling/uncoupling) of chunk i-1. 8*num_chunks dispatches but enables latency hiding through interleaved compute-communication.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Naive Loop with 8 All-Reduces",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.909144"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Local Operations Between Collectives",
+      "sim": 18351.20000000012,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-Scatter + All-Gather Pipeline",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.259994"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level Reduction (Intra+Inter Node)",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Bucket-Pipelined All-Reduce with Chunking",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.909144"
+    },
+    {
+      "stage": "refine:Fused Local Operations Between Collectives",
+      "round": 3,
+      "sim": 17251.500000000175
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 17251.500000000175,
+  "final_code": "def r68b_bidi_b018m4_d8_p1024_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 1024\n    W = world_size\n    dtype = x.dtype\n    \n    # Precompute b coefficients\n    b = [0.18 + 0.13 * (r % 4) for r in range(W)]\n    \n    # Stage 1: Initial all-reduce and coupling\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    buf = s / W\n    for r in range(W - 1):\n        start = r * S\n        end = (r + 1) * S\n        next_end = (r + 2) * S\n        buf[start:end] = buf[start:end] + b[r] * buf[end:next_end]\n    \n    # Stages 2-7: Unroll and batch operations more efficiently\n    for stage in range(2, 8):\n        # All-reduce\n        s = xm.all_reduce(xm.REDUCE_SUM, buf)\n        \n        # Uncouple, divide, and recouple in single pass\n        buf = s / W\n        \n        # Uncouple previous coupling (backward pass)\n        for r in range(W - 2, -1, -1):\n            start = r * S\n            end = (r + 1) * S\n            next_end = (r + 2) * S\n            buf[start:end] = buf[start:end] - b[r] * buf[end:next_end]\n        \n        # Apply new coupling (forward pass)\n        for r in range(W - 1):\n            start = r * S\n            end = (r + 1) * S\n            next_end = (r + 2) * S\n            buf[start:end] = buf[start:end] + b[r] * buf[end:next_end]\n    \n    # Stage 8: Final all-reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    \n    return s"
+}

@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r68b_bidi_b035m4_d8_p2048",
+  "gate": "fp32",
+  "baseline_sim": 18396.42222222234,
+  "strategies": [
+    {
+      "name": "Baseline sequential all-reduce stages",
+      "desc": "Performs 8 sequential all-reduce operations with interleaved local bidiagonal coupling and inverse coupling transformations, exactly as in the reference. 8 all-reduce dispatches, each operating on full W*S tensor. Straightforward but no overlap or fusion opportunities; maximizes simplicity at cost of latency."
+    },
+    {
+      "name": "Reduce-scatter then all-gather per stage",
+      "desc": "Replace each all-reduce with a reduce-scatter followed by all-gather, allowing each rank to own and compute its shard's coupling locally before broadcasting. 16 collective dispatches (8 reduce-scatter + 8 all-gather). Trades dispatch count for smaller per-rank working set and potential pipeline benefits if hardware supports concurrent RS/AG."
+    },
+    {
+      "name": "Fused bidiagonal coupling with buffering",
+      "desc": "Pre-compute all 8 stages' coupling and inverse-coupling coefficients, then issue all-reduces on pre-transformed buffers in a tight loop with minimal synchronization barriers. Still 8 all-reduce dispatches but local compute is batched/vectorized across stages. Reduces CPU overhead and enables better cache utilization for local ops."
+    },
+    {
+      "name": "Hierarchical two-level collective with nodes",
+      "desc": "Exploit num_nodes structure by performing intra-node all-reduce first (ppn ranks), then inter-node all-reduce (node leaders), then intra-node broadcast, per stage. 24 dispatches (8 stages \u00d7 3 ops) but each operates on smaller subgroups. Benefits from faster intra-node interconnect; trades off dispatch count for reduced per-dispatch latency on large world size."
+    },
+    {
+      "name": "Pipelined ring-allreduce with coupling overlap",
+      "desc": "Implement custom ring-based all-reduce using send/recv primitives where each rank pipelines the coupling transformation during the reduce-scatter phase and inverse during all-gather phase. Approximately 2*W*8 send/recv dispatches but enables computation-communication overlap. High dispatch count but hides local arithmetic latency within network transfers.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Baseline sequential all-reduce stages",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.725230"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-scatter then all-gather per stage",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.725230"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused bidiagonal coupling with buffering",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.310420"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-level collective with nodes",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined ring-allreduce with coupling overlap",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=44647.433594"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 18396.42222222234,
+  "final_code": "def r68b_bidi_b035m4_d8_p2048_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 2048; W = world_size\n    b = [0.35 + 0.1*(r % 4) for r in range(W)]\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    return s\n",
+  "fell_back_to_baseline": true
+}

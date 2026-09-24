@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r68b_bidi_b035m4_d8_p1024",
+  "gate": "fp32",
+  "baseline_sim": 18344.20000000012,
+  "strategies": [
+    {
+      "name": "Baseline Loop-Unrolled Eight All-Reduces",
+      "desc": "Directly implements 8 sequential all-reduce stages with interleaved local bidiagonal coupling and reverse operations as shown in reference. Each stage performs one all-reduce dispatch followed by local tensor manipulations (forward coupling + reduce-scatter semantics via division, then backward decoupling). Total 8 all-reduce dispatches with maximum fusion of local operations between collectives."
+    },
+    {
+      "name": "Reduce-Scatter then All-Gather per Stage",
+      "desc": "Replaces each all-reduce with reduce-scatter followed by all-gather, exploiting the fact that bidiagonal coupling only needs local shard after summation. Each rank reduce-scatters its contribution, applies bidiagonal transform locally on its assigned shard, then all-gathers to reconstruct full vector for next stage. 16 total dispatches (8 reduce-scatter + 8 all-gather) but each moves 1/W of the payload, potentially better bandwidth utilization."
+    },
+    {
+      "name": "Fused Bidiagonal-Coupling Custom Collective",
+      "desc": "Pre-computes the composition of 8 bidiagonal transforms algebraically into a single sparse linear operator, then performs one all-reduce of the input followed by local application of the composed transform matrix. Reduces to 1 all-reduce dispatch on full payload, trading collective count for increased local computation (sparse matrix-vector multiply with O(W) non-zeros per row)."
+    },
+    {
+      "name": "Pipelined Ring-Based Bidiagonal Propagation",
+      "desc": "Exploits nearest-neighbor structure in bidiagonal coupling by organizing 224 ranks into a ring topology. Each stage uses point-to-point send/recv to propagate shard boundaries (enabling incremental bidiagonal coupling) while simultaneously reducing local contributions via a ring all-reduce pattern. 8 stages \u00d7 O(W) ring steps = O(8W) small message dispatches, optimizing for latency-hiding through pipelining."
+    },
+    {
+      "name": "Hierarchical Two-Level Reduction with Inter-Node Aggregation",
+      "desc": "Leverages multi-node structure by performing intra-node all-reduce (across cores_per_device \u00d7 num_devices per node), applying bidiagonal transforms at node level, then inter-node all-reduce for global aggregation. Each of 8 stages performs 2 all-reduces (local + global) on smaller groups, totaling 16 dispatches but with significantly reduced per-dispatch payload and better NUMA/interconnect topology alignment.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Baseline Loop-Unrolled Eight All-Reduces",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.427038"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-Scatter then All-Gather per Stage",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.427038"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Bidiagonal-Coupling Custom Collective",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.095105"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Ring-Based Bidiagonal Propagation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.095105"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level Reduction with Inter-Node Aggregation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 18344.20000000012,
+  "final_code": "def r68b_bidi_b035m4_d8_p1024_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 1024; W = world_size\n    b = [0.35 + 0.09*(r % 4) for r in range(W)]\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    return s\n",
+  "fell_back_to_baseline": true
+}

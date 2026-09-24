@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r68b_bidi_b04m3_d8_p2048",
+  "gate": "fp32",
+  "baseline_sim": 18396.42222222234,
+  "strategies": [
+    {
+      "name": "Baseline Unrolled All-Reduce Chain",
+      "desc": "Direct translation of the seed code: 8 all-reduce dispatches, each preceded by a forward bidiagonal coupling pass and followed by a backward decoupling pass. Total 8 all-reduce dispatches on full (W*S) tensors. Represents the simplest correct approach with maximum dispatch overhead but minimal algorithmic complexity."
+    },
+    {
+      "name": "Reduce-Scatter + All-Gather Decomposition",
+      "desc": "Replace each all-reduce with reduce-scatter (producing local shard) followed by all-gather. This enables applying the bidiagonal coupling/decoupling only to local shards between stages, reducing local compute from O(W*S) to O(S) per stage. Total 16 dispatches (8 reduce-scatter + 8 all-gather) but ~W times less local computation per iteration."
+    },
+    {
+      "name": "Fused Bidiagonal Transform All-Reduce",
+      "desc": "Merge the forward coupling and division into a single pre-processing step, then single all-reduce, then backward decoupling as post-processing. Repeat 8 times but with tighter fusion boundaries to enable compiler optimization of the compute kernels between collectives. Still 8 all-reduce dispatches but improved arithmetic intensity and potential XLA fusion."
+    },
+    {
+      "name": "Hierarchical Two-Level Reduction",
+      "desc": "Exploit multi-node topology by performing intra-node all-reduce (28 ranks/node \u00d7 8 nodes) followed by inter-node reduction and broadcast. Apply bidiagonal transforms at node granularity to reduce cross-node traffic. Approximately 8\u00d7(1 intra-node AR + 1 inter-node reduce + 1 inter-node broadcast) = 24 dispatches but with smaller inter-node payloads."
+    },
+    {
+      "name": "Pipelined Overlapped Chunked Execution",
+      "desc": "Partition the W*S vector into K chunks and pipeline the 8-stage loop: while stage i processes chunk j, stage i+1 processes chunk j-1. Use non-blocking collectives (if available) or manual chunking to overlap communication and local bidiagonal arithmetic. Same 8 all-reduce count asymptotically but enables latency hiding through spatial chunking and temporal pipelining.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Baseline Unrolled All-Reduce Chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.334246"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-Scatter + All-Gather Decomposition",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.745973"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Bidiagonal Transform All-Reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.745973"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level Reduction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Overlapped Chunked Execution",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 18396.42222222234,
+  "final_code": "def r68b_bidi_b04m3_d8_p2048_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 2048; W = world_size\n    b = [0.4 + 0.08*(r % 3) for r in range(W)]\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    return s\n",
+  "fell_back_to_baseline": true
+}

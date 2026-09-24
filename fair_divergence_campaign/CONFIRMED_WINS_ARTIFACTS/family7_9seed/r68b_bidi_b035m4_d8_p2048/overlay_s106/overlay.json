@@ -1,0 +1,68 @@
+{
+  "pipeline": "overlay",
+  "problem": "r68b_bidi_b035m4_d8_p2048",
+  "gate": "fp32",
+  "baseline_sim": 18396.42222222234,
+  "strategies": [
+    {
+      "name": "Baseline Sequential All-Reduce Chain",
+      "desc": "Performs 8 sequential all-reduce operations with intermediate local bidiagonal coupling and uncoupling operations. Each stage consists of: apply coupling, all-reduce, undo coupling. Total of 8 all-reduce dispatches. This is the reference implementation pattern with minimal structural optimization but clear separation of communication and computation phases."
+    },
+    {
+      "name": "Fused Coupling with Bulk All-Reduce",
+      "desc": "Pre-compute all 8 coupling transformations locally, storing intermediate states in a buffer of shape (8, W*S), then dispatch all-reduces in a tight loop to maximize network stack batching opportunities. Total of 8 all-reduce dispatches but with improved locality and potential for runtime fusion. Trades memory (8x larger working set) for better pipeline utilization and reduced host-device synchronization overhead."
+    },
+    {
+      "name": "Reduce-Scatter + All-Gather Decomposition",
+      "desc": "Decompose each all-reduce into reduce-scatter followed by all-gather, allowing local sharded computation of bidiagonal coupling only on owned segments between the two primitives. Each of 8 stages uses 2 collectives (RS+AG), totaling 16 dispatches. Reduces per-stage communication volume by performing coupling on smaller shards, potentially better for memory-bandwidth-bound local ops at world_size=224."
+    },
+    {
+      "name": "Pipelined Two-Stage with Overlap",
+      "desc": "Group the 8 stages into pairs, performing coupling for stage N+1 while all-reduce for stage N is in-flight by double-buffering intermediate results. Uses async all-reduce launches where available, maintaining 2 active buffers. Still 8 all-reduce dispatches but overlaps ~50% of local computation with communication, improving utilization on multi-core devices."
+    },
+    {
+      "name": "Hierarchical Two-Level All-Reduce",
+      "desc": "Exploit potential node structure (224 ranks could be 28 nodes \u00d7 8 devices) by performing intra-node all-reduce first, then inter-node all-reduce, applying coupling transformations at the inter-node boundary. Uses 16 all-reduce dispatches (8 intra-node + 8 inter-node) but with smaller per-dispatch payloads and faster intra-node collectives. Optimizes for non-uniform network topology where intra-node bandwidth >> inter-node bandwidth.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Baseline Sequential All-Reduce Chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.725230"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Coupling with Bulk All-Reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.725230"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-Scatter + All-Gather Decomposition",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.725230"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Two-Stage with Overlap",
+      "sim": 18396.42222222234,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level All-Reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.725230"
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 18396.42222222234,
+  "final_code": "def r68b_bidi_b035m4_d8_p2048_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 2048\n    W = world_size\n    b = [0.35 + 0.1*(r % 4) for r in range(W)]\n    dtype = x.dtype\n    \n    # Initial all-reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Pipelined two-stage with overlap: process stages in pairs\n    # Stage pairs: (1,2), (3,4), (5,6), (7,8) - but stage 1 is just the initial reduce\n    # So we have pairs: (2,3), (4,5), (6,7), and final stage 8\n    \n    # Actually, let's interpret the strategy as: overlap computation for next stage\n    # while all-reduce is in flight by using double buffering\n    \n    # We'll use two buffers and alternate between them\n    buf_a = s / W\n    buf_b = torch.zeros_like(s)\n    \n    # Stage 2\n    for r in range(W - 1):\n        buf_a[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf_a)\n    \n    # Stages 3-8: pipeline by preparing next coupling while reduce is conceptually in-flight\n    # In practice, xm.all_reduce is blocking, but we structure code to be ready for async\n    \n    for stage in range(2, 8):\n        # Undo previous coupling\n        for r in range(W - 2, -1, -1):\n            s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n        \n        # Apply new coupling (using alternate buffer conceptually)\n        if stage % 2 == 0:\n            buf_curr = buf_a\n        else:\n            buf_curr = buf_b\n            \n        buf_curr[:] = s / W\n        for r in range(W - 1):\n            buf_curr[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n        \n        # All-reduce\n        s = xm.all_reduce(xm.REDUCE_SUM, buf_curr)\n    \n    return s"
+}

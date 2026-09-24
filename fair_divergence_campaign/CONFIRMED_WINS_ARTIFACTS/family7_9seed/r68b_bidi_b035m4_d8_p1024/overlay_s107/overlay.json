@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r68b_bidi_b035m4_d8_p1024",
+  "gate": "fp32",
+  "baseline_sim": 18344.20000000012,
+  "strategies": [
+    {
+      "name": "Baseline 8-stage sequential all-reduce",
+      "desc": "Directly follows the reference: 8 sequential all-reduce operations with interleaved bidiagonal coupling/decoupling local ops. 8 collective dispatches total (one all-reduce per stage). Represents the straightforward interpretation with no fusion or overlap, serving as the performance baseline."
+    },
+    {
+      "name": "Fused bidiagonal kernel per stage",
+      "desc": "Fuse the coupling and decoupling local operations into single vectorized kernels executed between all-reduces, eliminating intermediate buffer writes. Still 8 all-reduce dispatches but reduces memory traffic and kernel launch overhead by combining the forward coupling, backward decoupling, and division operations into monolithic compute passes."
+    },
+    {
+      "name": "Reduce-scatter then all-gather per stage",
+      "desc": "Replace each all-reduce with a reduce-scatter followed by all-gather (16 dispatches total). Each rank only computes its owned shard's bidiagonal coupling locally between RS and AG, requiring point-to-point communication or halo exchange for boundary terms (shard r+1 data). Trades more dispatches for potentially better network utilization on large world sizes."
+    },
+    {
+      "name": "Pipelined multi-stage with async dispatch",
+      "desc": "Issue all 8 all-reduce operations asynchronously with xm non-blocking semantics, interleaving local computation (coupling/decoupling) as soon as each stage's result arrives. Approximately 8 dispatches but overlaps communication with computation across stages. Requires careful dependency tracking to respect stage ordering while maximizing pipeline fill."
+    },
+    {
+      "name": "Hierarchical two-level reduction with node-local aggregation",
+      "desc": "Exploit 224 = 28 nodes \u00d7 8 devices structure by performing intra-node all-reduce first (8-way), then inter-node all-reduce (28-way), then intra-node broadcast for each of the 8 stages. Approximately 24 dispatches (3 collectives \u00d7 8 stages) but reduces cross-node bandwidth pressure by aggregating within NUMA domains first.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Baseline 8-stage sequential all-reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.427038"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused bidiagonal kernel per stage",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.095105"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-scatter then all-gather per stage",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.427038"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined multi-stage with async dispatch",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.427038"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-level reduction with node-local aggregation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.427038"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 18344.20000000012,
+  "final_code": "def r68b_bidi_b035m4_d8_p1024_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 1024; W = world_size\n    b = [0.35 + 0.09*(r % 4) for r in range(W)]\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    return s\n",
+  "fell_back_to_baseline": true
+}

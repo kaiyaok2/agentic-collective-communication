@@ -1,0 +1,68 @@
+{
+  "pipeline": "overlay",
+  "problem": "r68b_bidi_b035m4_d8_p2048",
+  "gate": "fp32",
+  "baseline_sim": 18396.42222222234,
+  "strategies": [
+    {
+      "name": "Naive 8-Stage Sequential All-Reduce",
+      "desc": "Performs 8 sequential all-reduce operations with local bidiagonal coupling applied between stages and undoing applied after each all-reduce. Total 8 all-reduce dispatches with full W*S payload each. Straightforward translation of the algorithm with no optimization; maximizes latency by serializing all collectives."
+    },
+    {
+      "name": "Reduce-Scatter + AllGather Decomposition",
+      "desc": "Decomposes each all-reduce into reduce-scatter followed by all-gather, allowing each rank to compute its local shard's bidiagonal coupling during the window between RS and AG. Results in 16 collective dispatches (8 RS + 8 AG) but with smaller payloads (S per RS, W*S per AG). Trades dispatch count for potential computation-communication overlap on local shards."
+    },
+    {
+      "name": "Fused Bidiagonal with Boundary Exchange",
+      "desc": "Recognizes that bidiagonal coupling only needs boundary elements (shard r+1's first S elements for rank r). Uses point-to-point send/recv or small all-to-all to exchange only boundary data, then performs 8 all-reduces on locally-coupled data. Reduces communication volume significantly but increases dispatch count (8 AR + 8 boundary exchanges = 16 dispatches)."
+    },
+    {
+      "name": "Hierarchical Two-Level All-Reduce",
+      "desc": "Exploits multi-node topology by performing intra-node all-reduce first, then inter-node all-reduce, followed by intra-node broadcast for each of 8 stages. At world_size=224 with multiple nodes, this reduces cross-node bandwidth pressure. Increases dispatches to 24 (3 collectives \u00d7 8 stages) but optimizes for network hierarchy."
+    },
+    {
+      "name": "Pipelined Ring All-Reduce with Coupling",
+      "desc": "Implements custom ring-based all-reduce where each rank simultaneously performs reduce-scatter and all-gather phases in a pipelined manner, injecting bidiagonal coupling computation between pipeline stages. Requires W-1 send/recv rounds per stage for 8 stages, resulting in ~1792 fine-grained dispatches but enabling maximal overlap of computation and communication with smaller message chunks.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Naive 8-Stage Sequential All-Reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.310420"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-Scatter + AllGather Decomposition",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.725230"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Bidiagonal with Boundary Exchange",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: RuntimeError: The size of tensor a (8192) mus"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level All-Reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Ring All-Reduce with Coupling",
+      "sim": 18396.42222222234,
+      "ok": true,
+      "err": null
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 18396.42222222234,
+  "final_code": "def r68b_bidi_b035m4_d8_p2048_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 2048\n    W = world_size\n    dtype = x.dtype\n    \n    # Compute bidiagonal coefficients\n    b = [0.35 + 0.1 * (r % 4) for r in range(W)]\n    \n    # Stage 1: Initial all-reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Stages 2-8: Apply bidiagonal coupling, undo previous, and reduce\n    for stage in range(7):\n        # Undo previous coupling (stages 2+)\n        if stage > 0:\n            for r in range(W - 2, -1, -1):\n                s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r] * s[(r+1)*S:(r+2)*S]\n        \n        # Apply new coupling and normalize\n        buf = s / W\n        for r in range(W - 1):\n            buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r] * s[(r+1)*S:(r+2)*S]) / W\n        \n        # All-reduce the coupled buffer\n        s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    \n    return s"
+}

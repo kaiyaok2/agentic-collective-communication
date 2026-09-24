@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r68b_bidi_b015m3_d8_p2048",
+  "gate": "fp32",
+  "baseline_sim": 18396.42222222234,
+  "strategies": [
+    {
+      "name": "Baseline Sequential All-Reduce Chain",
+      "desc": "Execute 8 sequential all-reduce operations (one per stage) with local bidiagonal coupling/uncoupling between each. Each stage performs: (1) undo previous coupling, (2) apply new coupling, (3) all-reduce. Results in exactly 8 collective dispatches with full W*S payload each time. Represents the straightforward translation of the problem with minimal optimization but maximum clarity."
+    },
+    {
+      "name": "Reduce-Scatter + All-Gather Decomposition",
+      "desc": "Replace each all-reduce with reduce-scatter followed by all-gather, keeping only the owned shard between stages. Each rank performs local coupling only on its assigned shard during the 8 iterations, then reconstructs the full vector via all-gather at the end. Results in 16 collective dispatches (8 RS + 8 AG) but with smaller per-dispatch payload (W*S/W = S for reduce-scatter outputs), trading dispatch count for reduced bandwidth per operation."
+    },
+    {
+      "name": "Hierarchical Two-Level Reduction",
+      "desc": "Exploit multi-node topology by splitting the 8 stages into intra-node and inter-node phases. Perform node-local reductions first (across cores within each node), then cross-node reductions, applying bidiagonal coupling at the node granularity. Reduces cross-node traffic at the cost of additional intra-node collectives, potentially 16+ dispatches but with better network utilization on hierarchical interconnects."
+    },
+    {
+      "name": "Fused Local-Op Pipelined Waves",
+      "desc": "Overlap the coupling/uncoupling local operations with collective communication by chunking the W*S tensor into smaller blocks and pipelining across the 8 stages. Launch all 8 all-reduce operations with dependencies encoded via async barriers, fusing the intermediate coupling transforms into the collective's pre/post-processing hooks. Maintains 8 dispatches but enables compute-communication overlap and potential latency hiding."
+    },
+    {
+      "name": "Transpose-Batch-Transpose with Single Mega-Reduce",
+      "desc": "Restructure the computation by transposing data layout so that all 8 stages' intermediate results are computed locally as independent \"batch\" dimensions, then perform a single batched all-reduce operation across all stages simultaneously. Reshape from (8, W, S) to (W, 8*S) for the collective, then locally extract per-stage results. Results in 1 collective dispatch with 8\u00d7 payload size, optimizing for dispatch overhead at the cost of memory footprint and single large transfer.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Baseline Sequential All-Reduce Chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.833904"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-Scatter + All-Gather Decomposition",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.535546"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level Reduction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.833904"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Local-Op Pipelined Waves",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=0.833904"
+    },
+    {
+      "stage": "impl",
+      "name": "Transpose-Batch-Transpose with Single Mega-Reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.667807"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 18396.42222222234,
+  "final_code": "def r68b_bidi_b015m3_d8_p2048_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 2048; W = world_size\n    b = [0.15 + 0.1*(r % 3) for r in range(W)]\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for r in range(W - 2, -1, -1):\n        s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n    buf = s / W\n    for r in range(W - 1):\n        buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    return s\n",
+  "fell_back_to_baseline": true
+}

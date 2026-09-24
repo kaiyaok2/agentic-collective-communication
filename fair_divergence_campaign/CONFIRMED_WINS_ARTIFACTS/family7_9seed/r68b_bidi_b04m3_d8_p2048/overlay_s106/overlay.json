@@ -1,0 +1,68 @@
+{
+  "pipeline": "overlay",
+  "problem": "r68b_bidi_b04m3_d8_p2048",
+  "gate": "fp32",
+  "baseline_sim": 18396.42222222234,
+  "strategies": [
+    {
+      "name": "Baseline Unrolled Sequential AllReduce",
+      "desc": "Direct translation of the reference: 8 sequential all_reduce calls, each preceded by forward bidiagonal coupling and followed by backward uncoupling. 8 all_reduce dispatches total. Represents the naive approach with maximum dispatch overhead but simplest correctness verification."
+    },
+    {
+      "name": "Fused Local Ops Single Buffer",
+      "desc": "Merge all forward coupling and backward uncoupling loops into single-pass kernels per stage, reusing one buffer in-place. Still 8 all_reduce dispatches but reduces memory allocation overhead and local compute fragmentation. Trades code complexity for fewer intermediate tensor allocations."
+    },
+    {
+      "name": "Reduce-Scatter + AllGather Chain",
+      "desc": "Replace each all_reduce with a reduce_scatter (producing W shards) followed by all_gather on rank-local shard after local coupling/uncoupling. 16 dispatches (8 RS + 8 AG) but smaller per-dispatch payload (1/W of all_reduce size for reduce_scatter phase). Better bandwidth utilization when network is the bottleneck."
+    },
+    {
+      "name": "Pipelined AllReduce with Overlapping Computation",
+      "desc": "Launch all_reduce asynchronously where possible, interleaving backward uncoupling of stage i with forward coupling and all_reduce of stage i+1. Requires careful dependency tracking via xm barriers. 8 dispatches but overlaps communication with local compute, reducing wall-clock time."
+    },
+    {
+      "name": "Hierarchical Two-Level AllReduce",
+      "desc": "Exploit multi-node structure (if num_nodes > 1): perform intra-node all_reduce, apply coupling/uncoupling once per node, then inter-node all_reduce, then broadcast back. Reduces cross-node traffic by factor of cores_per_node. Fewer large dispatches for inter-node, more small dispatches for intra-node (approximately 8*3 = 24 dispatches assuming two levels).\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Baseline Unrolled Sequential AllReduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=1.334246"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Local Ops Single Buffer",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.745973"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-Scatter + AllGather Chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.745973"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined AllReduce with Overlapping Computation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.745973"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level AllReduce",
+      "sim": 18396.42222222234,
+      "ok": true,
+      "err": null
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 18396.42222222234,
+  "final_code": "def r68b_bidi_b04m3_d8_p2048_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 2048\n    W = world_size\n    b = [0.4 + 0.08*(r % 3) for r in range(W)]\n    dtype = x.dtype\n    \n    # Hierarchical two-level all-reduce strategy\n    # Level 1: intra-node, Level 2: inter-node\n    \n    cores_per_node = num_devices * cores_per_device\n    node_id = rank // cores_per_node\n    local_rank = rank % cores_per_node\n    num_nodes_actual = (W + cores_per_node - 1) // cores_per_node\n    \n    # If single node or num_nodes == 1, fall back to standard implementation\n    if num_nodes_actual == 1:\n        s = xm.all_reduce(xm.REDUCE_SUM, x)\n        buf = s / W\n        for r in range(W - 1):\n            buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n        s = xm.all_reduce(xm.REDUCE_SUM, buf)\n        for r in range(W - 2, -1, -1):\n            s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n        buf = s / W\n        for r in range(W - 1):\n            buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n        s = xm.all_reduce(xm.REDUCE_SUM, buf)\n        for r in range(W - 2, -1, -1):\n            s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n        buf = s / W\n        for r in range(W - 1):\n            buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n        s = xm.all_reduce(xm.REDUCE_SUM, buf)\n        for r in range(W - 2, -1, -1):\n            s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n        buf = s / W\n        for r in range(W - 1):\n            buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n        s = xm.all_reduce(xm.REDUCE_SUM, buf)\n        for r in range(W - 2, -1, -1):\n            s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n        buf = s / W\n        for r in range(W - 1):\n            buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n        s = xm.all_reduce(xm.REDUCE_SUM, buf)\n        for r in range(W - 2, -1, -1):\n            s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n        buf = s / W\n        for r in range(W - 1):\n            buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n        s = xm.all_reduce(xm.REDUCE_SUM, buf)\n        for r in range(W - 2, -1, -1):\n            s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n        buf = s / W\n        for r in range(W - 1):\n            buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n        s = xm.all_reduce(xm.REDUCE_SUM, buf)\n        return s\n    \n    # Multi-node hierarchical approach\n    # Build intra-node groups\n    intra_node_groups = []\n    for nid in range(num_nodes_actual):\n        group = list(range(nid * cores_per_node, min((nid + 1) * cores_per_node, W)))\n        intra_node_groups.append(group)\n    \n    # Build inter-node groups (one rank per node)\n    inter_node_groups = [[nid * cores_per_node for nid in range(num_nodes_actual) if nid * cores_per_node < W]]\n    \n    s = x.clone()\n    \n    # 8 stages\n    for stage in range(8):\n        # Intra-node all-reduce\n        s = xm.all_reduce(xm.REDUCE_SUM, s, groups=intra_node_groups)\n        \n        # Apply coupling/uncoupling at node representatives (local_rank == 0)\n        if local_rank == 0:\n            if stage == 0:\n                # First stage: just coupling\n                buf = s / W\n                for r in range(W - 1):\n                    buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n                s = buf\n            else:\n                # Subsequent stages: uncoupling then coupling\n                for r in range(W - 2, -1, -1):\n                    s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r]*s[(r+1)*S:(r+2)*S]\n                buf = s / W\n                for r in range(W - 1):\n                    buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r]*s[(r+1)*S:(r+2)*S]) / W\n                s = buf\n            \n            # Inter-node all-reduce\n            s = xm.all_reduce(xm.REDUCE_SUM, s, groups=inter_node_groups)\n        \n        # Broadcast result from node representative to all intra-node ranks\n        s = xm.all_reduce(xm.REDUCE_SUM, s if local_rank == 0 else torch.zeros_like(s), groups=intra_node_groups)\n    \n    return s"
+}

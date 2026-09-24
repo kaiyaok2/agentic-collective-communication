@@ -1,0 +1,68 @@
+{
+  "pipeline": "overlay",
+  "problem": "r68b_bidi_b04m3_d8_p2048",
+  "gate": "fp32",
+  "baseline_sim": 18396.42222222234,
+  "strategies": [
+    {
+      "name": "Naive Sequential Eight All-Reduces",
+      "desc": "Direct translation of the reference: 8 separate all_reduce dispatches with interleaved local bidiagonal coupling and inverse operations on full W*S vectors. 8 collective dispatches total. Represents the baseline with maximum clarity but no fusion or communication optimization."
+    },
+    {
+      "name": "Reduce-Scatter + AllGather Decomposition",
+      "desc": "Replace each all_reduce with reduce_scatter (producing local shard) followed by all_gather to reconstruct full vector. Enables overlapping local computation (coupling/decoupling) with the all_gather phase of stage N and reduce_scatter of stage N+1. 16 collective dispatches (8 RS + 8 AG) but potential for pipeline parallelism between communication and computation."
+    },
+    {
+      "name": "Fused Local Operations Between Collectives",
+      "desc": "Keep 8 all_reduce calls but fuse all local operations (forward coupling, backward decoupling, division) into single kernel launches between each collective. Reduces kernel launch overhead and intermediate buffer writes. Still 8 collective dispatches but minimized local-op dispatch count from ~32 to ~8 local kernels."
+    },
+    {
+      "name": "Ring-AllReduce with Inline Coupling",
+      "desc": "Implement custom ring-based all_reduce where each rank applies bidiagonal coupling transformations during the reduce-scatter and allgather phases of the ring protocol. Fuses communication with transformation logic. Requires point-to-point operations (send/recv) instead of collectives, potentially 8*2*(W-1) send/recv pairs but enables fine-grained coupling integration."
+    },
+    {
+      "name": "Hierarchical Intra-Node Then Inter-Node",
+      "desc": "Exploit multi-node topology by performing all_reduce in two phases per stage: first aggregate within each node's ranks, apply coupling on node-local results, then aggregate across nodes. 16 collective dispatches (8 intra-node + 8 inter-node all_reduce) but leverages faster intra-node bandwidth for the majority of data movement at world_size=224.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Naive Sequential Eight All-Reduces",
+      "sim": 18396.42222222234,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-Scatter + AllGather Decomposition",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: shape (32768,) != (8192,)"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Local Operations Between Collectives",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    },
+    {
+      "stage": "impl",
+      "name": "Ring-AllReduce with Inline Coupling",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.745973"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Intra-Node Then Inter-Node",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 18396.42222222234,
+  "final_code": "def r68b_bidi_b04m3_d8_p2048_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 2048\n    W = world_size\n    dtype = x.dtype\n    \n    # Precompute bidiagonal coefficients\n    b = [0.4 + 0.08 * (r % 3) for r in range(W)]\n    \n    # Stage 1: Initial all-reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Stages 2-8: Apply bidiagonal coupling, inverse previous coupling, and all-reduce\n    for stage in range(7):\n        # Apply inverse coupling from previous stage (if stage > 0)\n        if stage > 0:\n            for r in range(W - 2, -1, -1):\n                s[r*S:(r+1)*S] = s[r*S:(r+1)*S] - b[r] * s[(r+1)*S:(r+2)*S]\n        \n        # Divide by W and apply forward bidiagonal coupling\n        buf = s / W\n        for r in range(W - 1):\n            buf[r*S:(r+1)*S] = (s[r*S:(r+1)*S] + b[r] * s[(r+1)*S:(r+2)*S]) / W\n        \n        # All-reduce\n        s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    \n    return s"
+}
