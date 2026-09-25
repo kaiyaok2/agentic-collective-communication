@@ -1,0 +1,73 @@
+{
+  "pipeline": "overlay",
+  "problem": "r71_wdiag_b5_L3_w1_d8",
+  "gate": "fp32",
+  "baseline_sim": 6669.557142857143,
+  "strategies": [
+    {
+      "name": "Reference Sequential All-Reduce Chain",
+      "desc": "Performs 8 all-reduce dispatches sequentially: 1 initial sum, then 7 weighted iterations each with selective masking, weight application, all-reduce, and normalization. Total 8 dispatches with full-size payload (5*2048 elements) each time. Represents the baseline with maximum dispatch count but simplest logic."
+    },
+    {
+      "name": "Fused Weight-Mask Computation",
+      "desc": "Pre-computes all 7 weight masks and normalization factors in a single local pass, then performs all 8 all-reduces with interleaved local tensor operations batched together. Still 8 dispatches but reduces intermediate buffer allocations and repeated mask computation overhead. Trades memory for fewer redundant computations."
+    },
+    {
+      "name": "Block-Decomposed Reduce-Scatter + All-Gather",
+      "desc": "Replace each all-reduce with reduce-scatter (scattering 5 blocks across rank groups) followed by all-gather, enabling per-block pipeline parallelism. Total 16 dispatches (2 per iteration) but with smaller per-dispatch payloads (~2048 elements). Exploits block independence to reduce network bottleneck at high world size."
+    },
+    {
+      "name": "Hierarchical Two-Level Aggregation",
+      "desc": "Groups 224 ranks into hierarchical clusters (e.g., 28 groups of 8), performs intra-group all-reduce followed by inter-group all-reduce for each iteration. Total 16 dispatches (2 per iteration \u00d7 8 iterations) with reduced per-group payload size. Optimizes for multi-node topology by minimizing cross-node bandwidth."
+    },
+    {
+      "name": "Pipelined Asynchronous Wave",
+      "desc": "Launches all 8 all-reduce operations asynchronously with explicit barrier synchronization only where data dependencies exist (between iterations). Uses non-blocking collectives to overlap independent local computation (masking, scaling) with network transfers. Still 8 dispatches but with latency hiding through pipeline parallelism.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Reference Sequential All-Reduce Chain",
+      "sim": 6669.557142857143,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Weight-Mask Computation",
+      "sim": 6727.557142857143,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Block-Decomposed Reduce-Scatter + All-Gather",
+      "sim": 6669.557142857143,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level Aggregation",
+      "sim": 6669.557142857143,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Asynchronous Wave",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=3.897346"
+    },
+    {
+      "stage": "refine:Reference Sequential All-Reduce Chain",
+      "round": 1,
+      "sim": 7168.95714285714
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6669.557142857143,
+  "final_code": "def r71_wdiag_b5_L3_w1_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    STRATEGY: Reference Sequential All-Reduce Chain\n    Performs 8 all-reduce dispatches sequentially: \n    1 initial sum, then 7 weighted iterations each with selective masking, \n    weight application, all-reduce, and normalization.\n    \"\"\"\n    S = 2048\n    W = world_size\n    dtype = x.dtype\n    \n    # Dispatch 1: Initial all-reduce sum\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Precompute normalization factors A[b] for each block\n    A = [0.0] * 5\n    for r in range(W):\n        w = 0.5 + 0.02 * r\n        st = (r + 0) % 5\n        for j in range(3):\n            A[(st + 1 * j) % 5] += w\n    \n    # Dispatches 2-8: 7 weighted iterations\n    for iteration in range(7):\n        # Determine which blocks this rank contributes to\n        start = (rank + 0) % 5\n        keep = set((start + 1 * j) % 5 for j in range(3))\n        \n        # This rank's weight\n        w = 0.5 + 0.02 * rank\n        \n        # Create masked and weighted buffer\n        buf = torch.zeros_like(s)\n        for b in range(5):\n            if b in keep:\n                buf[b*S:(b+1)*S] = w * s[b*S:(b+1)*S]\n        \n        # All-reduce to sum contributions\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n        \n        # Normalize each block (except on last iteration where normalization is skipped)\n        if iteration < 6:\n            for b in range(5):\n                acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / A[b]\n        \n        s = acc\n    \n    return s"
+}

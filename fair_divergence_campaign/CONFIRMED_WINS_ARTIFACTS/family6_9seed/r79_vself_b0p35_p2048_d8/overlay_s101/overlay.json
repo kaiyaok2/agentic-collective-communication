@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r79_vself_b0p35_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6643.4,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with scalar accumulation",
+      "desc": "Perform 8 sequential all_reduce operations on the full vector (16384 elements each), computing the v-projection locally between each collective. This is the baseline from the seed library: 8 all_reduce dispatches of size 16384, trading off no fusion opportunity for simplicity and correctness."
+    },
+    {
+      "name": "Split-vector parallel all-reduce batching",
+      "desc": "Split the 16384-element vector into chunks (e.g., 2048 or 4096 elements), perform all_reduce on each chunk independently, then reassemble. The v-projection mean computation requires a second all_reduce pass over scalars or small aggregates. Total ~16-32 dispatches (8 iterations \u00d7 2-4 chunks), trading increased dispatch count for potential parallelism if the runtime can overlap independent chunk collectives."
+    },
+    {
+      "name": "Fused buffer with alternating v-signs",
+      "desc": "Exploit that v alternates [+1,-1]: split data into even/odd indices, compute separate sums, and pack both into a 2-element auxiliary vector alongside the main all_reduce. Each iteration performs 1 all_reduce on the full vector plus 1 all_reduce on a 2-element auxiliary (or fused into one larger buffer). Expected 8-16 dispatches, reducing scalar all_reduce overhead by batching metadata."
+    },
+    {
+      "name": "Hierarchical reduce-scatter then all-gather",
+      "desc": "Replace each all_reduce with a reduce_scatter (producing N/W local elements) followed by local computation on sharded data, then all_gather to reconstruct. The v-projection mean requires a separate all_reduce of a scalar per iteration. Total ~24 dispatches (8 \u00d7 (reduce_scatter + all_gather + scalar_all_reduce)), trading larger dispatch count for smaller per-dispatch payload (16384/224 \u2248 73 elements in scatter/gather phases)."
+    },
+    {
+      "name": "Pipelined dual-buffer with scalar precompute",
+      "desc": "Precompute (v*s).mean() as a scalar all_reduce, then pipeline the main vector all_reduce with the next iteration's scalar all_reduce. Use double-buffering to overlap communication of iteration i's vector with computation of iteration i+1's projection. Expected 9 dispatches (1 initial vector + 8 scalar all_reduce), dramatically reducing total communication volume by sending 8 scalars instead of 8 full vectors after the first iteration.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with scalar accumulation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902346"
+    },
+    {
+      "stage": "impl",
+      "name": "Split-vector parallel all-reduce batching",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.001436"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused buffer with alternating v-signs",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.001436"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical reduce-scatter then all-gather",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: TypeError: MockXM.all_gather() got an unexpec"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined dual-buffer with scalar precompute",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902346"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 6643.4,
+  "final_code": "def r79_vself_b0p35_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size; BETA = 0.35; N = 16384\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    idx = torch.arange(N)\n    v = (1 - 2 * (idx % 2)).to(s.dtype)\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    return s\n",
+  "fell_back_to_baseline": true
+}

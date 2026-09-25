@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r71_wdiag_b5_L3_w1_d8",
+  "gate": "fp32",
+  "baseline_sim": 6669.557142857143,
+  "strategies": [
+    {
+      "name": "Baseline Sequential Weighted All-Reduce",
+      "desc": "Executes 8 all_reduce dispatches sequentially as shown in reference: 1 initial sum + 7 weighted iterations. Each iteration zeros a buffer, applies rank-dependent weight to 3 blocks (determined by window), all-reduces, then normalizes by precomputed totals. 8 total dispatches, straightforward but no overlap opportunity."
+    },
+    {
+      "name": "Fused Buffer Preparation Multi-Block",
+      "desc": "Pre-allocate a single contiguous buffer for all 7 weighted iterations, interleaving the 5-block layout 7 times (35 blocks total). Compute all weighted masked blocks locally in one pass, then issue 7 separate all_reduce calls on non-contiguous slices or views. Reduces local compute overhead but still 8 dispatches; trades memory for compute fusion."
+    },
+    {
+      "name": "Hierarchical Two-Stage Block Aggregation",
+      "desc": "Exploit the modular arithmetic pattern: group ranks by (rank % 5) into 5 cohorts of ~45 ranks each. First stage performs intra-cohort all_reduce per block (5 dispatches), second stage performs inter-cohort reduction with weights (3 dispatches). Total ~8 dispatches but with smaller world-size per collective, potentially lower latency."
+    },
+    {
+      "name": "Pipelined Overlapped Weight Iterations",
+      "desc": "Issue the 7 weighted all_reduce operations in a pipelined manner by starting iteration i+1's local buffer preparation while iteration i's all_reduce is in flight. Uses async dispatch if available or careful ordering to hide local computation (masking, weighting, normalization) behind network communication. Still 8 dispatches but improved wall-clock time."
+    },
+    {
+      "name": "Reduce-Scatter + All-Gather Decomposition",
+      "desc": "Decompose each weighted all_reduce into reduce-scatter (5 dispatches producing partial sums on different ranks) followed by all-gather (5 dispatches broadcasting results). For 7 iterations: 7\u00d72=14 base dispatches, but each operates on 1/5 payload size. Trades dispatch count for smaller per-dispatch bandwidth when network is bottleneck.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Baseline Sequential Weighted All-Reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=3.897346"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Buffer Preparation Multi-Block",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=3.514818"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Stage Block Aggregation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=3.897346"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Overlapped Weight Iterations",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-Scatter + All-Gather Decomposition",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=3.897346"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 6669.557142857143,
+  "final_code": "def r71_wdiag_b5_L3_w1_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 2048; W = world_size\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    A = [0.0]*5\n    for r in range(W):\n        w = 0.5 + 0.02*r\n        st = (r + 0) % 5\n        for j in range(3):\n            A[(st + 1*j) % 5] += w\n    start = (rank + 0) % 5\n    keep = set((start + 1*j) % 5 for j in range(3))\n    w = 0.5 + 0.02*rank\n    buf = torch.zeros_like(s)\n    for b in range(5):\n        if b in keep:\n            buf[b*S:(b+1)*S] = w * s[b*S:(b+1)*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(5):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / A[b]\n    s = acc\n    start = (rank + 0) % 5\n    keep = set((start + 1*j) % 5 for j in range(3))\n    w = 0.5 + 0.02*rank\n    buf = torch.zeros_like(s)\n    for b in range(5):\n        if b in keep:\n            buf[b*S:(b+1)*S] = w * s[b*S:(b+1)*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(5):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / A[b]\n    s = acc\n    start = (rank + 0) % 5\n    keep = set((start + 1*j) % 5 for j in range(3))\n    w = 0.5 + 0.02*rank\n    buf = torch.zeros_like(s)\n    for b in range(5):\n        if b in keep:\n            buf[b*S:(b+1)*S] = w * s[b*S:(b+1)*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(5):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / A[b]\n    s = acc\n    start = (rank + 0) % 5\n    keep = set((start + 1*j) % 5 for j in range(3))\n    w = 0.5 + 0.02*rank\n    buf = torch.zeros_like(s)\n    for b in range(5):\n        if b in keep:\n            buf[b*S:(b+1)*S] = w * s[b*S:(b+1)*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(5):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / A[b]\n    s = acc\n    start = (rank + 0) % 5\n    keep = set((start + 1*j) % 5 for j in range(3))\n    w = 0.5 + 0.02*rank\n    buf = torch.zeros_like(s)\n    for b in range(5):\n        if b in keep:\n            buf[b*S:(b+1)*S] = w * s[b*S:(b+1)*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(5):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / A[b]\n    s = acc\n    start = (rank + 0) % 5\n    keep = set((start + 1*j) % 5 for j in range(3))\n    w = 0.5 + 0.02*rank\n    buf = torch.zeros_like(s)\n    for b in range(5):\n        if b in keep:\n            buf[b*S:(b+1)*S] = w * s[b*S:(b+1)*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    for b in range(5):\n        acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / A[b]\n    s = acc\n    start = (rank + 0) % 5\n    keep = set((start + 1*j) % 5 for j in range(3))\n    w = 0.5 + 0.02*rank\n    buf = torch.zeros_like(s)\n    for b in range(5):\n        if b in keep:\n            buf[b*S:(b+1)*S] = w * s[b*S:(b+1)*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    s = acc\n    return s\n",
+  "fell_back_to_baseline": true
+}

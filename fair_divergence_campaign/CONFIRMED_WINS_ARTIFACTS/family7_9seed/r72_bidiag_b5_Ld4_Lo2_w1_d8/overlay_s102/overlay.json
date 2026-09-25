@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r72_bidiag_b5_Ld4_Lo2_w1_d8",
+  "gate": "fp32",
+  "baseline_sim": 6834.257142857144,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with inline bidiagonal solve",
+      "desc": "Performs 8 dependent all-reduce operations sequentially, each followed by immediate local bidiagonal solve and weight application. Dispatch count: 1 initial all-reduce + 8\u00d7(weight+all-reduce+solve) = 9 total all-reduce dispatches. Represents the reference baseline with maximum dispatch overhead but minimal memory overhead and straightforward dependency chain."
+    },
+    {
+      "name": "Fused weight-application before grouped all-reduce",
+      "desc": "Precompute all 8 weight application buffers locally into separate tensors, then batch multiple all-reduce operations together using a single concatenated payload to reduce dispatch overhead. Dispatch count: 1 initial all-reduce + 1-2 grouped all-reduces for 8 iterations. Trades increased memory allocation (8 intermediate buffers) for fewer collective dispatches, exploiting potential hardware batching of consecutive operations."
+    },
+    {
+      "name": "Reduce-scatter and all-gather decomposition per iteration",
+      "desc": "Replace each all-reduce with reduce-scatter followed by all-gather, allowing overlap of the bidiagonal solve computation during the all-gather phase since solve can begin on partial results. Dispatch count: 1 initial all-reduce + 8\u00d72 = 17 total dispatches. Increases dispatch count but enables computational overlap and reduces per-rank communication volume during scatter phase."
+    },
+    {
+      "name": "Block-pipelined with staggered dependencies",
+      "desc": "Exploit the lower-bidiagonal structure where block b only depends on block b-1, enabling block-level pipelining across the 8 iterations. Issue all-reduce operations for independent blocks concurrently within iteration constraints. Dispatch count: 1 initial + ~8-12 dispatches depending on pipeline depth. Reduces critical path latency by overlapping independent block computations."
+    },
+    {
+      "name": "Hierarchical two-level reduction with node-local pre-aggregation",
+      "desc": "Given world_size=224 and num_nodes parameter, perform intra-node reduction first (assuming multi-node setup), then inter-node all-reduce, exploiting faster intra-node interconnect. Apply weight transformations at node-aggregation boundaries. Dispatch count: 1 initial + 8\u00d72 = 17 dispatches (intra+inter per iteration). Optimizes for hierarchical network topology with lower intra-node latency.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with inline bidiagonal solve",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=8.194191"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused weight-application before grouped all-reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=8.194191"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-scatter and all-gather decomposition per iteration",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: TypeError: MockXM.all_gather() got an unexpec"
+    },
+    {
+      "stage": "impl",
+      "name": "Block-pipelined with staggered dependencies",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=8.194191"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-level reduction with node-local pre-aggregation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 6834.257142857144,
+  "final_code": "def r72_bidiag_b5_Ld4_Lo2_w1_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 2048; W = world_size\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    A = [0.0]*5\n    C = [0.0]*5\n    for r in range(W):\n        wd = 0.8 + 0.02*r\n        wo = 0.15 + 0.01*(r % 5)\n        sd = (r + 0) % 5\n        for j in range(4):\n            A[(sd + j) % 5] += wd\n        so = (r + 1) % 5\n        for j in range(2):\n            b = (so + j) % 5\n            if b >= 1:\n                C[b] += wo\n    sd = (rank + 0) % 5\n    kd = set((sd + j) % 5 for j in range(4))\n    so = (rank + 1) % 5\n    ko = set((so + j) % 5 for j in range(2))\n    wd = 0.8 + 0.02*rank\n    wo = 0.15 + 0.01*(rank % 5)\n    buf = torch.zeros_like(s)\n    for b in range(5):\n        if b in kd:\n            buf[b*S:(b+1)*S] = buf[b*S:(b+1)*S] + wd * s[b*S:(b+1)*S]\n        if b in ko and b >= 1:\n            buf[b*S:(b+1)*S] = buf[b*S:(b+1)*S] + wo * s[(b-1)*S:b*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    rec = acc.clone()\n    rec[0:S] = acc[0:S] / A[0]\n    for b in range(1, 5):\n        rec[b*S:(b+1)*S] = (acc[b*S:(b+1)*S] - C[b] * rec[(b-1)*S:b*S]) / A[b]\n    s = rec\n    sd = (rank + 0) % 5\n    kd = set((sd + j) % 5 for j in range(4))\n    so = (rank + 1) % 5\n    ko = set((so + j) % 5 for j in range(2))\n    wd = 0.8 + 0.02*rank\n    wo = 0.15 + 0.01*(rank % 5)\n    buf = torch.zeros_like(s)\n    for b in range(5):\n        if b in kd:\n            buf[b*S:(b+1)*S] = buf[b*S:(b+1)*S] + wd * s[b*S:(b+1)*S]\n        if b in ko and b >= 1:\n            buf[b*S:(b+1)*S] = buf[b*S:(b+1)*S] + wo * s[(b-1)*S:b*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    rec = acc.clone()\n    rec[0:S] = acc[0:S] / A[0]\n    for b in range(1, 5):\n        rec[b*S:(b+1)*S] = (acc[b*S:(b+1)*S] - C[b] * rec[(b-1)*S:b*S]) / A[b]\n    s = rec\n    sd = (rank + 0) % 5\n    kd = set((sd + j) % 5 for j in range(4))\n    so = (rank + 1) % 5\n    ko = set((so + j) % 5 for j in range(2))\n    wd = 0.8 + 0.02*rank\n    wo = 0.15 + 0.01*(rank % 5)\n    buf = torch.zeros_like(s)\n    for b in range(5):\n        if b in kd:\n            buf[b*S:(b+1)*S] = buf[b*S:(b+1)*S] + wd * s[b*S:(b+1)*S]\n        if b in ko and b >= 1:\n            buf[b*S:(b+1)*S] = buf[b*S:(b+1)*S] + wo * s[(b-1)*S:b*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    rec = acc.clone()\n    rec[0:S] = acc[0:S] / A[0]\n    for b in range(1, 5):\n        rec[b*S:(b+1)*S] = (acc[b*S:(b+1)*S] - C[b] * rec[(b-1)*S:b*S]) / A[b]\n    s = rec\n    sd = (rank + 0) % 5\n    kd = set((sd + j) % 5 for j in range(4))\n    so = (rank + 1) % 5\n    ko = set((so + j) % 5 for j in range(2))\n    wd = 0.8 + 0.02*rank\n    wo = 0.15 + 0.01*(rank % 5)\n    buf = torch.zeros_like(s)\n    for b in range(5):\n        if b in kd:\n            buf[b*S:(b+1)*S] = buf[b*S:(b+1)*S] + wd * s[b*S:(b+1)*S]\n        if b in ko and b >= 1:\n            buf[b*S:(b+1)*S] = buf[b*S:(b+1)*S] + wo * s[(b-1)*S:b*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    rec = acc.clone()\n    rec[0:S] = acc[0:S] / A[0]\n    for b in range(1, 5):\n        rec[b*S:(b+1)*S] = (acc[b*S:(b+1)*S] - C[b] * rec[(b-1)*S:b*S]) / A[b]\n    s = rec\n    sd = (rank + 0) % 5\n    kd = set((sd + j) % 5 for j in range(4))\n    so = (rank + 1) % 5\n    ko = set((so + j) % 5 for j in range(2))\n    wd = 0.8 + 0.02*rank\n    wo = 0.15 + 0.01*(rank % 5)\n    buf = torch.zeros_like(s)\n    for b in range(5):\n        if b in kd:\n            buf[b*S:(b+1)*S] = buf[b*S:(b+1)*S] + wd * s[b*S:(b+1)*S]\n        if b in ko and b >= 1:\n            buf[b*S:(b+1)*S] = buf[b*S:(b+1)*S] + wo * s[(b-1)*S:b*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    rec = acc.clone()\n    rec[0:S] = acc[0:S] / A[0]\n    for b in range(1, 5):\n        rec[b*S:(b+1)*S] = (acc[b*S:(b+1)*S] - C[b] * rec[(b-1)*S:b*S]) / A[b]\n    s = rec\n    sd = (rank + 0) % 5\n    kd = set((sd + j) % 5 for j in range(4))\n    so = (rank + 1) % 5\n    ko = set((so + j) % 5 for j in range(2))\n    wd = 0.8 + 0.02*rank\n    wo = 0.15 + 0.01*(rank % 5)\n    buf = torch.zeros_like(s)\n    for b in range(5):\n        if b in kd:\n            buf[b*S:(b+1)*S] = buf[b*S:(b+1)*S] + wd * s[b*S:(b+1)*S]\n        if b in ko and b >= 1:\n            buf[b*S:(b+1)*S] = buf[b*S:(b+1)*S] + wo * s[(b-1)*S:b*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    rec = acc.clone()\n    rec[0:S] = acc[0:S] / A[0]\n    for b in range(1, 5):\n        rec[b*S:(b+1)*S] = (acc[b*S:(b+1)*S] - C[b] * rec[(b-1)*S:b*S]) / A[b]\n    s = rec\n    sd = (rank + 0) % 5\n    kd = set((sd + j) % 5 for j in range(4))\n    so = (rank + 1) % 5\n    ko = set((so + j) % 5 for j in range(2))\n    wd = 0.8 + 0.02*rank\n    wo = 0.15 + 0.01*(rank % 5)\n    buf = torch.zeros_like(s)\n    for b in range(5):\n        if b in kd:\n            buf[b*S:(b+1)*S] = buf[b*S:(b+1)*S] + wd * s[b*S:(b+1)*S]\n        if b in ko and b >= 1:\n            buf[b*S:(b+1)*S] = buf[b*S:(b+1)*S] + wo * s[(b-1)*S:b*S]\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    s = acc\n    return s\n",
+  "fell_back_to_baseline": true
+}

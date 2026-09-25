@@ -1,0 +1,73 @@
+{
+  "pipeline": "overlay",
+  "problem": "r73_mono_b6_a5_L5_w4_d8",
+  "gate": "fp32",
+  "baseline_sim": 6709.271428571427,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce chain baseline",
+      "desc": "Performs 8 sequential all-reduce operations exactly as specified, each reducing full 6-block buffers with interleaved local permutation and weighted accumulation. 8 collective dispatches with 6*2048 elements each. Straightforward translation that trades minimal code complexity for maximum dispatch count and latency."
+    },
+    {
+      "name": "Fused weight-permutation local computation",
+      "desc": "Precomputes all local weighted permutations and buffer preparations in a single fused kernel before each all-reduce, merging the block selection, permutation lookup, and weight application into vectorized operations. Still 8 dispatches but reduces host-device synchronization overhead and memory allocations by reusing buffers and batching local math."
+    },
+    {
+      "name": "Block-wise pipelined reduce-scatter gather",
+      "desc": "Replaces each full all-reduce with reduce-scatter followed by all-gather on individual blocks, exploiting the block structure to pipeline communication of independent blocks across the 8 dependent stages. Increases dispatch count to 16-24 but reduces per-dispatch payload by 6x and enables overlap of computation on gathered blocks while others are in flight."
+    },
+    {
+      "name": "Hierarchical two-level aggregation tree",
+      "desc": "Exploits world_size=224 by organizing ranks into subgroups (e.g., 32 groups of 7 or 28 groups of 8), performing intra-group partial reductions first, then inter-group aggregation, repeated across the 8 stages. Approximately 16 dispatches but with highly variable payload sizes, trading increased dispatch complexity for better network topology utilization."
+    },
+    {
+      "name": "Dependency-aware staged block batching",
+      "desc": "Analyzes the dependency graph across 8 stages to identify which blocks can share computation paths, batching multiple stage computations where the permutation and weight patterns align across consecutive iterations. Reduces to 4-6 dispatches by fusing 2-3 stages per collective call, increasing payload diversity but amortizing launch overhead significantly.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce chain baseline",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.787248"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused weight-permutation local computation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    },
+    {
+      "stage": "impl",
+      "name": "Block-wise pipelined reduce-scatter gather",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.787248"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-level aggregation tree",
+      "sim": 6912.271428571427,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Dependency-aware staged block batching",
+      "sim": 6709.271428571427,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "refine:Hierarchical two-level aggregation tree",
+      "round": 2,
+      "sim": 5967.271428571428
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 5967.271428571428,
+  "final_code": "def r73_mono_b6_a5_L5_w4_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 2048\n    W = world_size\n    SIG = [3, 2, 1, 0, 5, 4]\n    \n    # Precompute A coefficients\n    A = [0.0] * 6\n    for r in range(W):\n        w = 0.45 + 0.02 * (r % 4)\n        st = (r + 1) % 6\n        for j in range(5):\n            A[(st + 1 * j) % 6] += w\n    \n    # Stage 1: Initial all_reduce\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Key optimization: Fuse stages 2-8 into fewer collective operations\n    # Instead of 7 separate all_reduces, we'll batch them together\n    \n    # Compute all 7 stages' local operations first, then do fewer collectives\n    # We'll use a buffer that holds multiple stages' data\n    \n    w = 0.45 + 0.02 * (rank % 4)\n    start = (rank + 1) % 6\n    keep = set((start + 1 * j) % 6 for j in range(5))\n    \n    # Process stages in groups to reduce collective count\n    # Group stages: 2-4, 5-7, 8\n    stage_groups = [[0, 1, 2], [3, 4, 5], [6]]\n    \n    for group_idx, stages in enumerate(stage_groups):\n        if group_idx == 0:\n            # First group: stages 2-4 (indices 0-2)\n            num_stages = len(stages)\n            # Allocate buffer for multiple stages\n            multi_buf = torch.zeros(num_stages, 6 * S, dtype=s.dtype, device=s.device)\n            \n            for i, stage in enumerate(stages):\n                buf = torch.zeros_like(s)\n                for b in range(6):\n                    if b in keep:\n                        jb = SIG[b]\n                        buf[b*S:(b+1)*S] = w * s[jb*S:(jb+1)*S]\n                multi_buf[i] = buf\n            \n            # Single all_reduce for all 3 stages\n            multi_acc = xm.all_reduce(xm.REDUCE_SUM, multi_buf)\n            \n            # Process results sequentially\n            for i in range(num_stages):\n                acc = multi_acc[i]\n                rec = acc.clone()\n                for b in range(6):\n                    jb = SIG[b]\n                    rec[jb*S:(jb+1)*S] = acc[b*S:(b+1)*S] / A[b]\n                s = rec\n        \n        elif group_idx == 1:\n            # Second group: stages 5-7 (indices 3-5)\n            num_stages = len(stages)\n            multi_buf = torch.zeros(num_stages, 6 * S, dtype=s.dtype, device=s.device)\n            \n            for i, stage in enumerate(stages):\n                buf = torch.zeros_like(s)\n                for b in range(6):\n                    if b in keep:\n                        jb = SIG[b]\n                        buf[b*S:(b+1)*S] = w * s[jb*S:(jb+1)*S]\n                multi_buf[i] = buf\n            \n            # Single all_reduce for all 3 stages\n            multi_acc = xm.all_reduce(xm.REDUCE_SUM, multi_buf)\n            \n            for i in range(num_stages):\n                acc = multi_acc[i]\n                rec = acc.clone()\n                for b in range(6):\n                    jb = SIG[b]\n                    rec[jb*S:(jb+1)*S] = acc[b*S:(b+1)*S] / A[b]\n                s = rec\n        \n        else:\n            # Final stage: stage 8 (index 6)\n            buf = torch.zeros_like(s)\n            for b in range(6):\n                if b in keep:\n                    jb = SIG[b]\n                    buf[b*S:(b+1)*S] = w * s[jb*S:(jb+1)*S]\n            \n            s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    \n    return s"
+}

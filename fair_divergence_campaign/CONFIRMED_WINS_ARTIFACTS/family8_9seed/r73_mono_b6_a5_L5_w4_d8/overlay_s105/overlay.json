@@ -1,0 +1,78 @@
+{
+  "pipeline": "overlay",
+  "problem": "r73_mono_b6_a5_L5_w4_d8",
+  "gate": "fp32",
+  "baseline_sim": 6709.271428571427,
+  "strategies": [
+    {
+      "name": "Baseline Sequential All-Reduce Chain",
+      "desc": "Executes 8 sequential all-reduce operations as shown in the reference, with intermediate permutation, weighting, and normalization between each dispatch. Total 8 all-reduce dispatches with full (6*2048) payload each. Represents the straightforward approach with maximum dispatch count but simplest logic."
+    },
+    {
+      "name": "Fused Weight-Permute-Normalize Kernels",
+      "desc": "Reduces local compute overhead by fusing the per-iteration weight application, permutation indexing, and normalization into single vectorized operations instead of separate loops. Still 8 all-reduce dispatches but with significantly reduced host-side overhead and potentially better memory locality for the local transformations between collectives."
+    },
+    {
+      "name": "Block-Parallel Independent Streams",
+      "desc": "Exploits that each block undergoes independent transformations by splitting the 6 blocks into separate all-reduce operations per iteration, allowing pipeline parallelism across blocks. Results in 8 iterations \u00d7 6 blocks = 48 smaller all-reduce dispatches of 2048 elements each, trading dispatch count for potential overlap and reduced per-dispatch latency."
+    },
+    {
+      "name": "Hierarchical Two-Level Reduction",
+      "desc": "Groups the 224 ranks into clusters (e.g., 56 groups of 4, exploiting the mod-4 weight pattern) to perform intra-cluster reductions first, then inter-cluster reductions, reducing the number of participants per operation. Maintains 8 dependency stages but uses 16 total dispatches (8\u00d72 levels), trading dispatch count for reduced per-dispatch network diameter and bandwidth contention."
+    },
+    {
+      "name": "Pipelined Reduce-Scatter + All-Gather",
+      "desc": "Replaces full all-reduce with reduce-scatter followed by all-gather pattern for each of the 8 stages, allowing each rank to work on 1/W fraction of data during reduction phase. Results in 16 collective dispatches (8 RS + 8 AG) with smaller effective payloads during scatter phase, optimizing for bandwidth-constrained networks at cost of increased dispatch overhead.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Baseline Sequential All-Reduce Chain",
+      "sim": 6709.271428571427,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Weight-Permute-Normalize Kernels",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    },
+    {
+      "stage": "impl",
+      "name": "Block-Parallel Independent Streams",
+      "sim": 14920.271428571428,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level Reduction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.787248"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Reduce-Scatter + All-Gather",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.787248"
+    },
+    {
+      "stage": "refine:Baseline Sequential All-Reduce Chain",
+      "round": 3,
+      "sim": 6709.271428571427
+    },
+    {
+      "stage": "refine:Block-Parallel Independent Streams",
+      "round": 1,
+      "sim": 6912.271428571427
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6709.271428571427,
+  "final_code": "def r73_mono_b6_a5_L5_w4_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 2048\n    W = world_size\n    SIG = [3, 2, 1, 0, 5, 4]\n    \n    # Compute A[b] - total weight for each block across all ranks\n    A = [0.0] * 6\n    for r in range(W):\n        w = 0.45 + 0.02 * (r % 4)\n        st = (r + 1) % 6\n        for j in range(5):\n            A[(st + 1 * j) % 6] += w\n    \n    # Current rank's weight and block window\n    w = 0.45 + 0.02 * (rank % 4)\n    start = (rank + 1) % 6\n    keep = set((start + 1 * j) % 6 for j in range(5))\n    \n    # Dispatch 1: Initial all-reduce sum\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Dispatches 2-7: Permute, weight, all-reduce, unpermute+normalize\n    for iteration in range(6):\n        buf = torch.zeros_like(s)\n        for b in range(6):\n            if b in keep:\n                jb = SIG[b]\n                buf[b*S:(b+1)*S] = w * s[jb*S:(jb+1)*S]\n        \n        acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n        \n        rec = acc.clone()\n        for b in range(6):\n            jb = SIG[b]\n            rec[jb*S:(jb+1)*S] = acc[b*S:(b+1)*S] / A[b]\n        \n        s = rec\n    \n    # Dispatch 8: Final permute, weight, all-reduce (no normalization)\n    buf = torch.zeros_like(s)\n    for b in range(6):\n        if b in keep:\n            jb = SIG[b]\n            buf[b*S:(b+1)*S] = w * s[jb*S:(jb+1)*S]\n    \n    s = xm.all_reduce(xm.REDUCE_SUM, buf)\n    \n    return s"
+}

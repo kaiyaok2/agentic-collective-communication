@@ -1,0 +1,73 @@
+{
+  "pipeline": "overlay",
+  "problem": "r71_wdiag_b6_L5_w1_d8",
+  "gate": "fp32",
+  "baseline_sim": 6709.271428571427,
+  "strategies": [
+    {
+      "name": "Baseline Sequential All-Reduce Chain",
+      "desc": "Performs 8 sequential all_reduce operations (1 initial sum + 7 weighted iterations), each with full 6-block payload. Each iteration applies rank-dependent weights to 5 of 6 blocks, zeroing one block, then all-reduces and normalizes. Total 8 dispatches with 12KB payload each. Represents the straightforward reference implementation with maximal dispatch count but simplest logic."
+    },
+    {
+      "name": "Fused Weight-Accumulation with Block-Sparse Buffers",
+      "desc": "Pre-compute all 7 weight masks across iterations and fuse the weight application into a single buffer construction phase, then batch multiple weighted all-reduces by interleaving compute and communication. Reduces to 8 dispatches but enables better pipelining by overlapping local weight computation with prior all-reduce completion. Trades increased local memory (multiple buffers) for potential latency hiding."
+    },
+    {
+      "name": "Reduce-Scatter + All-Gather Decomposition",
+      "desc": "Decompose each of the 7 weighted all-reduce operations into reduce_scatter (producing 1/6th result per rank) followed by all_gather to reconstruct full tensor. Total 1 initial all_reduce + 14 dispatches (7\u00d72), but each reduce_scatter operates on smaller 2KB payload, potentially better utilizing network bisection bandwidth. Trades dispatch count for per-dispatch payload reduction and improved network utilization at scale."
+    },
+    {
+      "name": "Hierarchical Two-Level Aggregation",
+      "desc": "Exploit 224-rank structure by grouping into node-level subcommunicators (assuming multi-node topology), performing intra-node all-reduce for the initial sum and each weighted iteration, then inter-node all-reduce. Total 16 dispatches (8\u00d72 levels) but with reduced per-dispatch latency on smaller groups. Optimizes for hierarchical network topology with lower intra-node latency."
+    },
+    {
+      "name": "Block-Diagonal Payload Packing with Single-Shot Communication",
+      "desc": "Recognize that each iteration applies weights to only 5 of 6 blocks; pack only the active blocks into a reduced 10KB buffer per iteration, dispatch all_reduce on packed buffer, then unpack and normalize. Requires 1 initial all_reduce + 7 packed all_reduces = 8 dispatches with 17% reduced payload on 7 iterations. Trades local pack/unpack overhead for reduced communication volume.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Baseline Sequential All-Reduce Chain",
+      "sim": 6709.271428571427,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Weight-Accumulation with Block-Sparse Buffers",
+      "sim": 6709.271428571427,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-Scatter + All-Gather Decomposition",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=5.285919"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level Aggregation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Block-Diagonal Payload Packing with Single-Shot Communication",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=20.073492"
+    },
+    {
+      "stage": "refine:Fused Weight-Accumulation with Block-Sparse Buffers",
+      "round": 3,
+      "sim": 6709.271428571427
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6709.271428571427,
+  "final_code": "def r71_wdiag_b6_L5_w1_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Baseline Sequential All-Reduce Chain.\n    Performs 8 sequential all_reduce operations:\n    1. Initial sum of x across all ranks\n    2-8. Seven weighted iterations, each applying rank-dependent weights to 5 of 6 blocks\n    \n    Each iteration:\n    - Applies rank weight to blocks in the rank's window (5 blocks)\n    - Zeros out 1 block (the one not in window)\n    - All-reduces the result\n    - Normalizes by accumulated weights\n    \"\"\"\n    S = 2048\n    W = world_size\n    dtype = x.dtype\n    \n    # Step 1: Initial all-reduce sum\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Precompute accumulated weights A[b] for each block b\n    # A[b] = sum over all ranks r of weight(r) if block b is in rank r's window\n    A = [0.0] * 6\n    for r in range(W):\n        w = 0.5 + 0.02 * r\n        start = (r + 0) % 6\n        for j in range(5):\n            block_idx = (start + 1 * j) % 6\n            A[block_idx] += w\n    \n    # Steps 2-8: Seven weighted iterations\n    for iteration in range(7):\n        # Determine which blocks this rank contributes to (5 out of 6)\n        start = (rank + 0) % 6\n        keep = set((start + 1 * j) % 6 for j in range(5))\n        \n        # Rank-dependent weight\n        w = 0.5 + 0.02 * rank\n        \n        # Create buffer: apply weight to kept blocks, zero others\n        buf = torch.zeros_like(s)\n        for b in range(6):\n            if b in keep:\n                buf[b*S:(b+1)*S] = w * s[b*S:(b+1)*S]\n        \n        # All-reduce sum\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n        \n        # Normalize by accumulated weights (except last iteration)\n        if iteration < 6:\n            for b in range(6):\n                acc[b*S:(b+1)*S] = acc[b*S:(b+1)*S] / A[b]\n        \n        s = acc\n    \n    return s"
+}

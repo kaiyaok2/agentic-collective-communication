@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r82_vself_b0p30_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6643.4,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with scalar extraction",
+      "desc": "Performs 8 sequential all_reduce operations (9 total including initial sum) where each iteration computes the v-projection scalar locally, applies the transform, and dispatches the next all_reduce. 9 dispatches total. Baseline approach with no fusion, highest dispatch overhead but simplest control flow."
+    },
+    {
+      "name": "Fused buffer preparation with batched scalars",
+      "desc": "Pre-computes all intermediate buffer transforms locally before dispatching collectives by vectorizing the scalar mean computations into a single reduction pass, then issues all 9 all_reduce operations with prepared buffers. Still 9 dispatches but reduces local computation overhead by batching scalar extractions and reusing v-pattern computations."
+    },
+    {
+      "name": "Two-phase chunked pipeline overlap",
+      "desc": "Splits the 16384-element tensor into independent chunks, pipelines the first 4 all_reduce iterations on chunk A while preparing chunk B transforms, then alternates. Maintains 9 total all_reduce dispatches but overlaps local compute (mean, v-projection) with collective communication by exploiting data parallelism across spatial chunks."
+    },
+    {
+      "name": "Reduce-scatter then all-gather decomposition",
+      "desc": "Replaces each all_reduce with a reduce_scatter followed by all_gather pair, distributing the intermediate 16384/224 elements across ranks. Each rank computes its local v-projection on the smaller slice, then all_gather reconstructs the full result. 18 dispatches (9 RS + 9 AG) but smaller per-dispatch payload and potential for better network utilization."
+    },
+    {
+      "name": "Accumulator fusion with deferred normalization",
+      "desc": "Defers all division-by-W operations to the final step, accumulating raw sums across all 8 dependent iterations. Fuses the inverse transformation s = acc - ... into a single backward pass after all forward all_reduce passes complete. 9 dispatches but enables fusion of multiple scalar operations and reduces floating-point rounding accumulation.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with scalar extraction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902330"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused buffer preparation with batched scalars",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902330"
+    },
+    {
+      "stage": "impl",
+      "name": "Two-phase chunked pipeline overlap",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.001231"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-scatter then all-gather decomposition",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902330"
+    },
+    {
+      "stage": "impl",
+      "name": "Accumulator fusion with deferred normalization",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.001231"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 6643.4,
+  "final_code": "def r82_vself_b0p30_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size; BETA = 0.3; N = 16384\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    idx = torch.arange(N)\n    v = (1 - 2 * (idx % 2)).to(s.dtype)\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    return s\n",
+  "fell_back_to_baseline": true
+}

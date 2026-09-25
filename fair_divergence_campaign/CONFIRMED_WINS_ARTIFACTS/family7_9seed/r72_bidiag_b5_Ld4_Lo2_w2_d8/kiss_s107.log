@@ -1,0 +1,15 @@
+[shim] kiss AnthropicModel._create_message patched -> /tmp/tokens.jsonl
+[shim] kiss client -> AnthropicBedrock (us-east-1)
+[kiss] baseline r72_bidiag_b5_Ld4_Lo2_w2_d8: {'ok': True, 'sim_time_us': 6834.257142857144, 'num_ops': 308, 'num_all_gather': 0, 'num_all_reduce': 8, 'num_collective_permute': 0, 'num_reduce_scatter': 0}
+[kiss] agent error: KISS Error: Agent fair-r72_bidiag_b5_Ld4_Lo2_w2_d8 budget exceeded.
+{
+  "pipeline": "sorcar",
+  "problem": "r72_bidiag_b5_Ld4_Lo2_w2_d8",
+  "gate": "fp32",
+  "wall_seconds": 359.5940260887146,
+  "baseline_sim_time_us": 6834.257142857144,
+  "best_sim_time_us": 6475.385714285714,
+  "best_name": "kiss_9",
+  "n_score_calls": 14,
+  "n_ok": 12
+}

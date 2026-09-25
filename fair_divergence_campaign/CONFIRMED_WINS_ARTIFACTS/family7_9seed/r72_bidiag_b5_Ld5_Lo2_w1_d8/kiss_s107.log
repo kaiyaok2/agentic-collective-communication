@@ -1,0 +1,14 @@
+[shim] kiss AnthropicModel._create_message patched -> /tmp/tokens.jsonl
+[shim] kiss client -> AnthropicBedrock (us-east-1)
+[kiss] baseline r72_bidiag_b5_Ld5_Lo2_w1_d8: {'ok': True, 'sim_time_us': 6858.057142857143, 'num_ops': 336, 'num_all_gather': 0, 'num_all_reduce': 8, 'num_collective_permute': 0, 'num_reduce_scatter': 0}
+{
+  "pipeline": "sorcar",
+  "problem": "r72_bidiag_b5_Ld5_Lo2_w1_d8",
+  "gate": "fp32",
+  "wall_seconds": 241.92414498329163,
+  "baseline_sim_time_us": 6858.057142857143,
+  "best_sim_time_us": 6514.785714285715,
+  "best_name": "kiss_7",
+  "n_score_calls": 13,
+  "n_ok": 9
+}

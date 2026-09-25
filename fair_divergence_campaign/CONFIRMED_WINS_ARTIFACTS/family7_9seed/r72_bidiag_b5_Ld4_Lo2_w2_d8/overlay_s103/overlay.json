@@ -1,0 +1,78 @@
+{
+  "pipeline": "overlay",
+  "problem": "r72_bidiag_b5_Ld4_Lo2_w2_d8",
+  "gate": "fp32",
+  "baseline_sim": 6834.257142857144,
+  "strategies": [
+    {
+      "name": "Naive 8-iteration all-reduce loop",
+      "desc": "Replicate the seed library structure: 8 sequential all-reduce dispatches (1 initial sum + 7 iterations of weighted-apply \u2192 all-reduce \u2192 bidiagonal-solve). 16 total all-reduce dispatches. Straightforward but maximal latency cost; no fusion or pipelining. Represents the baseline \"correct but slow\" approach."
+    },
+    {
+      "name": "Fused weighted-buffer preparation bulk dispatch",
+      "desc": "Pre-compute all 7 weighted buffer applications locally (overlapping windows kd/ko computed once), store in a (7, 5*2048) tensor, then dispatch 8 all-reduces on contiguous slices. Reduces redundant weight/window recomputation across iterations, trading memory (7\u00d7 buffer) for fewer instruction dispatches but same collective count. Exploits deterministic rank-dependent weights."
+    },
+    {
+      "name": "Block-wise reduce-scatter then all-gather pipeline",
+      "desc": "Replace monolithic all-reduce with reduce-scatter (splitting 5 blocks across rank subgroups) followed by local bidiagonal solve on owned block, then all-gather to reconstruct full result. Each iteration uses 2 collectives instead of 1, but smaller per-dispatch payload (2048 vs 10240 elements) and potential overlap of RS/AG with local compute. 16 collectives total (8 iterations \u00d7 2)."
+    },
+    {
+      "name": "Two-phase: initial bulk + iterative residual",
+      "desc": "First all-reduce computes global sum s; pre-solve the bidiagonal system analytically for the \"linear\" contribution, then iterate only 7 times on the residual correction terms (weighted buffers). Fuses the 7 weight applications into 7 all-reduces on smaller correction deltas, avoiding full buffer clones. 8 dispatches, reduced intermediate memory."
+    },
+    {
+      "name": "Hierarchical node-local then cross-node collectives",
+      "desc": "Exploit num_nodes structure (224 ranks likely span multiple nodes): perform node-local all-reduce subcollectives first (lower latency), then cross-node all-reduce on node representatives, then broadcast back. Each of 8 iterations uses 3-stage hierarchical collectives instead of flat all-reduce. 24 total collectives but each over smaller communicator, reducing congestion on inter-node links.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Naive 8-iteration all-reduce loop",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=7.197982"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused weighted-buffer preparation bulk dispatch",
+      "sim": 6834.257142857144,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Block-wise reduce-scatter then all-gather pipeline",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=7.197982"
+    },
+    {
+      "stage": "impl",
+      "name": "Two-phase: initial bulk + iterative residual",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: AttributeError: 'MockTorch' object has no att"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical node-local then cross-node collectives",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "refine:Fused weighted-buffer preparation bulk dispatch",
+      "round": 1,
+      "sim": 8156.657142857144
+    },
+    {
+      "stage": "refine:Fused weighted-buffer preparation bulk dispatch",
+      "round": 2,
+      "sim": 7056.4571428571435
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 6834.257142857144,
+  "final_code": "def r72_bidiag_b5_Ld4_Lo2_w2_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 2048\n    W = world_size\n    dtype = x.dtype\n    \n    # Pre-compute global A and C coefficients\n    A = [0.0] * 5\n    C = [0.0] * 5\n    for r in range(W):\n        wd = 0.7 + 0.03 * (r % 5)\n        wo = 0.2 + 0.01 * (r % 7)\n        sd = (r + 1) % 5\n        for j in range(4):\n            A[(sd + j) % 5] += wd\n        so = (r + 2) % 5\n        for j in range(2):\n            b = (so + j) % 5\n            if b >= 1:\n                C[b] += wo\n    \n    # Pre-compute all 7 weighted buffer applications for this rank\n    # We need to compute the buffer for each of the 7 iterations that depend on rank's data\n    # The pattern: iteration i needs buffer based on input s from iteration i-1\n    # We'll compute the weight pattern once and store all 7 weighted versions\n    \n    # Compute this rank's weight and window parameters\n    wd = 0.7 + 0.03 * (rank % 5)\n    wo = 0.2 + 0.01 * (rank % 7)\n    sd = (rank + 1) % 5\n    kd = set((sd + j) % 5 for j in range(4))\n    so = (rank + 2) % 5\n    ko = set((so + j) % 5 for j in range(2))\n    \n    # Initial all-reduce to get s_0\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Perform 7 dependent iterations (8 all-reduces total: 1 initial + 7 iterations)\n    for iteration in range(7):\n        # Build buffer based on current s\n        buf = torch.zeros_like(s)\n        for b in range(5):\n            if b in kd:\n                buf[b*S:(b+1)*S] = buf[b*S:(b+1)*S] + wd * s[b*S:(b+1)*S]\n            if b in ko and b >= 1:\n                buf[b*S:(b+1)*S] = buf[b*S:(b+1)*S] + wo * s[(b-1)*S:b*S]\n        \n        # All-reduce the buffer\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n        \n        # Solve the lower-bidiagonal system (if this is not the last iteration)\n        if iteration < 6:\n            rec = acc.clone()\n            rec[0:S] = acc[0:S] / A[0]\n            for b in range(1, 5):\n                rec[b*S:(b+1)*S] = (acc[b*S:(b+1)*S] - C[b] * rec[(b-1)*S:b*S]) / A[b]\n            s = rec\n        else:\n            # Last iteration: just return acc without solving\n            s = acc\n    \n    return s"
+}

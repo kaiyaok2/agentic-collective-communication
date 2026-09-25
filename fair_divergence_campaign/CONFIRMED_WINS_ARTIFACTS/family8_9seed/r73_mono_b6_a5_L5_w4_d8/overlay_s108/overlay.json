@@ -1,0 +1,68 @@
+{
+  "pipeline": "overlay",
+  "problem": "r73_mono_b6_a5_L5_w4_d8",
+  "gate": "fp32",
+  "baseline_sim": 6709.271428571427,
+  "strategies": [
+    {
+      "name": "Naive Sequential All-Reduce Chain",
+      "desc": "Directly follows the reference implementation with 8 sequential all_reduce dispatches (1 initial sum + 7 iterations of weighted permutation). Each all-reduce operates on the full 6-block tensor with block-selective masking via local multiplication by rank-dependent weights and permutation indexing. Represents the baseline with 8 dispatches, minimal local compute complexity, but no overlap or fusion opportunities."
+    },
+    {
+      "name": "Fused Local Compute with Batch All-Reduce",
+      "desc": "Pre-compute all 8 intermediate buffers locally (initial sum setup + 7 weighted-permuted versions) and stack them into a single enlarged tensor, then issue one batched all_reduce on the concatenated payload. After the single collective dispatch, unpack and apply the per-iteration normalization (division by A[b]) sequentially. Trades 8 dispatches for 1 dispatch with 8\u00d7 payload size, reducing latency overhead but increasing single-message bandwidth cost."
+    },
+    {
+      "name": "Reduce-Scatter + All-Gather Pipeline",
+      "desc": "Partition the 6 blocks across ranks using reduce_scatter to distribute partial sums, perform the 7 dependent weighted-permutation iterations locally on smaller per-rank slices, then use all_gather to reassemble the full result. At world_size=224 with 6 blocks, multiple ranks own the same block; group ranks into 6 logical partitions. Results in 2 primary collectives (RS + AG) plus potential intermediate small all-reduces within partitions, reducing global communication volume."
+    },
+    {
+      "name": "Hierarchical Two-Level Reduction Tree",
+      "desc": "Exploit potential multi-node topology (num_nodes parameter) by splitting the 8 all-reduce operations into intra-node reduce (across local devices) followed by inter-node all-reduce, then local broadcast. Each of the 8 iterations uses a 3-step collective pattern (local reduce, cross-node AR, local broadcast), yielding ~24 dispatches but with smaller per-dispatch participant sets and lower cross-node bandwidth pressure. Beneficial if intra-node bandwidth >> inter-node bandwidth."
+    },
+    {
+      "name": "Overlapped Pipelined All-Reduce with Block Streaming",
+      "desc": "Decompose each all-reduce into 6 independent per-block all-reduce operations dispatched asynchronously, allowing overlap of the dependent chain across blocks. Issue block-0's iteration-k all-reduce while block-5's iteration-(k-1) is in flight. Requires 48 dispatches (8 iterations \u00d7 6 blocks) but exploits block-level parallelism and network pipelining to hide latency. Works best when dispatch overhead is amortized by overlapping communication across the permutation dependency chain.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Naive Sequential All-Reduce Chain",
+      "sim": 6709.271428571427,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Local Compute with Batch All-Reduce",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.787396"
+    },
+    {
+      "stage": "impl",
+      "name": "Reduce-Scatter + All-Gather Pipeline",
+      "sim": 6709.271428571427,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level Reduction Tree",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Overlapped Pipelined All-Reduce with Block Streaming",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.787248"
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6709.271428571427,
+  "final_code": "def r73_mono_b6_a5_L5_w4_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    S = 2048\n    W = world_size\n    SIG = [3, 2, 1, 0, 5, 4]\n    \n    # Dispatch 1: Initial all-reduce to get global sum\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Precompute A[b]: total weight for each block across all ranks\n    A = [0.0] * 6\n    for r in range(W):\n        w = 0.45 + 0.02 * (r % 4)\n        st = (r + 1) % 6\n        for j in range(5):\n            A[(st + 1 * j) % 6] += w\n    \n    # 7 iterations of weighted permutation\n    for iteration in range(7):\n        # Compute rank-specific parameters\n        start = (rank + 1) % 6\n        keep = set((start + 1 * j) % 6 for j in range(5))\n        w = 0.45 + 0.02 * (rank % 4)\n        \n        # Build buffer: apply weight and permutation to selected blocks\n        buf = torch.zeros_like(s)\n        for b in range(6):\n            if b in keep:\n                jb = SIG[b]\n                buf[b * S:(b + 1) * S] = w * s[jb * S:(jb + 1) * S]\n        \n        # Dispatch all-reduce\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n        \n        # Inverse permutation and normalization (except on last iteration)\n        if iteration < 6:\n            rec = acc.clone()\n            for b in range(6):\n                jb = SIG[b]\n                rec[jb * S:(jb + 1) * S] = acc[b * S:(b + 1) * S] / A[b]\n            s = rec\n        else:\n            s = acc\n    \n    return s"
+}

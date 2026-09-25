@@ -1,0 +1,68 @@
+{
+  "pipeline": "overlay",
+  "problem": "r82_vself_b0p30_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6643.4,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with local compute",
+      "desc": "Eight sequential all_reduce calls (REDUCE_SUM) interleaved with local element-wise operations (v*s projection, mean, scaling). 8 all_reduce dispatches total. This is the baseline reference pattern: maximizes clarity but incurs full dispatch overhead for each collective without overlapping communication and computation."
+    },
+    {
+      "name": "Fused buffer preparation batching",
+      "desc": "Prepare multiple iteration buffers locally before dispatching collectives, using stacked/concatenated tensors to batch 2-4 all_reduce operations into fewer dispatches. Reduces dispatch count to 2-4 by increasing payload size per collective (e.g., concatenate buf[i] and buf[i+1] along a new dimension). Trades memory footprint for fewer kernel launches."
+    },
+    {
+      "name": "Scalar coefficient all-gather strategy",
+      "desc": "Instead of all_reduce on full buffers, extract only the scalar projection coefficient (v*s).mean() locally, perform all_gather or all_reduce on scalars (size 1), then reconstruct buffers locally. 8 scalar all_reduce dispatches (tiny payload) plus local vector math. Reduces communication volume dramatically but increases local compute and may not amortize dispatch overhead on small scalars."
+    },
+    {
+      "name": "Pipelined dual-buffer overlap",
+      "desc": "Maintain two buffers and issue all_reduce on buffer A while computing local operations for buffer B (next iteration). Uses asynchronous dispatch and manual synchronization to overlap 7 of 8 collectives with local compute. Still 8 dispatches but hides latency; requires careful dependency tracking to ensure correctness of the iterative refinement."
+    },
+    {
+      "name": "Hierarchical reduce-scatter then all-gather",
+      "desc": "Decompose each iteration into reduce_scatter (partition s across ranks, each computes local slice projection) followed by all_gather to reconstruct full result. 16 total dispatches (2 per iteration \u00d7 8 iterations) but enables intra-node bandwidth optimization and potential load-balancing if projection computation is non-uniform. Trades dispatch count for better network topology utilization at world_size=224.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with local compute",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902330"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused buffer preparation batching",
+      "sim": 8436.085714285715,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Scalar coefficient all-gather strategy",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902330"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined dual-buffer overlap",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902330"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical reduce-scatter then all-gather",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: RuntimeError: The size of tensor a (16384) mu"
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 8436.085714285715,
+  "final_code": "def r82_vself_b0p30_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size\n    BETA = 0.3\n    N = 16384\n    dtype = x.dtype\n    \n    # Precompute v (sign pattern)\n    idx = torch.arange(N, device=x.device)\n    v = (1 - 2 * (idx % 2)).to(dtype)\n    \n    # Initial all_reduce to get s\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Batch iterations: process 2 iterations at a time\n    # Each pair: compute buf[i], reduce, update s, compute buf[i+1], reduce, update s\n    # We'll stack buffers and reduce together when possible\n    \n    # Iteration pairs: (0,1), (2,3), (4,5), (6,)\n    # Total 7 iterations after initial reduce\n    \n    for pair_idx in range(3):  # 3 pairs of 2 iterations\n        # First iteration of pair\n        buf1 = s + BETA * v * (v * s).mean()\n        \n        # Second iteration prep (compute what buf2 would be after first iteration)\n        # We need s_next first, so we can't truly batch the computation\n        # But we can batch the all_reduce calls\n        \n        # Actually, since each iteration depends on previous result, \n        # we need to reduce sequentially but can prepare buffers in advance\n        \n        # Let's stack two buffers: current and next anticipated\n        acc1 = xm.all_reduce(xm.REDUCE_SUM, buf1)\n        acc1 = acc1 / W\n        s1 = acc1 - (BETA / (1.0 + BETA)) * v * (v * acc1).mean()\n        \n        buf2 = s1 + BETA * v * (v * s1).mean()\n        \n        # Stack buf1 and buf2 for batched reduce\n        # Actually we already reduced buf1, so batch buf2 with next\n        acc2 = xm.all_reduce(xm.REDUCE_SUM, buf2)\n        acc2 = acc2 / W\n        s = acc2 - (BETA / (1.0 + BETA)) * v * (v * acc2).mean()\n    \n    # Final iteration (7th)\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    \n    # Wait, let me reconsider the batching strategy more carefully\n    # We can stack buffers from different iterations into a single tensor\n    # and do one all_reduce on the stacked tensor\n    \n    # Reset and implement proper batching\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Batch size 2: pair iterations together\n    num_iterations = 7\n    batch_size = 2\n    \n    for batch_start in range(0, num_iterations, batch_size):\n        batch_end = min(batch_start + batch_size, num_iterations)\n        current_batch_size = batch_end - batch_start\n        \n        if current_batch_size == 2:\n            # Compute first buffer\n            buf1 = s + BETA * v * (v * s).mean()\n            \n            # To compute second buffer, we need intermediate s\n            # This requires sequential processing within batch\n            acc1 = xm.all_reduce(xm.REDUCE_SUM, buf1)\n            acc1 = acc1 / W\n            s_mid = acc1 - (BETA / (1.0 + BETA)) * v * (v * acc1).mean()\n            \n            buf2 = s_mid + BETA * v * (v * s_mid).mean()\n            \n            # Now batch buf2 with next by stacking\n            # Actually, we can stack and reduce together\n            stacked = torch.stack([buf1, buf2])\n            reduced_stacked = xm.all_reduce(xm.REDUCE_SUM, stacked)\n            \n            # Extract results\n            acc1 = reduced_stacked[0] / W\n            acc2 = reduced_stacked[1] / W\n            \n            # Update s through both iterations\n            s = acc2 - (BETA / (1.0 + BETA)) * v * (v * acc2).mean()\n        else:\n            # Single iteration\n            buf = s + BETA * v * (v * s).mean()\n            acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n            acc = acc / W\n            s = acc\n    \n    return s"
+}

@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r82_vself_b0p30_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6643.4,
+  "strategies": [
+    {
+      "name": "Naive Sequential All-Reduce Chain",
+      "desc": "Performs 8 sequential all-reduce operations with local elementwise operations (multiplication, mean, addition) between each dispatch. This baseline requires 8 all-reduce dispatches with minimal computation overlap; trades simplicity for latency as each collective blocks the next iteration."
+    },
+    {
+      "name": "Pipelined Scalar-Vector Decomposition",
+      "desc": "Separates the scalar projection coefficient (v*s).mean() computation from the vector update by performing all-reduce on the scalar first (reduce to single value), broadcasting implicitly through the next all-reduce of the full vector. Requires 8 scalar all-reduces + 8 vector all-reduces = 16 total dispatches but reduces per-dispatch payload size for half the operations."
+    },
+    {
+      "name": "Fused Buffer Accumulation",
+      "desc": "Pre-computes multiple iterations of the local (s + BETA * v * (v*s).mean()) transform and stacks them into a single larger tensor, then performs fewer all-reduce operations on concatenated buffers. Reduces dispatch count to 2-4 by batching multiple iteration states, trading increased memory footprint and larger per-dispatch payload for fewer kernel launches."
+    },
+    {
+      "name": "Hierarchical Two-Level Reduction",
+      "desc": "Exploits multi-node structure (224 ranks likely spans multiple nodes) by performing intra-node reductions first, then inter-node reductions, computing the v-projection at intermediate stages. Maintains 8 logical iterations but uses 16 dispatches (8 node-local + 8 global) with smaller cross-node payloads to optimize for network topology."
+    },
+    {
+      "name": "Invariant Projection Vector Caching",
+      "desc": "Recognizes that vector v is fixed and only the projection coefficient changes; pre-reduces (v*x) to scalar across all ranks in one initial all-reduce, then iteratively updates only the scalar coefficient through 8 cheap scalar all-reduces, reconstructing full vector only at the end. Reduces to 1 + 8 + 1 = 10 total dispatches with 8 being single-element reductions.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Naive Sequential All-Reduce Chain",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902330"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined Scalar-Vector Decomposition",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902330"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Buffer Accumulation",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.856981"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level Reduction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Invariant Projection Vector Caching",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.176772"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 6643.4,
+  "final_code": "def r82_vself_b0p30_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size; BETA = 0.3; N = 16384\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    idx = torch.arange(N)\n    v = (1 - 2 * (idx % 2)).to(s.dtype)\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    return s\n",
+  "fell_back_to_baseline": true
+}

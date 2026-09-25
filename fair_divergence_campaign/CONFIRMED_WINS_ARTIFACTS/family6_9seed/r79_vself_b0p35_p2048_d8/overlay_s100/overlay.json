@@ -1,0 +1,69 @@
+{
+  "pipeline": "overlay",
+  "problem": "r79_vself_b0p35_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6643.4,
+  "strategies": [
+    {
+      "name": "Sequential all-reduce with repeated pattern",
+      "desc": "Execute 8 dependent all_reduce operations sequentially, each followed by local computation of the self-reinforcing projection step. This matches the reference implementation with 8 dispatches total. Straightforward but no fusion opportunities; trades simplicity for dispatch overhead."
+    },
+    {
+      "name": "Fused scalar-reduce then broadcast reconstruction",
+      "desc": "Extract the two scalar invariants (mean of s, mean of v*s) via all_reduce of partial sums, then iterate locally to reconstruct full vector. Reduces to 2*8=16 scalar all_reduce dispatches but with tiny payload (2 scalars vs 16384 elements). Trades more dispatches for dramatically reduced bandwidth per collective."
+    },
+    {
+      "name": "Pipelined dual-buffer with odd-even split",
+      "desc": "Split the vector into odd and even indices (aligned with v's pattern), pipeline computation by overlapping all_reduce on one half while computing local projection on the other. Maintains 8 all_reduce dispatches but on half-sized payloads (8192 elements each), potentially hiding local compute latency behind communication."
+    },
+    {
+      "name": "Batched multi-tensor all-reduce collective",
+      "desc": "If the XLA backend supports multi-tensor collectives, batch multiple consecutive iteration buffers into a single all_reduce dispatch with strided layout. Could reduce 8 dispatches to 2-4 by batching 2-4 iterations per call. Trades increased memory footprint for fewer kernel launches."
+    },
+    {
+      "name": "Scalar coefficient iteration with final reconstruction",
+      "desc": "Track only the two evolving scalar coefficients (weight on identity and weight on v) through 8 iterations using scalar arithmetic and 2 all_reduce ops per iteration on scalars only. Reconstruct full vector once at the end. Uses 16 scalar all_reduce dispatches plus one final vector-scale operation, optimizing for minimal per-collective bandwidth.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Sequential all-reduce with repeated pattern",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902346"
+    },
+    {
+      "stage": "impl",
+      "name": "Fused scalar-reduce then broadcast reconstruction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902346"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined dual-buffer with odd-even split",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: TypeError: len() of a 0-d tensor"
+    },
+    {
+      "stage": "impl",
+      "name": "Batched multi-tensor all-reduce collective",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.001436"
+    },
+    {
+      "stage": "impl",
+      "name": "Scalar coefficient iteration with final reconstruction",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: TypeError: len() of a 0-d tensor"
+    }
+  ],
+  "n_llm_calls": 6,
+  "final_sim": 6643.4,
+  "final_code": "def r79_vself_b0p35_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size; BETA = 0.35; N = 16384\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    idx = torch.arange(N)\n    v = (1 - 2 * (idx % 2)).to(s.dtype)\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    buf = s + BETA * v * (v * s).mean()\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    return s\n",
+  "fell_back_to_baseline": true
+}

@@ -1,0 +1,73 @@
+{
+  "pipeline": "overlay",
+  "problem": "r79_vself_b0p35_p2048_d8",
+  "gate": "fp32",
+  "baseline_sim": 6643.4,
+  "strategies": [
+    {
+      "name": "Scalar-reduction fusion with vector broadcast",
+      "desc": "Extract the two scalar quantities (sum-of-elements and v-projected mean) in each iteration, perform all_reduce on a length-2 vector instead of length-16384, then reconstruct the full result locally. This yields 8 all_reduce operations but with dramatically smaller payload (2 scalars vs 16384 elements), trading smaller bandwidth for the same dispatch count and additional local compute to reconstruct the full vector."
+    },
+    {
+      "name": "Pipelined overlapping all_reduce with computation",
+      "desc": "Issue all_reduce asynchronously and overlap the local computation (v construction, element-wise products, mean calculation, scaling) with communication of the previous iteration. Uses non-blocking collectives to hide latency, maintaining 8 dispatches but reducing wall-clock time through pipeline parallelism at the cost of additional synchronization complexity."
+    },
+    {
+      "name": "Batched multi-iteration all_reduce with loop unrolling",
+      "desc": "Since the pattern repeats 7 times (after initial all_reduce), precompute multiple iterations' worth of transformations locally and batch consecutive all_reduce calls into fewer dispatches by concatenating buffers or using custom collectives. Reduces dispatch overhead from 8 to potentially 2-4 dispatches with larger payloads and more complex local reconstruction logic."
+    },
+    {
+      "name": "Hierarchical two-stage reduction within/across nodes",
+      "desc": "Exploit the multi-node topology by splitting each iteration into intra-node reduce_scatter followed by inter-node all_reduce, then intra-node all_gather. For 224 ranks this adds dispatch count (24 total operations) but leverages faster intra-node fabric and potentially better NIC utilization, trading more dispatches for better bandwidth efficiency on hierarchical hardware."
+    },
+    {
+      "name": "Residual accumulation with delayed normalization",
+      "desc": "Defer all division-by-W operations to the very end and accumulate intermediate \"buf\" terms across iterations, performing a single final normalization step. Reduces floating-point operations and potential numeric instability, maintaining 8 all_reduce dispatches but with different numerical characteristics and simplified per-iteration logic that may enable better compiler fusion of local operations.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Scalar-reduction fusion with vector broadcast",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.001436"
+    },
+    {
+      "stage": "impl",
+      "name": "Pipelined overlapping all_reduce with computation",
+      "sim": 6643.4,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Batched multi-iteration all_reduce with loop unrolling",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=8 pattern=uniform rank=0: max_diff=0.001436"
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical two-stage reduction within/across nodes",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modulo"
+    },
+    {
+      "stage": "impl",
+      "name": "Residual accumulation with delayed normalization",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=2.902346"
+    },
+    {
+      "stage": "refine:Pipelined overlapping all_reduce with computation",
+      "round": 1,
+      "sim": 6643.4
+    }
+  ],
+  "n_llm_calls": 9,
+  "final_sim": 6643.4,
+  "final_code": "def r79_vself_b0p35_p2048_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    W = world_size\n    BETA = 0.35\n    N = 16384\n    \n    # Precompute the fixed sign vector v\n    idx = torch.arange(N, device=x.device)\n    v = (1 - 2 * (idx % 2)).to(x.dtype)\n    \n    # Helper function for the forward step: s -> buf\n    def forward_step(s):\n        return s + BETA * v * (v * s).mean()\n    \n    # Helper function for the inverse step: acc -> s\n    def inverse_step(acc):\n        return acc - (BETA / (1.0 + BETA)) * v * (v * acc).mean()\n    \n    # First all_reduce (initial sum)\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Pipeline: We'll overlap computation with communication\n    # We use all_reduce_coalesced or issue async operations\n    # Since xm.all_reduce is blocking by default, we need to structure\n    # the code to minimize wait time by preparing the next buffer while\n    # the communication is in flight.\n    \n    # For true pipelining, we'd need non-blocking collectives.\n    # However, since the reference implementation shows sequential operations,\n    # we'll structure the code to enable hardware-level pipelining by\n    # organizing operations efficiently.\n    \n    # Iteration 1\n    buf = forward_step(s)\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = inverse_step(acc)\n    \n    # Iteration 2\n    buf = forward_step(s)\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = inverse_step(acc)\n    \n    # Iteration 3\n    buf = forward_step(s)\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = inverse_step(acc)\n    \n    # Iteration 4\n    buf = forward_step(s)\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = inverse_step(acc)\n    \n    # Iteration 5\n    buf = forward_step(s)\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = inverse_step(acc)\n    \n    # Iteration 6\n    buf = forward_step(s)\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = inverse_step(acc)\n    \n    # Iteration 7 (final)\n    buf = forward_step(s)\n    acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n    acc = acc / W\n    s = acc\n    \n    return s"
+}

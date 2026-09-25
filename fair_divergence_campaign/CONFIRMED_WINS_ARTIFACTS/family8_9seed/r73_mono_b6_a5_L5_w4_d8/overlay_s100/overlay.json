@@ -1,0 +1,73 @@
+{
+  "pipeline": "overlay",
+  "problem": "r73_mono_b6_a5_L5_w4_d8",
+  "gate": "fp32",
+  "baseline_sim": 6709.271428571427,
+  "strategies": [
+    {
+      "name": "Baseline Sequential All-Reduce Chain",
+      "desc": "Performs 8 sequential all-reduce operations with interleaved local permutation, weighting, and normalization steps as shown in the reference. This results in 8 all-reduce dispatches with full tensor payload (6*2048 elements each). Represents the straightforward approach with maximum dispatch overhead but simplest correctness reasoning."
+    },
+    {
+      "name": "Fused Buffer Preparation Multi-Iteration",
+      "desc": "Fuses multiple iterations' buffer preparation (weighting + permutation) into a single compute kernel before each all-reduce, reducing intermediate memory operations. Still requires 8 all-reduce dispatches but optimizes local computation between collectives. Trades off slightly more complex indexing logic for better memory locality and fewer kernel launches on the local compute side."
+    },
+    {
+      "name": "Block-Parallel Reduce-Scatter All-Gather Pipeline",
+      "desc": "Replaces each all-reduce with a reduce-scatter followed by all-gather pair, enabling each rank to work on a subset of blocks during the computation phase. This increases dispatch count to 16 but reduces per-dispatch payload to 1/6th size and enables pipeline parallelism where local computation on gathered blocks overlaps with subsequent reduce-scatter operations."
+    },
+    {
+      "name": "Hierarchical Two-Level All-Reduce (Intra/Inter-Node)",
+      "desc": "Exploits multi-node topology by performing intra-node all-reduce aggregation first, then inter-node all-reduce, repeated for each of the 8 iterations. With num_nodes>1, this yields 16 dispatches but leverages faster intra-node interconnects (NVLink/ICI) for the bulk of data movement, reducing cross-node bandwidth pressure by a factor of cores_per_device * num_devices."
+    },
+    {
+      "name": "Batched All-Reduce with Delayed Normalization",
+      "desc": "Accumulates multiple iterations' weighted contributions into separate buffer slots and issues batched/coalesced all-reduce operations (e.g., 2-4 iterations per dispatch), deferring the division-by-A[b] normalization to the end. Reduces dispatch count to 2-4 by trading increased memory footprint (multiple intermediate buffers) and more complex dependency tracking for fewer collective launches.\n```"
+    }
+  ],
+  "candidates": [
+    {
+      "stage": "impl",
+      "name": "Baseline Sequential All-Reduce Chain",
+      "sim": 6709.271428571427,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Fused Buffer Preparation Multi-Iteration",
+      "sim": 6709.271428571427,
+      "ok": true,
+      "err": null
+    },
+    {
+      "stage": "impl",
+      "name": "Block-Parallel Reduce-Scatter All-Gather Pipeline",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: CRASH in collect pass 0: world=4 pattern=uniform rank=0: RuntimeError: shape '[12288]' is invalid for "
+    },
+    {
+      "stage": "impl",
+      "name": "Hierarchical Two-Level All-Reduce (Intra/Inter-Node)",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.787248"
+    },
+    {
+      "stage": "impl",
+      "name": "Batched All-Reduce with Delayed Normalization",
+      "sim": null,
+      "ok": false,
+      "err": "correctness fail: world=4 pattern=uniform rank=0: max_diff=4.748035"
+    },
+    {
+      "stage": "refine:Baseline Sequential All-Reduce Chain",
+      "round": 2,
+      "sim": 6709.271428571427
+    }
+  ],
+  "n_llm_calls": 12,
+  "final_sim": 6709.271428571427,
+  "final_code": "def r73_mono_b6_a5_L5_w4_d8_fn(x, rank, world_size, num_devices,\n                 cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"\n    Baseline Sequential All-Reduce Chain strategy:\n    Performs 8 sequential all-reduce operations with interleaved local \n    permutation, weighting, and normalization steps.\n    \"\"\"\n    S = 2048\n    W = world_size\n    SIG = [3, 2, 1, 0, 5, 4]\n    dtype = x.dtype\n    \n    # First all-reduce: sum input x across all ranks\n    s = xm.all_reduce(xm.REDUCE_SUM, x)\n    \n    # Compute normalization factors A[b] for each block\n    A = [0.0] * 6\n    for r in range(W):\n        w = 0.45 + 0.02 * (r % 4)\n        st = (r + 1) % 6\n        for j in range(5):\n            A[(st + 1 * j) % 6] += w\n    \n    # Perform 7 iterations of: weight + permute, all-reduce, normalize + inverse permute\n    for iteration in range(7):\n        # Determine which blocks this rank contributes to\n        start = (rank + 1) % 6\n        keep = set((start + 1 * j) % 6 for j in range(5))\n        w = 0.45 + 0.02 * (rank % 4)\n        \n        # Apply weighting and permutation\n        buf = torch.zeros_like(s)\n        for b in range(6):\n            if b in keep:\n                jb = SIG[b]\n                buf[b * S:(b + 1) * S] = w * s[jb * S:(jb + 1) * S]\n        \n        # All-reduce the weighted and permuted buffer\n        acc = xm.all_reduce(xm.REDUCE_SUM, buf)\n        \n        # For iterations 0-5: normalize and apply inverse permutation\n        # For iteration 6 (last): skip normalization (just return acc)\n        if iteration < 6:\n            rec = acc.clone()\n            for b in range(6):\n                jb = SIG[b]\n                rec[jb * S:(jb + 1) * S] = acc[b * S:(b + 1) * S] / A[b]\n            s = rec\n        else:\n            s = acc\n    \n    return s"
+}
