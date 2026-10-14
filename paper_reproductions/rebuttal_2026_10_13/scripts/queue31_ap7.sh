@@ -8,7 +8,6 @@ set -uo pipefail
 AP=/home/ubuntu/ap7; REPO=/home/ubuntu/OverlayCCL; Q=/home/ubuntu/queue.log; LC=/home/ubuntu/livecal; mkdir -p $LC
 source /home/ubuntu/venv.env; source /home/ubuntu/llm.env
 stage () { echo "### [$(date -u +%T)] $1" | tee -a $Q; }
-until grep -q "QUEUE30 DONE" $Q; do sleep 20; done
 stage "QUEUE31 a) fresh Phase-1 probe (single node, SIZES<=4MB, no collective_permute)"
 cp $AP/train_hwprobe_7node.py $REPO/training/
 SECTIONS=trivial,xla_ops,index_select,memcpy,graph_launch,back_to_back,collectives SIZES=4096,32768,65536,524288,4194304 WORKERS_OVERRIDE=' ' PERCALL_PROBE=0 RESULTS_DIR=/home/ubuntu/hwprobe \

@@ -64,8 +64,11 @@ Generic AST edits (swap primitive, mutate constant, delete/move, insert tensor o
 | top-k 2 (expert dim 1024) | 2079 ms | 1677 ms | 310 ms | 85% / 82% (agent) | 1.24× |
 | expert dim 16384 | device OOM | device OOM | device OOM | — | — |
 | top-k 2 + expert dim 8192 | 2164 ms | 1740 ms | 365 ms | 83% / 79% (agent) | 1.24× |
+| top-k 4 + expert dim 8192 | 2923 ms | 2046 ms | 381 ms | 87% / 81% (agent) | 1.43× |
 | expert dim 8192 | device OOM | 3216 | 440 | 86% | — (AG+RS needs a second full buffer) |
-Every larger-token configuration (B=2/4, S=512, L=16) fails at NEFF load / device memory for both backends: the AG-based
+**Why tokens per step cannot change this share.** With all-gather-based AllToAllV over 224 experts the collective payload is
+ws·T·k·D and the expert compute is T·k·D·EXDIM: both are linear in the token count T, so the collective share is T-invariant; only
+the per-token compute (expert width, top-k, model width) moves it — which the table sweeps. Every larger-token configuration (B=2/4, S=512, L=16) fails at NEFF load / device memory for both backends: the AG-based
 AllToAllV buffer is ws×cap×DM·ws bytes (2 GB per rank at the paper shape, 8 GB at B=4). The regime is collective-bound by
 construction of 224-way expert parallelism; the transferable number is the collective-component speedup 4016→2795 ms (1.44×).
 

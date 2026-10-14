@@ -116,9 +116,12 @@ width raises compute without changing the AllToAllV payload:
 | top-k 2 (expert dim 1024) | 2079 ms | 1677 ms | 310 ms | 85% / 82% (agent) | 1.24× |
 | expert dim 16384 | device OOM | device OOM | device OOM | — | — |
 | top-k 2 + expert dim 8192 | 2164 ms | 1740 ms | 365 ms | 83% / 79% (agent) | 1.24× |
+| top-k 4 + expert dim 8192 | 2923 ms | 2046 ms | 381 ms | 87% / 81% (agent) | 1.43× |
 | expert dim 8192 | device OOM (second buffer) | 3216 ms | 440 ms | 86% (agent) | — |
 
-Larger token counts are not reachable by either implementation: the AG-based AllToAllV allocates a ws×ws×cap×DM buffer
+**Why tokens per step cannot change this share.** With all-gather-based AllToAllV over 224 experts the collective payload is
+ws·T·k·D and the expert compute is T·k·D·EXDIM: both are linear in the token count T, so the collective share is T-invariant; only
+the per-token compute (expert width, top-k, model width) moves it — which the table sweeps. Larger token counts are not reachable by either implementation: the AG-based AllToAllV allocates a ws×ws×cap×DM buffer
 that grows linearly with tokens (2 GB per rank at the paper's shape; B=4 is 8 GB), so every B>1 / longer-sequence
 configuration fails at load on this stack for both backends. We will therefore (i) state that the headline is the
 collective-bound regime of 224-way expert parallelism, (ii) report the collective-component speedup (4016→2795 ms,
