@@ -11,7 +11,7 @@ run () { T=$1; V=$2; B=$3
   D=/home/ubuntu/olmoe_results/$T; mkdir -p $D; FL=""; [ $B = agent ] && FL="--ce agent"
   RESULTS_DIR=$D PERCALL_PROBE=0 timeout 2400 bash $AP/run_ap7.sh $V $B 160 $T $FL >> $Q 2>&1; harvest $D; }
 until grep -q "QUEUE38 DONE" $Q; do sleep 20; done
-for cfg in dm4096_topk2_ex8192 dm4096_topk4_ex8192; do
+for cfg in dm4096_L4_topk2_ex4096 dm4096_L2_topk2_ex8192; do
   ok=$(ls /home/ubuntu/olmoe_results/olmoe_${cfg}_agent/*ce-agent.json 2>/dev/null | wc -l)
   [ "$ok" -ge 1 ] || { stage "QUEUE39 skip $cfg (no agent result)"; continue; }
   for seed in 2 3; do

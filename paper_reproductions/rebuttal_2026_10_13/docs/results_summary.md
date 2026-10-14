@@ -75,8 +75,9 @@ Generic AST edits (swap primitive, mutate constant, delete/move, insert tensor o
 | top-k 4 (expert dim 1024) | 2830 ms | 1993 ms | 316 ms | 89% / 84% (agent) | 1.42× |
 | top-k 2 (expert dim 1024) | 2079 ms | 1677 ms | 310 ms | 85% / 82% (agent) | 1.24× |
 | expert dim 16384 | device OOM | device OOM | device OOM | — | — |
-| top-k 2 + expert dim 8192 | 2164 ms | 1740 ms | 365 ms | 83% / 79% (agent) | 1.24× |
-| top-k 4 + expert dim 8192 | 2923 ms | 2046 ms | 381 ms | 87% / 81% (agent) | 1.43× |
+| **top-k 2 + expert dim 8192** (3 runs, 2 seeds) | 2164 / 2163 / 2156 ms | 1740 / 1724 / 1718 ms | 365 ms | 83% / 79% (agent) | **1.25×** |
+| top-k 4 + expert dim 8192 (2–3 runs) | 2923 / 2906 ms | 2046 / 2030 / 2031 ms | 381 ms | 87% / 81% (agent) | 1.43× |
+| model width 4096 (L=8, 4, 2 variants) | device OOM (L=8); stuck-collective hardware error `NRT_EXEC_HW_ERR_COLLECTIVES` (L=4, L=2) | | | — | — |
 Repeat 2 (from the run log; the cluster was terminated by AWS at ~10:55 UTC, 35 min before the block's end, before the JSONs could be pulled): top-k 2 + ex 8192 agent 1724 / baseline 2163 ms; top-k 4 + ex 8192 agent 2030 ms (baseline repeat lost).
 | expert dim 8192 | device OOM | 3216 | 440 | 86% | — (AG+RS needs a second full buffer) |
 **Why tokens per step cannot change this share.** With all-gather-based AllToAllV over 224 experts the collective payload is
