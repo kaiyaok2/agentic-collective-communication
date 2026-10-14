@@ -1,0 +1,78 @@
+sim file: /tmp/ap7/pull/sweep_v2/sim_v4_v16b.json
+candidates measured: 61  (percall records: 45)
+
+problem         n_cands rho(step)  top1  regret%  sim-pick -> measured-best
+alltoallv             8       0.9     Y      0.0  helper_view_col_public -> helper_view_col_public
+dxe                   8      0.59     n     15.3  g_structure-three_ar -> g_structure-max_plus_stacked
+fsdp_prefetch         6      0.85     Y      0.0  g_bundle-all -> g_bundle-all
+llama_block_ar        7       0.9     Y      0.0  g_bundle-one_ar_pack-stack -> g_bundle-one_ar_pack-stack
+pp_send_recv          6       0.8     n      0.7  g_bundle-all_mb_pack-stack -> paper_7f79b897
+ring_kv               5      0.56     n      3.9  g_bundle-joint -> paper_2f6a05c4
+tp_mlp               13      0.88     n      1.9  g_bundle-per_layer_pack-flat -> g_bundle-per_layer_pack-stac
+uniform_a2a           8      0.87     Y      0.0  r28nosim_train_c0b2d468 -> r28nosim_train_c0b2d468
+
+pooled Spearman on speedup-vs-baseline ratios (sim vs measured), n=61: 0.734913342655306
+direction agreement where the sim predicts a change vs baseline: 28/30  (ties excluded: 31)
+
+candidate                                                   n   mean ms      sd   sim_def percall ms
+alltoallv__helper_view_col_public                           1     24.26     nan   16815.4        nan
+alltoallv__helper_AGRS                                      1     29.41     nan   21497.2        nan
+alltoallv__tmpl_ag_t_rs_inline_match                        1     29.46     nan   21497.2        nan
+alltoallv__harness_baseline                                 1     29.74     nan   21497.2        nan
+alltoallv__helper_loop_cat_paper                            1     37.99     nan   28747.9        nan
+alltoallv__tmpl_ag_slice_cat                                1     47.07     nan   40764.7        nan
+alltoallv__tmpl_vectorized_view_col                         1     51.95     nan   29046.4        nan
+alltoallv__tmpl_allgather_reduce_scatter                    1    121.24     nan   37655.7        nan
+dxe__g_structure-max_plus_stacked_sum                       1      8.01     nan   19987.0        nan
+dxe__r36brandom_dd3aa11f                                    1      8.29     nan   17772.7        nan
+dxe__r42_f2537e28                                           1      8.70     nan   17772.7        nan
+dxe__r28nosim_train_10815c6f                                1      8.88     nan   19880.0        nan
+dxe__paper_e791408f                                         1      9.05     nan   20185.3        nan
+dxe__g_structure-three_ar                                   1      9.23     nan   17772.7        nan
+dxe__g_structure-one_ag                                     1     13.03     nan   21077.7        nan
+dxe__harness_baseline                                       1     15.61     nan   21080.7        nan
+fsdp_prefetch__g_bundle-all                                 1     13.25     nan   17035.8     11.494
+fsdp_prefetch__r28nosim_train_72b4a7e0                      1     13.60     nan   17067.6     10.235
+fsdp_prefetch__harness_baseline                             1     14.35     nan   25683.6     13.812
+fsdp_prefetch__paper_daa256fa                               1     14.50     nan   25683.6     13.683
+fsdp_prefetch__g_bundle-per_mb                              1     15.25     nan   25683.6     13.275
+fsdp_prefetch__g_bundle-per_call                            1     15.30     nan   25683.6     15.757
+llama_block_ar__g_bundle-one_ar_pack-stack                  1     17.25     nan    6672.0      7.849
+llama_block_ar__r28nosim_train_8f7e002c                     1     17.25     nan    6672.0      7.652
+llama_block_ar__g_bundle-one_ar_pack-cat                    1     17.45     nan    6783.0      7.592
+llama_block_ar__g_bundle-two_ar_pack-cat                    1     19.00     nan    8862.6      9.671
+llama_block_ar__g_bundle-two_ar_pack-stack                  1     19.20     nan    8862.6      9.661
+llama_block_ar__paper_6e7ab1d7                              1     19.30     nan    8862.6      9.338
+llama_block_ar__harness_baseline                            1     19.60     nan    8862.6      9.711
+pp_send_recv__paper_7f79b897                                1    111.65     nan  385803.2     50.277
+pp_send_recv__g_bundle-all_mb_pack-cat                      1    111.65     nan  385894.5     49.772
+pp_send_recv__g_bundle-all_mb_pack-stack                    1    112.40     nan  385803.2     50.323
+pp_send_recv__g_bundle-per_mb_pack-stack                    1    144.10     nan  392161.0     66.760
+pp_send_recv__g_bundle-per_mb_pack-cat                      1    145.90     nan  392161.0     66.194
+pp_send_recv__harness_baseline                              1    146.50     nan  392161.0     66.876
+ring_kv__paper_2f6a05c4                                     1      4.77     nan   20821.4      4.957
+ring_kv__g_bundle-per_slot                                  1      4.85     nan   20821.4      4.764
+ring_kv__g_bundle-joint                                     1      4.96     nan   18007.7      4.735
+ring_kv__harness_baseline                                   1      8.91     nan   25797.1      8.473
+ring_kv__g_bundle-per_chunk                                 1      9.02     nan   23160.6      8.914
+tp_mlp__g_bundle-per_layer_pack-stack                       1     10.60     nan    9949.1      6.257
+tp_mlp__g_bundle-per_layer_pack-flatten                     1     10.80     nan    9949.1      5.764
+tp_mlp__r42_a475ecb5                                        1     10.80     nan   10167.2      5.461
+tp_mlp__r28nosim_train_9a349b85                             1     10.85     nan    9949.1      5.421
+tp_mlp__g_bundle-all_pack-stack                             1     10.90     nan    9949.1      5.463
+tp_mlp__paper_456211d8                                      1     11.10     nan   10167.2      5.106
+tp_mlp__g_bundle-all_pack-flatten                           1     11.40     nan   10167.2      5.694
+tp_mlp__harness_baseline                                    1     11.50     nan   16520.9      6.325
+tp_mlp__g_bundle-per_call_pack-stack                        1     11.60     nan   16520.9      6.492
+tp_mlp__g_bundle-per_call_pack-flatten                      1     11.65     nan   16520.9      7.427
+tp_mlp__g_bundle-per_mb_pack-flatten                        1     11.70     nan   16520.9      6.950
+tp_mlp__g_bundle-per_mb_pack-stack                          1     11.80     nan   16520.9      6.385
+tp_mlp__r36none_beaeb1b6                                    1     11.80     nan   16520.9      7.861
+uniform_a2a__r28nosim_train_c0b2d468                        2   1202.75    1.60 1109192.2      0.558
+uniform_a2a__paper_96e21a8e                                 1   1216.05     nan 1123804.5      8.031
+uniform_a2a__g_extract-loop_cat_structure-ag_slice          1   1217.60     nan 1123804.5      8.050
+uniform_a2a__harness_baseline                               1   1510.50     nan 3508033.6      0.603
+uniform_a2a__g_extract-view_col_structure-ag_rs             2   1511.35    4.30 3508033.6      0.628
+uniform_a2a__g_extract-loop_cat_structure-ag_rs             2   1516.62    2.22 3508033.6      0.604
+uniform_a2a__r42_d910f8d1                                   1   1516.85     nan 3508033.6      0.637
+uniform_a2a__tmpl_allgather_reduce_scatter                  1   1526.30     nan 3508033.6      0.614
