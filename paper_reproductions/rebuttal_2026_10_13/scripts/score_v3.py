@@ -113,6 +113,6 @@ for c in man:
             v = None
         out[a][key] = v; row.append(f"{a}={v}")
     print(f"{key:58s} " + "  ".join(row), flush=True)
-os.makedirs("/home/ubuntu/sweep_v2", exist_ok=True)
-for a in ARMS: json.dump(out[a], open(f"/home/ubuntu/sweep_v2/sim_v3_{a}.json", "w"), indent=1)
+OUTDIR = os.environ.get("OUTDIR", "/home/ubuntu/sweep_v2"); os.makedirs(OUTDIR, exist_ok=True)
+for a in ARMS: json.dump(out[a], open(f"{OUTDIR}/sim_v3_{a}.json", "w"), indent=1)
 print("wrote sim_v3_A/B/C.json")

@@ -27,8 +27,8 @@ on the full-tensor basis the model charges, 297 GB/s vs 20; per-op in-graph marg
 all-gather graph compiled >15 min and thrashed the host). Small-collective latencies differ ±2× between probe runs.
 Network constants do not matter for ranking (TPU swap ρ = 1.00 reproduced); local terms do.
 
-## 3. Simulator vs hardware, final (A-Q2, C-Q1) — arm v11c, one configuration for all problems
-71 candidates (seed templates, grammar variants, archived LLM strategies, deployed runtimes, baselines, search finds,
+## 3. Simulator vs hardware, final (A-Q2, C-Q1) — arm v13, one configuration for all problems
+74 candidates (seed templates, grammar variants, archived LLM strategies, deployed runtimes, baselines, search finds,
 6 AllToAllV seed-library helpers), 3 repeats at 224-rank training scope; repeat sd ≤2%.
 | Problem | n | ρ (sim vs measured step) | top-1 | regret |
 |---|---|---|---|---|
@@ -39,8 +39,8 @@ Network constants do not matter for ranking (TPU swap ρ = 1.00 reproduced); loc
 | PP send/recv | 6 | 0.89 | yes | 0 |
 | Ring KV | 6 | 0.58 | top-2 (HW tie 4.96 vs 5.14) | 3.7% |
 | TP MLP | 16 | 0.90 | within 0.3% | 0.3% |
-| Uniform A2A | 1 | not measurable: every alternative implementation (3 archived agent variants, 3 seed templates) aborts in the Neuron runtime (`ENC_MAX_COMM_N` assertion) | | |
-Pooled Spearman on speedup ratios 0.60 (n=58); direction agreement 22/25. Before fixes: dxe −0.77, AllToAllV −0.32.
+| Uniform A2A | 10 (⟨n=3 reps pending⟩) | 0.73 | yes (AG+slice extraction 1205 ms; AG+RS forms 1511–1526; harness baseline 1515; AG+index_select 5692) | 0 |
+Pooled Spearman on speedup ratios 0.56 (n=68); direction agreement 26/30. Simulator arm = sim_v4_v13 (v11c + index_select at its measured gather rate). Before fixes: dxe −0.77, AllToAllV −0.32.
 Cross-scope inversion reproduced by the simulator: per-primitive payload → AG+T+RS 19972 < AG+slice 29045/40760 (HW
 30.0 / 24.2 / 38.0 ms); OLMoE payload → AG+slice 131603/143416 < AG+T+RS 271144 (HW 3127 vs 4338 ms).
 
@@ -50,7 +50,7 @@ Generic AST edits (swap primitive, mutate constant, delete/move, insert tensor o
 - vs shipped simulator (budget 150): "wins" of 3.7–60× on PP/TP-MLP/FSDP = the microbatch loop unrolled by two — a
   detector exploit; hardware 1.00× (TP MLP 11.65–11.90 vs 11.75; FSDP 15.25 vs 14.5–15.3; PP variants crash). One real
   find: Ring KV parts-per-chunk 4→1 (GA), HW 6.82 vs 8.81 ms baseline (deployed per-slot 4.96).
-- vs fixed simulator (budget 60, 2 seeds): **no strategy-level improvement on any of the 8 problems**; the only sim gains are compiler-pass-level rewrites of the PP loop (LICM of the zeros buffer: 0.985×; GA unroll + shared buffer: 0.990×), hardware check ⟨pending⟩.
+- vs fixed simulator (budget 60, 2 seeds): **no strategy-level improvement on any of the 8 problems**; the only sim gains are compiler-pass-level rewrites of the PP loop (LICM of the zeros buffer: 0.985×; GA unroll + shared buffer: 0.990×); both fail the hardware gate (harness-incompatible CPU tensors inherited from the seed template).
   None of the methods produced pack-and-gather, the dxe recomposition, or stack/cat bundling.
 - Archived non-LLM Phase-3 arms ("none"/"random" over the seed library): reproduce OLMoE (1.41×), deploy the baseline on
   all four Llama problems.
@@ -60,6 +60,10 @@ Generic AST edits (swap primitive, mutate constant, delete/move, insert tensor o
 |---|---|---|---|---|---|
 | expert dim 1024 (paper) | 4347–4351 ms | 3121–3130 ms | 333 ms | 92% | 1.39× |
 | expert dim 4096 | 4407 | 3168 | 365 | 92% | 1.39× |
+| top-k 4 (expert dim 1024) | 2830 ms | 1993 ms | 316 ms | 89% / 84% (agent) | 1.42× |
+| top-k 2 (expert dim 1024) | 2079 ms | 1677 ms | 310 ms | 85% / 82% (agent) | 1.24× |
+| expert dim 16384 | device OOM | device OOM | device OOM | — | — |
+| top-k 2 + expert dim 8192 | ⟨running⟩ | ⟨running⟩ | ⟨running⟩ | | |
 | expert dim 8192 | device OOM | 3216 | 440 | 86% | — (AG+RS needs a second full buffer) |
 Every larger-token configuration (B=2/4, S=512, L=16) fails at NEFF load / device memory for both backends: the AG-based
 AllToAllV buffer is ws×cap×DM·ws bytes (2 GB per rank at the paper shape, 8 GB at B=4). The regime is collective-bound by
@@ -80,4 +84,5 @@ cross-entropy at 224 ranks 8.25–8.31 ms vs deployed 2-AR 8.3–8.6 vs 1-AG bas
 5. Registered ring_kv `per_chunk_per_part_allgather` template fails its own reference.
 6. Microbatch-loop graph detector only matched `range(M)` (gameable); fixed locally.
 7. `$19/hour` should be ~$150/h; Table 5 7n-train (4410) vs Table 6 step (4404) come from different harnesses.
-8. `collective_permute` deadlocks in CCOM bootstrap at ws=32 on SDK 2.22/2.29; Uniform-A2A alternatives abort (`ENC_MAX_COMM_N`).
+8. `collective_permute` deadlocks in CCOM bootstrap at ws=32 on SDK 2.22/2.29.
+9. The Uniform-A2A harness imports `runtime/trainium_uniform_a2a.py` (not the `_7node` file); the shipped copy is a `collective_permute` ring that aborts at 224 ranks (`ENC_MAX_COMM_N`), so the public ua2a agent path is broken as shipped and every earlier "agent variant" measurement silently ran it. Fixed in deploy_candidate.py; pool re-measured (see §3).

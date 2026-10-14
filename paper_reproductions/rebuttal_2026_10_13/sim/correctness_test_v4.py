@@ -2684,6 +2684,7 @@ def benchmark_xla_candidate_generic(problem, candidate_fn, topology,
                                      coll_curves=None,
                                      coll_tables=None,
                                      amort_knee_bytes=262144,
+                                     index_select_bytes_per_us=0.0,
                                      hbm_budget_bytes_per_core=2 * (1024 ** 3),
                                      hbm_penalty_scale_us=10000.0,
                                      candidate_source=None):
@@ -2871,10 +2872,13 @@ def benchmark_xla_candidate_generic(problem, candidate_fn, topology,
         if op_name in _VOLUME_SCALED_OPS:
             base = (max(op_costs.get(op_name, 29.0), min_local_op_us)
                     if op_costs else 29.0)
-            if copy_bytes <= 0 or memcpy_bytes_per_us <= 0:
+            # v4: index_select is a random-access gather; the probe measures its own throughput (index_select_scaling:
+            # 1M indices -> 4 MB output in ~18 ms, i.e. ~0.2 GB/s), far below the strided-memcpy rate.
+            rate = index_select_bytes_per_us if (op_name == "index_select" and index_select_bytes_per_us > 0) else memcpy_bytes_per_us
+            if copy_bytes <= 0 or rate <= 0:
                 return base
             scaled = copy_bytes * float(training_scale_bytes_multiplier)
-            return max(base, scaled / float(memcpy_bytes_per_us))
+            return max(base, scaled / float(rate))
         # Compute / copy ops: agent-measured cost with the floor.
         if op_costs:
             return max(op_costs.get(op_name, 29.0), min_local_op_us)

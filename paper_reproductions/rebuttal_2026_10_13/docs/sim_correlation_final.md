@@ -1,4 +1,4 @@
-# Simulator vs 224-rank hardware — final numbers (rebuttal, 2026-10-14 00:30 UTC; arm v11c)
+# Simulator vs 224-rank hardware — final numbers (rebuttal, 2026-10-14 06:20 UTC; arm v13 = v11c + measured index_select gather rate)
 
 Pool: 71 candidates over the 8 problems (seed-library templates, every structural-grammar variant, archived LLM strategies
 incl. non-deployed ones, the deployed runtimes, developer baselines, the leak-free search's finds, and 6 AllToAllV
@@ -17,8 +17,9 @@ scope-aware graph boundaries). One configuration for all problems; no per-proble
 | PP send/recv | 6 | **0.89** | yes (stacked masked AR 111.4) | 0 |
 | Ring KV | 6 | **0.58** | top-2 (joint 5.14 vs per-slot 4.96; HW gap within repeat noise) | 3.7% |
 | TP MLP | 16 | **0.90** | within 0.3% (per-layer flatten 10.88 vs per-layer stack 10.85) | 0.3% |
-| Uniform A2A | 1 measured (+3 seed candidates running) | pending | | |
-Pooled Spearman on speedup-vs-baseline ratios (n=58): 0.60; direction agreement where the sim predicts a change: 22/25.
+| Uniform A2A | 10 | **0.73** | yes (AG+slice 1205 ms vs AG+RS 1511-1526, AG+index_select 5692) | 0 |
+Pooled Spearman on speedup-vs-baseline ratios (n=68): 0.56; direction agreement where the sim predicts a change: 26/30.
+Uniform A2A became measurable only after fixing the deploy target: the harness imports runtime/trainium_uniform_a2a.py (not the _7node file), whose shipped copy is a collective_permute ring that aborts at 224 ranks (ENC_MAX_COMM_N).
 
 Before the fixes (shipped static table, toy shapes): TP MLP 0.74, Layer-block 0.90, PP 0.93, FSDP 0.60, Ring KV 0.56,
 **dxe -0.77, AllToAllV -0.32**; the dxe failure was structural (4 KB sandbox all-gather x10 vs 147 KB in / 33 MB out on

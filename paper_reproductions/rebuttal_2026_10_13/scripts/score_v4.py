@@ -25,6 +25,7 @@ KW = dict(op_costs=op_costs, dispatch_overhead_us=SP["dispatch_overhead_us"], gr
           memcpy_bytes_per_us=SP["memcpy_bytes_per_us"], memcpy_seq_bytes_per_us=SP["memcpy_seq_bytes_per_us"],
           hbm_bytes_per_us=DT["memcpy_throughput"]["clone_gbps"] * 1000.0,
           coll_curves=None, amort_knee_bytes=int(os.environ.get("KNEE", "262144")),
+          index_select_bytes_per_us=(1_000_000 * 4) / float(DT["index_select_scaling"]["large_index_1M"]) if "large_index_1M" in DT.get("index_select_scaling", {}) else 0.0,
           microbatch_loops_induce_graphs=(os.environ.get("SCOPE", "harness") == "e2e"),
           coll_run_reset=os.environ.get("RESET", "graph"))
 TOPO = MultiNodeTopology(num_nodes=NODES, neuronlink_bandwidth_GBps=192.0, neuronlink_latency_us=0.5, num_devices_per_node=16, cores_per_device=2,
@@ -113,6 +114,7 @@ def main():
       except Exception as e:
           v = None; extra = f"{type(e).__name__}: {str(e)[:80]}"
       out[key] = v; print(f"{key:58s} V4={v}  {extra}", flush=True)
-  json.dump(out, open(f"/home/ubuntu/sweep_v2/sim_v4_{TAG}.json", "w"), indent=1); print("wrote sim_v4", TAG)
+  OUTDIR = os.environ.get("OUTDIR", "/home/ubuntu/sweep_v2"); os.makedirs(OUTDIR, exist_ok=True)
+  json.dump(out, open(f"{OUTDIR}/sim_v4_{TAG}.json", "w"), indent=1); print("wrote sim_v4", TAG)
 if __name__ == "__main__":
   main()

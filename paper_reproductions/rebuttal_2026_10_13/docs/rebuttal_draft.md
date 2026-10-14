@@ -24,14 +24,22 @@ reduction/memset ops by volume at the measured HBM rate, (iv) let a dispatch run
 amortize only latency-bound (≤256 KB) collectives, (v) apply XLA's concat-of-consecutive-slices simplification, and
 (vi) derive graph boundaries from the scope being scored. These changes are listed in the artifact (sim_v4_changes.md).
 
-**Result (71-candidate pool over the 8 problems, each measured 3× at 224-rank training scope; repeat sd ≤2%):**
+**Result (74-candidate pool over the 8 problems, each measured 3× at 224-rank training scope; repeat sd ≤2%):**
 within-problem Spearman between simulator score and measured step time — AllToAllV **0.56** (8 cands), distributed CE
 **0.56** (8; sim top-1 = HW best), FSDP **0.81** (7; top-1), Layer-block **0.90** (7; top-1), PP **0.89** (6; top-1),
 Ring KV **0.58** (6; sim's pick within 3.7% of best, the two leaders tie within repeat noise), TP MLP **0.90** (16; within
-0.3%), Uniform A2A: not measurable — every alternative implementation we could deploy (the three archived LLM variants and the three seed-library templates) aborts in the Neuron runtime (`ENC_MAX_COMM_N` assertion) at 224 ranks, so only the baseline runs; we report this as a limit of the SDK, not as a data point. Pooled Spearman on
-speedup-vs-baseline ratios 0.60 (n = 58); where the sim predicts a change vs the baseline its direction agrees with
-hardware 22/25 times. Before the fixes: TP MLP 0.74, Layer-block 0.90, PP 0.93, FSDP 0.60, Ring KV 0.56, dxe −0.77,
+0.3%), Uniform A2A **0.73** (10; sim top-1 = HW best; measured after fixing an artifact bug — the harness imports `runtime/trainium_uniform_a2a.py`, whose shipped copy is a `collective_permute` ring that aborts at 224 ranks, so earlier "agent" runs never executed the candidate). Pooled Spearman on
+speedup-vs-baseline ratios 0.56 (n = 68); where the sim predicts a change vs the baseline its direction agrees with
+hardware 26/30 times. Before the fixes: TP MLP 0.74, Layer-block 0.90, PP 0.93, FSDP 0.60, Ring KV 0.56, dxe −0.77,
 AllToAllV −0.32. We will replace the paper's simulator-accuracy claims with this table.
+
+**Prediction errors (C-Q1).** Simulator units are not milliseconds, so we report errors on predicted-vs-measured
+speedup ratios against each problem's baseline (MAPE) and, after a per-problem affine rescaling, median relative error of
+predicted step time: bundling problems (PP, TP MLP, FSDP, Layer-block, Ring KV) ratio-MAPE 8–24%, rescaled error 0.1–19%
+(median 1.2%); payload-changing problems where the inversion lives (AllToAllV, Uniform A2A, dxe) ratio-MAPE 29–56%,
+rescaled error 0.6–23%. The ranking survives (ρ ≥ 0.56 everywhere) while magnitudes on the payload-changing problems
+remain coarse — which is why the pipeline keeps the hardware gate. None of the pool candidates was used to fit anything:
+the constants come from the Phase-1 probes, the structure is fixed.
 
 **The cross-scope inversion is reproduced by the simulator, not assumed.** For AllToAllV the same candidates scored at the
 per-primitive harness's payload rank AG+T+RS first (sim 19972 < vectorized AG+slice 29045 < loop+cat 40760; hardware
@@ -57,7 +65,7 @@ a rule-based arm (standard compiler passes DCE/CSE/LICM/loop-fusion), same corre
 each developer baseline. Against the *shipped* simulator it reported 3.7–60× "wins" on PP/TP-MLP/FSDP: the baseline loop
 unrolled by two (`range(0, M, 2)`), which the old graph-boundary detector did not recognize — a simulator exploit, not a
 strategy. Hardware: TP MLP 11.65–11.90 ms vs baseline 11.75, FSDP 15.25 vs 14.5–15.3, PP variants fail the harness. The
-fixed detector removes it. Against the fixed simulator (budget 60 evaluations per method, 2 seeds, all 8 problems) no method improves on any baseline except two compiler-pass-level rewrites of the PP loop (hoisting the zeros buffer out of the loop, 1.5% in the simulator; hardware check ⟨pending⟩). No method
+fixed detector removes it. Against the fixed simulator (budget 60 evaluations per method, 2 seeds, all 8 problems) no method improves on any baseline except two compiler-pass-level rewrites of the PP loop (hoisting the zeros buffer out of the loop, 1.5% in the simulator; both fail the hardware gate — the seed template they descend from allocates CPU tensors the harness cannot run). No method
 produced pack-and-gather, the distributed-CE recomposition, or stack/cat bundling; the one real find (Ring KV, GA: fewer
 parts per chunk) measures 6.82 ms vs 8.81 baseline and 4.96 deployed. Separately, the archived non-LLM Phase-3 arms
 ("none"/"random" over the seed library) reproduce the OLMoE headline (pack-and-gather is a seed template; 1.41×) but
@@ -96,7 +104,11 @@ width raises compute without changing the AllToAllV payload:
 |---|---|---|---|---|---|
 | expert dim 1024 (paper) | 4347–4351 ms | 3121–3130 ms | 333 ms | 92% | 1.39× |
 | expert dim 4096 | 4407 ms | 3168 ms | 365 ms | 92% | 1.39× |
-| expert dim 8192 | device OOM (second buffer) | 3216 ms | 440 ms | 86% | — |
+| top-k 4 (expert dim 1024) | 2830 ms | 1993 ms | 316 ms | 89% / 84% (agent) | 1.42× |
+| top-k 2 (expert dim 1024) | 2079 ms | 1677 ms | 310 ms | 85% / 82% (agent) | 1.24× |
+| expert dim 16384 | device OOM | device OOM | device OOM | — | — |
+| top-k 2 + expert dim 8192 | ⟨running⟩ | ⟨running⟩ | ⟨running⟩ | | |
+| expert dim 8192 | device OOM (second buffer) | 3216 ms | 440 ms | 86% (agent) | — |
 
 Larger token counts are not reachable by either implementation: the AG-based AllToAllV allocates a ws×ws×cap×DM buffer
 that grows linearly with tokens (2 GB per rank at the paper's shape; B=4 is 8 GB), so every B>1 / longer-sequence
@@ -104,6 +116,44 @@ configuration fails at load on this stack for both backends. We will therefore (
 collective-bound regime of 224-way expert parallelism, (ii) report the collective-component speedup (4016→2795 ms,
 1.44×) as the quantity that transfers to other step compositions, and (iii) note the memory advantage of the deployed
 strategy (one gathered buffer instead of two), which is why it still runs at expert dim 8192 where AG+RS does not.
+
+## C — remaining numbered comments
+
+**C1 (what the method buys; manual vs inferred model).** Across the archived Phase-3 runs, 125 candidates reached the
+gates and 8 were trained end to end: the cost model plus gates avoid 117 of 125 training runs. What distinguishes this
+from model-based autotuning is the search space (program rewrites above a closed API, with a correctness oracle) rather
+than the model. Honest statement on the model: its structure and functional forms are manual; only its constants come
+from probes — and, as corrected above, the submitted runs took them from a snapshot. **C3 (search-space size,
+sensitivity).** The space before the seed library is the set of correct programs over 4 primitives × tensor rewrites,
+not enumerable; we fixed K=5 strategies per enumeration and 2 refinement rounds and did not run a sensitivity sweep over
+these; we will state this as a limitation. **C4 (FSDP fallback).** Correction: the appendix attributes the FSDP fallback to
+the HBM gate; the archived logs show a harness error (`TypeError: missing argument 'torch'`) for all FSDP candidates in
+those runs, and the fully-fused FSDP all-gather failed the correctness oracle; we will rewrite that paragraph.
+**C8 (rejection categories).** Archived Phase-4: 125 candidates → 93 pass / 15 fail / 17 skipped; failures are training-
+shape gate errors (RuntimeError/TypeError/IndexError on shape) and `collective_permute` at ws>64; on this SDK
+`collective_permute` also deadlocks at ws=32. **C9.** Agreed; claims narrowed as stated below.
+
+## B — comments
+
+(i) *Is a better microbenchmark enough?* Our per-primitive harness at 224 ranks is that better microbenchmark — it uses
+the real primitives, shapes and rank count — and it still inverts on AllToAllV (AG+T+RS 30.0 vs pack-and-gather 38.0 ms
+per step in isolation; 4338 vs 3127 ms inside the OLMoE step). The inversion is a property of payload and graph context,
+not of microbenchmark quality. (ii) *Regression instead of an LLM for calibration?* Yes for the constants: our corrected
+model fits its collective curves by least squares from the probes, and we will say so; the LLM's contribution is Phase 3
+(the rewrites a generic search does not find), not Phase 1. (iii) *Takeaway.* Three measured facts: the inversion; a
+cost model faithful enough to rank at training scope (table above); and LLM-authored rewrites (bundling, the dxe
+recomposition) that leak-free generic searches do not reach. We will expand `mark_step`, ICI/DCN and the other jargon
+on first use.
+
+## D — question and comments
+
+*Portability.* The model's structure is hardware-specific in what it charges (dispatch runs, graph launches, NEFF loads,
+HBM copies), and its constants are per-deployment; swapping TPU constants changes no ranking because rankings here are
+driven by local terms, not network constants. We claim no TPU result and will say the structure's portability is
+unvalidated. *Cluster-size experiment.* Repeated with the model fixed: 3-node Llama-7B per_mb 65.7 vs bundled 21.0 ms;
+the bundled time is flat across 3→7 nodes (21.0 vs 21.1–22.1), so the agent strategy does not degrade — Table 9's 27.2
+ms was a single run; the ratio compresses because the baseline speeds up. C2 is mitigated, not addressed — we will reword;
+the H100 price sentence and the XLA phrasing will be removed.
 
 ## C-Q5 / C7 — Wall-clock, compile, repeats
 
