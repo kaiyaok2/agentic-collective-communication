@@ -1,0 +1,114 @@
+{
+ "pp_send_recv": {
+  "random": {
+   "best_sim": 384584.14308232255,
+   "code": "def evolved_pp_send_recv(activations, src_stage, half, M, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"per_mb_loop_AR: one masked all_reduce per microbatch (M dispatches, M graphs).\"\"\"\n    stage = 0 if rank < half else 1\n    pair_id = rank if stage == 0 else rank - half\n    a0 = activations[0]\n    outs = []\n    for m in range(M):\n        buf = torch.zeros(half, *a0.shape, dtype=a0.dtype)\n        if stage == src_stage:\n            buf[pair_id] = activations[m]\n        ared = xm.all_reduce(xm.REDUCE_SUM, buf)\n        outs.append(ared[pair_id])\n    return outs",
+   "evals": 60,
+   "structure": {
+    "colls": {
+     "all_reduce": 1
+    },
+    "loops": 1
+   }
+  },
+  "ga": {
+   "best_sim": 384584.14308232255,
+   "code": "def evolved_pp_send_recv(activations, src_stage, half, M, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"per_mb_loop_AR: one masked all_reduce per microbatch (M dispatches, M graphs).\"\"\"\n    stage = 0 if rank < half else 1\n    pair_id = rank if stage == 0 else rank - half\n    a0 = activations[0]\n    outs = []\n    for m in range(M):\n        buf = torch.zeros(half, *a0.shape, dtype=a0.dtype)\n        if stage == src_stage:\n            buf[pair_id] = activations[m]\n        ared = xm.all_reduce(xm.REDUCE_SUM, buf)\n        outs.append(ared[pair_id])\n    return outs",
+   "evals": 60,
+   "structure": {
+    "colls": {
+     "all_reduce": 1
+    },
+    "loops": 1
+   }
+  },
+  "beam": {
+   "best_sim": 380952.21946941933,
+   "code": "def evolved_pp_send_recv(activations, src_stage, half, M, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"per_mb_loop_AR: one masked all_reduce per microbatch (M dispatches, M graphs).\"\"\"\n    stage = 0 if rank < half else 1\n    pair_id = rank if stage == 0 else rank - half\n    a0 = activations[0]\n    outs = []\n    for m in range(0, M, 2):\n        buf = torch.zeros(half, *a0.shape, dtype=a0.dtype)\n        if stage == src_stage:\n            buf.squeeze(0)[pair_id] = activations[m]\n        ared = xm.all_reduce(xm.REDUCE_SUM, buf)\n        outs.append(ared[pair_id])\n        if stage == src_stage:\n            buf.squeeze(0)[pair_id] = activations[m + 1]\n        ared = xm.all_reduce(xm.REDUCE_SUM, buf)\n        outs.append(ared[pair_id])\n    return outs",
+   "evals": 60,
+   "structure": {
+    "colls": {
+     "all_reduce": 2
+    },
+    "loops": 1
+   }
+  },
+  "rules": {
+   "best_sim": 378901.53766296775,
+   "code": "def evolved_pp_send_recv(activations, src_stage, half, M, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"per_mb_loop_AR: one masked all_reduce per microbatch (M dispatches, M graphs).\"\"\"\n    stage = 0 if rank < half else 1\n    pair_id = rank if stage == 0 else rank - half\n    a0 = activations[0]\n    outs = []\n    buf = torch.zeros(half, *a0.shape, dtype=a0.dtype)\n    for m in range(M):\n        if stage == src_stage:\n            buf[pair_id] = activations[m]\n        ared = xm.all_reduce(xm.REDUCE_SUM, buf)\n        outs.append(ared[pair_id])\n    return outs",
+   "passes": [
+    "LICM"
+   ],
+   "evals": 41,
+   "structure": {
+    "colls": {
+     "all_reduce": 1
+    },
+    "loops": 1
+   }
+  },
+  "start_sim": 384584.14308232255,
+  "start_structure": {
+   "colls": {
+    "all_reduce": 1
+   },
+   "loops": 1
+  },
+  "secs": 394.8
+ },
+ "llama_block_ar": {
+  "random": {
+   "best_sim": 8862.594223718894,
+   "code": "def evolved_llama_block(attn_partial, mlp_partial, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"Developer baseline: two sequential AR calls, one per primitive.\"\"\"\n    attn_full = xm.all_reduce(xm.REDUCE_SUM, attn_partial)\n    mlp_full = xm.all_reduce(xm.REDUCE_SUM, mlp_partial)\n    return [attn_full, mlp_full]",
+   "evals": 60,
+   "structure": {
+    "colls": {
+     "all_reduce": 2
+    },
+    "loops": 0
+   }
+  },
+  "ga": {
+   "best_sim": 8862.594223718894,
+   "code": "def evolved_llama_block(attn_partial, mlp_partial, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"Developer baseline: two sequential AR calls, one per primitive.\"\"\"\n    attn_full = xm.all_reduce(xm.REDUCE_SUM, attn_partial)\n    mlp_full = xm.all_reduce(xm.REDUCE_SUM, mlp_partial)\n    return [attn_full, mlp_full]",
+   "evals": 60,
+   "structure": {
+    "colls": {
+     "all_reduce": 2
+    },
+    "loops": 0
+   }
+  },
+  "beam": {
+   "best_sim": 8862.594223718894,
+   "code": "def evolved_llama_block(attn_partial, mlp_partial, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"Developer baseline: two sequential AR calls, one per primitive.\"\"\"\n    attn_full = xm.all_reduce(xm.REDUCE_SUM, attn_partial)\n    mlp_full = xm.all_reduce(xm.REDUCE_SUM, mlp_partial)\n    return [attn_full, mlp_full]",
+   "evals": 60,
+   "structure": {
+    "colls": {
+     "all_reduce": 2
+    },
+    "loops": 0
+   }
+  },
+  "rules": {
+   "best_sim": 8862.594223718894,
+   "code": "def evolved_llama_block(attn_partial, mlp_partial, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"Developer baseline: two sequential AR calls, one per primitive.\"\"\"\n    attn_full = xm.all_reduce(xm.REDUCE_SUM, attn_partial)\n    mlp_full = xm.all_reduce(xm.REDUCE_SUM, mlp_partial)\n    return [attn_full, mlp_full]",
+   "passes": [],
+   "evals": 41,
+   "structure": {
+    "colls": {
+     "all_reduce": 2
+    },
+    "loops": 0
+   }
+  },
+  "start_sim": 8862.594223718894,
+  "start_structure": {
+   "colls": {
+    "all_reduce": 2
+   },
+   "loops": 0
+  },
+  "secs": 370.3
+ }
+}

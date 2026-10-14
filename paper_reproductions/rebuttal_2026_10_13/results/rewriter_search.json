@@ -1,0 +1,358 @@
+{
+ "alltoallv": {
+  "baseline": "allgather_reduce_scatter",
+  "beam": {
+   "best_sim": 516.0,
+   "start_sim": 578.72,
+   "rules": [
+    "R3_ag_rs_to_slice"
+   ],
+   "code": "def evolved_alltoallv(input_tensor, send_counts, recv_counts, max_chunk, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"AllGather + ReduceScatter.\"\"\"\n    pack_size = world_size * max_chunk\n    packed = torch.zeros(pack_size, device=input_tensor.device, dtype=input_tensor.dtype)\n    send_off = 0\n    for i in range(world_size):\n        sc = send_counts[i]\n        if sc > 0:\n            packed[i * max_chunk:i * max_chunk + sc] = input_tensor[send_off:send_off + sc]\n        send_off += sc\n    gathered = xm.all_gather(packed.unsqueeze(0), dim=0)\n    reshaped = gathered.view(world_size, world_size, max_chunk)\n    my_shard = reshaped[:, rank, :].contiguous().view(-1)\n    flat_idx = []\n    for src in range(world_size):\n        count = recv_counts[src]\n        base = src * max_chunk\n        flat_idx.extend(range(base, base + count))\n    idx_tensor = torch.tensor(flat_idx, device=input_tensor.device, dtype=torch.long)\n    return torch.index_select(my_shard, 0, idx_tensor)",
+   "evals": 2
+  },
+  "random_walk": {
+   "best_sim": 516.0,
+   "start_sim": 578.72,
+   "rules": [
+    "R3_ag_rs_to_slice"
+   ],
+   "code": "def evolved_alltoallv(input_tensor, send_counts, recv_counts, max_chunk, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"AllGather + ReduceScatter.\"\"\"\n    pack_size = world_size * max_chunk\n    packed = torch.zeros(pack_size, device=input_tensor.device, dtype=input_tensor.dtype)\n    send_off = 0\n    for i in range(world_size):\n        sc = send_counts[i]\n        if sc > 0:\n            packed[i * max_chunk:i * max_chunk + sc] = input_tensor[send_off:send_off + sc]\n        send_off += sc\n    gathered = xm.all_gather(packed.unsqueeze(0), dim=0)\n    reshaped = gathered.view(world_size, world_size, max_chunk)\n    my_shard = reshaped[:, rank, :].contiguous().view(-1)\n    flat_idx = []\n    for src in range(world_size):\n        count = recv_counts[src]\n        base = src * max_chunk\n        flat_idx.extend(range(base, base + count))\n    idx_tensor = torch.tensor(flat_idx, device=input_tensor.device, dtype=torch.long)\n    return torch.index_select(my_shard, 0, idx_tensor)",
+   "evals": 40
+  },
+  "oracle_log": [
+   {
+    "rule": "R3_ag_rs_to_slice",
+    "accepted": true,
+    "via": "sandbox",
+    "sim": 516.0
+   }
+  ],
+  "start_structure": {
+   "colls": {
+    "all_gather": 1,
+    "reduce_scatter": 1
+   },
+   "loops": 2
+  },
+  "beam_structure": {
+   "colls": {
+    "all_gather": 1
+   },
+   "loops": 2
+  },
+  "secs": 8.2
+ },
+ "uniform_a2a": {
+  "baseline": "allgather_reduce_scatter",
+  "beam": {
+   "best_sim": 205.0,
+   "start_sim": 1208.5199999999998,
+   "rules": [
+    "R3_ag_rs_to_slice"
+   ],
+   "code": "def evolved_uniform_a2a(input_tensor, chunk_size, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"AllGather + transpose + ReduceScatter.\"\"\"\n    gathered = xm.all_gather(input_tensor.unsqueeze(0), dim=0)\n    reshaped = gathered.view(world_size, world_size, chunk_size)\n    shard = reshaped[:, rank, :].contiguous().view(-1)\n    return shard",
+   "evals": 2
+  },
+  "random_walk": {
+   "best_sim": 205.0,
+   "start_sim": 1208.5199999999998,
+   "rules": [
+    "R3_ag_rs_to_slice"
+   ],
+   "code": "def evolved_uniform_a2a(input_tensor, chunk_size, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"AllGather + transpose + ReduceScatter.\"\"\"\n    gathered = xm.all_gather(input_tensor.unsqueeze(0), dim=0)\n    reshaped = gathered.view(world_size, world_size, chunk_size)\n    shard = reshaped[:, rank, :].contiguous().view(-1)\n    return shard",
+   "evals": 40
+  },
+  "oracle_log": [
+   {
+    "rule": "R3_ag_rs_to_slice",
+    "accepted": true,
+    "via": "sandbox",
+    "sim": 205.0
+   }
+  ],
+  "start_structure": {
+   "colls": {
+    "all_gather": 1,
+    "reduce_scatter": 1
+   },
+   "loops": 0
+  },
+  "beam_structure": {
+   "colls": {
+    "all_gather": 1
+   },
+   "loops": 0
+  },
+  "secs": 7.1
+ },
+ "ring_kv": {
+  "baseline": "per_chunk_per_part_allgather",
+  "beam": {
+   "best_sim": 683.9999999999999,
+   "start_sim": 950.9999999999999,
+   "rules": [
+    "R1_hoist_loop"
+   ],
+   "code": "def evolved_ring_kv(kv_chunks, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    N_PARTS = 16\n    results = []\n    for chunk in kv_chunks:\n        part_sz = chunk.numel() // N_PARTS\n        parts = []\n        _ops1 = []\n        for p in range(N_PARTS):\n            piece = chunk[p * part_sz:(p + 1) * part_sz]\n            _ops1.append(piece.unsqueeze(0))\n        _st1 = torch.cat(_ops1, dim=0)\n        _R1 = xm.all_gather(_st1, dim=0)\n        for p in range(N_PARTS):\n            gathered = _R1.reshape(world_size, len(_ops1), -1)[:, p].contiguous().reshape(world_size, *_ops1[p].shape[1:])\n            parts.append(gathered.view(world_size, -1))\n        results.append(torch.cat(parts, dim=1).reshape(-1))\n    return results",
+   "evals": 2
+  },
+  "random_walk": {
+   "best_sim": 683.9999999999999,
+   "start_sim": 950.9999999999999,
+   "rules": [
+    "R1_hoist_loop"
+   ],
+   "code": "def evolved_ring_kv(kv_chunks, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    N_PARTS = 16\n    results = []\n    for chunk in kv_chunks:\n        part_sz = chunk.numel() // N_PARTS\n        parts = []\n        _ops2 = []\n        for p in range(N_PARTS):\n            piece = chunk[p * part_sz:(p + 1) * part_sz]\n            _ops2.append(piece.unsqueeze(0))\n        _st2 = torch.cat(_ops2, dim=0)\n        _R2 = xm.all_gather(_st2, dim=0)\n        for p in range(N_PARTS):\n            gathered = _R2.reshape(world_size, len(_ops2), -1)[:, p].contiguous().reshape(world_size, *_ops2[p].shape[1:])\n            parts.append(gathered.view(world_size, -1))\n        results.append(torch.cat(parts, dim=1).reshape(-1))\n    return results",
+   "evals": 40
+  },
+  "oracle_log": [
+   {
+    "rule": "R1_hoist_loop",
+    "accepted": true,
+    "via": "sandbox",
+    "sim": 683.9999999999999
+   }
+  ],
+  "start_structure": {
+   "colls": {
+    "all_gather": 1
+   },
+   "loops": 2
+  },
+  "beam_structure": {
+   "colls": {
+    "all_gather": 1
+   },
+   "loops": 3
+  },
+  "secs": 11.3
+ },
+ "dxe": {
+  "baseline": "full_vocab_ag",
+  "beam": {
+   "best_sim": 247.0,
+   "start_sim": 247.0,
+   "rules": [],
+   "code": "def evolved_dxe(logits_local, targets, V_local, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"Full-vocab all-gather then log-softmax + target-gather + mean.\n    Semantically equivalent to baseline_ce in train_olmoe10b.py\n    (xm.all_gather + F.cross_entropy), but expressed in primitive ops\n    so the Phase-2 TrackedTensor sandbox accepts it (F.cross_entropy\n    rejects TrackedTensor inputs). One xm.all_gather over (T, V_local)\n    producing (T, V_total) on every rank, then a local log-softmax\n    plus a per-token gather of the target logit. Substantially more\n    cross-rank bytes per call than the 2-/3-AR families, but it IS\n    what the OLMoE --ce baseline path runs end-to-end.\"\"\"\n    ll = logits_local.reshape(-1, V_local).contiguous()\n    gathered = xm.all_gather(ll, dim=1)\n    gmax = gathered.max(dim=-1, keepdim=True).values\n    shifted = gathered - gmax\n    log_sum_exp = shifted.exp().sum(dim=-1).log() + gmax.squeeze(-1)\n    tgt_flat = targets.reshape(-1)\n    target_logit = gathered.gather(1, tgt_flat.unsqueeze(1)).squeeze(1)\n    return (log_sum_exp - target_logit).mean()",
+   "evals": 3
+  },
+  "random_walk": {
+   "best_sim": 247.0,
+   "start_sim": 247.0,
+   "rules": [],
+   "code": "def evolved_dxe(logits_local, targets, V_local, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"Full-vocab all-gather then log-softmax + target-gather + mean.\n    Semantically equivalent to baseline_ce in train_olmoe10b.py\n    (xm.all_gather + F.cross_entropy), but expressed in primitive ops\n    so the Phase-2 TrackedTensor sandbox accepts it (F.cross_entropy\n    rejects TrackedTensor inputs). One xm.all_gather over (T, V_local)\n    producing (T, V_total) on every rank, then a local log-softmax\n    plus a per-token gather of the target logit. Substantially more\n    cross-rank bytes per call than the 2-/3-AR families, but it IS\n    what the OLMoE --ce baseline path runs end-to-end.\"\"\"\n    ll = logits_local.reshape(-1, V_local).contiguous()\n    gathered = xm.all_gather(ll, dim=1)\n    gmax = gathered.max(dim=-1, keepdim=True).values\n    shifted = gathered - gmax\n    log_sum_exp = shifted.exp().sum(dim=-1).log() + gmax.squeeze(-1)\n    tgt_flat = targets.reshape(-1)\n    target_logit = gathered.gather(1, tgt_flat.unsqueeze(1)).squeeze(1)\n    return (log_sum_exp - target_logit).mean()",
+   "evals": 40
+  },
+  "oracle_log": [
+   {
+    "rule": "R4_reduce_through_gather",
+    "accepted": true,
+    "via": "sandbox",
+    "sim": 710.3
+   },
+   {
+    "rule": "R2_merge_adjacent",
+    "accepted": true,
+    "via": "sandbox",
+    "sim": 510.3
+   }
+  ],
+  "start_structure": {
+   "colls": {
+    "all_gather": 1
+   },
+   "loops": 0
+  },
+  "beam_structure": {
+   "colls": {
+    "all_gather": 1
+   },
+   "loops": 0
+  },
+  "secs": 1.2
+ },
+ "pp_send_recv": {
+  "baseline": "per_mb",
+  "beam": {
+   "best_sim": 2056.0,
+   "start_sim": 40256.0,
+   "rules": [
+    "R1_hoist_loop"
+   ],
+   "code": "def evolved_pp_send_recv(activations, src_stage, half, M, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"per_mb_loop_AR: one masked all_reduce per microbatch (M dispatches, M graphs).\"\"\"\n    stage = 0 if rank < half else 1\n    pair_id = rank if stage == 0 else rank - half\n    a0 = activations[0]\n    outs = []\n    _ops121 = []\n    for m in range(M):\n        buf = torch.zeros(half, *a0.shape, dtype=a0.dtype)\n        if stage == src_stage:\n            buf[pair_id] = activations[m]\n        _ops121.append(buf)\n    _st121 = torch.stack(_ops121, dim=0)\n    _R121 = xm.all_reduce(xm.REDUCE_SUM, _st121)\n    for m in range(M):\n        ared = _R121[m]\n        outs.append(ared[pair_id])\n    return outs",
+   "evals": 2
+  },
+  "random_walk": {
+   "best_sim": 2056.0,
+   "start_sim": 40256.0,
+   "rules": [
+    "R1_hoist_loop"
+   ],
+   "code": "def evolved_pp_send_recv(activations, src_stage, half, M, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"per_mb_loop_AR: one masked all_reduce per microbatch (M dispatches, M graphs).\"\"\"\n    stage = 0 if rank < half else 1\n    pair_id = rank if stage == 0 else rank - half\n    a0 = activations[0]\n    outs = []\n    _ops122 = []\n    for m in range(M):\n        buf = torch.zeros(half, *a0.shape, dtype=a0.dtype)\n        if stage == src_stage:\n            buf[pair_id] = activations[m]\n        _ops122.append(buf)\n    _st122 = torch.stack(_ops122, dim=0)\n    _R122 = xm.all_reduce(xm.REDUCE_SUM, _st122)\n    for m in range(M):\n        ared = _R122[m]\n        outs.append(ared[pair_id])\n    return outs",
+   "evals": 40
+  },
+  "oracle_log": [
+   {
+    "rule": "R1_hoist_loop",
+    "accepted": true,
+    "via": "sandbox",
+    "sim": 2056.0
+   }
+  ],
+  "start_structure": {
+   "colls": {
+    "all_reduce": 1
+   },
+   "loops": 1
+  },
+  "beam_structure": {
+   "colls": {
+    "all_reduce": 1
+   },
+   "loops": 2
+  },
+  "secs": 7.3
+ },
+ "tp_mlp": {
+  "baseline": "per_mb",
+  "beam": {
+   "best_sim": 2056.0,
+   "start_sim": 52059.99999999999,
+   "rules": [
+    "R1_hoist_loop",
+    "R1_hoist_loop"
+   ],
+   "code": "def evolved_tp_mlp(partials, M, N_LAYERS, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"per_mb_loop_AR: AR each layer's partial per-microbatch, mark_step between \u03bcbatches.\"\"\"\n    outs = []\n    _ops163 = []\n    for m in range(M):\n        _ops162 = []\n        for L in range(N_LAYERS):\n            _ops162.append(partials[m][L])\n        _st162 = torch.stack(_ops162, dim=0)\n        _ops163.append(_st162)\n    _st163 = torch.stack(_ops163, dim=0)\n    _R163 = xm.all_reduce(xm.REDUCE_SUM, _st163)\n    for m in range(M):\n        _R162 = _R163[m]\n        per_layer = []\n        for L in range(N_LAYERS):\n            _c161 = _R162[L]\n            per_layer.append(_c161)\n        outs.append(per_layer)\n    return outs",
+   "evals": 3
+  },
+  "random_walk": {
+   "best_sim": 2056.0,
+   "start_sim": 52059.99999999999,
+   "rules": [
+    "R1_hoist_loop",
+    "R1_hoist_loop"
+   ],
+   "code": "def evolved_tp_mlp(partials, M, N_LAYERS, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"per_mb_loop_AR: AR each layer's partial per-microbatch, mark_step between \u03bcbatches.\"\"\"\n    outs = []\n    _ops166 = []\n    for m in range(M):\n        _ops165 = []\n        for L in range(N_LAYERS):\n            _ops165.append(partials[m][L])\n        _st165 = torch.stack(_ops165, dim=0)\n        _ops166.append(_st165)\n    _st166 = torch.stack(_ops166, dim=0)\n    _R166 = xm.all_reduce(xm.REDUCE_SUM, _st166)\n    for m in range(M):\n        _R165 = _R166[m]\n        per_layer = []\n        for L in range(N_LAYERS):\n            _c164 = _R165[L]\n            per_layer.append(_c164)\n        outs.append(per_layer)\n    return outs",
+   "evals": 40
+  },
+  "oracle_log": [
+   {
+    "rule": "R1_hoist_loop",
+    "accepted": true,
+    "via": "sandbox",
+    "sim": 38400.0
+   },
+   {
+    "rule": "R1_hoist_loop",
+    "accepted": true,
+    "via": "sandbox",
+    "sim": 2056.0
+   }
+  ],
+  "start_structure": {
+   "colls": {
+    "all_reduce": 1
+   },
+   "loops": 2
+  },
+  "beam_structure": {
+   "colls": {
+    "all_reduce": 1
+   },
+   "loops": 4
+  },
+  "secs": 16.8
+ },
+ "fsdp_prefetch": {
+  "baseline": "per_mb",
+  "beam": {
+   "best_sim": 2056.0,
+   "start_sim": 52059.99999999999,
+   "rules": [
+    "R1_hoist_loop",
+    "R1_hoist_loop"
+   ],
+   "code": "def evolved_fsdp_prefetch(shards, M, N_LAYERS, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"per_mb_loop_AG: AG each layer's shard per-microbatch, mark_step between \u03bcbatches.\"\"\"\n    outs = []\n    _ops283 = []\n    for m in range(M):\n        _ops282 = []\n        for L in range(N_LAYERS):\n            _ops282.append(shards[m][L])\n        _st282 = torch.stack(_ops282, dim=0)\n        _ops283.append(_st282)\n    _st283 = torch.stack(_ops283, dim=0)\n    _R283 = xm.all_gather(_st283, dim=-1)\n    for m in range(M):\n        _R282 = _R283[m]\n        per_layer = []\n        for L in range(N_LAYERS):\n            _c281 = _R282[L]\n            per_layer.append(_c281)\n        outs.append(per_layer)\n    return outs",
+   "evals": 3
+  },
+  "random_walk": {
+   "best_sim": 2056.0,
+   "start_sim": 52059.99999999999,
+   "rules": [
+    "R1_hoist_loop",
+    "R1_hoist_loop"
+   ],
+   "code": "def evolved_fsdp_prefetch(shards, M, N_LAYERS, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"per_mb_loop_AG: AG each layer's shard per-microbatch, mark_step between \u03bcbatches.\"\"\"\n    outs = []\n    _ops286 = []\n    for m in range(M):\n        _ops285 = []\n        for L in range(N_LAYERS):\n            _ops285.append(shards[m][L])\n        _st285 = torch.stack(_ops285, dim=0)\n        _ops286.append(_st285)\n    _st286 = torch.stack(_ops286, dim=0)\n    _R286 = xm.all_gather(_st286, dim=-1)\n    for m in range(M):\n        _R285 = _R286[m]\n        per_layer = []\n        for L in range(N_LAYERS):\n            _c284 = _R285[L]\n            per_layer.append(_c284)\n        outs.append(per_layer)\n    return outs",
+   "evals": 40
+  },
+  "oracle_log": [
+   {
+    "rule": "R1_hoist_loop",
+    "accepted": true,
+    "via": "sandbox",
+    "sim": 38400.0
+   },
+   {
+    "rule": "R1_hoist_loop",
+    "accepted": true,
+    "via": "sandbox",
+    "sim": 2056.0
+   }
+  ],
+  "start_structure": {
+   "colls": {
+    "all_gather": 1
+   },
+   "loops": 2
+  },
+  "beam_structure": {
+   "colls": {
+    "all_gather": 1
+   },
+   "loops": 4
+  },
+  "secs": 14.9
+ },
+ "llama_block_ar": {
+  "baseline": "sequential_2ar",
+  "beam": {
+   "best_sim": 199.99999999999997,
+   "start_sim": 260.0,
+   "rules": [
+    "R2_merge_adjacent"
+   ],
+   "code": "def evolved_llama_block(attn_partial, mlp_partial, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"Developer baseline: two sequential AR calls, one per primitive.\"\"\"\n    _R401 = xm.all_reduce(xm.REDUCE_SUM, torch.stack([attn_partial, mlp_partial], dim=0))\n    attn_full = _R401[0]\n    mlp_full = _R401[1]\n    return [attn_full, mlp_full]",
+   "evals": 2
+  },
+  "random_walk": {
+   "best_sim": 199.99999999999997,
+   "start_sim": 260.0,
+   "rules": [
+    "R2_merge_adjacent"
+   ],
+   "code": "def evolved_llama_block(attn_partial, mlp_partial, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"Developer baseline: two sequential AR calls, one per primitive.\"\"\"\n    _R402 = xm.all_reduce(xm.REDUCE_SUM, torch.stack([attn_partial, mlp_partial], dim=0))\n    attn_full = _R402[0]\n    mlp_full = _R402[1]\n    return [attn_full, mlp_full]",
+   "evals": 40
+  },
+  "oracle_log": [
+   {
+    "rule": "R2_merge_adjacent",
+    "accepted": true,
+    "via": "sandbox",
+    "sim": 199.99999999999997
+   }
+  ],
+  "start_structure": {
+   "colls": {
+    "all_reduce": 2
+   },
+   "loops": 0
+  },
+  "beam_structure": {
+   "colls": {
+    "all_reduce": 1
+   },
+   "loops": 0
+  },
+  "secs": 1.4
+ }
+}

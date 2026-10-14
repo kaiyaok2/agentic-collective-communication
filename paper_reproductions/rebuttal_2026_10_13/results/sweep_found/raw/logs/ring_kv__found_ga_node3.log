@@ -1,0 +1,974 @@
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+W1013 22:38:29.096000 1686838 torch/distributed/run.py:803] 
+W1013 22:38:29.096000 1686838 torch/distributed/run.py:803] *****************************************
+W1013 22:38:29.096000 1686838 torch/distributed/run.py:803] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W1013 22:38:29.096000 1686838 torch/distributed/run.py:803] *****************************************
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:97: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:97: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:97: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:97: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:97: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:97: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+[init] ring_kv backend=agent ws=224 HEADS=8 SEQ_PER_RANK=16 HEAD_DIM=128
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:97: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:97: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:97: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:97: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:97: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:97: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:97: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-13 22:38:51.000639:  1686904  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_1838567325846182821+e30acd3a/model.neff
+2026-10-13 22:38:51.000640:  1686923  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_1838567325846182821+e30acd3a/model.neff
+2026-10-13 22:38:51.000640:  1686911  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_1838567325846182821+e30acd3a/model.neff
+2026-10-13 22:38:51.000641:  1686926  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_1838567325846182821+e30acd3a/model.neff
+2026-10-13 22:38:51.000642:  1686918  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_1838567325846182821+e30acd3a/model.neff
+2026-10-13 22:38:51.000642:  1686908  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_1838567325846182821+e30acd3a/model.neff
+2026-10-13 22:38:51.000643:  1686934  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_1838567325846182821+e30acd3a/model.neff
+2026-10-13 22:38:51.000645:  1686922  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_1838567325846182821+e30acd3a/model.neff
+2026-10-13 22:38:51.000645:  1686917  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_1838567325846182821+e30acd3a/model.neff
+2026-10-13 22:38:51.000646:  1686932  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_1838567325846182821+e30acd3a/model.neff
+2026-10-13 22:38:51.000647:  1686906  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_1838567325846182821+e30acd3a/model.neff
+2026-10-13 22:38:51.000647:  1686913  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_1838567325846182821+e30acd3a/model.neff
+2026-10-13 22:38:51.000648:  1686916  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_1838567325846182821+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:97: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:97: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:97: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:97: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+2026-10-13 22:38:51.000690:  1686910  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_1838567325846182821+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-13 22:38:51.000693:  1686912  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_1838567325846182821+e30acd3a/model.neff
+2026-10-13 22:38:51.000694:  1686935  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_1838567325846182821+e30acd3a/model.neff
+2026-10-13 22:38:51.000704:  1686914  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_1838567325846182821+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:97: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:97: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:97: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:97: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:97: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:97: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:97: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:97: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-13 22:38:51.000725:  1686928  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_1838567325846182821+e30acd3a/model.neff
+2026-10-13 22:38:51.000725:  1686921  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_1838567325846182821+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:97: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-13 22:38:51.000729:  1686929  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_1838567325846182821+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:97: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+2026-10-13 22:38:51.000730:  1686924  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_1838567325846182821+e30acd3a/model.neff
+2026-10-13 22:38:51.000730:  1686915  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_1838567325846182821+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:97: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+2026-10-13 22:38:51.000733:  1686933  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_1838567325846182821+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:97: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:97: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-13 22:38:51.000737:  1686905  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_1838567325846182821+e30acd3a/model.neff
+2026-10-13 22:38:51.000741:  1686920  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_1838567325846182821+e30acd3a/model.neff
+2026-10-13 22:38:51.000741:  1686919  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_1838567325846182821+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:97: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+2026-10-13 22:38:51.000744:  1686931  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_1838567325846182821+e30acd3a/model.neff
+2026-10-13 22:38:51.000746:  1686925  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_1838567325846182821+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:97: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-13 22:38:51.000755:  1686907  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_1838567325846182821+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-13 22:38:51.000761:  1686930  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_1838567325846182821+e30acd3a/model.neff
+2026-10-13 22:38:51.000761:  1686909  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_1838567325846182821+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-13 22:38:51.000767:  1686927  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_1838567325846182821+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+................................Completed run_backend_driver.
+Completed run_backend_driver.
+Completed run_backend_driver.
+Completed run_backend_driver.
+Completed run_backend_driver.
+Completed run_backend_driver.
+Completed run_backend_driver.
+Completed run_backend_driver.
+Completed run_backend_driver.
+Completed run_backend_driver.
+Completed run_backend_driver.
+Completed run_backend_driver.
+Completed run_backend_driver.
+
+Completed run_backend_driver.
+Compiler status PASS
+Completed run_backend_driver.
+Completed run_backend_driver.
+Completed run_backend_driver.
+Completed run_backend_driver.
+
+Compiler status PASS
+Completed run_backend_driver.
+Completed run_backend_driver.
+
+Compiler status PASS
+Completed run_backend_driver.
+
+Compiler status PASS
+Completed run_backend_driver.
+Completed run_backend_driver.
+Completed run_backend_driver.
+Completed run_backend_driver.
+
+Completed run_backend_driver.
+Compiler status PASS
+
+Completed run_backend_driver.
+Completed run_backend_driver.
+2026-10-13 22:38:53.000771:  1686926  [INFO]: Compilation Successfully Completed for model.MODULE_1611379962455083243+e30acd3a.hlo_module.pb
+Compiler status PASS
+Completed run_backend_driver.
+
+Compiler status PASS
+Completed run_backend_driver.
+2026-10-13 22:38:53.000796:  1686918  [INFO]: Compilation Successfully Completed for model.MODULE_3154813155817678037+e30acd3a.hlo_module.pb
+2026-10-13 22:38:53.000803:  1686913  [INFO]: Compilation Successfully Completed for model.MODULE_7055937773575252887+e30acd3a.hlo_module.pb
+
+
+Compiler status PASS
+Compiler status PASS
+2026-10-13 22:38:53.000816:  1686908  [INFO]: Compilation Successfully Completed for model.MODULE_8603220046551149963+e30acd3a.hlo_module.pb
+
+Compiler status PASS
+
+Compiler status PASS
+2026-10-13 22:38:53.000840:  1686906  [INFO]: Compilation Successfully Completed for model.MODULE_9027773595171457039+e30acd3a.hlo_module.pb
+2026-10-13 22:38:53.000846:  1686904  [INFO]: Compilation Successfully Completed for model.MODULE_18257288794597187275+e30acd3a.hlo_module.pb
+
+Compiler status PASS
+2026-10-13 22:38:53.000858:  1686932  [INFO]: Compilation Successfully Completed for model.MODULE_8676056569858228505+e30acd3a.hlo_module.pb
+
+Compiler status PASS
+
+Completed run_backend_driver.
+Compiler status PASS
+2026-10-13 22:38:53.000874:  1686911  [INFO]: Compilation Successfully Completed for model.MODULE_6801471496594309276+e30acd3a.hlo_module.pb
+2026-10-13 22:38:53.000875:  1686910  [INFO]: Compilation Successfully Completed for model.MODULE_17287723727406483881+e30acd3a.hlo_module.pb
+
+Compiler status PASS
+
+
+Compiler status PASS
+Compiler status PASS
+
+Compiler status PASS
+Completed run_backend_driver.
+2026-10-13 22:38:53.000897:  1686916  [INFO]: Compilation Successfully Completed for model.MODULE_5884904762813186501+e30acd3a.hlo_module.pb
+
+
+Compiler status PASS
+2026-10-13 22:38:53.000903:  1686923  [INFO]: Compilation Successfully Completed for model.MODULE_1423446810864778652+e30acd3a.hlo_module.pb
+Compiler status PASS
+
+
+Compiler status PASS
+Compiler status PASS
+2026-10-13 22:38:53.000932:  1686934  [INFO]: Compilation Successfully Completed for model.MODULE_2854362725533810067+e30acd3a.hlo_module.pb
+
+Compiler status PASS
+
+
+
+Compiler status PASS
+Compiler status PASS
+Compiler status PASS
+
+
+Compiler status PASS
+Compiler status PASS
+2026-10-13 22:38:53.000947:  1686912  [INFO]: Compilation Successfully Completed for model.MODULE_8061977355250512259+e30acd3a.hlo_module.pb
+
+Compiler status PASS
+2026-10-13 22:38:53.000957:  1686921  [INFO]: Compilation Successfully Completed for model.MODULE_1337503290747203684+e30acd3a.hlo_module.pb
+2026-10-13 22:38:53.000958:  1686935  [INFO]: Compilation Successfully Completed for model.MODULE_14112580971595688911+e30acd3a.hlo_module.pb
+2026-10-13 22:38:53.000958:  1686917  [INFO]: Compilation Successfully Completed for model.MODULE_6743079481268440432+e30acd3a.hlo_module.pb
+2026-10-13 22:38:53.000960:  1686933  [INFO]: Compilation Successfully Completed for model.MODULE_292144691878193401+e30acd3a.hlo_module.pb
+2026-10-13 22:38:53.000966:  1686914  [INFO]: Compilation Successfully Completed for model.MODULE_8734999407445662541+e30acd3a.hlo_module.pb
+2026-10-13 22:38:53.000969:  1686924  [INFO]: Compilation Successfully Completed for model.MODULE_5374856180448368909+e30acd3a.hlo_module.pb
+
+Compiler status PASS
+2026-10-13 22:38:53.000983:  1686922  [INFO]: Compilation Successfully Completed for model.MODULE_5585650577460843926+e30acd3a.hlo_module.pb
+2026-10-13 22:38:54.000001:  1686929  [INFO]: Compilation Successfully Completed for model.MODULE_15192191046363487405+e30acd3a.hlo_module.pb
+2026-10-13 22:38:54.000002:  1686925  [INFO]: Compilation Successfully Completed for model.MODULE_14683737575775007106+e30acd3a.hlo_module.pb
+2026-10-13 22:38:54.000002:  1686931  [INFO]: Compilation Successfully Completed for model.MODULE_12206487788727056234+e30acd3a.hlo_module.pb
+2026-10-13 22:38:54.000011:  1686928  [INFO]: Compilation Successfully Completed for model.MODULE_10883439923995367256+e30acd3a.hlo_module.pb
+2026-10-13 22:38:54.000015:  1686915  [INFO]: Compilation Successfully Completed for model.MODULE_5800072009064161107+e30acd3a.hlo_module.pb
+
+2026-10-13 22:38:54.000020:  1686905  [INFO]: Compilation Successfully Completed for model.MODULE_4473260276946709083+e30acd3a.hlo_module.pb
+Compiler status PASS
+2026-10-13 22:38:54.000021:  1686927  [INFO]: Compilation Successfully Completed for model.MODULE_6253998956741494720+e30acd3a.hlo_module.pb
+2026-10-13 22:38:54.000022:  1686909  [INFO]: Compilation Successfully Completed for model.MODULE_8933306530820626707+e30acd3a.hlo_module.pb
+2026-10-13 22:38:54.000023:  1686920  [INFO]: Compilation Successfully Completed for model.MODULE_13084380908999250891+e30acd3a.hlo_module.pb
+
+Compiler status PASS
+2026-10-13 22:38:54.000057:  1686907  [INFO]: Compilation Successfully Completed for model.MODULE_16923708650218924127+e30acd3a.hlo_module.pb
+2026-10-13 22:38:54.000082:  1686919  [INFO]: Compilation Successfully Completed for model.MODULE_1234950212778986957+e30acd3a.hlo_module.pb
+2026-10-13 22:38:54.000093:  1686930  [INFO]: Compilation Successfully Completed for model.MODULE_1572941443618406654+e30acd3a.hlo_module.pb
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+[init] warmup done
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-13 22:39:15.000388:  1686904  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_6565888815020900294+e30acd3a/model.neff
+2026-10-13 22:39:15.000388:  1686922  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_6565888815020900294+e30acd3a/model.neff
+2026-10-13 22:39:15.000389:  1686925  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_6565888815020900294+e30acd3a/model.neff
+2026-10-13 22:39:15.000389:  1686930  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_6565888815020900294+e30acd3a/model.neff
+2026-10-13 22:39:15.000390:  1686916  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_6565888815020900294+e30acd3a/model.neff
+2026-10-13 22:39:15.000390:  1686934  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_6565888815020900294+e30acd3a/model.neff
+2026-10-13 22:39:15.000391:  1686932  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_6565888815020900294+e30acd3a/model.neff
+2026-10-13 22:39:15.000391:  1686917  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_6565888815020900294+e30acd3a/model.neff
+2026-10-13 22:39:15.000392:  1686905  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_6565888815020900294+e30acd3a/model.neff
+2026-10-13 22:39:15.000393:  1686912  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_6565888815020900294+e30acd3a/model.neff
+2026-10-13 22:39:15.000393:  1686926  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_6565888815020900294+e30acd3a/model.neff
+2026-10-13 22:39:15.000394:  1686918  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_6565888815020900294+e30acd3a/model.neff
+2026-10-13 22:39:15.000394:  1686908  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_6565888815020900294+e30acd3a/model.neff
+2026-10-13 22:39:15.000394:  1686914  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_6565888815020900294+e30acd3a/model.neff
+2026-10-13 22:39:15.000395:  1686906  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_6565888815020900294+e30acd3a/model.neff
+2026-10-13 22:39:15.000397:  1686907  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_6565888815020900294+e30acd3a/model.neff
+2026-10-13 22:39:15.000397:  1686931  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_6565888815020900294+e30acd3a/model.neff
+2026-10-13 22:39:15.000397:  1686910  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_6565888815020900294+e30acd3a/model.neff
+2026-10-13 22:39:15.000398:  1686927  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_6565888815020900294+e30acd3a/model.neff
+2026-10-13 22:39:15.000399:  1686935  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_6565888815020900294+e30acd3a/model.neff
+2026-10-13 22:39:15.000400:  1686911  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_6565888815020900294+e30acd3a/model.neff
+2026-10-13 22:39:15.000401:  1686920  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_6565888815020900294+e30acd3a/model.neff
+2026-10-13 22:39:15.000402:  1686909  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_6565888815020900294+e30acd3a/model.neff
+2026-10-13 22:39:15.000405:  1686923  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_6565888815020900294+e30acd3a/model.neff
+2026-10-13 22:39:15.000405:  1686921  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_6565888815020900294+e30acd3a/model.neff
+2026-10-13 22:39:15.000405:  1686913  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_6565888815020900294+e30acd3a/model.neff
+2026-10-13 22:39:15.000406:  1686919  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_6565888815020900294+e30acd3a/model.neff
+2026-10-13 22:39:15.000408:  1686933  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_6565888815020900294+e30acd3a/model.neff
+2026-10-13 22:39:15.000408:  1686915  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_6565888815020900294+e30acd3a/model.neff
+2026-10-13 22:39:15.000408:  1686928  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_6565888815020900294+e30acd3a/model.neff
+2026-10-13 22:39:15.000409:  1686929  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_6565888815020900294+e30acd3a/model.neff
+2026-10-13 22:39:15.000409:  1686924  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_6565888815020900294+e30acd3a/model.neff
+2026-Oct-13 22:39:26.0000 1686921:1699530 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev3 mlaDev17] recvProxy: TIMEOUT, 0 d2026-Oct-13 22:39:26.0000 1686923:1699535 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev3 mlaDev19] sendProxy: TIMEOUT, 0 d2026-Oct-13 22:39:26.0000 1686905:1699531 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev1 mlaDev1] recvProxy: TIMEOUT, 0 do2026-Oct-13 22:39:26.0000 1686934:1699521 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev6 mlaDev30] sendProxy: TIMEOUT, 0 d2026-Oct-13 22:39:26.0000 1686915:1699536 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev2 mlaDev11] sendProxy: TIMEOUT, 0 d2026-Oct-13 22:39:26.0000 1686928:1699540 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev0 mlaDev24] sendProxy: TIMEOUT, 0 d2026-Oct-13 22:39:26.0000 1686919:1699548 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev4 mlaDev15] sendProxy: TIMEOUT, 0 dne / 0 posted
+one / 0 posted
+one / 0 posted
+one / 0 posted
+2026-Oct-13 22:39:26.0000 1686907:1699544 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev1 mlaDev3] sendProxy: TIMEOUT, 0 doone / 0 posted
+2026-Oct-13 22:39:26.0000 1686929:1699542 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev0 mlaDev25] sendProxy: TIMEOUT, 0 dne / 0 posted
+one / 0 posted
+2026-Oct-13 22:39:26.0000 1686909:1699547 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev7 mlaDev5] sendProxy: TIMEOUT, 0 do2026-Oct-13 22:39:26.0000 1686910:1699517 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev7 mlaDev6] recvProxy: TIMEOUT, 0 do2026-Oct-13 22:39:26.0000 1686926:1699518 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev5 mlaDev22] sendProxy: TIMEOUT, 0 dne / 0 posted
+ne / 0 posted
+2026-Oct-13 22:39:26.0000 1686908:1699522 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev7 mlaDev4] sendProxy: TIMEOUT, 0 do2026-Oct-13 22:39:26.0000 1686931:1699546 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev0 mlaDev27] sendProxy: TIMEOUT, 0 d2026-Oct-13 22:39:26.0000 1686906:1699525 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev1 mlaDev2] sendProxy: TIMEOUT, 0 do2026-Oct-13 22:39:26.0000 1686927:1699526 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev5 mlaDev23] sendProxy: TIMEOUT, 0 d2026-Oct-13 22:39:26.0000 1686911:1699527 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev7 mlaDev7] sendProxy: TIMEOUT, 0 do2026-Oct-13 22:39:26.0000 1686916:1699528 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev4 mlaDev12] sendProxy: TIMEOUT, 0 d2026-Oct-13 22:39:26.0000 1686932:1699523 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev6 mlaDev28] sendProxy: TIMEOUT, 0 dne / 0 posted
+2026-Oct-13 22:39:26.0000 1686917:1699534 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev4 mlaDev13] sendProxy: TIMEOUT, 0 d2026-Oct-13 22:39:26.0000 1686918:1699520 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev4 mlaDev14] sendProxy: TIMEOUT, 0 d2026-Oct-13 22:39:26.0000 1686925:1699524 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev5 mlaDev21] sendProxy: TIMEOUT, 0 d2026-Oct-13 22:39:26.0000 1686935:1699539 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev6 mlaDev31] sendProxy: TIMEOUT, 0 d2026-Oct-13 22:39:26.0000 1686924:1699519 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev5 mlaDev20] sendProxy: TIMEOUT, 0 done / 0 posted
+one / 0 posted
+2026-Oct-13 22:39:26.0000 1686909:1699547 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev7 mlaDev5] recvProxy: TIMEOUT, 0 doone / 0 posted
+one / 0 posted
+ne / 0 posted
+2026-Oct-13 22:39:26.0000 1686913:1699532 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev2 mlaDev9] sendProxy: TIMEOUT, 0 do2026-Oct-13 22:39:26.0000 1686933:1699545 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev6 mlaDev29] sendProxy: TIMEOUT, 0 d2026-Oct-13 22:39:26.0000 1686922:1699533 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev3 mlaDev18] sendProxy: TIMEOUT, 0 dne / 0 posted
+2026-Oct-13 22:39:26.0000 1686904:1699529 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev1 mlaDev0] sendProxy: TIMEOUT, 0 doone / 0 posted
+2026-Oct-13 22:39:26.0000 1686930:1699543 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev0 mlaDev26] sendProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-13 22:39:26.0000 1686912:1699541 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev2 mlaDev8] sendProxy: TIMEOUT, 0 do2026-Oct-13 22:39:26.0000 1686914:1699538 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev2 mlaDev10] sendProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-13 22:39:26.0000 1686920:1699537 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev3 mlaDev16] sendProxy: TIMEOUT, 0 dne / 0 posted
+ne / 0 posted
+one / 0 posted
+one / 0 posted
+2026-Oct-13 22:39:26.0000 1686921:1699530 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev3 mlaDev17] sendProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-13 22:39:26.0000 1686915:1699536 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev2 mlaDev11] recvProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-13 22:39:26.0000 1686929:1699542 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev0 mlaDev25] recvProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-13 22:39:26.0000 1686907:1699544 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev1 mlaDev3] recvProxy: TIMEOUT, 0 do2026-Oct-13 22:39:26.0000 1686928:1699540 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev0 mlaDev24] recvProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-13 22:39:26.0000 1686926:1699518 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev5 mlaDev22] recvProxy: TIMEOUT, 0 d2026-Oct-13 22:39:26.0000 1686934:1699521 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev6 mlaDev30] recvProxy: TIMEOUT, 0 d2026-Oct-13 22:39:26.0000 1686910:1699517 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev7 mlaDev6] sendProxy: TIMEOUT, 0 doone / 0 posted
+one / 0 posted
+ne / 0 posted
+one / 0 posted
+2026-Oct-13 22:39:26.0000 1686911:1699527 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev7 mlaDev7] recvProxy: TIMEOUT, 0 do2026-Oct-13 22:39:26.0000 1686920:1699537 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev3 mlaDev16] recvProxy: TIMEOUT, 0 d2026-Oct-13 22:39:26.0000 1686906:1699525 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev1 mlaDev2] recvProxy: TIMEOUT, 0 doone / 0 posted
+ne / 0 posted
+ne / 0 posted
+2026-Oct-13 22:39:26.0000 1686925:1699524 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev5 mlaDev21] recvProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-13 22:39:26.0000 1686918:1699520 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev4 mlaDev14] recvProxy: TIMEOUT, 0 d2026-Oct-13 22:39:26.0000 1686935:1699539 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev6 mlaDev31] recvProxy: TIMEOUT, 0 dne / 0 posted
+2026-Oct-13 22:39:26.0000 1686923:1699535 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev3 mlaDev19] recvProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-13 22:39:26.0000 1686913:1699532 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev2 mlaDev9] recvProxy: TIMEOUT, 0 do2026-Oct-13 22:39:26.0000 1686922:1699533 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev3 mlaDev18] recvProxy: TIMEOUT, 0 done / 0 posted
+one / 0 posted
+one / 0 posted
+one / 0 posted
+ne / 0 posted
+one / 0 posted
+2026-Oct-13 22:39:26.0000 1686933:1699545 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev6 mlaDev29] recvProxy: TIMEOUT, 0 d2026-Oct-13 22:39:26.0000 1686908:1699522 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev7 mlaDev4] recvProxy: TIMEOUT, 0 done / 0 posted
+one / 0 posted
+2026-Oct-13 22:39:26.0000 1686931:1699546 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev0 mlaDev27] recvProxy: TIMEOUT, 0 d2026-Oct-13 22:39:26.0000 1686930:1699543 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev0 mlaDev26] recvProxy: TIMEOUT, 0 d2026-Oct-13 22:39:26.0000 1686916:1699528 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev4 mlaDev12] recvProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-13 22:39:26.0000 1686927:1699526 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev5 mlaDev23] recvProxy: TIMEOUT, 0 done / 0 posted
+one / 0 posted
+2026-Oct-13 22:39:26.0000 1686932:1699523 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev6 mlaDev28] recvProxy: TIMEOUT, 0 done / 0 posted
+one / 0 posted
+2026-Oct-13 22:39:26.0000 1686917:1699534 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev4 mlaDev13] recvProxy: TIMEOUT, 0 done / 0 posted
+one / 0 posted
+one / 0 posted
+2026-Oct-13 22:39:26.0000 1686924:1699519 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev5 mlaDev20] recvProxy: TIMEOUT, 0 dne / 0 posted
+one / 0 posted
+ne / 0 posted
+one / 0 posted
+2026-Oct-13 22:39:26.0000 1686904:1699529 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev1 mlaDev0] recvProxy: TIMEOUT, 0 doone / 0 posted
+one / 0 posted
+ne / 0 posted
+2026-Oct-13 22:39:26.0000 1686912:1699541 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev2 mlaDev8] recvProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-13 22:39:26.0000 1686914:1699538 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev2 mlaDev10] recvProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-13 22:39:26.0001 1686905:1699531 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev1 mlaDev1] sendProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-13 22:39:26.0003 1686919:1699548 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev4 mlaDev15] recvProxy: TIMEOUT, 0 done / 0 posted
+  step 50: median_ms=6.93
+  step 100: median_ms=6.89
+  step 150: median_ms=6.84
+  step 200: median_ms=6.89
+  step 250: median_ms=6.72
+................................Completed run_backend_driver.
+Completed run_backend_driver.
+Completed run_backend_driver.
+Completed run_backend_driver.
+Completed run_backend_driver.
+Completed run_backend_driver.
+Completed run_backend_driver.
+Completed run_backend_driver.
+Completed run_backend_driver.
+Completed run_backend_driver.
+Completed run_backend_driver.
+Completed run_backend_driver.
+Completed run_backend_driver.
+
+Completed run_backend_driver.
+Compiler status PASS
+Completed run_backend_driver.
+Completed run_backend_driver.
+Completed run_backend_driver.
+Completed run_backend_driver.
+
+Compiler status PASS
+Completed run_backend_driver.
+Completed run_backend_driver.
+Completed run_backend_driver.
+Completed run_backend_driver.
+Completed run_backend_driver.
+Completed run_backend_driver.
+Completed run_backend_driver.
+Completed run_backend_driver.
+2026-10-13 22:39:34.000511:  1686919  [INFO]: Compilation Successfully Completed for model.MODULE_8016890272206958847+e30acd3a.hlo_module.pb
+Completed run_backend_driver.
+Completed run_backend_driver.
+
+Compiler status PASS
+Completed run_backend_driver.
+2026-10-13 22:39:34.000544:  1686927  [INFO]: Compilation Successfully Completed for model.MODULE_4844040597220848473+e30acd3a.hlo_module.pb
+Completed run_backend_driver.
+Completed run_backend_driver.
+2026-10-13 22:39:34.000592:  1686931  [INFO]: Compilation Successfully Completed for model.MODULE_18240559951490118695+e30acd3a.hlo_module.pb
+Completed run_backend_driver.
+
+
+Compiler status PASS
+Compiler status PASS
+
+Compiler status PASS
+
+Compiler status PASS
+
+Compiler status PASS
+
+
+Compiler status PASS
+Compiler status PASS
+
+
+
+
+Compiler status PASS
+Compiler status PASS
+Compiler status PASS
+Compiler status PASS
+
+
+
+Compiler status PASS
+Compiler status PASS
+Compiler status PASS
+
+Compiler status PASS
+
+Compiler status PASS
+
+
+Compiler status PASS
+Compiler status PASS
+2026-10-13 22:39:34.000675:  1686906  [INFO]: Compilation Successfully Completed for model.MODULE_11017536105751300623+e30acd3a.hlo_module.pb
+2026-10-13 22:39:34.000676:  1686934  [INFO]: Compilation Successfully Completed for model.MODULE_5280080543991721334+e30acd3a.hlo_module.pb
+2026-10-13 22:39:34.000678:  1686928  [INFO]: Compilation Successfully Completed for model.MODULE_9808956050514004798+e30acd3a.hlo_module.pb
+2026-10-13 22:39:34.000682:  1686923  [INFO]: Compilation Successfully Completed for model.MODULE_9513675533763177739+e30acd3a.hlo_module.pb
+
+Compiler status PASS
+
+Compiler status PASS
+
+Compiler status PASS
+
+Compiler status PASS
+
+Compiler status PASS
+
+Compiler status PASS
+2026-10-13 22:39:34.000712:  1686930  [INFO]: Compilation Successfully Completed for model.MODULE_17222969595958057106+e30acd3a.hlo_module.pb
+2026-10-13 22:39:34.000716:  1686926  [INFO]: Compilation Successfully Completed for model.MODULE_5570931852385803977+e30acd3a.hlo_module.pb
+
+Compiler status PASS
+2026-10-13 22:39:34.000723:  1686917  [INFO]: Compilation Successfully Completed for model.MODULE_747703169207187330+e30acd3a.hlo_module.pb
+
+Compiler status PASS
+2026-10-13 22:39:34.000734:  1686905  [INFO]: Compilation Successfully Completed for model.MODULE_3696469979071351862+e30acd3a.hlo_module.pb
+2026-10-13 22:39:34.000735:  1686907  [INFO]: Compilation Successfully Completed for model.MODULE_5993176529746271219+e30acd3a.hlo_module.pb
+2026-10-13 22:39:34.000738:  1686932  [INFO]: Compilation Successfully Completed for model.MODULE_3130855759230169824+e30acd3a.hlo_module.pb
+2026-10-13 22:39:34.000743:  1686913  [INFO]: Compilation Successfully Completed for model.MODULE_13442060783265100821+e30acd3a.hlo_module.pb
+2026-10-13 22:39:34.000744:  1686924  [INFO]: Compilation Successfully Completed for model.MODULE_364750783986789624+e30acd3a.hlo_module.pb
+2026-10-13 22:39:34.000745:  1686918  [INFO]: Compilation Successfully Completed for model.MODULE_14341077547971556024+e30acd3a.hlo_module.pb
+
+Compiler status PASS
+2026-10-13 22:39:34.000752:  1686904  [INFO]: Compilation Successfully Completed for model.MODULE_10191849431637528609+e30acd3a.hlo_module.pb
+
+Compiler status PASS
+2026-10-13 22:39:34.000756:  1686920  [INFO]: Compilation Successfully Completed for model.MODULE_16058592685035102719+e30acd3a.hlo_module.pb
+2026-10-13 22:39:34.000760:  1686911  [INFO]: Compilation Successfully Completed for model.MODULE_7546452685954632018+e30acd3a.hlo_module.pb
+2026-10-13 22:39:34.000761:  1686912  [INFO]: Compilation Successfully Completed for model.MODULE_10438324049578227318+e30acd3a.hlo_module.pb
+
+Compiler status PASS
+2026-10-13 22:39:34.000781:  1686908  [INFO]: Compilation Successfully Completed for model.MODULE_703889214891520418+e30acd3a.hlo_module.pb
+2026-10-13 22:39:34.000781:  1686916  [INFO]: Compilation Successfully Completed for model.MODULE_17715355011680583336+e30acd3a.hlo_module.pb
+2026-10-13 22:39:34.000790:  1686915  [INFO]: Compilation Successfully Completed for model.MODULE_10363201451602088693+e30acd3a.hlo_module.pb
+2026-10-13 22:39:34.000793:  1686910  [INFO]: Compilation Successfully Completed for model.MODULE_1317253748943967430+e30acd3a.hlo_module.pb
+2026-10-13 22:39:34.000793:  1686914  [INFO]: Compilation Successfully Completed for model.MODULE_1490780367639406243+e30acd3a.hlo_module.pb
+2026-10-13 22:39:34.000796:  1686933  [INFO]: Compilation Successfully Completed for model.MODULE_16702767677560375214+e30acd3a.hlo_module.pb
+2026-10-13 22:39:34.000801:  1686925  [INFO]: Compilation Successfully Completed for model.MODULE_4413458968506306983+e30acd3a.hlo_module.pb
+2026-10-13 22:39:34.000802:  1686921  [INFO]: Compilation Successfully Completed for model.MODULE_6905069353640082130+e30acd3a.hlo_module.pb
+2026-10-13 22:39:34.000821:  1686909  [INFO]: Compilation Successfully Completed for model.MODULE_2636422452998436910+e30acd3a.hlo_module.pb
+2026-10-13 22:39:34.000821:  1686922  [INFO]: Compilation Successfully Completed for model.MODULE_1035933035822440773+e30acd3a.hlo_module.pb
+2026-10-13 22:39:34.000825:  1686935  [INFO]: Compilation Successfully Completed for model.MODULE_17534515110768879144+e30acd3a.hlo_module.pb
+2026-10-13 22:39:34.000830:  1686929  [INFO]: Compilation Successfully Completed for model.MODULE_5507606747307486437+e30acd3a.hlo_module.pb
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:121: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py:63: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+  step 300: median_ms=7.50
+[bench] ring_kv agent steady_mean=18.80ms steady_median=6.89ms

@@ -1,0 +1,359 @@
+{
+ "pp_send_recv": {
+  "grammar_size": 4,
+  "valid": 4,
+  "exhaustive_opt": [
+   "{\"bundle\": \"all_mb\", \"pack\": \"stack\"}",
+   292.99999999999994
+  ],
+  "beam": {
+   "best": 292.99999999999994,
+   "genome": {
+    "bundle": "all_mb",
+    "pack": "stack"
+   },
+   "evals": 4
+  },
+  "ga": {
+   "best": 292.99999999999994,
+   "genome": {
+    "bundle": "all_mb",
+    "pack": "stack"
+   },
+   "evals": 40
+  },
+  "random": {
+   "best": 292.99999999999994,
+   "genome": {
+    "bundle": "all_mb",
+    "pack": "stack"
+   },
+   "evals": 40
+  },
+  "baseline": {
+   "genome": {
+    "bundle": "per_mb",
+    "pack": "stack"
+   },
+   "sim": 40256.0
+  },
+  "all": {
+   "{\"bundle\": \"per_mb\", \"pack\": \"stack\"}": 40256.0,
+   "{\"bundle\": \"per_mb\", \"pack\": \"cat\"}": 40256.0,
+   "{\"bundle\": \"all_mb\", \"pack\": \"stack\"}": 292.99999999999994,
+   "{\"bundle\": \"all_mb\", \"pack\": \"cat\"}": 357.0
+  },
+  "secs": 0.6
+ },
+ "tp_mlp": {
+  "grammar_size": 8,
+  "valid": 8,
+  "exhaustive_opt": [
+   "{\"bundle\": \"all\", \"pack\": \"stack\"}",
+   199.99999999999997
+  ],
+  "beam": {
+   "best": 199.99999999999997,
+   "genome": {
+    "bundle": "all",
+    "pack": "stack"
+   },
+   "evals": 8
+  },
+  "ga": {
+   "best": 199.99999999999997,
+   "genome": {
+    "bundle": "all",
+    "pack": "stack"
+   },
+   "evals": 40
+  },
+  "random": {
+   "best": 199.99999999999997,
+   "genome": {
+    "bundle": "all",
+    "pack": "stack"
+   },
+   "evals": 40
+  },
+  "baseline": {
+   "genome": {
+    "bundle": "per_call",
+    "pack": "stack"
+   },
+   "sim": 860.0
+  },
+  "all": {
+   "{\"bundle\": \"per_call\", \"pack\": \"stack\"}": 860.0,
+   "{\"bundle\": \"per_call\", \"pack\": \"flatten\"}": 860.0,
+   "{\"bundle\": \"per_mb\", \"pack\": \"stack\"}": 38400.0,
+   "{\"bundle\": \"per_mb\", \"pack\": \"flatten\"}": 38400.0,
+   "{\"bundle\": \"per_layer\", \"pack\": \"stack\"}": 399.99999999999994,
+   "{\"bundle\": \"per_layer\", \"pack\": \"flatten\"}": 399.99999999999994,
+   "{\"bundle\": \"all\", \"pack\": \"stack\"}": 199.99999999999997,
+   "{\"bundle\": \"all\", \"pack\": \"flatten\"}": 455.99999999999994
+  },
+  "secs": 2.5
+ },
+ "fsdp_prefetch": {
+  "grammar_size": 3,
+  "valid": 3,
+  "exhaustive_opt": [
+   "{\"bundle\": \"all\"}",
+   199.99999999999997
+  ],
+  "beam": {
+   "best": 199.99999999999997,
+   "genome": {
+    "bundle": "all"
+   },
+   "evals": 3
+  },
+  "ga": {
+   "best": 199.99999999999997,
+   "genome": {
+    "bundle": "all"
+   },
+   "evals": 40
+  },
+  "random": {
+   "best": 199.99999999999997,
+   "genome": {
+    "bundle": "all"
+   },
+   "evals": 40
+  },
+  "baseline": {
+   "genome": {
+    "bundle": "per_call"
+   },
+   "sim": 860.0
+  },
+  "all": {
+   "{\"bundle\": \"per_call\"}": 860.0,
+   "{\"bundle\": \"per_mb\"}": 38400.0,
+   "{\"bundle\": \"all\"}": 199.99999999999997
+  },
+  "secs": 0.9
+ },
+ "llama_block_ar": {
+  "grammar_size": 4,
+  "valid": 4,
+  "exhaustive_opt": [
+   "{\"bundle\": \"one_ar\", \"pack\": \"stack\"}",
+   199.99999999999997
+  ],
+  "beam": {
+   "best": 199.99999999999997,
+   "genome": {
+    "bundle": "one_ar",
+    "pack": "stack"
+   },
+   "evals": 4
+  },
+  "ga": {
+   "best": 199.99999999999997,
+   "genome": {
+    "bundle": "one_ar",
+    "pack": "stack"
+   },
+   "evals": 40
+  },
+  "random": {
+   "best": 199.99999999999997,
+   "genome": {
+    "bundle": "one_ar",
+    "pack": "stack"
+   },
+   "evals": 40
+  },
+  "baseline": {
+   "genome": {
+    "bundle": "two_ar",
+    "pack": "stack"
+   },
+   "sim": 260.0
+  },
+  "all": {
+   "{\"bundle\": \"two_ar\", \"pack\": \"stack\"}": 260.0,
+   "{\"bundle\": \"two_ar\", \"pack\": \"cat\"}": 260.0,
+   "{\"bundle\": \"one_ar\", \"pack\": \"stack\"}": 199.99999999999997,
+   "{\"bundle\": \"one_ar\", \"pack\": \"cat\"}": 206.0
+  },
+  "secs": 0.1
+ },
+ "dxe": {
+  "grammar_size": 3,
+  "valid": 3,
+  "exhaustive_opt": [
+   "{\"structure\": \"one_ag\"}",
+   244.0
+  ],
+  "beam": {
+   "best": 244.0,
+   "genome": {
+    "structure": "one_ag"
+   },
+   "evals": 3
+  },
+  "ga": {
+   "best": 244.0,
+   "genome": {
+    "structure": "one_ag"
+   },
+   "evals": 40
+  },
+  "random": {
+   "best": 244.0,
+   "genome": {
+    "structure": "one_ag"
+   },
+   "evals": 40
+  },
+  "baseline": {
+   "genome": {
+    "structure": "one_ag"
+   },
+   "sim": 244.0
+  },
+  "all": {
+   "{\"structure\": \"one_ag\"}": 244.0,
+   "{\"structure\": \"three_ar\"}": 707.3,
+   "{\"structure\": \"max_plus_stacked_sum\"}": 509.29999999999995
+  },
+  "secs": 0.0
+ },
+ "alltoallv": {
+  "grammar_size": 4,
+  "valid": 4,
+  "exhaustive_opt": [
+   "{\"extract\": \"loop_cat\", \"structure\": \"ag_slice\"}",
+   708.0
+  ],
+  "beam": {
+   "best": 708.0,
+   "genome": {
+    "structure": "ag_slice",
+    "extract": "loop_cat"
+   },
+   "evals": 4
+  },
+  "ga": {
+   "best": 708.0,
+   "genome": {
+    "structure": "ag_slice",
+    "extract": "loop_cat"
+   },
+   "evals": 40
+  },
+  "random": {
+   "best": 708.0,
+   "genome": {
+    "structure": "ag_slice",
+    "extract": "loop_cat"
+   },
+   "evals": 40
+  },
+  "baseline": {
+   "genome": {
+    "structure": "ag_rs",
+    "extract": "loop_cat"
+   },
+   "sim": 773.72
+  },
+  "all": {
+   "{\"extract\": \"loop_cat\", \"structure\": \"ag_rs\"}": 773.72,
+   "{\"extract\": \"view_col\", \"structure\": \"ag_rs\"}": 773.72,
+   "{\"extract\": \"loop_cat\", \"structure\": \"ag_slice\"}": 708.0,
+   "{\"extract\": \"view_col\", \"structure\": \"ag_slice\"}": 710.9999999999999
+  },
+  "secs": 0.6
+ },
+ "uniform_a2a": {
+  "grammar_size": 4,
+  "valid": 4,
+  "exhaustive_opt": [
+   "{\"extract\": \"view_col\", \"structure\": \"ag_slice\"}",
+   205.0
+  ],
+  "beam": {
+   "best": 205.0,
+   "genome": {
+    "structure": "ag_slice",
+    "extract": "view_col"
+   },
+   "evals": 4
+  },
+  "ga": {
+   "best": 205.0,
+   "genome": {
+    "structure": "ag_slice",
+    "extract": "view_col"
+   },
+   "evals": 40
+  },
+  "random": {
+   "best": 205.0,
+   "genome": {
+    "structure": "ag_slice",
+    "extract": "view_col"
+   },
+   "evals": 40
+  },
+  "baseline": {
+   "genome": {
+    "structure": "ag_rs",
+    "extract": "loop_cat"
+   },
+   "sim": 1208.5199999999998
+  },
+  "all": {
+   "{\"extract\": \"loop_cat\", \"structure\": \"ag_rs\"}": 1208.5199999999998,
+   "{\"extract\": \"view_col\", \"structure\": \"ag_rs\"}": 1208.5199999999998,
+   "{\"extract\": \"loop_cat\", \"structure\": \"ag_slice\"}": 455.0,
+   "{\"extract\": \"view_col\", \"structure\": \"ag_slice\"}": 205.0
+  },
+  "secs": 0.6
+ },
+ "ring_kv": {
+  "grammar_size": 3,
+  "valid": 3,
+  "exhaustive_opt": [
+   "{\"bundle\": \"joint\"}",
+   205.0
+  ],
+  "beam": {
+   "best": 205.0,
+   "genome": {
+    "bundle": "joint"
+   },
+   "evals": 3
+  },
+  "ga": {
+   "best": 205.0,
+   "genome": {
+    "bundle": "joint"
+   },
+   "evals": 40
+  },
+  "random": {
+   "best": 205.0,
+   "genome": {
+    "bundle": "joint"
+   },
+   "evals": 40
+  },
+  "baseline": {
+   "genome": {
+    "bundle": "per_chunk"
+   },
+   "sim": 839.0
+  },
+  "all": {
+   "{\"bundle\": \"per_chunk\"}": 839.0,
+   "{\"bundle\": \"per_slot\"}": 263.99999999999994,
+   "{\"bundle\": \"joint\"}": 205.0
+  },
+  "secs": 0.0
+ }
+}

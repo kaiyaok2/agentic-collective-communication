@@ -1,0 +1,55 @@
+measured candidates: 32
+
+=== hand-set default calibration: 29 (sim, measured) pairs ===
+overall Spearman rho = 0.14566135022943474
+  alltoallv       n=4 rho=0.63  sim-pick=builtin_ag_t_rs_inline_match (24.07 ms) measured-best=builtin_ag_t_rs_inline_match (24.07 ms) regret=0.0%
+  dxe             n=8 rho=-0.7  sim-pick=harness_baseline (15.38 ms) measured-best=r36brandom_dd3aa11f (7.98 ms) regret=92.7%
+  fsdp_prefetch   n=3 rho=1.0  sim-pick=r28nosim_train_72b4a7e0 (14.20 ms) measured-best=r28nosim_train_72b4a7e0 (14.20 ms) regret=0.0%
+  llama_block_ar  n=3 rho=0.87  sim-pick=r28nosim_train_8f7e002c (18.10 ms) measured-best=r28nosim_train_8f7e002c (18.10 ms) regret=0.0%
+  ring_kv         n=4 rho=0.95  sim-pick=builtin_joint_cat_allgather (4.83 ms) measured-best=builtin_joint_cat_allgather (4.83 ms) regret=0.0%
+  tp_mlp          n=5 rho=0.79  sim-pick=r28nosim_train_9a349b85 (11.70 ms) measured-best=paper_456211d8 (11.30 ms) regret=3.5%
+top-1 recall 4/6; mean regret 16.0%; max regret 92.7%
+
+=== recorded LLM calibration: 24 (sim, measured) pairs ===
+overall Spearman rho = 0.3328985857239174
+  alltoallv       n=5 rho=-0.05  sim-pick=paper_7ee07e87 (37.59 ms) measured-best=builtin_ag_t_rs_inline_match (24.07 ms) regret=56.2%
+  dxe             n=5 rho=-0.58  sim-pick=paper_e791408f (8.47 ms) measured-best=r36brandom_dd3aa11f (7.98 ms) regret=6.2%
+  fsdp_prefetch   n=2 rho=None  sim-pick=paper_daa256fa (15.20 ms) measured-best=paper_daa256fa (15.20 ms) regret=0.0%
+  llama_block_ar  n=3 rho=0.87  sim-pick=r28nosim_train_8f7e002c (18.10 ms) measured-best=r28nosim_train_8f7e002c (18.10 ms) regret=0.0%
+  ring_kv         n=4 rho=0.74  sim-pick=paper_2f6a05c4 (4.87 ms) measured-best=builtin_joint_cat_allgather (4.83 ms) regret=0.8%
+  tp_mlp          n=3 rho=0.87  sim-pick=paper_456211d8 (11.30 ms) measured-best=paper_456211d8 (11.30 ms) regret=0.0%
+top-1 recall 3/6; mean regret 10.5%; max regret 56.2%
+
+=== per-candidate table ===
+alltoallv__builtin_ag_t_rs_inline_match            meas=    24.07 ms  sim_def=267.71999999999997  sim_paper=6576.4388266666665
+alltoallv__builtin_hierarchical_intra_inter        meas=    37.44 ms  sim_def=None  sim_paper=5528.857828571428
+alltoallv__harness_baseline                        meas=    29.55 ms  sim_def=578.72  sim_paper=6794.7252266666665
+alltoallv__paper_7ee07e87                          meas=    37.59 ms  sim_def=708.0  sim_paper=5432.571428571429
+alltoallv__r42_1b07b1ae                            meas=    38.17 ms  sim_def=578.72  sim_paper=6794.7252266666665
+dxe__builtin_async_back_to_back                    meas=     8.67 ms  sim_def=567.3  sim_paper=5532.5
+dxe__builtin_full_vocab_ag                         meas=    13.52 ms  sim_def=247.0  sim_paper=None
+dxe__builtin_three_ar                              meas=     8.44 ms  sim_def=707.3  sim_paper=5712.5
+dxe__harness_baseline                              meas=    15.38 ms  sim_def=247.0  sim_paper=None
+dxe__paper_e791408f                                meas=     8.47 ms  sim_def=564.7  sim_paper=5525.2
+dxe__r28nosim_train_10815c6f                       meas=     8.32 ms  sim_def=468.09999999999997  sim_paper=None
+dxe__r36brandom_dd3aa11f                           meas=     7.98 ms  sim_def=707.3  sim_paper=5712.5
+dxe__r42_f2537e28                                  meas=     8.14 ms  sim_def=567.3  sim_paper=5532.5
+fsdp_prefetch__harness_baseline                    meas=    15.20 ms  sim_def=52059.99999999999  sim_paper=69868.8
+fsdp_prefetch__paper_daa256fa                      meas=    15.20 ms  sim_def=52059.99999999999  sim_paper=69868.8
+fsdp_prefetch__r28nosim_train_72b4a7e0             meas=    14.20 ms  sim_def=228.99999999999997  sim_paper=None
+llama_block_ar__harness_baseline                   meas=    21.30 ms  sim_def=260.0  sim_paper=6046.5
+llama_block_ar__paper_6e7ab1d7                     meas=    20.40 ms  sim_def=260.0  sim_paper=6046.5
+llama_block_ar__r28nosim_train_8f7e002c            meas=    18.10 ms  sim_def=199.99999999999997  sim_paper=5982.5
+pp_send_recv_S512__harness_baseline                meas=   144.50 ms  sim_def=None  sim_paper=None
+pp_send_recv_S512__paper_7f79b897                  meas=   112.00 ms  sim_def=None  sim_paper=None
+pp_send_recv__harness_baseline                     meas=   245.80 ms  sim_def=40256.0  sim_paper=54740.9
+ring_kv__builtin_joint_cat_allgather               meas=     4.83 ms  sim_def=205.0  sim_paper=6071.0608
+ring_kv__builtin_per_chunk_per_part_allgather      meas=    11.49 ms  sim_def=949.0  sim_paper=11514.4
+ring_kv__harness_baseline                          meas=     8.85 ms  sim_def=949.0  sim_paper=11514.4
+ring_kv__paper_2f6a05c4                            meas=     4.87 ms  sim_def=263.99999999999994  sim_paper=5381.142857142857
+tp_mlp__harness_baseline                           meas=    12.60 ms  sim_def=52059.99999999999  sim_paper=69868.8
+tp_mlp__paper_456211d8                             meas=    11.30 ms  sim_def=455.99999999999994  sim_paper=18936.0
+tp_mlp__r28nosim_train_9a349b85                    meas=    11.70 ms  sim_def=199.99999999999997  sim_paper=None
+tp_mlp__r36none_beaeb1b6                           meas=    12.50 ms  sim_def=52059.99999999999  sim_paper=69868.8
+tp_mlp__r42_a475ecb5                               meas=    12.30 ms  sim_def=455.99999999999994  sim_paper=None
+uniform_a2a__harness_baseline                      meas=  2889.50 ms  sim_def=1208.5199999999998  sim_paper=92469.88689173605

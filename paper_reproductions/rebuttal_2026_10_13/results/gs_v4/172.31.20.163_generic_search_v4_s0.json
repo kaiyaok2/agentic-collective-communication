@@ -1,0 +1,169 @@
+{
+ "dxe": {
+  "random": {
+   "best_sim": null,
+   "code": "def evolved_dxe(logits_local, targets, V_local, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"Full-vocab all-gather then log-softmax + target-gather + mean.\n    Semantically equivalent to baseline_ce in train_olmoe10b.py\n    (xm.all_gather + F.cross_entropy), but expressed in primitive ops\n    so the Phase-2 TrackedTensor sandbox accepts it (F.cross_entropy\n    rejects TrackedTensor inputs). One xm.all_gather over (T, V_local)\n    producing (T, V_total) on every rank, then a local log-softmax\n    plus a per-token gather of the target logit. Substantially more\n    cross-rank bytes per call than the 2-/3-AR families, but it IS\n    what the OLMoE --ce baseline path runs end-to-end.\"\"\"\n    ll = logits_local.reshape(-1, V_local).contiguous()\n    gathered = xm.all_gather(ll, dim=1)\n    gmax = gathered.max(dim=-1, keepdim=True).values\n    shifted = gathered - gmax\n    log_sum_exp = shifted.exp().sum(dim=-1).log() + gmax.squeeze(-1)\n    tgt_flat = targets.reshape(-1)\n    target_logit = gathered.gather(1, tgt_flat.unsqueeze(1)).squeeze(1)\n    return (log_sum_exp - target_logit).mean()",
+   "evals": 60,
+   "structure": {
+    "colls": {
+     "all_gather": 1
+    },
+    "loops": 0
+   }
+  },
+  "ga": {
+   "best_sim": null,
+   "code": "def evolved_dxe(logits_local, targets, V_local, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"Full-vocab all-gather then log-softmax + target-gather + mean.\n    Semantically equivalent to baseline_ce in train_olmoe10b.py\n    (xm.all_gather + F.cross_entropy), but expressed in primitive ops\n    so the Phase-2 TrackedTensor sandbox accepts it (F.cross_entropy\n    rejects TrackedTensor inputs). One xm.all_gather over (T, V_local)\n    producing (T, V_total) on every rank, then a local log-softmax\n    plus a per-token gather of the target logit. Substantially more\n    cross-rank bytes per call than the 2-/3-AR families, but it IS\n    what the OLMoE --ce baseline path runs end-to-end.\"\"\"\n    ll = logits_local.reshape(-1, V_local).contiguous()\n    gathered = xm.all_gather(ll, dim=1)\n    gmax = gathered.max(dim=-1, keepdim=True).values\n    shifted = gathered - gmax\n    log_sum_exp = shifted.exp().sum(dim=-1).log() + gmax.squeeze(-1)\n    tgt_flat = targets.reshape(-1)\n    target_logit = gathered.gather(1, tgt_flat.unsqueeze(1)).squeeze(1)\n    return (log_sum_exp - target_logit).mean()",
+   "evals": 60,
+   "structure": {
+    "colls": {
+     "all_gather": 1
+    },
+    "loops": 0
+   }
+  },
+  "beam": {
+   "best_sim": null,
+   "code": "def evolved_dxe(logits_local, targets, V_local, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"Full-vocab all-gather then log-softmax + target-gather + mean.\n    Semantically equivalent to baseline_ce in train_olmoe10b.py\n    (xm.all_gather + F.cross_entropy), but expressed in primitive ops\n    so the Phase-2 TrackedTensor sandbox accepts it (F.cross_entropy\n    rejects TrackedTensor inputs). One xm.all_gather over (T, V_local)\n    producing (T, V_total) on every rank, then a local log-softmax\n    plus a per-token gather of the target logit. Substantially more\n    cross-rank bytes per call than the 2-/3-AR families, but it IS\n    what the OLMoE --ce baseline path runs end-to-end.\"\"\"\n    ll = logits_local.reshape(-1, V_local).contiguous()\n    gathered = xm.all_gather(ll, dim=1)\n    gmax = gathered.max(dim=-1, keepdim=True).values\n    shifted = gathered - gmax\n    log_sum_exp = shifted.exp().sum(dim=-1).log() + gmax.squeeze(-1)\n    tgt_flat = targets.reshape(-1)\n    target_logit = gathered.gather(1, tgt_flat.unsqueeze(1)).squeeze(1)\n    return (log_sum_exp - target_logit).mean()",
+   "evals": 8,
+   "structure": {
+    "colls": {
+     "all_gather": 1
+    },
+    "loops": 0
+   }
+  },
+  "rules": {
+   "best_sim": null,
+   "code": "def evolved_dxe(logits_local, targets, V_local, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"Full-vocab all-gather then log-softmax + target-gather + mean.\n    Semantically equivalent to baseline_ce in train_olmoe10b.py\n    (xm.all_gather + F.cross_entropy), but expressed in primitive ops\n    so the Phase-2 TrackedTensor sandbox accepts it (F.cross_entropy\n    rejects TrackedTensor inputs). One xm.all_gather over (T, V_local)\n    producing (T, V_total) on every rank, then a local log-softmax\n    plus a per-token gather of the target logit. Substantially more\n    cross-rank bytes per call than the 2-/3-AR families, but it IS\n    what the OLMoE --ce baseline path runs end-to-end.\"\"\"\n    ll = logits_local.reshape(-1, V_local).contiguous()\n    gathered = xm.all_gather(ll, dim=1)\n    gmax = gathered.max(dim=-1, keepdim=True).values\n    shifted = gathered - gmax\n    log_sum_exp = shifted.exp().sum(dim=-1).log() + gmax.squeeze(-1)\n    tgt_flat = targets.reshape(-1)\n    target_logit = gathered.gather(1, tgt_flat.unsqueeze(1)).squeeze(1)\n    return (log_sum_exp - target_logit).mean()",
+   "passes": [],
+   "evals": 41,
+   "structure": {
+    "colls": {
+     "all_gather": 1
+    },
+    "loops": 0
+   }
+  },
+  "start_sim": null,
+  "start_structure": {
+   "colls": {
+    "all_gather": 1
+   },
+   "loops": 0
+  },
+  "secs": 22.5
+ },
+ "pp_send_recv": {
+  "random": {
+   "best_sim": 384584.14308232255,
+   "code": "def evolved_pp_send_recv(activations, src_stage, half, M, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"per_mb_loop_AR: one masked all_reduce per microbatch (M dispatches, M graphs).\"\"\"\n    stage = 0 if rank < half else 1\n    pair_id = rank if stage == 0 else rank - half\n    a0 = activations[0]\n    outs = []\n    for m in range(M):\n        buf = torch.zeros(half, *a0.shape, dtype=a0.dtype)\n        if stage == src_stage:\n            buf[pair_id] = activations[m]\n        ared = xm.all_reduce(xm.REDUCE_SUM, buf)\n        outs.append(ared[pair_id])\n    return outs",
+   "evals": 60,
+   "structure": {
+    "colls": {
+     "all_reduce": 1
+    },
+    "loops": 1
+   }
+  },
+  "ga": {
+   "best_sim": 384584.14308232255,
+   "code": "def evolved_pp_send_recv(activations, src_stage, half, M, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"per_mb_loop_AR: one masked all_reduce per microbatch (M dispatches, M graphs).\"\"\"\n    stage = 0 if rank < half else 1\n    pair_id = rank if stage == 0 else rank - half\n    a0 = activations[0]\n    outs = []\n    for m in range(M):\n        buf = torch.zeros(half, *a0.shape, dtype=a0.dtype)\n        if stage == src_stage:\n            buf[pair_id] = activations[m]\n        ared = xm.all_reduce(xm.REDUCE_SUM, buf)\n        outs.append(ared[pair_id])\n    return outs",
+   "evals": 60,
+   "structure": {
+    "colls": {
+     "all_reduce": 1
+    },
+    "loops": 1
+   }
+  },
+  "beam": {
+   "best_sim": 384584.14308232255,
+   "code": "def evolved_pp_send_recv(activations, src_stage, half, M, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"per_mb_loop_AR: one masked all_reduce per microbatch (M dispatches, M graphs).\"\"\"\n    stage = 0 if rank < half else 1\n    pair_id = rank if stage == 0 else rank - half\n    a0 = activations[0]\n    outs = []\n    for m in range(M):\n        buf = torch.zeros(half, *a0.shape, dtype=a0.dtype)\n        if stage == src_stage:\n            buf[pair_id] = activations[m]\n        ared = xm.all_reduce(xm.REDUCE_SUM, buf)\n        outs.append(ared[pair_id])\n    return outs",
+   "evals": 60,
+   "structure": {
+    "colls": {
+     "all_reduce": 1
+    },
+    "loops": 1
+   }
+  },
+  "rules": {
+   "best_sim": 378901.53766296775,
+   "code": "def evolved_pp_send_recv(activations, src_stage, half, M, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"per_mb_loop_AR: one masked all_reduce per microbatch (M dispatches, M graphs).\"\"\"\n    stage = 0 if rank < half else 1\n    pair_id = rank if stage == 0 else rank - half\n    a0 = activations[0]\n    outs = []\n    buf = torch.zeros(half, *a0.shape, dtype=a0.dtype)\n    for m in range(M):\n        if stage == src_stage:\n            buf[pair_id] = activations[m]\n        ared = xm.all_reduce(xm.REDUCE_SUM, buf)\n        outs.append(ared[pair_id])\n    return outs",
+   "passes": [
+    "LICM"
+   ],
+   "evals": 41,
+   "structure": {
+    "colls": {
+     "all_reduce": 1
+    },
+    "loops": 1
+   }
+  },
+  "start_sim": 384584.14308232255,
+  "start_structure": {
+   "colls": {
+    "all_reduce": 1
+   },
+   "loops": 1
+  },
+  "secs": 772.0
+ },
+ "llama_block_ar": {
+  "random": {
+   "best_sim": 8862.594223718894,
+   "code": "def evolved_llama_block(attn_partial, mlp_partial, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"Developer baseline: two sequential AR calls, one per primitive.\"\"\"\n    attn_full = xm.all_reduce(xm.REDUCE_SUM, attn_partial)\n    mlp_full = xm.all_reduce(xm.REDUCE_SUM, mlp_partial)\n    return [attn_full, mlp_full]",
+   "evals": 60,
+   "structure": {
+    "colls": {
+     "all_reduce": 2
+    },
+    "loops": 0
+   }
+  },
+  "ga": {
+   "best_sim": 8862.594223718894,
+   "code": "def evolved_llama_block(attn_partial, mlp_partial, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"Developer baseline: two sequential AR calls, one per primitive.\"\"\"\n    attn_full = xm.all_reduce(xm.REDUCE_SUM, attn_partial)\n    mlp_full = xm.all_reduce(xm.REDUCE_SUM, mlp_partial)\n    return [attn_full, mlp_full]",
+   "evals": 60,
+   "structure": {
+    "colls": {
+     "all_reduce": 2
+    },
+    "loops": 0
+   }
+  },
+  "beam": {
+   "best_sim": 8862.594223718894,
+   "code": "def evolved_llama_block(attn_partial, mlp_partial, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"Developer baseline: two sequential AR calls, one per primitive.\"\"\"\n    attn_full = xm.all_reduce(xm.REDUCE_SUM, attn_partial)\n    mlp_full = xm.all_reduce(xm.REDUCE_SUM, mlp_partial)\n    return [attn_full, mlp_full]",
+   "evals": 60,
+   "structure": {
+    "colls": {
+     "all_reduce": 2
+    },
+    "loops": 0
+   }
+  },
+  "rules": {
+   "best_sim": 8862.594223718894,
+   "code": "def evolved_llama_block(attn_partial, mlp_partial, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"Developer baseline: two sequential AR calls, one per primitive.\"\"\"\n    attn_full = xm.all_reduce(xm.REDUCE_SUM, attn_partial)\n    mlp_full = xm.all_reduce(xm.REDUCE_SUM, mlp_partial)\n    return [attn_full, mlp_full]",
+   "passes": [],
+   "evals": 41,
+   "structure": {
+    "colls": {
+     "all_reduce": 2
+    },
+    "loops": 0
+   }
+  },
+  "start_sim": 8862.594223718894,
+  "start_structure": {
+   "colls": {
+    "all_reduce": 2
+   },
+   "loops": 0
+  },
+  "secs": 288.0
+ }
+}

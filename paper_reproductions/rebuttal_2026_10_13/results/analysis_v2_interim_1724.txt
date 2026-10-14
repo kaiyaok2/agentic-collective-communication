@@ -1,0 +1,35 @@
+candidates measured: 22  (percall records: 19)
+
+problem         n_cands rho(step)  top1  regret%  sim-pick -> measured-best
+dxe                   3      -1.0     n     54.0  g_structure-one_ag -> g_structure-three_ar
+fsdp_prefetch         3       1.0     Y      0.0  g_bundle-all -> g_bundle-all
+llama_block_ar        4      0.95     Y      0.0  g_bundle-one_ar_pack-stack -> g_bundle-one_ar_pack-stack
+pp_send_recv          4      0.95     Y      0.0  g_bundle-all_mb_pack-stack -> g_bundle-all_mb_pack-stack
+tp_mlp                8      0.97     Y      0.0  g_bundle-all_pack-stack -> g_bundle-all_pack-stack
+
+pooled Spearman on speedup-vs-baseline ratios (sim vs measured), n=0: None
+direction agreement (sim says faster-than-baseline iff measured faster): 0/0
+
+candidate                                                   n   mean ms      sd   sim_def percall ms
+dxe__g_structure-three_ar                                   1      8.30     nan     707.3        nan
+dxe__g_structure-max_plus_stacked_sum                       1      8.68     nan 509.29999        nan
+dxe__g_structure-one_ag                                     1     12.78     nan     244.0        nan
+fsdp_prefetch__g_bundle-all                                 1     13.30     nan 199.99999     10.557
+fsdp_prefetch__g_bundle-per_call                            1     14.60     nan     860.0     14.690
+fsdp_prefetch__g_bundle-per_mb                              1     15.30     nan   38400.0     13.480
+llama_block_ar__g_bundle-one_ar_pack-stack                  1     17.20     nan 199.99999      7.519
+llama_block_ar__g_bundle-one_ar_pack-cat                    1     17.50     nan     206.0      8.674
+llama_block_ar__g_bundle-two_ar_pack-cat                    1     19.00     nan     260.0      9.486
+llama_block_ar__g_bundle-two_ar_pack-stack                  1     19.20     nan     260.0      9.713
+pp_send_recv__g_bundle-all_mb_pack-stack                    1    111.15     nan 292.99999     49.476
+pp_send_recv__g_bundle-all_mb_pack-cat                      1    111.30     nan     357.0     49.538
+pp_send_recv__g_bundle-per_mb_pack-cat                      1    145.50     nan   40256.0     66.434
+pp_send_recv__g_bundle-per_mb_pack-stack                    1    145.70     nan   40256.0     66.215
+tp_mlp__g_bundle-all_pack-stack                             1     10.65     nan 199.99999      5.261
+tp_mlp__g_bundle-all_pack-flatten                           1     10.90     nan 455.99999      5.394
+tp_mlp__g_bundle-per_layer_pack-flatten                     1     10.90     nan 399.99999      5.195
+tp_mlp__g_bundle-per_layer_pack-stack                       1     10.90     nan 399.99999      5.431
+tp_mlp__g_bundle-per_call_pack-stack                        1     11.65     nan     860.0      6.720
+tp_mlp__g_bundle-per_call_pack-flatten                      1     11.80     nan     860.0      6.734
+tp_mlp__g_bundle-per_mb_pack-stack                          1     11.90     nan   38400.0      6.532
+tp_mlp__g_bundle-per_mb_pack-flatten                        1     12.00     nan   38400.0      6.251

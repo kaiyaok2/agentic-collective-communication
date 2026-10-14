@@ -1,0 +1,1202 @@
+=== sweep: 57 runs, 300 steps each ===
+--- [16:36:44] pp_send_recv__g_bundle-per_mb_pack-stack
+=== [16:36:46] training/train_pp_send_recv_7node_s512.py backend=agent steps=300 tag=pp_send_recv__g_bundle-per_mb_pack-stack nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  WARNING: neuron cores still held after 90s
+/home/ubuntu/ap7/run_ap7.sh: line 59: 2908068 Killed                  $SSHK ubuntu@$ip "$COMMON_ENV && cd $REPO && $TORCHRUN $TRUN --node_rank=$NODE_RANK $REPO/$TRAIN_REL --backend $BACKEND --steps $STEPS --warmup $WARMUP $EXTRA" > "$LOG" 2>&1 < /dev/null
+/home/ubuntu/ap7/run_ap7.sh: line 59: 2908070 Killed                  $SSHK ubuntu@$ip "$COMMON_ENV && cd $REPO && $TORCHRUN $TRUN --node_rank=$NODE_RANK $REPO/$TRAIN_REL --backend $BACKEND --steps $STEPS --warmup $WARMUP $EXTRA" > "$LOG" 2>&1 < /dev/null
+/home/ubuntu/ap7/run_ap7.sh: line 59: 2908071 Killed                  $SSHK ubuntu@$ip "$COMMON_ENV && cd $REPO && $TORCHRUN $TRUN --node_rank=$NODE_RANK $REPO/$TRAIN_REL --backend $BACKEND --steps $STEPS --warmup $WARMUP $EXTRA" > "$LOG" 2>&1 < /dev/null
+/home/ubuntu/ap7/run_ap7.sh: line 59: 2908072 Killed                  $SSHK ubuntu@$ip "$COMMON_ENV && cd $REPO && $TORCHRUN $TRUN --node_rank=$NODE_RANK $REPO/$TRAIN_REL --backend $BACKEND --steps $STEPS --warmup $WARMUP $EXTRA" > "$LOG" 2>&1 < /dev/null
+/home/ubuntu/ap7/run_ap7.sh: line 59: 2908073 Killed                  $SSHK ubuntu@$ip "$COMMON_ENV && cd $REPO && $TORCHRUN $TRUN --node_rank=$NODE_RANK $REPO/$TRAIN_REL --backend $BACKEND --steps $STEPS --warmup $WARMUP $EXTRA" > "$LOG" 2>&1 < /dev/null
+/home/ubuntu/ap7/run_ap7.sh: line 59: 2908074 Killed                  bash -c "$COMMON_ENV && cd $REPO && $TORCHRUN $TRUN --node_rank=0 $REPO/$TRAIN_REL --backend $BACKEND --steps $STEPS --warmup $WARMUP $EXTRA" > "$LOG0" 2>&1
+/home/ubuntu/ap7/run_ap7.sh: line 71: unexpected EOF while looking for matching `"'
+   NO RESULT (rc=137)
+--- [16:49:24] pp_send_recv__g_bundle-per_mb_pack-cat
+=== [16:49:26] training/train_pp_send_recv_7node_s512.py backend=agent steps=300 tag=pp_send_recv__g_bundle-per_mb_pack-cat nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   NO RESULT (rc=137)
+--- [16:49:41] pp_send_recv__g_bundle-all_mb_pack-stack
+=== [16:49:43] training/train_pp_send_recv_7node_s512.py backend=agent steps=300 tag=pp_send_recv__g_bundle-all_mb_pack-stack nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   NO RESULT (rc=137)
+--- [16:49:58] pp_send_recv__g_bundle-all_mb_pack-cat
+=== [16:49:59] training/train_pp_send_recv_7node_s512.py backend=agent steps=300 tag=pp_send_recv__g_bundle-all_mb_pack-cat nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   NO RESULT (rc=137)
+--- [16:50:15] tp_mlp__g_bundle-per_call_pack-stack
+=== [16:50:16] training/train_tp_mlp_7node.py backend=agent steps=300 tag=tp_mlp__g_bundle-per_call_pack-stack nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   NO RESULT (rc=137)
+--- [16:50:33] tp_mlp__g_bundle-per_call_pack-flatten
+=== [16:50:34] training/train_tp_mlp_7node.py backend=agent steps=300 tag=tp_mlp__g_bundle-per_call_pack-flatten nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   NO RESULT (rc=137)
+--- [16:50:50] tp_mlp__g_bundle-per_mb_pack-stack
+=== [16:50:51] training/train_tp_mlp_7node.py backend=agent steps=300 tag=tp_mlp__g_bundle-per_mb_pack-stack nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   NO RESULT (rc=137)
+--- [16:51:06] tp_mlp__g_bundle-per_mb_pack-flatten
+=== [16:51:08] training/train_tp_mlp_7node.py backend=agent steps=300 tag=tp_mlp__g_bundle-per_mb_pack-flatten nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   NO RESULT (rc=137)
+--- [16:51:24] tp_mlp__g_bundle-per_layer_pack-stack
+=== [16:51:26] training/train_tp_mlp_7node.py backend=agent steps=300 tag=tp_mlp__g_bundle-per_layer_pack-stack nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   NO RESULT (rc=137)
+--- [16:51:41] tp_mlp__g_bundle-per_layer_pack-flatten
+=== [16:51:43] training/train_tp_mlp_7node.py backend=agent steps=300 tag=tp_mlp__g_bundle-per_layer_pack-flatten nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   NO RESULT (rc=137)
+--- [16:51:58] tp_mlp__g_bundle-all_pack-stack
+=== [16:52:00] training/train_tp_mlp_7node.py backend=agent steps=300 tag=tp_mlp__g_bundle-all_pack-stack nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+=== sweep: 57 runs, 300 steps each ===
+--- [16:52:52] pp_send_recv__g_bundle-per_mb_pack-stack
+=== [16:52:56] training/train_pp_send_recv_7node_s512.py backend=agent steps=300 tag=pp_send_recv__g_bundle-per_mb_pack-stack nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=95s
+  Steady step : 193.2 ms (from step 200)
+--- [16:54:38] pp_send_recv__g_bundle-per_mb_pack-cat
+=== [16:54:40] training/train_pp_send_recv_7node_s512.py backend=agent steps=300 tag=pp_send_recv__g_bundle-per_mb_pack-cat nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=102s
+  Steady step : 193.2 ms (from step 200)
+--- [16:56:31] pp_send_recv__g_bundle-all_mb_pack-stack
+=== [16:56:33] training/train_pp_send_recv_7node_s512.py backend=agent steps=300 tag=pp_send_recv__g_bundle-all_mb_pack-stack nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=93s
+  Steady step : 223.6 ms (from step 200)
+--- [16:58:14] pp_send_recv__g_bundle-all_mb_pack-cat
+=== [16:58:16] training/train_pp_send_recv_7node_s512.py backend=agent steps=300 tag=pp_send_recv__g_bundle-all_mb_pack-cat nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=103s
+  Steady step : 224.5 ms (from step 200)
+--- [17:00:08] tp_mlp__g_bundle-per_call_pack-stack
+=== [17:00:10] training/train_tp_mlp_7node.py backend=agent steps=300 tag=tp_mlp__g_bundle-per_call_pack-stack nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=53s
+  Steady step : 18.2 ms (from step 200)
+--- [17:01:11] tp_mlp__g_bundle-per_call_pack-flatten
+=== [17:01:13] training/train_tp_mlp_7node.py backend=agent steps=300 tag=tp_mlp__g_bundle-per_call_pack-flatten nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=37s
+  Steady step : 18.1 ms (from step 200)
+--- [17:01:58] tp_mlp__g_bundle-per_mb_pack-stack
+=== [17:01:59] training/train_tp_mlp_7node.py backend=agent steps=300 tag=tp_mlp__g_bundle-per_mb_pack-stack nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=38s
+  Steady step : 18.5 ms (from step 200)
+--- [17:02:46] tp_mlp__g_bundle-per_mb_pack-flatten
+=== [17:02:48] training/train_tp_mlp_7node.py backend=agent steps=300 tag=tp_mlp__g_bundle-per_mb_pack-flatten nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=38s
+  Steady step : 18.2 ms (from step 200)
+--- [17:03:34] tp_mlp__g_bundle-per_layer_pack-stack
+=== [17:03:36] training/train_tp_mlp_7node.py backend=agent steps=300 tag=tp_mlp__g_bundle-per_layer_pack-stack nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=37s
+  Steady step : 17.0 ms (from step 200)
+--- [17:04:21] tp_mlp__g_bundle-per_layer_pack-flatten
+=== [17:04:23] training/train_tp_mlp_7node.py backend=agent steps=300 tag=tp_mlp__g_bundle-per_layer_pack-flatten nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=43s
+  Steady step : 17.1 ms (from step 200)
+--- [17:05:14] tp_mlp__g_bundle-all_pack-stack
+=== [17:05:15] training/train_tp_mlp_7node.py backend=agent steps=300 tag=tp_mlp__g_bundle-all_pack-stack nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=66s
+  Steady step : 17.0 ms (from step 200)
+--- [17:06:30] tp_mlp__g_bundle-all_pack-flatten
+=== [17:06:33] training/train_tp_mlp_7node.py backend=agent steps=300 tag=tp_mlp__g_bundle-all_pack-flatten nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=54s
+  Steady step : 17.0 ms (from step 200)
+--- [17:07:35] fsdp_prefetch__g_bundle-per_call
+=== [17:07:38] training/train_fsdp_prefetch_7node.py backend=agent steps=300 tag=fsdp_prefetch__g_bundle-per_call nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=52s
+  Steady step : 158.3 ms (from step 200)
+--- [17:08:38] fsdp_prefetch__g_bundle-per_mb
+=== [17:08:40] training/train_fsdp_prefetch_7node.py backend=agent steps=300 tag=fsdp_prefetch__g_bundle-per_mb nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=64s
+  Steady step : 137.0 ms (from step 200)
+--- [17:09:53] fsdp_prefetch__g_bundle-all
+=== [17:09:55] training/train_fsdp_prefetch_7node.py backend=agent steps=300 tag=fsdp_prefetch__g_bundle-all nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=51s
+  Steady step : 54.1 ms (from step 200)
+--- [17:10:54] llama_block_ar__g_bundle-two_ar_pack-stack
+=== [17:10:57] training/train_llama_block_ar_7node.py backend=agent steps=300 tag=llama_block_ar__g_bundle-two_ar_pack-stack nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=68s
+  Steady step : 227.8 ms (from step 200)
+--- [17:12:14] llama_block_ar__g_bundle-two_ar_pack-cat
+=== [17:12:16] training/train_llama_block_ar_7node.py backend=agent steps=300 tag=llama_block_ar__g_bundle-two_ar_pack-cat nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=56s
+  Steady step : 28.1 ms (from step 200)
+--- [17:13:21] llama_block_ar__g_bundle-one_ar_pack-stack
+=== [17:13:23] training/train_llama_block_ar_7node.py backend=agent steps=300 tag=llama_block_ar__g_bundle-one_ar_pack-stack nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=74s
+  Steady step : 273.6 ms (from step 200)
+--- [17:14:46] llama_block_ar__g_bundle-one_ar_pack-cat
+=== [17:14:48] training/train_llama_block_ar_7node.py backend=agent steps=300 tag=llama_block_ar__g_bundle-one_ar_pack-cat nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=104s
+  Steady step : 374.6 ms (from step 200)
+--- [17:16:40] dxe__g_structure-one_ag
+=== [17:16:42] training/train_dxe_7node.py backend=agent steps=300 tag=dxe__g_structure-one_ag nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=41s
+  Steady step : 12.82 ms (median of last half)
+--- [17:17:43] dxe__g_structure-three_ar
+=== [17:17:44] training/train_dxe_7node.py backend=agent steps=300 tag=dxe__g_structure-three_ar nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=36s
+  Steady step : 8.35 ms (median of last half)
+--- [17:18:37] dxe__g_structure-max_plus_stacked_sum
+=== [17:18:39] training/train_dxe_7node.py backend=agent steps=300 tag=dxe__g_structure-max_plus_stacked_sum nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=35s
+  Steady step : 8.79 ms (median of last half)
+--- [17:19:33] uniform_a2a__g_extract-loop_cat_structure-ag_rs
+=== [17:19:35] training/train_uniform_a2a_7node.py backend=agent steps=300 tag=uniform_a2a__g_extract-loop_cat_structure-ag_rs nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=1 wall=194s
+   NO RESULT (rc=1)
+--- [17:23:10] uniform_a2a__g_extract-view_col_structure-ag_rs
+=== [17:23:11] training/train_uniform_a2a_7node.py backend=agent steps=300 tag=uniform_a2a__g_extract-view_col_structure-ag_rs nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=1 wall=42s
+   NO RESULT (rc=1)
+--- [17:24:13] uniform_a2a__g_extract-loop_cat_structure-ag_slice
+=== [17:24:15] training/train_uniform_a2a_7node.py backend=agent steps=300 tag=uniform_a2a__g_extract-loop_cat_structure-ag_slice nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=1 wall=44s
+   NO RESULT (rc=1)
+--- [17:25:19] uniform_a2a__g_extract-view_col_structure-ag_slice
+=== [17:25:21] training/train_uniform_a2a_7node.py backend=agent steps=300 tag=uniform_a2a__g_extract-view_col_structure-ag_slice nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=1 wall=40s
+   NO RESULT (rc=1)
+--- [17:26:21] ring_kv__g_bundle-per_chunk
+=== [17:26:23] training/train_ring_kv_7node.py backend=agent steps=300 tag=ring_kv__g_bundle-per_chunk nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=47s
+[bench] ring_kv agent steady_mean=31.35ms steady_median=8.96ms
+--- [17:27:22] ring_kv__g_bundle-per_slot
+=== [17:27:24] training/train_ring_kv_7node.py backend=agent steps=300 tag=ring_kv__g_bundle-per_slot nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=50s
+[bench] ring_kv agent steady_mean=15.63ms steady_median=4.78ms
+--- [17:28:26] ring_kv__g_bundle-joint
+=== [17:28:28] training/train_ring_kv_7node.py backend=agent steps=300 tag=ring_kv__g_bundle-joint nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=46s
+[bench] ring_kv agent steady_mean=16.55ms steady_median=5.34ms
+--- [17:29:27] alltoallv__helper_loop_cat_paper
+=== [17:29:28] training/train_alltoallv_7node.py backend=agent steps=300 tag=alltoallv__helper_loop_cat_paper nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=148s
+  Steady step : 38.24 ms (median of last half)
+--- [17:32:15] alltoallv__helper_view_col_public
+=== [17:32:17] training/train_alltoallv_7node.py backend=agent steps=300 tag=alltoallv__helper_view_col_public nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=132s
+  Steady step : 24.21 ms (median of last half)
+--- [17:34:49] alltoallv__helper_AGRS
+=== [17:34:50] training/train_alltoallv_7node.py backend=agent steps=300 tag=alltoallv__helper_AGRS nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=151s
+  Steady step : 29.89 ms (median of last half)
+--- [17:37:41] dxe__paper_e791408f
+=== [17:37:42] training/train_dxe_7node.py backend=agent steps=300 tag=dxe__paper_e791408f nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=54s
+  Steady step : 8.32 ms (median of last half)
+--- [17:38:56] dxe__r28nosim_train_10815c6f
+=== [17:38:57] training/train_dxe_7node.py backend=agent steps=300 tag=dxe__r28nosim_train_10815c6f nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=54s
+  Steady step : 9.17 ms (median of last half)
+--- [17:40:10] dxe__r36brandom_dd3aa11f
+=== [17:40:12] training/train_dxe_7node.py backend=agent steps=300 tag=dxe__r36brandom_dd3aa11f nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=56s
+  Steady step : 8.84 ms (median of last half)
+--- [17:41:28] dxe__r42_f2537e28
+=== [17:41:29] training/train_dxe_7node.py backend=agent steps=300 tag=dxe__r42_f2537e28 nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=47s
+  Steady step : 8.17 ms (median of last half)
+--- [17:42:36] fsdp_prefetch__paper_daa256fa
+=== [17:42:37] training/train_fsdp_prefetch_7node.py backend=agent steps=300 tag=fsdp_prefetch__paper_daa256fa nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=49s
+  Steady step : 28.7 ms (from step 200)
+--- [17:43:35] fsdp_prefetch__r28nosim_train_72b4a7e0
+=== [17:43:37] training/train_fsdp_prefetch_7node.py backend=agent steps=300 tag=fsdp_prefetch__r28nosim_train_72b4a7e0 nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=53s
+  Steady step : 54.1 ms (from step 200)
+--- [17:44:38] llama_block_ar__paper_6e7ab1d7
+=== [17:44:40] training/train_llama_block_ar_7node.py backend=agent steps=300 tag=llama_block_ar__paper_6e7ab1d7 nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=51s
+  Steady step : 28.3 ms (from step 200)
+--- [17:45:39] llama_block_ar__r28nosim_train_8f7e002c
+=== [17:45:41] training/train_llama_block_ar_7node.py backend=agent steps=300 tag=llama_block_ar__r28nosim_train_8f7e002c nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=54s
+  Steady step : 23.9 ms (from step 200)
+--- [17:46:44] pp_send_recv__paper_7f79b897
+=== [17:46:46] training/train_pp_send_recv_7node_s512.py backend=agent steps=300 tag=pp_send_recv__paper_7f79b897 nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=137s
+  Steady step : 763.3 ms (from step 200)
+--- [17:49:12] ring_kv__paper_2f6a05c4
+=== [17:49:13] training/train_ring_kv_7node.py backend=agent steps=300 tag=ring_kv__paper_2f6a05c4 nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=36s
+[bench] ring_kv agent steady_mean=16.98ms steady_median=5.17ms
+--- [17:50:01] tp_mlp__paper_456211d8
+=== [17:50:02] training/train_tp_mlp_7node.py backend=agent steps=300 tag=tp_mlp__paper_456211d8 nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=42s
+  Steady step : 17.4 ms (from step 200)
+--- [17:50:52] tp_mlp__r28nosim_train_9a349b85
+=== [17:50:54] training/train_tp_mlp_7node.py backend=agent steps=300 tag=tp_mlp__r28nosim_train_9a349b85 nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=52s
+  Steady step : 17.1 ms (from step 200)
+--- [17:51:54] tp_mlp__r36none_beaeb1b6
+=== [17:51:56] training/train_tp_mlp_7node.py backend=agent steps=300 tag=tp_mlp__r36none_beaeb1b6 nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=53s
+  Steady step : 18.3 ms (from step 200)
+--- [17:52:57] tp_mlp__r42_a475ecb5
+=== [17:52:59] training/train_tp_mlp_7node.py backend=agent steps=300 tag=tp_mlp__r42_a475ecb5 nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=49s
+  Steady step : 16.8 ms (from step 200)
+--- [17:53:57] uniform_a2a__paper_96e21a8e
+=== [17:53:58] training/train_uniform_a2a_7node.py backend=agent steps=300 tag=uniform_a2a__paper_96e21a8e nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=1 wall=51s
+   NO RESULT (rc=1)
+--- [17:55:10] uniform_a2a__r28nosim_train_c0b2d468
+=== [17:55:11] training/train_uniform_a2a_7node.py backend=agent steps=300 tag=uniform_a2a__r28nosim_train_c0b2d468 nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=1 wall=45s
+   NO RESULT (rc=1)
+--- [17:56:16] uniform_a2a__r42_d910f8d1
+=== [17:56:18] training/train_uniform_a2a_7node.py backend=agent steps=300 tag=uniform_a2a__r42_d910f8d1 nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=1 wall=41s
+   NO RESULT (rc=1)
+--- [17:57:19] alltoallv__harness_baseline
+=== [17:57:21] training/train_alltoallv_7node.py backend=baseline steps=300 tag=alltoallv__harness_baseline nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=147s
+  Steady step : 30.08 ms (median of last half)
+--- [18:00:07] uniform_a2a__harness_baseline
+=== [18:00:09] training/train_uniform_a2a_7node.py backend=baseline steps=300 tag=uniform_a2a__harness_baseline nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=534s
+  Steady step : 1518.3 ms (from step 200)
+  Final loss  : nan
+--- [18:09:19] ring_kv__harness_baseline
+=== [18:09:20] training/train_ring_kv_7node.py backend=baseline steps=300 tag=ring_kv__harness_baseline nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=59s
+[bench] ring_kv baseline steady_mean=29.34ms steady_median=8.94ms
+--- [18:10:32] dxe__harness_baseline
+=== [18:10:33] training/train_dxe_7node.py backend=baseline steps=300 tag=dxe__harness_baseline nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=50s
+  Steady step : 15.01 ms (median of last half)
+--- [18:11:42] pp_send_recv__harness_baseline
+=== [18:11:44] training/train_pp_send_recv_7node_s512.py backend=baseline steps=300 tag=pp_send_recv__harness_baseline nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=85s
+  Steady step : 195.0 ms (from step 200)
+--- [18:13:17] tp_mlp__harness_baseline
+=== [18:13:19] training/train_tp_mlp_7node.py backend=baseline steps=300 tag=tp_mlp__harness_baseline nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=81s
+  Steady step : 318.1 ms (from step 200)
+--- [18:14:48] fsdp_prefetch__harness_baseline
+=== [18:14:50] training/train_fsdp_prefetch_7node.py backend=baseline steps=300 tag=fsdp_prefetch__harness_baseline nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=58s
+  Steady step : 28.9 ms (from step 200)
+--- [18:15:56] llama_block_ar__harness_baseline
+=== [18:15:58] training/train_llama_block_ar_7node.py backend=baseline steps=300 tag=llama_block_ar__harness_baseline nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=90s
+  Steady step : 428.2 ms (from step 200)
+=== sweep done 18:17:37 ===
