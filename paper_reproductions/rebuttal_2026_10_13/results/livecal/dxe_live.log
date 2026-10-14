@@ -1,0 +1,227 @@
+[_sso_creds] no live SSO at import; AWS calls will fail if attempted (Command '['aws', 'configure', 'export-credentials', '--profile', 'default', '--format', 'process']' returned non-zero exit status 2.)
+[Phase 1] hardware table: LIVE probe (/home/ubuntu/hwprobe/hw_probe_measured.json)
+======================================================================
+Collective Search Pipeline: Distributed Cross-Entropy (vocab-sharded) (5-Phase)
+Pattern: moe | LLM: True | HW eval: True
+======================================================================
+
+======================================================================
+[Phase 1] Agent Hardware Profiling — LLM Builds Simulator
+======================================================================
+  Model: sonnet | max_turns: 15
+  [Turn 1] Agent: I'll systematically profile this hardware and build an accurate cost model. Let me start with the fundamentals.
+  [Turn 1] Tool: get_device_info({})
+  [Turn 1] Tool: discover_device_adjacency({})
+  [Turn 2] Agent: Good! 16 devices, 2 cores each = 32 ranks, 4-neighbor topology. Now let me check which XLA primitives actually compile on this hardware:
+  [Turn 2] Tool: check_primitive_compilation({"primitive": "all_gather"})
+  [Turn 2] Tool: check_primitive_compilation({"primitive": "reduce_scatter"})
+  [Turn 2] Tool: check_primitive_compilation({"primitive": "all_reduce"})
+  [Turn 2] Tool: check_primitive_compilation({"primitive": "collective_permute"})
+  [Turn 2] Tool: check_primitive_compilation({"primitive": "all_to_all"})
+  [Turn 3] Agent: Excellent! **all_to_all does NOT compile** - this is critical. Now let me profile collective latencies at various sizes:
+  [Turn 3] Tool: measure_collective_latency({"collective_type": "all_gather", "tensor_bytes": 4096, "world_size": 32})
+  [Turn 3] Tool: measure_collective_latency({"collective_type": "all_gather", "tensor_bytes": 65536, "world_size": 32})
+  [Turn 3] Tool: measure_collective_latency({"collective_type": "all_gather", "tensor_bytes": 1048576, "world_size": 32})
+  [Turn 3] Tool: measure_collective_latency({"collective_type": "reduce_scatter", "tensor_bytes": 4096, "world_size": 32})
+  [Turn 3] Tool: measure_collective_latency({"collective_type": "reduce_scatter", "tensor_bytes": 65536, "world_size": 32})
+  [Turn 3] Tool: measure_collective_latency({"collective_type": "reduce_scatter", "tensor_bytes": 1048576, "world_size": 32})
+  [Turn 4] Agent: Interesting! reduce_scatter has constant latency (~95 µs), all_gather varies. Let me test collective_permute:
+  [Turn 4] Tool: measure_collective_latency({"collective_type": "collective_permute", "tensor_bytes": 4096, "num_steps": 1, "world_size": 32})
+  [Turn 4] Tool: measure_collective_latency({"collective_type": "collective_permute", "tensor_bytes": 65536, "num_steps": 1, "world_size": 32})
+  [Turn 4] Tool: measure_collective_latency({"collective_type": "collective_permute", "tensor_bytes": 4096, "num_steps": 4, "world_size": 32})
+  [Turn 4] Tool: check_cross_node_support({"collective_type": "collective_permute"})
+  [Turn 5] Agent: Critical constraint discovered! collective_permute has cross-node limitations. Now let me profile ALL local XLA ops:
+  [Turn 5] Tool: measure_xla_op_overhead({"op_name": "index_select", "tensor_size": 1000, "num_ops": 10})
+  [Turn 5] Tool: measure_xla_op_overhead({"op_name": "slice", "tensor_size": 1000, "num_ops": 10})
+  [Turn 5] Tool: measure_xla_op_overhead({"op_name": "cat", "tensor_size": 1000, "num_ops": 10})
+  [Turn 5] Tool: measure_xla_op_overhead({"op_name": "view", "tensor_size": 1000, "num_ops": 10})
+  [Turn 5] Tool: measure_xla_op_overhead({"op_name": "reshape", "tensor_size": 1000, "num_ops": 10})
+  [Turn 5] Tool: measure_xla_op_overhead({"op_name": "unsqueeze", "tensor_size": 1000, "num_ops": 10})
+  [Turn 6] Tool: measure_xla_op_overhead({"op_name": "squeeze", "tensor_size": 1000, "num_ops": 10})
+  [Turn 6] Tool: measure_xla_op_overhead({"op_name": "flatten", "tensor_size": 1000, "num_ops": 10})
+  [Turn 6] Tool: measure_xla_op_overhead({"op_name": "narrow", "tensor_size": 1000, "num_ops": 10})
+  [Turn 6] Tool: measure_xla_op_overhead({"op_name": "transpose", "tensor_size": 1000, "num_ops": 10})
+  [Turn 6] Tool: measure_xla_op_overhead({"op_name": "permute", "tensor_size": 1000, "num_ops": 10})
+  [Turn 6] Tool: measure_xla_op_overhead({"op_name": "expand", "tensor_size": 1000, "num_ops": 10})
+  [Turn 7] Tool: measure_xla_op_overhead({"op_name": "contiguous", "tensor_size": 1000, "num_ops": 10})
+  [Turn 7] Tool: measure_xla_op_overhead({"op_name": "zeros", "tensor_size": 1000, "num_ops": 10})
+  [Turn 7] Tool: measure_xla_op_overhead({"op_name": "tensor", "tensor_size": 1000, "num_ops": 10})
+  [Turn 7] Tool: measure_xla_op_overhead({"op_name": "stack", "tensor_size": 1000, "num_ops": 10})
+  [Turn 7] Tool: measure_xla_op_overhead({"op_name": "gather", "tensor_size": 1000, "num_ops": 10})
+  [Turn 7] Tool: measure_xla_op_overhead({"op_name": "scatter", "tensor_size": 1000, "num_ops": 10})
+  [Turn 8] Tool: measure_xla_op_overhead({"op_name": "split", "tensor_size": 1000, "num_ops": 10})
+  [Turn 8] Tool: measure_xla_op_overhead({"op_name": "chunk", "tensor_size": 1000, "num_ops": 10})
+  [Turn 9] Agent: Great! Now let me measure index_select scaling and other critical parameters:
+  [Turn 9] Tool: measure_index_select_scaling({"index_tensor_size": 100, "source_tensor_size": 10000})
+  [Turn 9] Tool: measure_index_select_scaling({"index_tensor_size": 1000, "source_tensor_size": 10000})
+  [Turn 9] Tool: measure_index_select_scaling({"index_tensor_size": 5000, "source_tensor_size": 100000})
+  [Turn 9] Tool: measure_overlap_potential({"collective_type": "all_reduce", "pattern": "per_tensor"})
+  [Turn 9] Tool: measure_overlap_potential({"collective_type": "all_reduce", "pattern": "batched"})
+  [Turn 10] Agent: Now let me measure compilation cost, graph launch overhead, memory copy throughput, and back-to-back amortization:
+  [Turn 10] Tool: measure_compilation_cost({"tensor_bytes": 4096})
+  [Turn 10] Tool: measure_compilation_cost({"tensor_bytes": 65536})
+  [Turn 10] Tool: measure_compilation_cost({"tensor_bytes": 1048576})
+  [Turn 10] Tool: measure_compilation_cost({"tensor_bytes": 16777216})
+  [Turn 10] Tool: measure_graph_launch_overhead({})
+  [Turn 10] Tool: measure_memory_copy_throughput({})
+  [Turn 11] Agent: Now let me measure back-to-back amortization:
+  [Turn 11] Tool: measure_back_to_back_amortization({"depth": 1})
+  [Turn 11] Tool: measure_back_to_back_amortization({"depth": 2})
+  [Turn 11] Tool: measure_back_to_back_amortization({"depth": 4})
+  [Turn 11] Tool: measure_back_to_back_amortization({"depth": 8})
+  [Turn 11] Tool: measure_back_to_back_amortization({"depth": 16})
+  [Turn 12] Agent: Let me calculate the pipeline amortization factors:
+- Depth 1: 967.7 µs (first issue baseline)
+- Depth 2: 1289.8 µs → marginal = 322.1 µs → alpha1 = 322.1 / 967.7 ≈ 0.333
+- Depth 4: 425.7 µs → margina...
+  [Turn 12] Tool: measure_algorithm_latency({"algorithm": "algo_1coll_3localops_32ranks"})
+  [Turn 12] Tool: measure_algorithm_latency({"algorithm": "algo_1coll_35localops_32ranks"})
+  [Turn 12] Tool: measure_algorithm_latency({"algorithm": "algo_31coll_62localops_32ranks"})
+  [Turn 12] Tool: measure_algorithm_latency({"algorithm": "algo_2coll_5localops_32ranks"})
+  [Turn 12] Tool: measure_algorithm_latency({"algorithm": "algo_fused_32ranks"})
+  [Turn 12] Tool: measure_algorithm_latency({"algorithm": "algo_15coll_30localops_32ranks"})
+  [Turn 13] Agent: Excellent! Now I have all the data. Let me build the cost model simulator:
+  [Turn 13] Tool: build_simulator({"code": "\nimport math\n\n# Hardware parameters discovered through profiling\nNUM_DEVICES = 16\nCOR...)
+    -> build_simulator: ok
+  [Turn 14] Agent: Now let me validate the simulator against real measurements:
+  [Turn 14] Tool: validate_simulator({})
+    -> validate_simulator: False
+  [Turn 15] Agent: I'm overestimating costs. Let me analyze the actual measurements more carefully and refine the model:
+
+Looking at the data:
+- algo_1coll_3localops: 130 µs (1 collective + 3 local ops)
+- algo_1coll_35l...
+  [Turn 15] Tool: build_simulator({"code": "\nimport math\n\n# Hardware parameters discovered through profiling\nNUM_DEVICES = 16\nCOR...)
+    -> build_simulator: ok
+  [Turn 16] Tool: validate_simulator({})
+    -> validate_simulator: False
+/home/ubuntu/OverlayCCL/search/correctness_test.py:509: UserWarning: Using a non-tuple sequence for multidimensional indexing is deprecated and will be changed in pytorch 2.9; use x[tuple(seq)] instead of x[seq]. In pytorch 2.9 this will be interpreted as tensor index, x[torch.tensor(seq)], which will result either in an error or a different result (Triggered internally at /pytorch/torch/csrc/autograd/python_variable_indexing.cpp:345.)
+  return TrackedTensor(self._t[key], self._counter)
+  [Turn 17] Agent: Getting closer! The issue is with multi-collective algorithms. Let me analyze more carefully:
+
+- algo_2coll_5localops: 730 µs actual vs 239.5 predicted → missing ~490 µs
+- algo_31coll_62localops: 2780...
+  [Turn 17] Tool: build_simulator({"code": "\nimport math\n\n# Hardware parameters discovered through profiling\nNUM_DEVICES = 16\nCOR...)
+    -> build_simulator: ok
+  [Turn 18] Tool: validate_simulator({})
+    -> validate_simulator: False
+  [Turn 19] Agent: Getting very close! 3 out of 4 are within tolerance, but algo_1coll_3localops is still way off. The issue is that with very few ops, there's some base cost I'm overestimating. Let me analyze:
+
+- algo_...
+  [Turn 19] Tool: build_simulator({"code": "\nimport math\n\n# Hardware parameters discovered through profiling\nNUM_DEVICES = 16\nCOR...)
+    -> build_simulator: ok
+  [Turn 20] Tool: validate_simulator({})
+    -> validate_simulator: True
+  [Turn 21] Agent: Excellent! The simulator has passed validation! Now let me set the simulator config with all discovered parameters:
+  [Turn 21] Tool: set_simulator_config({"num_devices": 16, "cores_per_device": 2, "device_adjacency": {"0": [12, 3, 4, 1], "1": [13, 0, 5, ...)
+    -> Set link_bandwidth_gbps = 80.0
+    -> Set link_latency_us = 5.0
+    -> Set collective_dispatch_overhead_us = 295.0
+    -> Set local_op_overhead_us = 28.0
+    -> Set num_devices = 16
+    -> Set cores_per_device = 2
+    -> set_simulator_config received and ever_validated=True; ending profiling loop.
+    -> ever_validated=True; restored best snapshot simulator.
+
+  Simulator config:
+    collective_dispatch_overhead_us = 295.0
+    local_op_overhead_us = 28.0
+    link_bandwidth_gbps = 80.0
+    link_latency_us = 5.0
+    unsupported_primitives = ['all_to_all']
+    Simulator built: True
+    Simulator validated: True
+    Config complete: True
+
+  Agent discovered:
+    dispatch_overhead = 295.0 us
+    devices = 16, cores/dev = 2
+    simulator built = True
+    simulator validated = True
+Trainium cluster topology (7 node(s)):
+  Nodes: 7, Devices: 112, Cores: 224
+  NeuronLink BW: 80.0 GB/s, Latency: 5.0 us
+  EFA BW: 12.5 GB/s x 8 adapters/node, Latency: 5.0 us
+  Max hops: 4, Avg hops: 1.14
+  Hardware constraints: unsupported primitives = ['all_to_all']
+  [Phase 1 done] pipeline_amort_alphas = (1.000, 0.150, 0.100)
+
+======================================================================
+[Phase 2] Baseline Evaluation: Distributed Cross-Entropy (vocab-sharded)
+======================================================================
+  three_ar: 17406.2 us, 15 local ops, 0 ag, 3 ar, 0 cp
+  async_back_to_back: 17406.2 us, 15 local ops, 0 ag, 3 ar, 0 cp
+  full_vocab_ag: 16165.9 us, 10 local ops, 1 ag, 0 ar, 0 cp
+
+  Best baseline: baseline:full_vocab_ag (16165.9 us)
+
+======================================================================
+[Phase 3 / Strategy-Enumerate] Distributed Cross-Entropy (vocab-sharded)
+======================================================================
+  K=5 strategies, R=2 refinement rounds per top-2 (budget ~10 LLM calls)
+  Enumerated 5 strategies:
+    1. Three sequential all-reduces: Max-AR, then sum-AR, then sum-AR for target gather, as shown in three_ar seed. T...
+    2. Back-to-back pipelined two sum-ARs: Max-AR first, then issue sum-exp and sum-target ARs back-to-back without host sy...
+    3. Full-vocab all-gather reconstruction: Single all-gather collective over (T, V_local)→(T, V_total) followed by local lo...
+    4. Reduce-scatter then all-gather: Reduce-scatter to compute per-token log-probabilities in sharded form (each rank...
+    5. Fused two-stage all-reduce with concatenated payload: Concatenate [local_max, local_sum_exp, local_target] into a single (3T,) tensor ...
+  Strategy 1 (Three sequential all-reduces): sim=17406.2 us
+  Strategy 2 (Back-to-back pipelined two sum-ARs): sim=17406.2 us
+  Strategy 3 (Full-vocab all-gather reconstruction): sim=16165.9 us
+  Strategy 4 (Reduce-scatter then all-gather): sim=17406.2 us
+  Strategy 5 (Fused two-stage all-reduce with concatenated payload): sim=16818.2 us
+
+  Top after enumeration:
+    Full-vocab all-gather reconstruction: 16165.9 us
+    Fused two-stage all-reduce with concatenated payload: 16818.2 us
+
+  Strategy-Enumerate complete. 7 total candidates.
+  Best: Full-vocab all-gather reconstruction (sim=16165.9 us)
+
+======================================================================
+RANKING (post-evolution, pre-hardware)
+======================================================================
+  1. baseline:full_vocab_ag: 16165.9 us, 10 ops
+  2. strat:Full-vocab all-gather reconstr: 16165.9 us, 10 ops
+  3. baseline:three_ar: 17406.2 us, 15 ops
+  4. baseline:async_back_to_back: 17406.2 us, 15 ops
+
+Simulator winner: baseline:full_vocab_ag (sim=16165.9 us)
+
+======================================================================
+[Phase 4] Hardware Benchmark: Distributed Cross-Entropy (vocab-sharded)
+======================================================================
+  Running baseline:full_vocab_ag (full_vocab_ag, sim=16165.9 us)...
+    HW: 398.915 ms | Sim: 16165.9 us
+  Running strat:Full-vocab all-gather reconstr (strategy_enumerate_final, sim=16165.9 us)...
+    HW: 395.299 ms | Sim: 16165.9 us
+  Running baseline:three_ar (three_ar, sim=17406.2 us)...
+    HW: 567.694 ms | Sim: 17406.2 us
+  Running baseline:async_back_to_back (async_back_to_back, sim=17406.2 us)...
+    HW: 616.925 ms | Sim: 17406.2 us
+
+  Algorithm                           Rank (ms)   Sim (us)  
+  -------------------------------------------------------
+  baseline:full_vocab_ag              398.915     16165.9   
+  strat:Full-vocab all-gather reconstr 395.299     16165.9   
+  baseline:three_ar                   567.694     17406.2   
+  baseline:async_back_to_back         616.925     17406.2   
+
+======================================================================
+[Phase 4b] Training-shape gate (all candidates): Distributed Cross-Entropy (vocab-sharded)
+======================================================================
+  PASS baseline:full_vocab_ag
+  PASS strat:Full-vocab all-gather reconstr
+  PASS baseline:three_ar
+  PASS baseline:async_back_to_back
+  Summary: 4 pass / 0 fail / 0 skip (total 4)
+
+======================================================================
+[Phase 5] Code Generation → runtime/trainium_dxe.py
+======================================================================
+  Winner selected by simulator score among HW+TV survivors: baseline:full_vocab_ag (sim=16165.9 us)
+  Winner: baseline:full_vocab_ag
+  Score: 161.659, SimTime: 16165.9 us, Local ops: 10
+  Results: experiments/results_live_dxe/results_dxe.json
+  Generated: runtime/trainium_dxe_7node.py
+

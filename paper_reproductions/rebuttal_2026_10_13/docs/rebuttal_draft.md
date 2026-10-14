@@ -191,4 +191,4 @@ wording, expand jargon on first use, and resolve the §6 single-trajectory/strat
 `runtime/trainium_alltoallv_7node.py` line 1 is a stray scp warning (SyntaxError on import); its vectorized helper OOMs at
 the paper's OLMoE shape (the measured loop+cat helper works); the Phase-1 probe tools return a static table; the deployed
 Layer-block runtime equals the baseline (gain is the e2e harness's bundling); the registered Ring-KV
-`per_chunk_per_part_allgather` template fails its own reference; the microbatch-loop graph detector was gameable.
+`per_chunk_per_part_allgather` template fails its own reference; the microbatch-loop graph detector was gameable; the Uniform-A2A harness imports a runtime file the deployment step never writes (its shipped copy is a collective_permute ring that aborts at 224 ranks); and the Phase-5 codegen's uniform `alltoallv` helper is hard-coded to AG+transpose+RS, so a freshly generated AllToAllV runtime does not exercise the deployed algorithm on the training path (we measure deployed strategies through a wrapper that routes the helper to `evolved_alltoallv`).

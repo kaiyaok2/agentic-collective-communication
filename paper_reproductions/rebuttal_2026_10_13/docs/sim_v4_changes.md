@@ -17,6 +17,12 @@ structural; no constant was tuned against the hardware pool.
 | 7 | Scope-aware graph boundaries: `microbatch_loops_induce_graphs=False` when scoring against the per-problem harness (one graph per step), True for e2e training; and the microbatch-loop detector accepts any iterable that mentions a microbatch quantity or the per-microbatch argument (`range(0, M, 2)`, `range(len(partials))`, `for p in partials`) | the old detector only matched `range(M)`: unrolling the loop by two hid the per-microbatch graph boundary and the simulator scored an identical program 60x better (the leak-free search found exactly this exploit; hardware: 1.00x) |
 | 8 | `index_select` charged at its measured random-access gather rate (probe: 1M indices -> 4 MB in 17.9 ms, ~0.2 GB/s) instead of the strided-memcpy rate | the AG+index_select extraction variants (Uniform A2A 5.7 s/step on hardware) were scored like plain slices |
 
+**Second cluster, same SDK (2026-10-14 11:40 UTC probe):** volume terms reproduce (HBM copy 292 vs 297 GB/s strided basis,
+74 vs 67 GB/s dense; index_select 1M = 18.5 vs 17.9 ms; 4 MB all-gather 5.07 vs 5.18 ms; gather/index_select marginals
+within 3%), while latency-floor terms move ±2× (dispatch 968 vs 1674 µs; 4 KB all-reduce 406 vs 1511 µs; back-to-back
+alphas (0.33, 0.0) vs (0.011, 0.027)). This is the per-deployment variance the Phase-1 probes exist to absorb, and it lands
+on exactly the terms that decide small-payload bundling decisions.
+
 Correlation against the 224-rank hardware pool (within-problem Spearman, step time; 3 repeats per candidate) is in
 rebuttal_draft.md / results_summary.md. Residual limits we state explicitly: (i) compiler-fusion-dependent costs of
 hundreds of 1-D slices (a2av helper variants) are not separable by a per-op model; (ii) small-collective latencies vary

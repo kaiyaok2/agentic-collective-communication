@@ -1,0 +1,42 @@
+[
+  {
+    "template": "ag_slice_cat",
+    "cost_score": 59.786285714285704,
+    "sim_time_us": 5978.6285714285705,
+    "local_ops": 453,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "baseline:ag_slice_cat"
+  },
+  {
+    "template": "ag_t_rs_inline_match",
+    "cost_score": 161.67368960000002,
+    "sim_time_us": 16167.368960000002,
+    "local_ops": 7,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "baseline:ag_t_rs_inline_match"
+  },
+  {
+    "template": "strategy_enumerate_final",
+    "cost_score": 166.7236896,
+    "sim_time_us": 16672.36896,
+    "local_ops": 457,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "strat:refined-from-AllGather + local"
+  },
+  {
+    "template": "allgather_reduce_scatter",
+    "cost_score": 166.9462016,
+    "sim_time_us": 16694.62016,
+    "local_ops": 234,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "baseline:allgather_reduce_scatter"
+  }
+]

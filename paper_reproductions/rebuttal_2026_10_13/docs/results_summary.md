@@ -27,6 +27,12 @@ on the full-tensor basis the model charges, 297 GB/s vs 20; per-op in-graph marg
 all-gather graph compiled >15 min and thrashed the host). Small-collective latencies differ ±2× between probe runs.
 Sensitivity of the corrected model's rankings (agreement with the live-calibrated arm): network curves ×4 / ×0.25 → bundling problems 1.00 / 0.90–1.00, AllToAllV 0.93 / −0.21, dxe 0.81 / 0.93; local terms reverted to the snapshot → dxe 0.81, Ring KV 0.94, others 1.00. The paper's ρ=1.00 TPU swap holds only on the dispatch-count-dominated problems (arms sim_v4_v13_net4x / net025x / localsnap).
 
+**Second cluster, same SDK (2026-10-14 11:40 UTC probe):** volume terms reproduce (HBM copy 292 vs 297 GB/s strided basis,
+74 vs 67 GB/s dense; index_select 1M = 18.5 vs 17.9 ms; 4 MB all-gather 5.07 vs 5.18 ms; gather/index_select marginals
+within 3%), while latency-floor terms move ±2× (dispatch 968 vs 1674 µs; 4 KB all-reduce 406 vs 1511 µs; back-to-back
+alphas (0.33, 0.0) vs (0.011, 0.027)). This is the per-deployment variance the Phase-1 probes exist to absorb, and it lands
+on exactly the terms that decide small-payload bundling decisions.
+
 ## 3. Simulator vs hardware, final (A-Q2, C-Q1) — arm v13, one configuration for all problems
 74 candidates (seed templates, grammar variants, archived LLM strategies, deployed runtimes, baselines, search finds,
 6 AllToAllV seed-library helpers), 3 repeats at 224-rank training scope; repeat sd ≤2%.
@@ -40,7 +46,7 @@ Sensitivity of the corrected model's rankings (agreement with the live-calibrate
 | Ring KV | 6 | 0.58 | top-2 (HW tie 4.96 vs 5.14) | 3.7% |
 | TP MLP | 16 | 0.90 | within 0.3% | 0.3% |
 | Uniform A2A | 10 (3 reps, sd ≤6 ms) | 0.73 | yes (AG+slice extraction 1205 ms; AG+RS forms 1511–1526; harness baseline 1515; AG+index_select 5692) | 0 |
-Pooled Spearman on speedup ratios 0.56 (n=68); direction agreement 26/30. Simulator arm = sim_v4_v13 (v11c + index_select at its measured gather rate). Before fixes: dxe −0.77, AllToAllV −0.32.
+Pooled Spearman on speedup ratios 0.56 (n=68); direction agreement 26/30. Per-candidate predicted-vs-measured speedup table (C-Q1 scatter data): results/sim_vs_hw_v13.csv (68 rows, n_reps, measured sd). Simulator arm = sim_v4_v13 (v11c + index_select at its measured gather rate). Before fixes: dxe −0.77, AllToAllV −0.32.
 Cross-scope inversion reproduced by the simulator: per-primitive payload → AG+T+RS 19972 < AG+slice 29045/40760 (HW
 30.0 / 24.2 / 38.0 ms); OLMoE payload → AG+slice 131603/143416 < AG+T+RS 271144 (HW 3127 vs 4338 ms).
 
@@ -65,6 +71,7 @@ Generic AST edits (swap primitive, mutate constant, delete/move, insert tensor o
 | expert dim 16384 | device OOM | device OOM | device OOM | — | — |
 | top-k 2 + expert dim 8192 | 2164 ms | 1740 ms | 365 ms | 83% / 79% (agent) | 1.24× |
 | top-k 4 + expert dim 8192 | 2923 ms | 2046 ms | 381 ms | 87% / 81% (agent) | 1.43× |
+Repeat 2 (from the run log; the cluster was terminated by AWS at ~10:55 UTC, 35 min before the block's end, before the JSONs could be pulled): top-k 2 + ex 8192 agent 1724 / baseline 2163 ms; top-k 4 + ex 8192 agent 2030 ms (baseline repeat lost).
 | expert dim 8192 | device OOM | 3216 | 440 | 86% | — (AG+RS needs a second full buffer) |
 **Why tokens per step cannot change this share.** With all-gather-based AllToAllV over 224 experts the collective payload is
 ws·T·k·D and the expert compute is T·k·D·EXDIM: both are linear in the token count T, so the collective share is T-invariant; only
@@ -77,6 +84,25 @@ AG+T+RS routed through the agent path at OLMoE scope = 4338 ms (inline baseline 
 harness path; at per-primitive scope the ordering inverts (AG+T+RS 30.0 vs pack-and-gather 38.0 ms). Megatron/NxD 3-AR
 cross-entropy at 224 ranks 8.25–8.31 ms vs deployed 2-AR 8.3–8.6 vs 1-AG baseline 14.6–14.9 → dxe gain ≈1.0× vs the library baseline.
 
+
+## Live-calibration reproduction (Phase 1 → 3 → 4 → 5 end to end, cluster 2, 2026-10-14)
+Same pipeline (`experiments/run_search.py`, sonnet, strategy-enumerate, HW gates on 7 nodes), three Phase-1 arms:
+(S) the shipped static snapshot table; (L) the live on-cluster probe table (`OVERLAY_HW_TABLE`); (L+v4) live table with
+the corrected simulator structure. Deployed runtimes then measured 3× with the per-problem harness at 224 ranks.
+
+| problem | arm | Phase-1 outcome | Phase-3 ranking (sim µs) | deployed | measured (ms) |
+|---|---|---|---|---|---|
+| dxe | S | dispatch 100, alphas (.3,.1,.1) | 1-AG 5207 < 2-AR 5528 < 3-AR 5668 | **1-AG (baseline)** | ⟨…⟩ |
+| dxe | L | live constants | 1-AG 16166 < 2-AR 16818 < 3-AR 17406 | **1-AG (baseline)** | ⟨…⟩ |
+| dxe | L+v4 | | ⟨…⟩ | ⟨…⟩ | ⟨…⟩ |
+| alltoallv | S | alphas (.3,.1,.02) | ag_slice_cat 5979 < AG+T+RS 16695 (3 LLM strategies fail the oracle) | **pack-and-gather** (= paper) | ⟨…⟩ |
+| alltoallv | L | alphas (.33,0,0) | permute_ring 11632 < ag_slice_cat 12787 | **collective_permute ring** | ⟨…⟩ (expected to fail at 224 ranks) |
+| alltoallv | L+v4 | | ⟨…⟩ | ⟨…⟩ | ⟨…⟩ |
+
+Reading so far: with the shipped model structure, live constants do not repair the dxe mis-ranking (1-AG still wins) and
+can promote a hardware-infeasible permute ring on AllToAllV — calibration constants are necessary but not sufficient; the
+structural terms (real shapes, bytes moved, volume-charged local ops) are what flip dxe to the all-reduce recomposition.
+
 ## 7. A-Q5: 10 strategy classes attempted, 4 deployed — see taxonomy_AQ5_attempted.md.
 
 ## 8. Artifact defects found
@@ -88,4 +114,5 @@ cross-entropy at 224 ranks 8.25–8.31 ms vs deployed 2-AR 8.3–8.6 vs 1-AG bas
 6. Microbatch-loop graph detector only matched `range(M)` (gameable); fixed locally.
 7. `$19/hour` should be ~$150/h; Table 5 7n-train (4410) vs Table 6 step (4404) come from different harnesses.
 8. `collective_permute` deadlocks in CCOM bootstrap at ws=32 on SDK 2.22/2.29.
+10. Phase-5 codegen (`search/problems.py` alltoallv `public_api_code`, line ~409) emits an `alltoallv(x, ws, mc)` helper hard-coded to AG+transpose+RS ("matching make_baseline_alltoallv ... evolved_alltoallv is not exercised by OLMoE"): the shipped pipeline's deployed AllToAllV strategy never reaches the OLMoE / per-primitive harness path (a freshly generated pack-and-gather runtime measures 29.6 ms = the inline baseline). The paper-era runtime (r28 archive) carried a pack-and-gather helper; the template was overwritten by the r43 "inline match" experiment.
 9. The Uniform-A2A harness imports `runtime/trainium_uniform_a2a.py` (not the `_7node` file); the shipped copy is a `collective_permute` ring that aborts at 224 ranks (`ENC_MAX_COMM_N`), so the public ua2a agent path is broken as shipped and every earlier "agent variant" measurement silently ran it. Fixed in deploy_candidate.py; pool re-measured (see §3).

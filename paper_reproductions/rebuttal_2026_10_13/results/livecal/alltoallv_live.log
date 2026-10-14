@@ -1,0 +1,348 @@
+[_sso_creds] no live SSO at import; AWS calls will fail if attempted (Command '['aws', 'configure', 'export-credentials', '--profile', 'default', '--format', 'process']' returned non-zero exit status 2.)
+[Phase 1] hardware table: LIVE probe (/home/ubuntu/hwprobe/hw_probe_measured.json)
+======================================================================
+Collective Search Pipeline: AllToAllV (5-Phase)
+Pattern: moe | LLM: True | HW eval: True
+======================================================================
+
+======================================================================
+[Phase 1] Agent Hardware Profiling — LLM Builds Simulator
+======================================================================
+  Model: sonnet | max_turns: 15
+  [Turn 1] Agent: I'll systematically profile this hardware and build an accurate cost model. Let me start by discovering the basic topology and testing which primitives are supported.
+  [Turn 1] Tool: get_device_info({})
+  [Turn 1] Tool: discover_device_adjacency({})
+  [Turn 1] Tool: check_primitive_compilation({"primitive": "all_gather"})
+  [Turn 1] Tool: check_primitive_compilation({"primitive": "reduce_scatter"})
+  [Turn 1] Tool: check_primitive_compilation({"primitive": "all_reduce"})
+  [Turn 1] Tool: check_primitive_compilation({"primitive": "collective_permute"})
+  [Turn 1] Tool: check_primitive_compilation({"primitive": "all_to_all"})
+  [Turn 2] Agent: Great! Now I have the basic topology: 16 devices, 2 cores per device (32 ranks total), 4 neighbors per device. **Critical finding: all_to_all does NOT compile** - I must penalize it in the cost model....
+  [Turn 2] Tool: measure_collective_latency({"collective_type": "all_gather", "tensor_bytes": 4096, "world_size": 32})
+  [Turn 2] Tool: measure_collective_latency({"collective_type": "all_gather", "tensor_bytes": 65536, "world_size": 32})
+  [Turn 2] Tool: measure_collective_latency({"collective_type": "all_gather", "tensor_bytes": 1048576, "world_size": 32})
+  [Turn 2] Tool: measure_collective_latency({"collective_type": "reduce_scatter", "tensor_bytes": 4096, "world_size": 32})
+  [Turn 2] Tool: measure_collective_latency({"collective_type": "reduce_scatter", "tensor_bytes": 65536, "world_size": 32})
+  [Turn 2] Tool: measure_collective_latency({"collective_type": "reduce_scatter", "tensor_bytes": 1048576, "world_size": 32})
+  [Turn 3] Agent: Interesting! Reduce_scatter has constant latency (~95 us) regardless of size, while all_gather varies. Let me continue with collective_permute:
+  [Turn 3] Tool: measure_collective_latency({"collective_type": "collective_permute", "tensor_bytes": 4096, "num_steps": 1, "world_size": 32})
+  [Turn 3] Tool: measure_collective_latency({"collective_type": "collective_permute", "tensor_bytes": 65536, "num_steps": 1, "world_size": 32})
+  [Turn 3] Tool: measure_collective_latency({"collective_type": "collective_permute", "tensor_bytes": 1048576, "num_steps": 1, "world_size": 32})
+  [Turn 3] Tool: check_cross_node_support({"collective_type": "collective_permute"})
+  [Turn 4] Agent: Now let me profile all the local XLA operations. This is critical - different ops have very different costs:
+  [Turn 4] Tool: measure_xla_op_overhead({"op_name": "index_select", "tensor_size": 10000, "num_ops": 100})
+  [Turn 4] Tool: measure_xla_op_overhead({"op_name": "slice", "tensor_size": 10000, "num_ops": 100})
+  [Turn 4] Tool: measure_xla_op_overhead({"op_name": "cat", "tensor_size": 10000, "num_ops": 100})
+  [Turn 4] Tool: measure_xla_op_overhead({"op_name": "view", "tensor_size": 10000, "num_ops": 100})
+  [Turn 4] Tool: measure_xla_op_overhead({"op_name": "reshape", "tensor_size": 10000, "num_ops": 100})
+  [Turn 4] Tool: measure_xla_op_overhead({"op_name": "unsqueeze", "tensor_size": 10000, "num_ops": 100})
+  [Turn 5] Tool: measure_xla_op_overhead({"op_name": "squeeze", "tensor_size": 10000, "num_ops": 100})
+  [Turn 5] Tool: measure_xla_op_overhead({"op_name": "flatten", "tensor_size": 10000, "num_ops": 100})
+  [Turn 5] Tool: measure_xla_op_overhead({"op_name": "narrow", "tensor_size": 10000, "num_ops": 100})
+  [Turn 5] Tool: measure_xla_op_overhead({"op_name": "transpose", "tensor_size": 10000, "num_ops": 100})
+  [Turn 5] Tool: measure_xla_op_overhead({"op_name": "permute", "tensor_size": 10000, "num_ops": 100})
+  [Turn 5] Tool: measure_xla_op_overhead({"op_name": "expand", "tensor_size": 10000, "num_ops": 100})
+  [Turn 6] Tool: measure_xla_op_overhead({"op_name": "contiguous", "tensor_size": 10000, "num_ops": 100})
+  [Turn 6] Tool: measure_xla_op_overhead({"op_name": "zeros", "tensor_size": 10000, "num_ops": 100})
+  [Turn 6] Tool: measure_xla_op_overhead({"op_name": "tensor", "tensor_size": 10000, "num_ops": 100})
+  [Turn 6] Tool: measure_xla_op_overhead({"op_name": "stack", "tensor_size": 10000, "num_ops": 100})
+  [Turn 6] Tool: measure_xla_op_overhead({"op_name": "gather", "tensor_size": 10000, "num_ops": 100})
+  [Turn 6] Tool: measure_xla_op_overhead({"op_name": "scatter", "tensor_size": 10000, "num_ops": 100})
+  [Turn 7] Tool: measure_xla_op_overhead({"op_name": "split", "tensor_size": 10000, "num_ops": 100})
+  [Turn 7] Tool: measure_xla_op_overhead({"op_name": "chunk", "tensor_size": 10000, "num_ops": 100})
+  [Turn 8] Agent: Now let me measure index_select scaling, overlap potential, and other important characteristics:
+  [Turn 8] Tool: measure_index_select_scaling({"index_tensor_size": 100, "source_tensor_size": 10000})
+  [Turn 8] Tool: measure_index_select_scaling({"index_tensor_size": 1000, "source_tensor_size": 100000})
+  [Turn 8] Tool: measure_index_select_scaling({"index_tensor_size": 10000, "source_tensor_size": 1000000})
+  [Turn 8] Tool: measure_overlap_potential({"collective_type": "all_reduce", "pattern": "per_tensor"})
+  [Turn 8] Tool: measure_overlap_potential({"collective_type": "all_reduce", "pattern": "batched"})
+  [Turn 9] Agent: Now let me measure compilation cost, graph launch overhead, memory copy throughput, and back-to-back amortization:
+  [Turn 9] Tool: measure_compilation_cost({"tensor_bytes": 4096})
+  [Turn 9] Tool: measure_compilation_cost({"tensor_bytes": 65536})
+  [Turn 9] Tool: measure_compilation_cost({"tensor_bytes": 1048576})
+  [Turn 9] Tool: measure_compilation_cost({"tensor_bytes": 16777216})
+  [Turn 9] Tool: measure_graph_launch_overhead({})
+  [Turn 9] Tool: measure_memory_copy_throughput({})
+  [Turn 10] Agent: Now let me measure back-to-back amortization to fit the pipeline-fill schedule:
+  [Turn 10] Tool: measure_back_to_back_amortization({"depth": 1})
+  [Turn 10] Tool: measure_back_to_back_amortization({"depth": 2})
+  [Turn 10] Tool: measure_back_to_back_amortization({"depth": 4})
+  [Turn 10] Tool: measure_back_to_back_amortization({"depth": 8})
+  [Turn 10] Tool: measure_back_to_back_amortization({"depth": 16})
+  [Turn 11] Agent: Now let me get ground truth measurements for validation:
+  [Turn 11] Tool: measure_algorithm_latency({"algorithm": "algo_1coll_3localops_32ranks"})
+  [Turn 11] Tool: measure_algorithm_latency({"algorithm": "algo_1coll_35localops_32ranks"})
+  [Turn 11] Tool: measure_algorithm_latency({"algorithm": "algo_31coll_62localops_32ranks"})
+  [Turn 11] Tool: measure_algorithm_latency({"algorithm": "algo_2coll_5localops_32ranks"})
+  [Turn 11] Tool: measure_algorithm_latency({"algorithm": "algo_fused_32ranks"})
+  [Turn 11] Tool: measure_algorithm_latency({"algorithm": "algo_15coll_30localops_32ranks"})
+  [Turn 12] Agent: Perfect! Now I have all the data needed. Let me analyze the key findings and build the cost model:
+
+## Key Findings:
+1. **Topology**: 16 devices, 2 cores/device, 32 ranks total, 4 neighbors per device...
+  [Turn 12] Tool: build_simulator({"code": "\ndef estimate_latency(algorithm_desc, **kwargs):\n    \"\"\"\n    Estimate algorithm late...)
+    -> build_simulator: ok
+  [Turn 13] Agent: Now let me validate the simulator against real measurements:
+  [Turn 13] Tool: validate_simulator({})
+    -> validate_simulator: False
+  [Turn 14] Agent: I'm overpredicting significantly. The hint suggests I'm charging too much for local ops or overhead. Looking at the real measurements:
+- algo_1coll_3localops: 130us actual vs 883us predicted
+- This ha...
+  [Turn 14] Tool: build_simulator({"code": "\ndef estimate_latency(algorithm_desc, **kwargs):\n    \"\"\"\n    Estimate algorithm late...)
+    -> build_simulator: ok
+  [Turn 15] Tool: validate_simulator({})
+    -> validate_simulator: False
+  [Turn 16] Agent: Better! 2/4 are now within tolerance. The failing ones (algo_1coll_35localops and algo_2coll_5localops) are underestimates. Looking at the pattern:
+- algo_1coll_35localops: 35 local ops is a LOT - my ...
+  [Turn 16] Tool: build_simulator({"code": "\ndef estimate_latency(algorithm_desc, **kwargs):\n    \"\"\"\n    Estimate algorithm late...)
+    -> build_simulator: ok
+  [Turn 17] Tool: validate_simulator({})
+    -> validate_simulator: False
+  [Turn 18] Agent: I'm back to overestimating. Let me think about this differently. Looking at the actual measurements:
+- algo_1coll_3localops: 130us 
+- algo_31coll_62localops: 2780us
+
+If algo_31coll has 31 collectives ...
+  [Turn 18] Tool: build_simulator({"code": "\ndef estimate_latency(algorithm_desc, **kwargs):\n    \"\"\"\n    Estimate algorithm late...)
+    -> build_simulator: ok
+  [Turn 19] Tool: validate_simulator({})
+    -> validate_simulator: False
+  [Turn 20] Agent: Great progress! 3/4 are now excellent. Only algo_31coll_62localops is off (45% error). I'm overestimating it - I predict 4030us but actual is 2780us. With 31 collectives, I'm charging 90us each = 2790...
+  [Turn 20] Tool: build_simulator({"code": "\ndef estimate_latency(algorithm_desc, **kwargs):\n    \"\"\"\n    Estimate algorithm late...)
+    -> build_simulator: ok
+  [Turn 21] Tool: validate_simulator({})
+    -> validate_simulator: True
+  [Turn 22] Agent: Excellent! All tests pass within 20% tolerance! Now let me set the simulator configuration with all discovered parameters:
+  [Turn 22] Tool: set_simulator_config({"num_devices": 16, "cores_per_device": 2, "device_adjacency": {"0": [12, 3, 4, 1], "4": [0, 7, 8, 5...)
+    -> Set link_bandwidth_gbps = 1.0
+    -> Set link_latency_us = 90.0
+    -> Set collective_dispatch_overhead_us = 100.0
+    -> Set local_op_overhead_us = 10.0
+    -> Set num_devices = 16
+    -> Set cores_per_device = 2
+    -> set_simulator_config received and ever_validated=True; ending profiling loop.
+    -> ever_validated=True; restored best snapshot simulator.
+
+  Simulator config:
+    collective_dispatch_overhead_us = 100.0
+    local_op_overhead_us = 10.0
+    link_bandwidth_gbps = 1.0
+    link_latency_us = 90.0
+    unsupported_primitives = ['all_to_all']
+    Simulator built: True
+    Simulator validated: True
+    Config complete: True
+
+  Agent discovered:
+    dispatch_overhead = 100.0 us
+    devices = 16, cores/dev = 2
+    simulator built = True
+    simulator validated = True
+Trainium cluster topology (7 node(s)):
+  Nodes: 7, Devices: 112, Cores: 224
+  NeuronLink BW: 192.0 GB/s, Latency: 90.0 us
+  EFA BW: 12.5 GB/s x 8 adapters/node, Latency: 5.0 us
+  Max hops: 4, Avg hops: 1.14
+  Hardware constraints: unsupported primitives = ['all_to_all']
+  [Phase 1 done] pipeline_amort_alphas = (0.330, 0.000, 0.000)
+
+======================================================================
+[Phase 2] Baseline Evaluation: AllToAllV
+======================================================================
+  ag_slice_cat: 12786.7 us, 453 local ops, 1 ag, 0 ar, 0 cp
+  allgather_reduce_scatter: 16968.3 us, 234 local ops, 1 ag, 0 ar, 0 cp
+  ag_t_rs_inline_match: 15126.7 us, 7 local ops, 1 ag, 0 ar, 0 cp
+  permute_ring: ERROR: hw_invalid: collective_permute at ws>64
+  hierarchical_intra_inter: ERROR: index out of range in self
+  pairwise_per_distance: ERROR: hw_invalid: collective_permute at ws>64
+
+  Best baseline: baseline:ag_slice_cat (12786.7 us)
+
+======================================================================
+[Phase 3 / Strategy-Enumerate] AllToAllV
+======================================================================
+  K=5 strategies, R=2 refinement rounds per top-2 (budget ~10 LLM calls)
+  Enumerated 5 strategies:
+    1. Bruck AllToAll decomposition: Decomposes AllToAllV into log2(world_size) rounds of collective_permute with dou...
+    2. Hierarchical node-ring hybrid: Three-phase approach exploiting num_nodes topology: (1) intra-node all_gather wi...
+    3. Butterfly all-gather with staged indexing: Log2(world_size) rounds of all_gather on progressively doubling tensor sizes (bu...
+    4. Reduce-scatter transpose all-gather chain: Inverse of seed allgather_reduce_scatter: first reduce_scatter with transpose to...
+    5. Pipelined permute with double-buffering: Similar iteration count to permute_ring (world_size-1 steps) but overlaps collec...
+  Strategy 1 (Bruck AllToAll decomposition) INCORRECT: world=4 pattern=moe rank=0: max_diff=30000.000000
+  Strategy 2 (Hierarchical node-ring hybrid) INCORRECT: CRASH in collect pass 0: world=4 pattern=moe rank=0: ZeroDivisionError: integer division or modulo b
+  Strategy 4 (Reduce-scatter transpose all-gather chain) INCORRECT: world=4 pattern=moe rank=0: max_diff=15000.000000
+  No correct candidates from strategy enumeration; falling back to multi-island.
+
+======================================================================
+[Phase 3] Multi-island Template Evolution: AllToAllV
+======================================================================
+  Islands (6): ['ag_slice_cat', 'allgather_reduce_scatter', 'ag_t_rs_inline_match', 'permute_ring', 'hierarchical_intra_inter', 'pairwise_per_distance']
+
+  --- Island 1/6: ag_slice_cat ---
+  Starting template: ag_slice_cat (XLA)
+  Baseline: 12786.7 us, 0 permutes, 1 gathers, 453 local ops
+
+  --- Evolution round 1 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 13466.7 us (0 permutes, 1 gathers, 230 local ops)
+
+  --- Evolution round 2 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 12786.7 us (0 permutes, 1 gathers, 453 local ops)
+
+  --- Evolution round 3 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 13466.7 us (0 permutes, 1 gathers, 230 local ops)
+
+  --- Evolution round 4 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 13466.7 us (0 permutes, 1 gathers, 230 local ops)
+
+  --- Island 2/6: allgather_reduce_scatter ---
+  Starting template: allgather_reduce_scatter (XLA)
+  Baseline: 16968.3 us, 0 permutes, 1 gathers, 234 local ops
+
+  --- Evolution round 1 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 13466.7 us (0 permutes, 1 gathers, 230 local ops)
+  NEW BEST: 13466.7 us (20.6% improvement)
+
+  --- Evolution round 2 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 12786.7 us (0 permutes, 1 gathers, 453 local ops)
+  NEW BEST: 12786.7 us (5.0% improvement)
+
+  --- Evolution round 3 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 15126.7 us (0 permutes, 1 gathers, 7 local ops)
+
+  --- Evolution round 4 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 12592.3 us (0 permutes, 1 gathers, 230 local ops)
+  NEW BEST: 12592.3 us (1.5% improvement)
+
+  --- Island 3/6: ag_t_rs_inline_match ---
+  Island 3 (ag_t_rs_inline_match) failed: Built-in template failed correctness: CRASH in collect pass 0: world=4 pattern=moe rank=0: RuntimeError: shape '[4, 4, 20]' is invalid for input of size 128
+
+  --- Island 4/6: permute_ring ---
+  Starting template: permute_ring (XLA)
+  Baseline: inf us, 1 permutes, 0 gathers, 0 local ops
+
+  --- Evolution round 1 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 15126.7 us (0 permutes, 1 gathers, 7 local ops)
+  NEW BEST: 15126.7 us (nan% improvement)
+
+  --- Evolution round 2 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 15126.7 us (0 permutes, 1 gathers, 7 local ops)
+
+  --- Evolution round 3 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 12052.0 us (0 permutes, 1 gathers, 229 local ops)
+  NEW BEST: 12052.0 us (20.3% improvement)
+
+  --- Evolution round 4 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 11632.4 us (0 permutes, 1 gathers, 5 local ops)
+  NEW BEST: 11632.4 us (3.5% improvement)
+
+  --- Island 5/6: hierarchical_intra_inter ---
+  Island 5 (hierarchical_intra_inter) failed: Built-in template failed correctness: CRASH in collect pass 0: world=16 pattern=moe rank=0: IndexError: index out of range in self
+
+  --- Island 6/6: pairwise_per_distance ---
+  Starting template: pairwise_per_distance (XLA)
+  Baseline: inf us, 1 permutes, 0 gathers, 0 local ops
+
+  --- Evolution round 1 ---
+  Correctness: PASS (including bf16)
+  Benchmark error: hw_invalid: collective_permute at ws>64
+
+  --- Evolution round 2 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 16288.3 us (0 permutes, 1 gathers, 457 local ops)
+  NEW BEST: 16288.3 us (nan% improvement)
+
+  --- Evolution round 3 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 15859.4 us (0 permutes, 1 gathers, 231 local ops)
+  NEW BEST: 15859.4 us (2.6% improvement)
+
+  --- Evolution round 4 ---
+  Correctness: PASS (including bf16)
+  Benchmark: 15859.4 us (0 permutes, 1 gathers, 231 local ops)
+
+  Evolution complete. 7 total candidates.
+  Best: evo:permute_ring_3 (11632.4 us, 5 local ops)
+
+======================================================================
+RANKING (post-evolution, pre-hardware)
+======================================================================
+  1. evo:permute_ring_3: 11632.4 us, 5 ops
+  2. evo:allgather_reduce_scatter_1: 12592.3 us, 230 ops
+  3. baseline:ag_slice_cat: 12786.7 us, 453 ops
+  4. evo:ag_slice_cat_0: 12786.7 us, 453 ops
+  5. baseline:ag_t_rs_inline_match: 15126.7 us, 7 ops
+  6. evo:pairwise_per_distance_5: 15859.4 us, 231 ops
+  7. baseline:allgather_reduce_scatter: 16968.3 us, 234 ops
+
+Simulator winner: evo:permute_ring_3 (sim=11632.4 us)
+
+======================================================================
+[Phase 4] Hardware Benchmark: AllToAllV
+======================================================================
+  Running evo:permute_ring_3 (evolved_permute_ring, sim=11632.4 us)...
+    HW: 0.434 ms | Sim: 11632.4 us
+    Running training validation (10 steps, bf16)...
+    Training validation: PASSED (per-step avg = 565.317 ms)
+  Running evo:allgather_reduce_scatter_1 (evolved_allgather_reduce_scatter, sim=12592.3 us)...
+    HW: 24.910 ms | Sim: 12592.3 us
+    Running training validation (10 steps, bf16)...
+    Training validation: PASSED (per-step avg = 1065.093 ms)
+  Running baseline:ag_slice_cat (ag_slice_cat, sim=12786.7 us)...
+    HW: 21.838 ms | Sim: 12786.7 us
+    Running training validation (10 steps, bf16)...
+    Training validation: PASSED (per-step avg = 1028.166 ms)
+  Running evo:ag_slice_cat_0 (evolved_ag_slice_cat, sim=12786.7 us)...
+    HW: 23.598 ms | Sim: 12786.7 us
+    Running training validation (10 steps, bf16)...
+    Training validation: PASSED (per-step avg = 1029.796 ms)
+  Running baseline:ag_t_rs_inline_match (ag_t_rs_inline_match, sim=15126.7 us)...
+    HW: 0.459 ms | Sim: 15126.7 us
+    Running training validation (10 steps, bf16)...
+    Training validation: PASSED (per-step avg = 666.761 ms)
+  Running evo:pairwise_per_distance_5 (evolved_pairwise_per_distance, sim=15859.4 us)...
+    HW: 6.834 ms | Sim: 15859.4 us
+    Running training validation (10 steps, bf16)...
+    Training validation: PASSED (per-step avg = 1153.340 ms)
+
+  Algorithm                           Rank (ms)   Sim (us)  
+  -------------------------------------------------------
+  evo:permute_ring_3                  565.317     11632.4   
+  evo:allgather_reduce_scatter_1      1065.093    12592.3   
+  baseline:ag_slice_cat               1028.166    12786.7   
+  evo:ag_slice_cat_0                  1029.796    12786.7   
+  baseline:ag_t_rs_inline_match       666.761     15126.7   
+  evo:pairwise_per_distance_5         1153.340    15859.4   
+
+======================================================================
+[Phase 4b] Training-shape gate (all candidates): AllToAllV
+======================================================================
+  PASS evo:permute_ring_3
+  PASS evo:allgather_reduce_scatter_1
+  PASS baseline:ag_slice_cat
+  PASS evo:ag_slice_cat_0
+  PASS baseline:ag_t_rs_inline_match
+  PASS evo:pairwise_per_distance_5
+  PASS baseline:allgather_reduce_scatter
+  Summary: 7 pass / 0 fail / 0 skip (total 7)
+
+======================================================================
+[Phase 5] Code Generation → runtime/trainium_alltoallv.py
+======================================================================
+  Winner selected by simulator score among HW+TV survivors: evo:permute_ring_3 (sim=11632.4 us)
+  Winner: evo:permute_ring_3
+  Score: 116.324, SimTime: 11632.4 us, Local ops: 5
+  Results: experiments/results_live_alltoallv/results_alltoallv.json
+  Generated: runtime/trainium_alltoallv_7node.py
+

@@ -5,7 +5,7 @@ AP=/home/ubuntu/ap7; REPO=/home/ubuntu/OverlayCCL; Q=/home/ubuntu/queue.log
 source /home/ubuntu/venv.env
 stage () { echo "### [$(date -u +%T)] $1" | tee -a $Q; }
 harvest () { for ip in $WORKERS; do scp -q -i /home/ubuntu/.ssh/Kaiyao.pem -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@$ip:$1/*.json $1/ 2>/dev/null; done; }
-until grep -q "QUEUE31 DONE" $Q; do sleep 30; done
+until grep -q "QUEUE33 DONE" $Q; do sleep 30; done
 [ -f $REPO/runtime/trainium_alltoallv_7node.py.paper.bak ] || cp $REPO/runtime/trainium_alltoallv_7node.py $REPO/runtime/trainium_alltoallv_7node.py.paper.bak
 run () { T=$1; V=$2; B=$3; RT=$4
   [ "$RT" != "-" ] && cp $RT $REPO/runtime/trainium_alltoallv_7node.py || cp $REPO/runtime/trainium_alltoallv_7node.py.paper.bak $REPO/runtime/trainium_alltoallv_7node.py
