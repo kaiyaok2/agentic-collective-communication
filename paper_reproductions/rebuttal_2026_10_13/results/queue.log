@@ -114,3 +114,326 @@ Traceback (most recent call last):
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError
 ### [13:57:03] QUEUE32 run_search --problem dxe [v4live]
+  rc=0 1 generated
+### [14:08:08] QUEUE32 run_search --problem alltoallv [v4live]
+  rc=0 1 generated
+### [14:24:26] QUEUE32 measure v4live runtimes, 3 repeats
+=== sweep: 2 runs, 300 steps each ===
+--- [14:24:26] dxe__livecal_v4live
+deployed file /home/ubuntu/livecal/dxe_v4live_runtime.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_dxe_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=8.399248123168945  (avg_ms=8.23183536529541 steady=8.399248123168945) rc=0
+--- [14:25:55] alltoallv__livecal_v4live
+deployed file /home/ubuntu/livecal/alltoallv_v4live_runtime.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_alltoallv_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=29.469013214111328  (avg_ms=30.110958417256672 steady=29.59120273590088) rc=0
+=== sweep done 14:28:31 ===
+=== sweep: 2 runs, 300 steps each ===
+--- [14:28:31] dxe__livecal_v4live
+deployed file /home/ubuntu/livecal/dxe_v4live_runtime.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_dxe_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=8.632540702819824  (avg_ms=9.16773239771525 steady=8.892178535461426) rc=0
+--- [14:29:29] alltoallv__livecal_v4live
+deployed file /home/ubuntu/livecal/alltoallv_v4live_runtime.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_alltoallv_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=30.07829189300537  (avg_ms=30.56622902552287 steady=30.121326446533203) rc=0
+=== sweep done 14:32:16 ===
+=== sweep: 2 runs, 300 steps each ===
+--- [14:32:17] dxe__livecal_v4live
+deployed file /home/ubuntu/livecal/dxe_v4live_runtime.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_dxe_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=8.610010147094727  (avg_ms=9.006493091583252 steady=8.721590042114258) rc=0
+--- [14:33:27] alltoallv__livecal_v4live
+deployed file /home/ubuntu/livecal/alltoallv_v4live_runtime.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_alltoallv_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=29.63125705718994  (avg_ms=30.437511603037517 steady=29.70409393310547) rc=0
+=== sweep done 14:36:11 ===
+### [14:36:11] QUEUE32 DONE
+### [14:36:30] QUEUE33 wrapped-helper measurement of deployed AllToAllV runtimes (snapshot, live, v4live), 3 repeats
+=== sweep: 3 runs, 300 steps each ===
+--- [14:36:30] alltoallv__livecal_snapshot_wrapped
+deployed file /home/ubuntu/livecal/alltoallv_snapshot_runtime_wrapped.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_alltoallv_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=47.6226806640625  (avg_ms=47.45984395345052 steady=47.66881465911865) rc=0
+--- [14:40:30] alltoallv__livecal_live_wrapped
+deployed file /home/ubuntu/livecal/alltoallv_live_runtime_wrapped.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_alltoallv_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=23.800373077392578  (avg_ms=24.057992299397785 steady=23.800373077392578) rc=0
+--- [14:43:26] alltoallv__livecal_v4live_wrapped
+deployed file /home/ubuntu/livecal/alltoallv_v4live_runtime_wrapped.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_alltoallv_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=47.16634750366211  (avg_ms=47.260921001434326 steady=47.181129455566406) rc=0
+=== sweep done 14:46:16 ===
+=== sweep: 3 runs, 300 steps each ===
+--- [14:46:16] alltoallv__livecal_snapshot_wrapped
+deployed file /home/ubuntu/livecal/alltoallv_snapshot_runtime_wrapped.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_alltoallv_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=46.999454498291016  (avg_ms=47.166452407836914 steady=47.04713821411133) rc=0
+--- [14:49:16] alltoallv__livecal_live_wrapped
+deployed file /home/ubuntu/livecal/alltoallv_live_runtime_wrapped.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_alltoallv_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=23.93794059753418  (avg_ms=24.552462100982666 steady=23.965835571289062) rc=0
+--- [14:52:05] alltoallv__livecal_v4live_wrapped
+deployed file /home/ubuntu/livecal/alltoallv_v4live_runtime_wrapped.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_alltoallv_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=46.90361022949219  (avg_ms=47.29090690612793 steady=46.94688320159912) rc=0
+=== sweep done 14:55:08 ===
+=== sweep: 3 runs, 300 steps each ===
+--- [14:55:08] alltoallv__livecal_snapshot_wrapped
+deployed file /home/ubuntu/livecal/alltoallv_snapshot_runtime_wrapped.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_alltoallv_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=47.32084274291992  (avg_ms=47.444492975870766 steady=47.345876693725586) rc=0
+--- [14:58:13] alltoallv__livecal_live_wrapped
+deployed file /home/ubuntu/livecal/alltoallv_live_runtime_wrapped.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_alltoallv_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=24.175286293029785  (avg_ms=24.652996857961018 steady=24.219751358032227) rc=0
+--- [15:00:49] alltoallv__livecal_v4live_wrapped
+deployed file /home/ubuntu/livecal/alltoallv_v4live_runtime_wrapped.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_alltoallv_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=47.96600341796875  (avg_ms=47.554004987080894 steady=47.925591468811035) rc=0
+=== sweep done 15:03:42 ===
+### [15:03:42] QUEUE33 DONE
+### [15:03:57] QUEUE34 OLMoE-scope: deployed AllToAllV runtimes (wrapped helper) v4live, snapshot
+=== [15:03:57] training/train_olmoe10b_hl_w100.py backend=agent steps=160 tag=olmoe_livecal_v4live_a2av nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+=== [15:29:00] training/train_olmoe10b_hl_w100.py backend=agent steps=160 tag=olmoe_livecal_snapshot_a2av nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=1095s
+  Steady step   : 6198.8 ms (from step 100)
+  Final loss    : 10.5450  (160/160 finite)
+### [15:47:26] QUEUE34 DONE
+### [15:47:34] QUEUE35 OLMoE-scope: live-arm permute-ring AllToAllV (wrapped helper)
+=== [15:47:34] training/train_olmoe10b_hl_w100.py backend=agent steps=160 tag=olmoe_livecal_live_a2av nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=1 wall=78s
+### [15:49:01] QUEUE35 DONE
+### [15:49:12] QUEUE36 OLMoE-scope: L+v4 deployed AllToAllV (wrapped), 120 steps, long timeout
+=== [15:49:12] training/train_olmoe10b_hl_w100.py backend=agent steps=120 tag=olmoe_livecal_v4live_a2av nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=0 wall=858s
+  Steady step   : 6198.0 ms (from step 100)
+  Final loss    : 10.5437  (120/120 finite)
+### [16:03:39] QUEUE36 DONE
+### [16:03:52] QUEUE30 B>1 OLMoE (fix v2: per-sample top-k + comparison one-hot): B2 DM1024, B4 DM1024, B2 DM2048
+=== [16:03:52] training/train_olmoe10b_B2fix2_DM1024.py backend=agent steps=160 tag=olmoe_B2fix2_DM1024_agent nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=1 wall=164s
+=== [16:06:47] training/train_olmoe10b_B2fix2_DM1024.py backend=agent steps=160 tag=olmoe_B2fix2_DM1024_nocomm nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=1 wall=67s
+=== [16:08:02] training/train_olmoe10b_B2fix2_DM1024.py backend=baseline steps=160 tag=olmoe_B2fix2_DM1024_baseline nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=1 wall=91s
+=== [16:09:42] training/train_olmoe10b_B4fix2_DM1024.py backend=agent steps=160 tag=olmoe_B4fix2_DM1024_agent nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=1 wall=92s
+=== [16:11:23] training/train_olmoe10b_B4fix2_DM1024.py backend=agent steps=160 tag=olmoe_B4fix2_DM1024_nocomm nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=1 wall=107s
+=== [16:13:19] training/train_olmoe10b_B4fix2_DM1024.py backend=baseline steps=160 tag=olmoe_B4fix2_DM1024_baseline nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free

@@ -75,7 +75,7 @@ Repeat 2 (from the run log; the cluster was terminated by AWS at ~10:55 UTC, 35 
 | expert dim 8192 | device OOM | 3216 | 440 | 86% | — (AG+RS needs a second full buffer) |
 **Why tokens per step cannot change this share.** With all-gather-based AllToAllV over 224 experts the collective payload is
 ws·T·k·D and the expert compute is T·k·D·EXDIM: both are linear in the token count T, so the collective share is T-invariant; only
-the per-token compute (expert width, top-k, model width) moves it — which the table sweeps. Every larger-token configuration (B=2/4, S=512, L=16) fails at NEFF load / device memory for both backends: the AG-based
+the per-token compute (expert width, top-k, model width) moves it — which the table sweeps. B>1 attempts on cluster 2 with two harness rewrites (one-hot matmul gather/scatter; per-sample top-k keeping every sort at S=256): the T>256 routing graph either faults at runtime (`NRT_EXEC_OOB` in the indirect-DMA gather/scatter) or fails to compile (`NCC_ITEN404 MaskPropagation` internal compiler error), so larger-token steps are blocked by the Neuron stack, not by the harness logic. Every larger-token configuration (B=2/4, S=512, L=16) fails at NEFF load / device memory for both backends: the AG-based
 AllToAllV buffer is ws×cap×DM·ws bytes (2 GB per rank at the paper shape, 8 GB at B=4). The regime is collective-bound by
 construction of 224-way expert parallelism; the transferable number is the collective-component speedup 4016→2795 ms (1.44×).
 
@@ -92,16 +92,17 @@ the corrected simulator structure. Deployed runtimes then measured 3× with the 
 
 | problem | arm | Phase-1 outcome | Phase-3 ranking (sim µs) | deployed | measured (ms) |
 |---|---|---|---|---|---|
-| dxe | S | dispatch 100, alphas (.3,.1,.1) | 1-AG 5207 < 2-AR 5528 < 3-AR 5668 | **1-AG (baseline)** | ⟨…⟩ |
-| dxe | L | live constants | 1-AG 16166 < 2-AR 16818 < 3-AR 17406 | **1-AG (baseline)** | ⟨…⟩ |
-| dxe | L+v4 | | ⟨…⟩ | ⟨…⟩ | ⟨…⟩ |
-| alltoallv | S | alphas (.3,.1,.02) | ag_slice_cat 5979 < AG+T+RS 16695 (3 LLM strategies fail the oracle) | **pack-and-gather** (= paper) | ⟨…⟩ |
-| alltoallv | L | alphas (.33,0,0) | permute_ring 11632 < ag_slice_cat 12787 | **collective_permute ring** | ⟨…⟩ (expected to fail at 224 ranks) |
-| alltoallv | L+v4 | | ⟨…⟩ | ⟨…⟩ | ⟨…⟩ |
+| dxe | S | dispatch 100, alphas (.3,.1,.1) | 1-AG 5207 < 2-AR 5528 < 3-AR 5668 | **1-AG (baseline)** | 13.0 / 13.3 / 13.6 |
+| dxe | L | live constants | 1-AG 16166 < 2-AR 16818 < 3-AR 17406 | **1-AG (baseline)** | 12.7 / 13.0 / 13.4 |
+| dxe | L+v4 | alphas (.33,.15,.14) | 2-AR async 15817 < 3-AR 15875 < fused 2-AR 16002 < **1-AG 21531 (last)** | **2-AR recomposition** | **8.6** (vs 13.0–13.6 for the 1-AG deployments of arms S and L) |
+| alltoallv | S | alphas (.3,.1,.02) | ag_slice_cat 5979 < AG+T+RS 16695 (3 LLM strategies fail the oracle) | **pack-and-gather seed template `ag_slice_cat`** | plain helper 29.6 (= AG+T+RS, defect #10); wrapped: 47.0–47.6 per-primitive, **6199 ms at OLMoE scope** (slower than the 4349 baseline; the paper's archived runtime — a different loop+cat implementation — gives 3125) |
+| alltoallv | L | alphas (.33,0,0) | permute_ring 11632 < ag_slice_cat 12787 | **collective_permute ring** (evo:permute_ring_3) | per-primitive 23.8–24.2 ms (correctness unverified by the harness); OLMoE scope: device OOM (2 GB buffer) |
+| alltoallv | L+v4 | alphas (.33,.15,.15) | LLM "segmented all-gather + strided indexing" (refined) 292448 < ag_slice_cat 315832; 3 LLM strategies fail the oracle | **LLM pack-and-gather variant** | per-primitive 47.2 (wrapped; = template 47.0); OLMoE scope 6198 ms via the generic wrapper (same as the template; the paper's hand-written uniform helper is what yields 3125) |
 
-Reading so far: with the shipped model structure, live constants do not repair the dxe mis-ranking (1-AG still wins) and
-can promote a hardware-infeasible permute ring on AllToAllV — calibration constants are necessary but not sufficient; the
-structural terms (real shapes, bytes moved, volume-charged local ops) are what flip dxe to the all-reduce recomposition.
+Reading: with the shipped model structure, live constants do not repair the dxe mis-ranking (1-AG still wins) and can
+promote a hardware-infeasible permute ring on AllToAllV; with the corrected structure plus live constants the pipeline
+deploys the all-reduce recomposition on dxe and ranks 1-AG last — calibration operating end to end, and necessary but not
+sufficient without the structural terms (real shapes, bytes moved, volume-charged local ops).
 
 ## 7. A-Q5: 10 strategy classes attempted, 4 deployed — see taxonomy_AQ5_attempted.md.
 
@@ -114,5 +115,6 @@ structural terms (real shapes, bytes moved, volume-charged local ops) are what f
 6. Microbatch-loop graph detector only matched `range(M)` (gameable); fixed locally.
 7. `$19/hour` should be ~$150/h; Table 5 7n-train (4410) vs Table 6 step (4404) come from different harnesses.
 8. `collective_permute` deadlocks in CCOM bootstrap at ws=32 on SDK 2.22/2.29.
+11. The paper-era runtime's uniform helper (`alltoallv(x, ws, mc)`: all-gather the pre-packed x, then 224 fixed-offset slices + cat; r28 archive) is hand-written and is what the OLMoE harness measured (3125 ms). Routing the identical seed template `ag_slice_cat` through a generic uniform wrapper (re-pack loop + per-source slices) costs 6199 ms at OLMoE scope — slower than the 4349 baseline. The shipped codegen emits neither (defect #10). The OLMoE headline therefore depends on the helper implementation, not only on the deployed algorithm class.
 10. Phase-5 codegen (`search/problems.py` alltoallv `public_api_code`, line ~409) emits an `alltoallv(x, ws, mc)` helper hard-coded to AG+transpose+RS ("matching make_baseline_alltoallv ... evolved_alltoallv is not exercised by OLMoE"): the shipped pipeline's deployed AllToAllV strategy never reaches the OLMoE / per-primitive harness path (a freshly generated pack-and-gather runtime measures 29.6 ms = the inline baseline). The paper-era runtime (r28 archive) carried a pack-and-gather helper; the template was overwritten by the r43 "inline match" experiment.
 9. The Uniform-A2A harness imports `runtime/trainium_uniform_a2a.py` (not the `_7node` file); the shipped copy is a `collective_permute` ring that aborts at 224 ranks (`ENC_MAX_COMM_N`), so the public ua2a agent path is broken as shipped and every earlier "agent variant" measurement silently ran it. Fixed in deploy_candidate.py; pool re-measured (see §3).

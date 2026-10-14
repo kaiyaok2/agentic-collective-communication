@@ -65,6 +65,20 @@ they do. We will rewrite the §5 portability claim as: network constants are not
 problems; on payload-changing problems both network and local terms move the ranking, and they must be measured on the
 deployed SDK.
 
+**Calibration operating, end to end (new).** On a second 7-node cluster we re-ran the full pipeline (Phase 1 LLM
+probing → Phase 3 enumeration → Phase 4 gates → Phase 5 deployment, same prompts, budget and gates) three ways and
+measured what each deployed: (S) the shipped snapshot table; (L) the live on-cluster probe table; (L+v4) the live table
+with the corrected cost-model structure. Distributed CE: S and L both deploy the full-vocab all-gather (13.0–13.6 ms
+measured); L+v4 ranks it last and deploys the two-all-reduce recomposition (8.6 ms, 1.55× over the S/L deployment).
+AllToAllV: S deploys the pack-and-gather seed template (the paper's strategy class); L deploys an LLM collective_permute
+ring (23.9 ms at per-primitive scope, device-OOM at OLMoE scope); L+v4 deploys an LLM pack-and-gather variant (47.2 ms
+per-primitive; 6198 ms at OLMoE scope through the generic helper). One more honest finding from this exercise: the uniform helper the OLMoE harness calls is
+not emitted by the shipped codegen (it hard-codes AG+T+RS), and the paper-era runtime's hand-written helper (all-gather
+the pre-packed buffer, 224 fixed-offset slices + cat) is what produced 3125 ms; the same template through a generic
+re-packing wrapper costs 6199 ms. We will ship the helper with the artifact and state that the headline depends on it.
+So calibration is necessary (S → wrong dxe deployment) but constants alone are not sufficient (L → still wrong); the
+structural terms the probes are meant to feed must be in the model.
+
 ## C-Q2 / B — Is the LLM necessary? Non-LLM generators, leak-free
 
 We built a generator with no knowledge of collective rewrites: generic AST edits (swap primitive, mutate constant,

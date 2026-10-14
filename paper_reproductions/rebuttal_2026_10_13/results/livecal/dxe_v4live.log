@@ -98,3 +98,137 @@ Now let m...
 - algo_1coll_35localops: 1050μs actual vs my 2042.9μs
 
 The is...
+  [Turn 13] Tool: build_simulator({"code": "\nimport re\n\n# Hardware parameters discovered through profiling\nNUM_DEVICES = 16\nCORES...)
+    -> build_simulator: ok
+  [Turn 14] Tool: validate_simulator({})
+    -> validate_simulator: False
+  [Turn 15] Agent: Better! I'm getting closer but still have issues:
+- algo_1coll_3localops: 37.7% error (179 vs 130) - still overestimating
+- algo_1coll_35localops: 2.4% error - excellent!
+- algo_31coll_62localops: 18....
+  [Turn 15] Tool: build_simulator({"code": "\nimport re\n\n# Hardware parameters discovered through profiling\nNUM_DEVICES = 16\nCORES...)
+    -> build_simulator: ok
+  [Turn 16] Tool: validate_simulator({})
+    -> validate_simulator: False
+  [Turn 17] Agent: I'm overestimating again. Let me recalibrate more carefully by looking at the actual data:
+
+1. algo_1coll_3localops = 130μs
+2. algo_1coll_35localops = 1050μs
+3. algo_2coll_5localops = 730μs
+4. algo_31...
+  [Turn 17] Tool: build_simulator({"code": "\nimport re\n\n# Unsupported primitives\nUNSUPPORTED_PRIMITIVES = ['all_to_all']\n\ndef es...)
+    -> build_simulator: ok
+  [Turn 18] Tool: validate_simulator({})
+    -> validate_simulator: True
+  [Turn 19] Agent: Perfect! My simulator is now validated. Let me set the simulator config with all the discovered parameters:
+  [Turn 19] Tool: set_simulator_config({"num_devices": 16, "cores_per_device": 2, "device_adjacency": {"0": [12, 3, 4, 1], "4": [0, 7, 8, 5...)
+    -> Set link_bandwidth_gbps = 100.0
+    -> Set link_latency_us = 90.0
+    -> Set collective_dispatch_overhead_us = 43.75
+    -> Set local_op_overhead_us = 28.75
+    -> Set num_devices = 16
+    -> Set cores_per_device = 2
+    -> set_simulator_config received and ever_validated=True; ending profiling loop.
+    -> ever_validated=True; restored best snapshot simulator.
+
+  Simulator config:
+    collective_dispatch_overhead_us = 43.75
+    local_op_overhead_us = 28.75
+    link_bandwidth_gbps = 100.0
+    link_latency_us = 90.0
+    unsupported_primitives = ['all_to_all']
+    Simulator built: True
+    Simulator validated: True
+    Config complete: True
+
+  Agent discovered:
+    dispatch_overhead = 43.8 us
+    devices = 16, cores/dev = 2
+    simulator built = True
+    simulator validated = True
+Trainium cluster topology (7 node(s)):
+  Nodes: 7, Devices: 112, Cores: 224
+  NeuronLink BW: 100.0 GB/s, Latency: 90.0 us
+  EFA BW: 12.5 GB/s x 8 adapters/node, Latency: 5.0 us
+  Max hops: 4, Avg hops: 1.14
+  Hardware constraints: unsupported primitives = ['all_to_all']
+  [Phase 1 done] pipeline_amort_alphas = (0.333, 0.150, 0.140)
+
+======================================================================
+[Phase 2] Baseline Evaluation: Distributed Cross-Entropy (vocab-sharded)
+======================================================================
+  three_ar: 15875.1 us, 18 local ops, 0 ag, 3 ar, 0 cp
+  async_back_to_back: 15816.8 us, 18 local ops, 0 ag, 3 ar, 0 cp
+  full_vocab_ag: 21530.9 us, 13 local ops, 1 ag, 0 ar, 0 cp
+
+  Best baseline: baseline:async_back_to_back (15816.8 us)
+
+======================================================================
+[Phase 3 / Strategy-Enumerate] Distributed Cross-Entropy (vocab-sharded)
+======================================================================
+  K=5 strategies, R=2 refinement rounds per top-2 (budget ~10 LLM calls)
+  Enumerated 5 strategies:
+    1. Three separate all-reduces (baseline): Issues three distinct all-reduce collectives: MAX over (T,) local row maxima, SU...
+    2. Back-to-back SUM all-reduces (async overlap): After the initial MAX all-reduce, immediately dispatch two SUM all-reduces (exp-...
+    3. Full-vocab all-gather reconstruction: Single all-gather collective over (T, V_local) logits to materialize the full (T...
+    4. Fused two-tensor SUM all-reduce: After MAX all-reduce and local exp/gather, concatenate the (T,) exp-sum and (T,)...
+    5. Reduce-scatter + all-gather pipeline: Reduce-scatter the (T, V_local) logits across ranks to produce per-rank (T/world...
+  Strategy 1 (Three separate all-reduces (baseline)): sim=15875.1 us
+  Strategy 2 (Back-to-back SUM all-reduces (async overlap)): sim=15816.8 us
+  Strategy 3 (Full-vocab all-gather reconstruction): sim=21530.9 us
+  Strategy 4 (Fused two-tensor SUM all-reduce): sim=16001.5 us
+
+  Top after enumeration:
+    Back-to-back SUM all-reduces (async overlap): 15816.8 us
+    Three separate all-reduces (baseline): 15875.1 us
+
+  Strategy-Enumerate complete. 6 total candidates.
+  Best: Back-to-back SUM all-reduces (async overlap) (sim=15816.8 us)
+
+======================================================================
+RANKING (post-evolution, pre-hardware)
+======================================================================
+  1. baseline:async_back_to_back: 15816.8 us, 18 ops
+  2. strat:Back-to-back SUM all-reduces (: 15816.8 us, 18 ops
+  3. baseline:three_ar: 15875.1 us, 18 ops
+  4. baseline:full_vocab_ag: 21530.9 us, 13 ops
+
+Simulator winner: baseline:async_back_to_back (sim=15816.8 us)
+
+======================================================================
+[Phase 4] Hardware Benchmark: Distributed Cross-Entropy (vocab-sharded)
+======================================================================
+  Running baseline:async_back_to_back (async_back_to_back, sim=15816.8 us)...
+    HW: 592.095 ms | Sim: 15816.8 us
+  Running strat:Back-to-back SUM all-reduces ( (strategy_enumerate_final, sim=15816.8 us)...
+    HW: 596.492 ms | Sim: 15816.8 us
+  Running baseline:three_ar (three_ar, sim=15875.1 us)...
+    HW: 597.283 ms | Sim: 15875.1 us
+  Running baseline:full_vocab_ag (full_vocab_ag, sim=21530.9 us)...
+    HW: 404.958 ms | Sim: 21530.9 us
+
+  Algorithm                           Rank (ms)   Sim (us)  
+  -------------------------------------------------------
+  baseline:async_back_to_back         592.095     15816.8   
+  strat:Back-to-back SUM all-reduces ( 596.492     15816.8   
+  baseline:three_ar                   597.283     15875.1   
+  baseline:full_vocab_ag              404.958     21530.9   
+
+======================================================================
+[Phase 4b] Training-shape gate (all candidates): Distributed Cross-Entropy (vocab-sharded)
+======================================================================
+  PASS baseline:async_back_to_back
+  PASS strat:Back-to-back SUM all-reduces (
+  PASS baseline:three_ar
+  PASS baseline:full_vocab_ag
+  Summary: 4 pass / 0 fail / 0 skip (total 4)
+
+======================================================================
+[Phase 5] Code Generation → runtime/trainium_dxe.py
+======================================================================
+  Winner selected by simulator score among HW+TV survivors: baseline:async_back_to_back (sim=15816.8 us)
+  Winner: baseline:async_back_to_back
+  Score: 158.168, SimTime: 15816.8 us, Local ops: 18
+  Results: experiments/results_v4live_dxe/results_dxe.json
+  Generated: runtime/trainium_dxe_7node.py
+
