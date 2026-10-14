@@ -1,4 +1,4 @@
-# PPoPP'27 #1429 — author response (DRAFT v2, 2026-10-14; ⟨⟩ = pending from runs still in flight)
+# PPoPP'27 #1429 — author response (DRAFT v2, 2026-10-14 09:10 UTC)
 
 We thank the reviewers. We answer the explicit questions first. All new numbers were measured on a fresh 7-node
 trn1.32xlarge cluster (224 ranks; compiler 2.22 / runtime 2.29 vs 2.24 in the submission) with the submission's code,
@@ -54,8 +54,16 @@ it matters: the ranking is indeed insensitive to the *network* constants (swappi
 ranking: ρ = 1.00, reproduced), but it is sensitive to the *local* terms — per-op in-graph costs, HBM copy rates,
 collective latency curves and NEFF-load behavior — which moved 2–15× between the snapshot and this SDK and ±2× between
 probe runs. Those are exactly the quantities the probes measure, and the quantities that decide the payload-changing
-problems (dxe, AllToAllV). We will rewrite the §5 portability claim as: network constants are not what calibration is for;
-local cost terms are, and they must be measured on the deployed SDK.
+problems (dxe, AllToAllV). We measured this directly on the corrected model (74-candidate pool, rank agreement of within-problem orderings with
+the live-calibrated model): scaling every collective curve's bandwidth by 4× or by 0.25× leaves the five bundling
+problems' rankings unchanged (Spearman 1.00, 0.90–1.00) — that is the invariance behind the paper's ρ = 1.00, and it holds
+because those problems are decided by dispatch counts, not bandwidth — but it does *not* hold for the payload-changing
+problems: AllToAllV's ranking agreement drops to 0.93 (4× faster network) and **−0.21** (4× slower), distributed CE's to
+0.81; and reverting only the *local* terms to the snapshot values changes distributed CE (0.81) and Ring KV (0.94) while
+leaving the rest intact. So the TPU swap in §5 tested the problems where constants cannot matter and missed the ones where
+they do. We will rewrite the §5 portability claim as: network constants are not what calibration is for on bundling
+problems; on payload-changing problems both network and local terms move the ranking, and they must be measured on the
+deployed SDK.
 
 ## C-Q2 / B — Is the LLM necessary? Non-LLM generators, leak-free
 
@@ -107,7 +115,7 @@ width raises compute without changing the AllToAllV payload:
 | top-k 4 (expert dim 1024) | 2830 ms | 1993 ms | 316 ms | 89% / 84% (agent) | 1.42× |
 | top-k 2 (expert dim 1024) | 2079 ms | 1677 ms | 310 ms | 85% / 82% (agent) | 1.24× |
 | expert dim 16384 | device OOM | device OOM | device OOM | — | — |
-| top-k 2 + expert dim 8192 | ⟨running⟩ | ⟨running⟩ | ⟨running⟩ | | |
+| top-k 2 + expert dim 8192 | 2164 ms | 1740 ms | 365 ms | 83% / 79% (agent) | 1.24× |
 | expert dim 8192 | device OOM (second buffer) | 3216 ms | 440 ms | 86% (agent) | — |
 
 Larger token counts are not reachable by either implementation: the AG-based AllToAllV allocates a ws×ws×cap×DM buffer

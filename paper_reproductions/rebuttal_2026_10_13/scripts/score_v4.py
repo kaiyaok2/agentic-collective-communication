@@ -19,6 +19,13 @@ WORLD, NODES = 224, 7
 P = json.load(open(os.environ["TABLE"])); DT = P["derived_table"]; SP = P["sim_params"]
 OPC = os.environ.get("OPC", "marginal")
 op_costs = dict(DT["xla_op_overhead_us_marginal"] if OPC == "marginal" else DT["xla_op_overhead_us"])
+if os.environ.get("LOCAL", "") == "snapshot":
+    from search.agent_simulator_config import _HARDWARE_MEASUREMENTS as _HM
+    op_costs = dict(_HM["xla_op_overhead_us"]); _mcs = _HM["memcpy_throughput"]
+    SP = dict(SP, dispatch_overhead_us=100.0, graph_launch_overhead_us=_HM["graph_launch_overhead_us"]["per_mark_step_us"],
+              memcpy_bytes_per_us=_mcs["strided_gbps"] * 1000.0, memcpy_seq_bytes_per_us=_mcs["sequential_gbps"] * 1000.0,
+              pipeline_amort_alpha1=0.30, pipeline_amort_alpha2=0.10, pipeline_amort_alpha3=0.02)
+    DT = dict(DT); DT["memcpy_throughput"] = dict(DT["memcpy_throughput"], clone_gbps=_mcs["sequential_gbps"]); print("LOCAL terms = snapshot")
 KW = dict(op_costs=op_costs, dispatch_overhead_us=SP["dispatch_overhead_us"], graph_launch_overhead_us=SP["graph_launch_overhead_us"],
           compilation_cost_samples=SP["compilation_cost_samples"], compilation_load_events_per_run=2, compilation_amortize_steps=5000,
           pipeline_amort_alpha1=SP["pipeline_amort_alpha1"], pipeline_amort_alpha2=SP["pipeline_amort_alpha2"], pipeline_amort_alpha3=SP["pipeline_amort_alpha3"],
@@ -52,6 +59,11 @@ if os.environ.get("CURVES", "1") == "1":
               "all_reduce": fit_curve(DT["all_reduce_latency_us"], 2.0),              # ring: 2x bytes
               "reduce_scatter": fit_curve({k.replace("_in", ""): v for k, v in DT["reduce_scatter_latency_us"].items()}, 1.0)}
     CURVES = {k: v for k, v in CURVES.items() if v}
+    # A-Q3 sensitivity arms: NET_SCALE scales every collective curve's bandwidth (and latency) -- a "different network";
+    # LOCAL=snapshot swaps the LOCAL terms (op costs, memcpy, graph launch, dispatch) back to the shipped snapshot values.
+    _ns = float(os.environ.get("NET_SCALE", "1"))
+    if _ns != 1.0:
+        CURVES = {k: (round(v[0] / _ns, 1), round(v[1] * _ns, 1)) for k, v in CURVES.items()}; print("NET_SCALE", _ns, CURVES)
     print("collective curves (L_us, bytes/us):", CURVES)
     KW["coll_curves"] = CURVES
 if os.environ.get("TABLES", "1") == "1":

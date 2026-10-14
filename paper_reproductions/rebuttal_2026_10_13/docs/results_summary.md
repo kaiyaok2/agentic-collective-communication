@@ -25,7 +25,7 @@ per-mark_step launch 150 µs vs 1500; dense permute copy 67 GB/s vs 200 (clone 1
 on the full-tensor basis the model charges, 297 GB/s vs 20; per-op in-graph marginal 10–70 µs for view ops (table 0.1),
 200–1200 µs isolated for gather/scatter/index_select (table 29); cold compile+load 2–37 s for ≤4 MB all-gathers (an 8 MB
 all-gather graph compiled >15 min and thrashed the host). Small-collective latencies differ ±2× between probe runs.
-Network constants do not matter for ranking (TPU swap ρ = 1.00 reproduced); local terms do.
+Sensitivity of the corrected model's rankings (agreement with the live-calibrated arm): network curves ×4 / ×0.25 → bundling problems 1.00 / 0.90–1.00, AllToAllV 0.93 / −0.21, dxe 0.81 / 0.93; local terms reverted to the snapshot → dxe 0.81, Ring KV 0.94, others 1.00. The paper's ρ=1.00 TPU swap holds only on the dispatch-count-dominated problems (arms sim_v4_v13_net4x / net025x / localsnap).
 
 ## 3. Simulator vs hardware, final (A-Q2, C-Q1) — arm v13, one configuration for all problems
 74 candidates (seed templates, grammar variants, archived LLM strategies, deployed runtimes, baselines, search finds,
@@ -39,7 +39,7 @@ Network constants do not matter for ranking (TPU swap ρ = 1.00 reproduced); loc
 | PP send/recv | 6 | 0.89 | yes | 0 |
 | Ring KV | 6 | 0.58 | top-2 (HW tie 4.96 vs 5.14) | 3.7% |
 | TP MLP | 16 | 0.90 | within 0.3% | 0.3% |
-| Uniform A2A | 10 (⟨n=3 reps pending⟩) | 0.73 | yes (AG+slice extraction 1205 ms; AG+RS forms 1511–1526; harness baseline 1515; AG+index_select 5692) | 0 |
+| Uniform A2A | 10 (3 reps, sd ≤6 ms) | 0.73 | yes (AG+slice extraction 1205 ms; AG+RS forms 1511–1526; harness baseline 1515; AG+index_select 5692) | 0 |
 Pooled Spearman on speedup ratios 0.56 (n=68); direction agreement 26/30. Simulator arm = sim_v4_v13 (v11c + index_select at its measured gather rate). Before fixes: dxe −0.77, AllToAllV −0.32.
 Cross-scope inversion reproduced by the simulator: per-primitive payload → AG+T+RS 19972 < AG+slice 29045/40760 (HW
 30.0 / 24.2 / 38.0 ms); OLMoE payload → AG+slice 131603/143416 < AG+T+RS 271144 (HW 3127 vs 4338 ms).
@@ -63,7 +63,7 @@ Generic AST edits (swap primitive, mutate constant, delete/move, insert tensor o
 | top-k 4 (expert dim 1024) | 2830 ms | 1993 ms | 316 ms | 89% / 84% (agent) | 1.42× |
 | top-k 2 (expert dim 1024) | 2079 ms | 1677 ms | 310 ms | 85% / 82% (agent) | 1.24× |
 | expert dim 16384 | device OOM | device OOM | device OOM | — | — |
-| top-k 2 + expert dim 8192 | ⟨running⟩ | ⟨running⟩ | ⟨running⟩ | | |
+| top-k 2 + expert dim 8192 | 2164 ms | 1740 ms | 365 ms | 83% / 79% (agent) | 1.24× |
 | expert dim 8192 | device OOM | 3216 | 440 | 86% | — (AG+RS needs a second full buffer) |
 Every larger-token configuration (B=2/4, S=512, L=16) fails at NEFF load / device memory for both backends: the AG-based
 AllToAllV buffer is ws×cap×DM·ws bytes (2 GB per rank at the paper shape, 8 GB at B=4). The regime is collective-bound by
