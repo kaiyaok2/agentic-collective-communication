@@ -85,7 +85,25 @@ VEC = '''def evolved_alltoallv(input_tensor, send_counts, recv_counts, max_chunk
 BASE = {"alltoallv": "allgather_reduce_scatter", "uniform_a2a": "allgather_reduce_scatter", "ring_kv": "per_chunk_per_part_allgather",
         "dxe": "full_vocab_ag", "pp_send_recv": "per_mb", "tp_mlp": "per_mb", "fsdp_prefetch": "per_mb", "llama_block_ar": "sequential_2ar"}
 
+# the per-primitive harness runs the runtime's UNIFORM helper alltoallv(x, ws, mc) on a pre-packed buffer; score each helper
+# variant by the code the helper actually executes (no re-pack loop), expressed in the evolved_alltoallv signature
+HELPER_CODE = {
+ "helper_view_col_public": '''def evolved_alltoallv(input_tensor, send_counts, recv_counts, max_chunk, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):
+    gathered = xm.all_gather(input_tensor.unsqueeze(0), dim=0).view(world_size, world_size, max_chunk)
+    my_col = gathered[:, rank, :].contiguous()
+    return my_col.view(-1)
+''',
+ "helper_loop_cat_paper": '''def evolved_alltoallv(input_tensor, send_counts, recv_counts, max_chunk, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):
+    gathered = xm.all_gather(input_tensor.unsqueeze(0), dim=0).view(world_size, -1)
+    chunks = []
+    for src in range(world_size):
+        chunks.append(gathered[src, rank * max_chunk:rank * max_chunk + max_chunk])
+    return torch.cat(chunks)
+''',
+}
 def code_for(c, prob):
+    if c["problem"] == "alltoallv" and c["cand"] in HELPER_CODE and os.environ.get("HELPER_CODE", "1") == "1":
+        return HELPER_CODE[c["cand"]]
     if c["problem"] == "alltoallv" and c["cand"] in A2AV_ALG:
         alg = A2AV_ALG[c["cand"]]; return VEC if alg == "__vectorized__" else prob.builtin_templates[alg]
     if c["kind"] == "builtin": return prob.builtin_templates[c["name"]]

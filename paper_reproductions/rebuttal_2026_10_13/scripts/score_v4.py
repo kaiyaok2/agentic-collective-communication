@@ -31,7 +31,7 @@ KW = dict(op_costs=op_costs, dispatch_overhead_us=SP["dispatch_overhead_us"], gr
           pipeline_amort_alpha1=SP["pipeline_amort_alpha1"], pipeline_amort_alpha2=SP["pipeline_amort_alpha2"], pipeline_amort_alpha3=SP["pipeline_amort_alpha3"],
           memcpy_bytes_per_us=SP["memcpy_bytes_per_us"], memcpy_seq_bytes_per_us=SP["memcpy_seq_bytes_per_us"],
           hbm_bytes_per_us=DT["memcpy_throughput"]["clone_gbps"] * 1000.0,
-          coll_curves=None, amort_knee_bytes=int(os.environ.get("KNEE", "262144")),
+          coll_curves=None, amort_knee_bytes=int(os.environ.get("KNEE", "262144")), local_fwd_bwd_factor=float(os.environ.get("FWDBWD", "1")),
           index_select_bytes_per_us=(1_000_000 * 4) / float(DT["index_select_scaling"]["large_index_1M"]) if "large_index_1M" in DT.get("index_select_scaling", {}) else 0.0,
           microbatch_loops_induce_graphs=(os.environ.get("SCOPE", "harness") == "e2e"),
           coll_run_reset=os.environ.get("RESET", "graph"))

@@ -437,3 +437,624 @@ Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
 Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
   neuron cores free
   ports free
+  rc=1 wall=107s
+=== [16:15:15] training/train_olmoe10b_B2fix2.py backend=agent steps=160 tag=olmoe_B2fix2_agent nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=1 wall=48s
+=== [16:16:10] training/train_olmoe10b_B2fix2.py backend=agent steps=160 tag=olmoe_B2fix2_nocomm nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=1 wall=101s
+=== [16:18:02] training/train_olmoe10b_B2fix2.py backend=baseline steps=160 tag=olmoe_B2fix2_baseline nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=1 wall=58s
+### [16:19:09] QUEUE30 DONE
+### [16:19:23] QUEUE37 cluster-2 repeat of pool v2 (57 candidates)
+=== sweep: 57 runs, 300 steps each ===
+--- [16:19:23] pp_send_recv__g_bundle-per_mb_pack-stack
+deployed code /home/ubuntu/ap7/cands_v2/pp_send_recv__g_bundle-per_mb_pack-stack.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_pp_send_recv_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=144.1  (avg_ms=185.6 steady=266.0) rc=0
+--- [16:22:08] pp_send_recv__g_bundle-per_mb_pack-cat
+deployed code /home/ubuntu/ap7/cands_v2/pp_send_recv__g_bundle-per_mb_pack-cat.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_pp_send_recv_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=145.9  (avg_ms=164.7 steady=193.1) rc=0
+--- [16:23:57] pp_send_recv__g_bundle-all_mb_pack-stack
+deployed code /home/ubuntu/ap7/cands_v2/pp_send_recv__g_bundle-all_mb_pack-stack.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_pp_send_recv_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=112.4  (avg_ms=171.1 steady=285.3) rc=0
+--- [16:26:05] pp_send_recv__g_bundle-all_mb_pack-cat
+deployed code /home/ubuntu/ap7/cands_v2/pp_send_recv__g_bundle-all_mb_pack-cat.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_pp_send_recv_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=111.65  (avg_ms=161.6 steady=257.4) rc=0
+--- [16:28:08] tp_mlp__g_bundle-per_call_pack-stack
+deployed code /home/ubuntu/ap7/cands_v2/tp_mlp__g_bundle-per_call_pack-stack.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_tp_mlp_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=11.6  (avg_ms=80.2 steady=217.3) rc=0
+--- [16:30:01] tp_mlp__g_bundle-per_call_pack-flatten
+deployed code /home/ubuntu/ap7/cands_v2/tp_mlp__g_bundle-per_call_pack-flatten.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_tp_mlp_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=11.649999999999999  (avg_ms=14.2 steady=18.4) rc=0
+--- [16:30:48] tp_mlp__g_bundle-per_mb_pack-stack
+deployed code /home/ubuntu/ap7/cands_v2/tp_mlp__g_bundle-per_mb_pack-stack.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_tp_mlp_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=11.8  (avg_ms=164.2 steady=468.3) rc=0
+--- [16:32:46] tp_mlp__g_bundle-per_mb_pack-flatten
+deployed code /home/ubuntu/ap7/cands_v2/tp_mlp__g_bundle-per_mb_pack-flatten.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_tp_mlp_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=11.7  (avg_ms=14.2 steady=18.4) rc=0
+--- [16:33:40] tp_mlp__g_bundle-per_layer_pack-stack
+deployed code /home/ubuntu/ap7/cands_v2/tp_mlp__g_bundle-per_layer_pack-stack.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_tp_mlp_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=10.6  (avg_ms=163.0 steady=466.6) rc=0
+--- [16:35:37] tp_mlp__g_bundle-per_layer_pack-flatten
+deployed code /home/ubuntu/ap7/cands_v2/tp_mlp__g_bundle-per_layer_pack-flatten.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_tp_mlp_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=10.8  (avg_ms=13.2 steady=16.9) rc=0
+--- [16:36:31] tp_mlp__g_bundle-all_pack-stack
+deployed code /home/ubuntu/ap7/cands_v2/tp_mlp__g_bundle-all_pack-stack.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_tp_mlp_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=10.9  (avg_ms=13.1 steady=16.8) rc=0
+--- [16:37:34] tp_mlp__g_bundle-all_pack-flatten
+deployed code /home/ubuntu/ap7/cands_v2/tp_mlp__g_bundle-all_pack-flatten.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_tp_mlp_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=11.4  (avg_ms=180.0 steady=517.3) rc=0
+--- [16:39:28] fsdp_prefetch__g_bundle-per_call
+deployed code /home/ubuntu/ap7/cands_v2/fsdp_prefetch__g_bundle-per_call.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_fsdp_prefetch_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=15.3  (avg_ms=62.8 steady=157.0) rc=0
+--- [16:41:16] fsdp_prefetch__g_bundle-per_mb
+deployed code /home/ubuntu/ap7/cands_v2/fsdp_prefetch__g_bundle-per_mb.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_fsdp_prefetch_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=15.25  (avg_ms=55.8 steady=136.4) rc=0
+--- [16:42:30] fsdp_prefetch__g_bundle-all
+deployed code /home/ubuntu/ap7/cands_v2/fsdp_prefetch__g_bundle-all.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_fsdp_prefetch_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=13.25  (avg_ms=27.5 steady=55.2) rc=0
+--- [16:43:34] llama_block_ar__g_bundle-two_ar_pack-stack
+deployed code /home/ubuntu/ap7/cands_v2/llama_block_ar__g_bundle-two_ar_pack-stack.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_llama_block_ar_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=19.2  (avg_ms=88.5 steady=226.7) rc=0
+--- [16:45:35] llama_block_ar__g_bundle-two_ar_pack-cat
+deployed code /home/ubuntu/ap7/cands_v2/llama_block_ar__g_bundle-two_ar_pack-cat.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_llama_block_ar_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=19.0  (avg_ms=22.5 steady=28.4) rc=0
+--- [16:46:25] llama_block_ar__g_bundle-one_ar_pack-stack
+deployed code /home/ubuntu/ap7/cands_v2/llama_block_ar__g_bundle-one_ar_pack-stack.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_llama_block_ar_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=17.25  (avg_ms=186.6 steady=524.1) rc=0
+--- [16:48:22] llama_block_ar__g_bundle-one_ar_pack-cat
+deployed code /home/ubuntu/ap7/cands_v2/llama_block_ar__g_bundle-one_ar_pack-cat.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_llama_block_ar_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=17.45  (avg_ms=170.0 steady=474.2) rc=0
+--- [16:50:20] dxe__g_structure-one_ag
+deployed code /home/ubuntu/ap7/cands_v2/dxe__g_structure-one_ag.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_dxe_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=13.028502464294434  (avg_ms=13.033188978830973 steady=12.932300567626953) rc=0
+--- [16:51:34] dxe__g_structure-three_ar
+deployed code /home/ubuntu/ap7/cands_v2/dxe__g_structure-three_ar.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_dxe_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=9.227395057678223  (avg_ms=9.298129081726074 steady=9.306788444519043) rc=0
+--- [16:52:40] dxe__g_structure-max_plus_stacked_sum
+deployed code /home/ubuntu/ap7/cands_v2/dxe__g_structure-max_plus_stacked_sum.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_dxe_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=8.005857467651367  (avg_ms=8.320922056833902 steady=8.164048194885254) rc=0
+--- [16:54:09] uniform_a2a__g_extract-loop_cat_structure-ag_rs
+deployed code /home/ubuntu/ap7/cands_v2/uniform_a2a__g_extract-loop_cat_structure-ag_rs.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_uniform_a2a_7node.py', '/home/ubuntu/OverlayCCL/runtime/trainium_uniform_a2a.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=1514.4  (avg_ms=1736.8 steady=1516.3) rc=0
+--- [17:06:40] uniform_a2a__g_extract-view_col_structure-ag_rs
+deployed code /home/ubuntu/ap7/cands_v2/uniform_a2a__g_extract-view_col_structure-ag_rs.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_uniform_a2a_7node.py', '/home/ubuntu/OverlayCCL/runtime/trainium_uniform_a2a.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=1515.65  (avg_ms=1538.1 steady=1517.5) rc=0
+--- [17:15:55] uniform_a2a__g_extract-loop_cat_structure-ag_slice
+deployed code /home/ubuntu/ap7/cands_v2/uniform_a2a__g_extract-loop_cat_structure-ag_slice.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_uniform_a2a_7node.py', '/home/ubuntu/OverlayCCL/runtime/trainium_uniform_a2a.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=1217.6  (avg_ms=1241.9 steady=1218.0) rc=0
+--- [17:23:43] uniform_a2a__g_extract-view_col_structure-ag_slice
+deployed code /home/ubuntu/ap7/cands_v2/uniform_a2a__g_extract-view_col_structure-ag_slice.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_uniform_a2a_7node.py', '/home/ubuntu/OverlayCCL/runtime/trainium_uniform_a2a.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   NO RESULT (rc=1)
+--- [17:25:04] ring_kv__g_bundle-per_chunk
+deployed code /home/ubuntu/ap7/cands_v2/ring_kv__g_bundle-per_chunk.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_ring_kv_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=9.018659591674805  (avg_ms=None steady=9.10937786102295) rc=0
+--- [17:26:48] ring_kv__g_bundle-per_slot
+deployed code /home/ubuntu/ap7/cands_v2/ring_kv__g_bundle-per_slot.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_ring_kv_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=4.850268363952637  (avg_ms=None steady=4.935503005981445) rc=0
+--- [17:27:49] ring_kv__g_bundle-joint
+deployed code /home/ubuntu/ap7/cands_v2/ring_kv__g_bundle-joint.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_ring_kv_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=4.958868026733398  (avg_ms=None steady=4.895925521850586) rc=0
+--- [17:28:48] alltoallv__helper_loop_cat_paper
+deployed file /home/ubuntu/ap7/cands/alltoallv__paper__7ee07e87.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_alltoallv_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=37.99331188201904  (avg_ms=38.21486473083496 steady=38.072824478149414) rc=0
+--- [17:32:08] alltoallv__helper_view_col_public
+deployed file /home/ubuntu/ap7/cands/alltoallv__publicVectorized__olmoe.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_alltoallv_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=24.26135540008545  (avg_ms=24.7022541364034 steady=24.32119846343994) rc=0
+--- [17:34:45] alltoallv__helper_AGRS
+deployed file /home/ubuntu/ap7/cands/alltoallv__helperAGRS__olmoe.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_alltoallv_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=29.41310405731201  (avg_ms=30.19865910212199 steady=29.465675354003906) rc=0
+--- [17:37:40] dxe__paper_e791408f
+deployed file /home/ubuntu/ap7/cands/dxe__paper__e791408f.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_dxe_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=9.046435356140137  (avg_ms=9.168910185496012 steady=9.084939956665039) rc=0
+--- [17:38:58] dxe__r28nosim_train_10815c6f
+deployed file /home/ubuntu/ap7/cands/dxe__r28nosim_train__10815c6f.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_dxe_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=8.875012397766113  (avg_ms=8.888281981150309 steady=9.057402610778809) rc=0
+--- [17:40:09] dxe__r36brandom_dd3aa11f
+deployed file /home/ubuntu/ap7/cands/dxe__r36brandom__dd3aa11f.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_dxe_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=8.285164833068848  (avg_ms=8.738821347554525 steady=8.571386337280273) rc=0
+--- [17:41:20] dxe__r42_f2537e28
+deployed file /home/ubuntu/ap7/cands/dxe__r42__f2537e28.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_dxe_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=8.695483207702637  (avg_ms=9.216857751210531 steady=9.029865264892578) rc=0
+--- [17:42:28] fsdp_prefetch__paper_daa256fa
+deployed file /home/ubuntu/ap7/cands/fsdp_prefetch__paper__daa256fa.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_fsdp_prefetch_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=14.5  (avg_ms=19.5 steady=28.9) rc=0
+--- [17:43:26] fsdp_prefetch__r28nosim_train_72b4a7e0
+deployed file /home/ubuntu/ap7/cands/fsdp_prefetch__r28nosim_train__72b4a7e0.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_fsdp_prefetch_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=13.6  (avg_ms=27.1 steady=54.4) rc=0
+--- [17:44:22] llama_block_ar__paper_6e7ab1d7
+deployed file /home/ubuntu/ap7/cands/llama_block_ar__paper__6e7ab1d7.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_llama_block_ar_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=19.3  (avg_ms=22.8 steady=28.9) rc=0
+--- [17:45:17] llama_block_ar__r28nosim_train_8f7e002c
+deployed file /home/ubuntu/ap7/cands/llama_block_ar__r28nosim_train__8f7e002c.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_llama_block_ar_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=17.25  (avg_ms=19.6 steady=23.7) rc=0
+--- [17:46:04] pp_send_recv__paper_7f79b897
+deployed file /home/ubuntu/ap7/cands/pp_send_recv__paper__7f79b897.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_pp_send_recv_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=111.65  (avg_ms=330.6 steady=764.2) rc=0
+--- [17:49:33] ring_kv__paper_2f6a05c4
+deployed file /home/ubuntu/ap7/cands/ring_kv__paper__2f6a05c4.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_ring_kv_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=4.773378372192383  (avg_ms=None steady=4.828214645385742) rc=0
+--- [17:50:35] tp_mlp__paper_456211d8
+deployed file /home/ubuntu/ap7/cands/tp_mlp__paper__456211d8.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_tp_mlp_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=11.1  (avg_ms=13.2 steady=16.9) rc=0
+--- [17:51:24] tp_mlp__r28nosim_train_9a349b85
+deployed file /home/ubuntu/ap7/cands/tp_mlp__r28nosim_train__9a349b85.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_tp_mlp_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=10.850000000000001  (avg_ms=13.1 steady=17.1) rc=0
+--- [17:52:27] tp_mlp__r36none_beaeb1b6
+deployed file /home/ubuntu/ap7/cands/tp_mlp__r36none__beaeb1b6.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_tp_mlp_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=11.8  (avg_ms=14.5 steady=18.8) rc=0
+--- [17:53:12] tp_mlp__r42_a475ecb5
+deployed file /home/ubuntu/ap7/cands/tp_mlp__r42__a475ecb5.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_tp_mlp_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=10.8  (avg_ms=13.3 steady=16.7) rc=0
+--- [17:54:14] uniform_a2a__paper_96e21a8e
+deployed file /home/ubuntu/ap7/cands/uniform_a2a__paper__96e21a8e.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_uniform_a2a_7node.py', '/home/ubuntu/OverlayCCL/runtime/trainium_uniform_a2a.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=1216.05  (avg_ms=1239.8 steady=1216.8) rc=0
+--- [18:01:45] uniform_a2a__r28nosim_train_c0b2d468
+deployed file /home/ubuntu/ap7/cands/uniform_a2a__r28nosim_train__c0b2d468.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_uniform_a2a_7node.py', '/home/ubuntu/OverlayCCL/runtime/trainium_uniform_a2a.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=1201.15  (avg_ms=1223.9 steady=1202.3) rc=0
+--- [18:09:11] uniform_a2a__r42_d910f8d1
+deployed file /home/ubuntu/ap7/cands/uniform_a2a__r42__d910f8d1.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_uniform_a2a_7node.py', '/home/ubuntu/OverlayCCL/runtime/trainium_uniform_a2a.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=1516.85  (avg_ms=1540.0 steady=1519.3) rc=0
+--- [18:18:25] alltoallv__harness_baseline
+restored ['/home/ubuntu/OverlayCCL/runtime/trainium_alltoallv_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=29.743075370788574  (avg_ms=30.589951674143474 steady=29.83391284942627) rc=0
+--- [18:21:03] uniform_a2a__harness_baseline
+restored ['/home/ubuntu/OverlayCCL/runtime/trainium_uniform_a2a_7node.py', '/home/ubuntu/OverlayCCL/runtime/trainium_uniform_a2a.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   NO RESULT (rc=1)
+--- [18:23:37] ring_kv__harness_baseline
+restored ['/home/ubuntu/OverlayCCL/runtime/trainium_ring_kv_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=8.907079696655273  (avg_ms=None steady=8.939385414123535) rc=0
+--- [18:24:48] dxe__harness_baseline
+restored ['/home/ubuntu/OverlayCCL/runtime/trainium_dxe_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=15.61117172241211  (avg_ms=15.64673900604248 steady=15.774250030517578) rc=0
+--- [18:26:05] pp_send_recv__harness_baseline
+restored ['/home/ubuntu/OverlayCCL/runtime/trainium_pp_send_recv_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=146.5  (avg_ms=165.0 steady=194.1) rc=0
+--- [18:27:40] tp_mlp__harness_baseline
+restored ['/home/ubuntu/OverlayCCL/runtime/trainium_tp_mlp_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=11.5  (avg_ms=180.8 steady=517.9) rc=0
+--- [18:29:41] fsdp_prefetch__harness_baseline
+restored ['/home/ubuntu/OverlayCCL/runtime/trainium_fsdp_prefetch_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=14.350000000000001  (avg_ms=19.4 steady=28.7) rc=0
+--- [18:30:38] llama_block_ar__harness_baseline
+restored ['/home/ubuntu/OverlayCCL/runtime/trainium_llama_block_ar_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=19.6  (avg_ms=206.2 steady=578.9) rc=0
+=== sweep done 18:32:37 ===
+### [18:32:37] QUEUE37 cluster-2 repeat of AllToAllV seed helpers
+=== sweep: 6 runs, 300 steps each ===
+--- [18:32:37] alltoallv__tmpl_ag_slice_cat
+deployed file /home/ubuntu/ap7/cands_a2av/alltoallv__tmpl_ag_slice_cat.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_alltoallv_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=47.068238258361816  (avg_ms=47.284201780954994 steady=47.09446430206299) rc=0
+--- [18:35:19] alltoallv__tmpl_allgather_reduce_scatter
+deployed file /home/ubuntu/ap7/cands_a2av/alltoallv__tmpl_allgather_reduce_scatter.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_alltoallv_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=121.23894691467285  (avg_ms=122.10569461186726 steady=121.23894691467285) rc=0
+--- [18:39:15] alltoallv__tmpl_ag_t_rs_inline_match
+deployed file /home/ubuntu/ap7/cands_a2av/alltoallv__tmpl_ag_t_rs_inline_match.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_alltoallv_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=29.459476470947266  (avg_ms=30.289591948191326 steady=29.475808143615723) rc=0
+--- [18:42:04] alltoallv__tmpl_hierarchical_intra_inter
+deployed file /home/ubuntu/ap7/cands_a2av/alltoallv__tmpl_hierarchical_intra_inter.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_alltoallv_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   NO RESULT (rc=1)
+--- [18:45:34] alltoallv__tmpl_pairwise_per_distance
+deployed file /home/ubuntu/ap7/cands_a2av/alltoallv__tmpl_pairwise_per_distance.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_alltoallv_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   NO RESULT (rc=1)
+--- [18:50:00] alltoallv__tmpl_vectorized_view_col
+deployed file /home/ubuntu/ap7/cands_a2av/alltoallv__tmpl_vectorized_view_col.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_alltoallv_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.

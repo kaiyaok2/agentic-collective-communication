@@ -1,4 +1,4 @@
-# Simulator vs 224-rank hardware — final numbers (rebuttal, 2026-10-14 06:20 UTC; arm v13 = v11c + measured index_select gather rate)
+# Simulator vs 224-rank hardware — final numbers (rebuttal, 2026-10-14 18:45 UTC; arm v16b = v13 + XLA dead-collective elimination + helper variants scored by the code the harness runs + volume terms fwd+bwd)
 
 Pool: 71 candidates over the 8 problems (seed-library templates, every structural-grammar variant, archived LLM strategies
 incl. non-deployed ones, the deployed runtimes, developer baselines, the leak-free search's finds, and 6 AllToAllV
@@ -10,15 +10,15 @@ scope-aware graph boundaries). One configuration for all problems; no per-proble
 
 | Problem | n | Spearman rho (sim vs measured step) | sim top-1 = HW best? | regret of sim pick |
 |---|---|---|---|---|
-| AllToAllV (per-primitive scope) | 8 | **0.56** | no (AG+T+RS inline 30.0 ms vs vectorized AG+slice 24.2) | 23.8% |
-| Distributed CE | 8 | **0.56** | yes (three_ar 8.31 ms) | 0 |
+| AllToAllV (per-primitive scope) | 8 | **0.90** | yes (vectorized AG+slice helper 24.2 ms) | 0 |
+| Distributed CE | 8 | **0.73** | yes (three_ar 8.31 ms) | 0 |
 | FSDP prefetch | 7 | **0.81** | yes (fully bundled AG 13.37) | 0 |
 | Layer-block AR | 7 | **0.90** | yes (stacked single AR 17.20) | 0 |
 | PP send/recv | 6 | **0.89** | yes (stacked masked AR 111.4) | 0 |
-| Ring KV | 6 | **0.58** | top-2 (joint 5.14 vs per-slot 4.96; HW gap within repeat noise) | 3.7% |
+| Ring KV | 6 | **0.75** | top-2 (joint 5.14 vs per-slot 4.96; HW gap within repeat noise) | 3.7% |
 | TP MLP | 16 | **0.90** | within 0.3% (per-layer flatten 10.88 vs per-layer stack 10.85) | 0.3% |
 | Uniform A2A | 10 | **0.73** | yes (AG+slice 1205 ms vs AG+RS 1511-1526, AG+index_select 5692) | 0 |
-Pooled Spearman on speedup-vs-baseline ratios (n=68): 0.56; direction agreement where the sim predicts a change: 26/30.
+Pooled Spearman on speedup-vs-baseline ratios (n=68): 0.69; direction agreement where the sim predicts a change: 31/33.
 Uniform A2A became measurable only after fixing the deploy target: the harness imports runtime/trainium_uniform_a2a.py (not the _7node file), whose shipped copy is a collective_permute ring that aborts at 224 ranks (ENC_MAX_COMM_N).
 
 Before the fixes (shipped static table, toy shapes): TP MLP 0.74, Layer-block 0.90, PP 0.93, FSDP 0.60, Ring KV 0.56,

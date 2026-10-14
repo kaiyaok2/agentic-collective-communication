@@ -21,23 +21,24 @@ shapes (dxe: a 4 KB all-gather × a hand multiplier, vs 147 KB in / 33 MB out on
 ops a flat ~29 µs regardless of size. We now (i) trace at the harness's real training shapes, (ii) charge collectives on
 the bytes they actually move (an all-gather receives (ws−1)×input) with measured latency curves, (iii) charge elementwise/
 reduction/memset ops by volume at the measured HBM rate, (iv) let a dispatch run survive XLA-fusible local compute and
-amortize only latency-bound (≤256 KB) collectives, (v) apply XLA's concat-of-consecutive-slices simplification, and
-(vi) derive graph boundaries from the scope being scored. These changes are listed in the artifact (sim_v4_changes.md).
+amortize only latency-bound (≤256 KB) collectives, (v) apply XLA's concat-of-consecutive-slices simplification and dead-collective elimination, (vi) derive graph
+boundaries from the scope being scored, and (vii) pay volume-proportional local terms in forward and backward, as the
+collectives already were. These changes are listed in the artifact (sim_v4_changes.md).
 
 **Result (74-candidate pool over the 8 problems, each measured 3× at 224-rank training scope; repeat sd ≤2%):**
-within-problem Spearman between simulator score and measured step time — AllToAllV **0.56** (8 cands), distributed CE
-**0.56** (8; sim top-1 = HW best), FSDP **0.81** (7; top-1), Layer-block **0.90** (7; top-1), PP **0.89** (6; top-1),
-Ring KV **0.58** (6; sim's pick within 3.7% of best, the two leaders tie within repeat noise), TP MLP **0.90** (16; within
-0.3%), Uniform A2A **0.73** (10; sim top-1 = HW best; measured after fixing an artifact bug — the harness imports `runtime/trainium_uniform_a2a.py`, whose shipped copy is a `collective_permute` ring that aborts at 224 ranks, so earlier "agent" runs never executed the candidate). Pooled Spearman on
-speedup-vs-baseline ratios 0.56 (n = 68); where the sim predicts a change vs the baseline its direction agrees with
-hardware 26/30 times. Before the fixes: TP MLP 0.74, Layer-block 0.90, PP 0.93, FSDP 0.60, Ring KV 0.56, dxe −0.77,
+within-problem Spearman between simulator score and measured step time — AllToAllV **0.90** (8 cands; sim top-1 = HW
+best), distributed CE **0.73** (8; top-1), FSDP **0.81** (7; top-1), Layer-block **0.90** (7; top-1), PP **0.89** (6;
+top-1), Ring KV **0.75** (6; sim's pick within 3.7% of best, the two leaders tie within repeat noise), TP MLP **0.90**
+(16; within 0.3%), Uniform A2A **0.73** (10; sim top-1 = HW best; measured after fixing an artifact bug — the harness imports `runtime/trainium_uniform_a2a.py`, whose shipped copy is a `collective_permute` ring that aborts at 224 ranks, so earlier "agent" runs never executed the candidate). Pooled Spearman on
+speedup-vs-baseline ratios 0.69 (n = 68); where the sim predicts a change vs the baseline its direction agrees with
+hardware 31/33 times. Before the fixes: TP MLP 0.74, Layer-block 0.90, PP 0.93, FSDP 0.60, Ring KV 0.56, dxe −0.77,
 AllToAllV −0.32. We will replace the paper's simulator-accuracy claims with this table.
 
 **Prediction errors (C-Q1).** Simulator units are not milliseconds, so we report errors on predicted-vs-measured
 speedup ratios against each problem's baseline (MAPE) and, after a per-problem affine rescaling, median relative error of
-predicted step time: bundling problems (PP, TP MLP, FSDP, Layer-block, Ring KV) ratio-MAPE 8–24%, rescaled error 0.1–19%
-(median 1.2%); payload-changing problems where the inversion lives (AllToAllV, Uniform A2A, dxe) ratio-MAPE 29–56%,
-rescaled error 0.6–23%. The ranking survives (ρ ≥ 0.56 everywhere) while magnitudes on the payload-changing problems
+predicted step time: bundling problems (PP, TP MLP, FSDP, Layer-block, Ring KV) ratio-MAPE 8–24%, rescaled error 0.1–14%; payload-changing
+problems where the inversion lives (AllToAllV, dxe) ratio-MAPE 24–27%, rescaled error 13–14%; Uniform A2A's ranking is
+right but the magnitude of the AG+slice-vs-AG+RS gap is over-predicted (ratio-MAPE 120%). The ranking survives (ρ ≥ 0.56 everywhere) while magnitudes on the payload-changing problems
 remain coarse — which is why the pipeline keeps the hardware gate. None of the pool candidates was used to fit anything:
 the constants come from the Phase-1 probes, the structure is fixed.
 

@@ -33,20 +33,20 @@ within 3%), while latency-floor terms move ±2× (dispatch 968 vs 1674 µs; 4 KB
 alphas (0.33, 0.0) vs (0.011, 0.027)). This is the per-deployment variance the Phase-1 probes exist to absorb, and it lands
 on exactly the terms that decide small-payload bundling decisions.
 
-## 3. Simulator vs hardware, final (A-Q2, C-Q1) — arm v13, one configuration for all problems
+## 3. Simulator vs hardware, final (A-Q2, C-Q1) — arm v16b, one configuration for all problems
 74 candidates (seed templates, grammar variants, archived LLM strategies, deployed runtimes, baselines, search finds,
 6 AllToAllV seed-library helpers), 3 repeats at 224-rank training scope; repeat sd ≤2%.
 | Problem | n | ρ (sim vs measured step) | top-1 | regret |
 |---|---|---|---|---|
-| AllToAllV (per-primitive scope) | 8 (seed-library helpers n=4 reps) | 0.56 | no (AG+T+RS 30.0 vs vectorized AG+slice 24.2 ms) | 23.8% |
-| Distributed CE | 8 | 0.56 | yes | 0 |
+| AllToAllV (per-primitive scope) | 8 (helpers n=3, seed helpers n=4 reps) | 0.90 | yes (vectorized AG+slice helper 24.2 ms) | 0 |
+| Distributed CE | 8 | 0.73 | yes | 0 |
 | FSDP prefetch | 7 | 0.81 | yes | 0 |
 | Layer-block AR | 7 | 0.90 | yes | 0 |
 | PP send/recv | 6 | 0.89 | yes | 0 |
-| Ring KV | 6 | 0.58 | top-2 (HW tie 4.96 vs 5.14) | 3.7% |
+| Ring KV | 6 | 0.75 | top-2 (HW tie 4.96 vs 5.14) | 3.7% |
 | TP MLP | 16 | 0.90 | within 0.3% | 0.3% |
 | Uniform A2A | 10 (3 reps, sd ≤6 ms) | 0.73 | yes (AG+slice extraction 1205 ms; AG+RS forms 1511–1526; harness baseline 1515; AG+index_select 5692) | 0 |
-Pooled Spearman on speedup ratios 0.56 (n=68); direction agreement 26/30. Per-candidate predicted-vs-measured speedup table (C-Q1 scatter data): results/sim_vs_hw_v13.csv (68 rows, n_reps, measured sd). Simulator arm = sim_v4_v13 (v11c + index_select at its measured gather rate). Before fixes: dxe −0.77, AllToAllV −0.32.
+Pooled Spearman on speedup ratios 0.56 (n=68); direction agreement 26/30. Per-candidate predicted-vs-measured speedup table (C-Q1 scatter data): results/sim_vs_hw_v16b.csv (68 rows, n_reps, measured sd); earlier arm in sim_vs_hw_v13.csv. Simulator arm = sim_v4_v13 (v11c + index_select at its measured gather rate). Before fixes: dxe −0.77, AllToAllV −0.32; intermediate arm v13 (this morning): a2av 0.56, dxe 0.56, rkv 0.58, others as above.
 Cross-scope inversion reproduced by the simulator: per-primitive payload → AG+T+RS 19972 < AG+slice 29045/40760 (HW
 30.0 / 24.2 / 38.0 ms); OLMoE payload → AG+slice 131603/143416 < AG+T+RS 271144 (HW 3127 vs 4338 ms).
 

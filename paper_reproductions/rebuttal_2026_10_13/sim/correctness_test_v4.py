@@ -319,7 +319,7 @@ class CollectiveSimulator:
 _VIEW_ONLY_OPS = frozenset({
     "view", "unsqueeze", "squeeze",
     "narrow", "transpose", "permute", "expand",
-    "slice", "slice_view", "cat_view",
+    "slice", "slice_view", "cat_view", "dead_collective",
 })
 
 # Ops whose cost is contiguity-dependent: cheap (metadata) when input is
@@ -458,6 +458,7 @@ class TorchOpCounter:
     def __init__(self):
         self.ops = []        # list[str], legacy access
         self.events = []     # list[(op_name, copy_bytes)]
+        self.coll_outputs = []   # TrackedTensor outputs of collectives (XLA-style DCE of unused results)
 
     def record(self, op_name, copy_bytes=0):
         self.ops.append(op_name)
@@ -476,6 +477,7 @@ class TorchOpCounter:
     def reset(self):
         self.ops = []
         self.events = []
+        self.coll_outputs = []
 
 
 def _slice_meta(t, key):
@@ -500,6 +502,7 @@ def _slice_meta(t, key):
 
 
 class TrackedTensor:
+    _consumed = False
     """Torch tensor wrapper that records XLA-relevant operations.
 
     Provides the tensor API needed by AllToAllV candidates while
@@ -863,11 +866,37 @@ class TrackedTensor:
         return f"TrackedTensor({self._t})"
 
 
+
+def _tt_mark_methods():
+    """Calling any TrackedTensor method marks the tensor as consumed (XLA HloDCE: a collective whose result is never
+    read and not returned is removed from the graph)."""
+    import functools
+    skip = {"__init__", "__repr__", "__class__", "__getattribute__", "__setattr__", "__new__", "numel", "size", "dim", "element_size", "is_contiguous", "stride"}
+    for name, fn in list(TrackedTensor.__dict__.items()):
+        if callable(fn) and name not in skip and not isinstance(fn, (property, staticmethod, classmethod)):
+            def mk(f):
+                @functools.wraps(f)
+                def w(self, *a, **k):
+                    self._consumed = True
+                    return f(self, *a, **k)
+                return w
+            setattr(TrackedTensor, name, mk(fn))
+_tt_mark_methods()
+
 def _unwrap(x):
     """Unwrap TrackedTensor to plain torch.Tensor."""
     if isinstance(x, TrackedTensor):
+        x._consumed = True
         return x._t
     return x
+
+def _mark_consumed(obj):
+    """Mark every TrackedTensor reachable from a returned structure as consumed (it is a graph output)."""
+    if isinstance(obj, TrackedTensor): obj._consumed = True
+    elif isinstance(obj, (list, tuple)):
+        for o in obj: _mark_consumed(o)
+    elif isinstance(obj, dict):
+        for o in obj.values(): _mark_consumed(o)
 
 
 # ================================================================
@@ -898,7 +927,8 @@ class MockXM:
             _b = 0
         self.counter.record("collective_permute", _b)
         result = self.sim.collective_permute(t, pairs, self.rank, step)
-        return TrackedTensor(result, self.counter)
+        _tt = TrackedTensor(result, self.counter); _tt._coll_ev = len(self.counter.events) - 1; self.counter.coll_outputs.append(_tt)
+        return _tt
 
     def all_gather(self, tensor, dim=0, groups=None):
         self._check_supported("all_gather")
@@ -911,7 +941,8 @@ class MockXM:
             _b = 0
         self.counter.record("all_gather", _b)
         result = self.sim.all_gather(t, dim, self.rank, step, groups=groups)
-        return TrackedTensor(result, self.counter)
+        _tt = TrackedTensor(result, self.counter); _tt._coll_ev = len(self.counter.events) - 1; self.counter.coll_outputs.append(_tt)
+        return _tt
 
     def _check_supported(self, primitive):
         if primitive in self._unsupported:
@@ -948,7 +979,8 @@ class MockXM:
         result = self.sim.reduce_scatter(
             t, reduce_type, scatter_dim,
             shard_count or self.sim.world_size, self.rank, step, scale)
-        return TrackedTensor(result, self.counter)
+        _tt = TrackedTensor(result, self.counter); _tt._coll_ev = len(self.counter.events) - 1; self.counter.coll_outputs.append(_tt)
+        return _tt
 
     def all_reduce(self, reduce_type, tensor, groups=None):
         self._check_supported("all_reduce")
@@ -963,7 +995,8 @@ class MockXM:
         self.counter.record("all_reduce", _ar_bytes)
         result = self.sim.all_reduce(reduce_type, t, self.rank, step,
                                      groups=groups)
-        return TrackedTensor(result, self.counter)
+        _tt = TrackedTensor(result, self.counter); _tt._coll_ev = len(self.counter.events) - 1; self.counter.coll_outputs.append(_tt)
+        return _tt
 
     REDUCE_SUM = "sum"
     REDUCE_MAX = "max"
@@ -1373,7 +1406,8 @@ class _ProfilerXM:
                 "tensor_bytes": _b,
             })
         self.counter.record("collective_permute", _b)
-        return TrackedTensor(torch.zeros_like(t), self.counter)
+        _tt = TrackedTensor(torch.zeros_like(t), self.counter); _tt._coll_ev = len(self.counter.events) - 1; self.counter.coll_outputs.append(_tt)
+        return _tt
 
     def all_gather(self, tensor, dim=0, groups=None):
         self._check_supported("all_gather")
@@ -1397,7 +1431,8 @@ class _ProfilerXM:
         else:
             n = self.profiler.world_size
         rep[dim] = n
-        return TrackedTensor(torch.zeros_like(t).repeat(*rep), self.counter)
+        _tt = TrackedTensor(torch.zeros_like(t).repeat(*rep), self.counter); _tt._coll_ev = len(self.counter.events) - 1; self.counter.coll_outputs.append(_tt)
+        return _tt
 
     def reduce_scatter(self, reduce_type, input, scale=1.0, scatter_dim=0,
                        shard_count=None, groups=None, output=None,
@@ -1421,7 +1456,8 @@ class _ProfilerXM:
         slices = [slice(None)] * t.dim()
         slices[scatter_dim] = slice(0, shard_size)
         result = t[tuple(slices)] * scale
-        return TrackedTensor(result, self.counter)
+        _tt = TrackedTensor(result, self.counter); _tt._coll_ev = len(self.counter.events) - 1; self.counter.coll_outputs.append(_tt)
+        return _tt
 
     def all_reduce(self, reduce_type, tensor, groups=None):
         self._check_supported("all_reduce")
@@ -1437,7 +1473,8 @@ class _ProfilerXM:
                 "grouped": groups is not None,
             })
         self.counter.record("all_reduce", _b)
-        return TrackedTensor(torch.zeros_like(t), self.counter)
+        _tt = TrackedTensor(torch.zeros_like(t), self.counter); _tt._coll_ev = len(self.counter.events) - 1; self.counter.coll_outputs.append(_tt)
+        return _tt
 
     REDUCE_SUM = "sum"
     REDUCE_MAX = "max"
@@ -2685,6 +2722,7 @@ def benchmark_xla_candidate_generic(problem, candidate_fn, topology,
                                      coll_tables=None,
                                      amort_knee_bytes=262144,
                                      index_select_bytes_per_us=0.0,
+                                     local_fwd_bwd_factor=1.0,
                                      hbm_budget_bytes_per_core=2 * (1024 ** 3),
                                      hbm_penalty_scale_us=10000.0,
                                      candidate_source=None):
@@ -2767,13 +2805,19 @@ def benchmark_xla_candidate_generic(problem, candidate_fn, topology,
     rank_args = _wrap_rank_args(test_case["per_rank_args"][rank], counter)
 
     try:
-        problem.call_candidate(
+        _ret = problem.call_candidate(
             candidate_fn, rank_args,
             test_case["shared_args"],
             rank, world_size, num_devices, cpd,
             xm_mock, torch_mock, num_nodes=num_nodes)
+        _mark_consumed(_ret)
     except Exception as e:
         return {"error": str(e)}
+    # v4: XLA HloDCE -- a collective whose output is never read and not returned is removed from the graph
+    _n_dead = 0
+    for _tt in getattr(counter, "coll_outputs", []):
+        if not getattr(_tt, "_consumed", False) and hasattr(_tt, "_coll_ev") and 0 <= _tt._coll_ev < len(counter.events):
+            counter.events[_tt._coll_ev] = ("dead_collective", 0); counter.ops[_tt._coll_ev] = "dead_collective"; _n_dead += 1
 
     # Filter the recorded events to local ops (drop collective entries).
     # Each event is (op_name, copy_bytes); copy_bytes > 0 only for ops that
@@ -2832,7 +2876,7 @@ def benchmark_xla_candidate_generic(problem, candidate_fn, topology,
             if copy_bytes <= 0 or seq_bw <= 0:
                 return base
             scaled = _scaled_bytes(copy_bytes)
-            return max(base, scaled / float(seq_bw))
+            return max(base, local_fwd_bwd_factor * scaled / float(seq_bw))
         # Pure metadata view ops: floor only, regardless of agent's
         # isolated-microbench measurement (which mostly reports kernel
         # launch overhead at a mark_step boundary).
@@ -2840,19 +2884,19 @@ def benchmark_xla_candidate_generic(problem, candidate_fn, topology,
             return (max(op_costs.get(op_name, base_view_us), base_view_us) if op_costs else base_view_us)
         if op_name in ("zeros", "ones", "empty", "zeros_like", "ones_like") and copy_bytes > 0 and hbm_bytes_per_us > 0:
             base = (max(op_costs.get(op_name, 29.0), min_local_op_us) if op_costs else 29.0)
-            return max(base, _scaled_bytes(copy_bytes) / float(hbm_bytes_per_us))
+            return max(base, local_fwd_bwd_factor * _scaled_bytes(copy_bytes) / float(hbm_bytes_per_us))
         if op_name in _VOLUME_COMPUTE_OPS:
             base = (max(op_costs.get(op_name, base_view_us), base_view_us) if op_costs else base_view_us)
             if copy_bytes <= 0 or hbm_bytes_per_us <= 0:
                 return base
-            return max(base, _scaled_bytes(copy_bytes) / float(hbm_bytes_per_us))
+            return max(base, local_fwd_bwd_factor * _scaled_bytes(copy_bytes) / float(hbm_bytes_per_us))
         # Reshape / contiguous on a sub-region source: gather-style
         # copy at the strided memcpy bandwidth.
         if op_name in _MAYBE_COPY_OPS_STRIDED:
             if copy_bytes <= 0 or memcpy_bytes_per_us <= 0:
                 return base_view_us
             scaled = _scaled_bytes(copy_bytes)
-            return max(scaled / float(memcpy_bytes_per_us), base_view_us)
+            return max(local_fwd_bwd_factor * scaled / float(memcpy_bytes_per_us), base_view_us)
         # Reshape / contiguous on a dense (full-storage permute) source:
         # predictable strided access that the compiler vectorizes,
         # charged at sequential memcpy bandwidth.
@@ -2860,7 +2904,7 @@ def benchmark_xla_candidate_generic(problem, candidate_fn, topology,
             if copy_bytes <= 0 or seq_bw <= 0:
                 return base_view_us
             scaled = _scaled_bytes(copy_bytes)
-            return max(scaled / float(seq_bw), base_view_us)
+            return max(local_fwd_bwd_factor * scaled / float(seq_bw), base_view_us)
         # Volume-scaled ops (index_select, tensor-from-python-list): the
         # agent's isolated microbench cost is the floor, but actual
         # cost is dominated by data volume the op moves. Without this
@@ -2878,7 +2922,7 @@ def benchmark_xla_candidate_generic(problem, candidate_fn, topology,
             if copy_bytes <= 0 or rate <= 0:
                 return base
             scaled = copy_bytes * float(training_scale_bytes_multiplier)
-            return max(base, scaled / float(rate))
+            return max(base, local_fwd_bwd_factor * scaled / float(rate))
         # Compute / copy ops: agent-measured cost with the floor.
         if op_costs:
             return max(op_costs.get(op_name, 29.0), min_local_op_us)
@@ -3375,6 +3419,7 @@ def benchmark_xla_candidate_generic(problem, candidate_fn, topology,
         "n_outer_collective_loops": n_outer_collective_loops,
         "n_neff_graphs": n_neff_graphs,
         "coll_breakdown": _coll_bd,
+        "n_dead_collectives": _n_dead,
         "hbm_penalty_us": hbm_penalty_us,
         "hbm_peak_bytes_scaled": scaled_peak,
         "hbm_bucket_cap_bytes": bucket_cap_bytes,

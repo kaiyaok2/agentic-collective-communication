@@ -1,0 +1,415 @@
+{
+ "world_size": 32,
+ "sections": {
+  "trivial": {
+   "empty_mark_step": {
+    "first_us": 187.3,
+    "median_us": 19.7,
+    "min_us": 18.7
+   },
+   "add_1op": {
+    "first_us": 11027.4,
+    "median_us": 248.8,
+    "min_us": 235.0
+   }
+  },
+  "xla_ops": {
+   "add": {
+    "isolated_1op_us": 258.2,
+    "graph_16ops_us": 569.6,
+    "marginal_us": 20.76,
+    "first_us": 949.1
+   },
+   "index_select": {
+    "isolated_1op_us": 1064.1,
+    "graph_16ops_us": 10112.5,
+    "marginal_us": 603.23,
+    "first_us": 13799.0
+   },
+   "slice": {
+    "isolated_1op_us": 223.2,
+    "graph_16ops_us": 1827.3,
+    "marginal_us": 106.94,
+    "first_us": 5014764.0
+   },
+   "cat": {
+    "isolated_1op_us": 223.6,
+    "graph_16ops_us": 407.1,
+    "marginal_us": 12.23,
+    "first_us": 5018541.4
+   },
+   "stack": {
+    "isolated_1op_us": 221.6,
+    "graph_16ops_us": 394.2,
+    "marginal_us": 11.51,
+    "first_us": 10015357.9
+   },
+   "zeros": {
+    "isolated_1op_us": 529.4,
+    "graph_16ops_us": 733.1,
+    "marginal_us": 13.58,
+    "first_us": 10744.9
+   },
+   "tensor": {
+    "isolated_1op_us": 83.2,
+    "graph_16ops_us": 556.8,
+    "marginal_us": 31.57,
+    "first_us": 241.5
+   },
+   "gather": {
+    "isolated_1op_us": 762.9,
+    "graph_16ops_us": 10106.7,
+    "marginal_us": 622.92,
+    "first_us": 11786.1
+   },
+   "scatter": {
+    "isolated_1op_us": 912.3,
+    "graph_16ops_us": 9648.3,
+    "marginal_us": 582.4,
+    "first_us": 12509.6
+   },
+   "split": {
+    "isolated_1op_us": 244.6,
+    "graph_16ops_us": 688.3,
+    "marginal_us": 29.58,
+    "first_us": 11933.3
+   },
+   "chunk": {
+    "isolated_1op_us": 273.7,
+    "graph_16ops_us": 671.6,
+    "marginal_us": 26.53,
+    "first_us": 388.5
+   },
+   "view": {
+    "isolated_1op_us": 236.9,
+    "graph_16ops_us": 490.4,
+    "marginal_us": 16.9,
+    "first_us": 14152.4
+   },
+   "reshape": {
+    "isolated_1op_us": 247.1,
+    "graph_16ops_us": 426.4,
+    "marginal_us": 11.95,
+    "first_us": 364.5
+   },
+   "unsqueeze": {
+    "isolated_1op_us": 228.8,
+    "graph_16ops_us": 446.6,
+    "marginal_us": 14.52,
+    "first_us": 5013627.2
+   },
+   "squeeze": {
+    "isolated_1op_us": 267.3,
+    "graph_16ops_us": 663.0,
+    "marginal_us": 26.38,
+    "first_us": 11649.8
+   },
+   "flatten": {
+    "isolated_1op_us": 240.4,
+    "graph_16ops_us": 622.4,
+    "marginal_us": 25.47,
+    "first_us": 10016083.0
+   },
+   "narrow": {
+    "isolated_1op_us": 236.1,
+    "graph_16ops_us": 503.8,
+    "marginal_us": 17.85,
+    "first_us": 11802.5
+   },
+   "transpose": {
+    "isolated_1op_us": 253.7,
+    "graph_16ops_us": 915.9,
+    "marginal_us": 44.15,
+    "first_us": 13255.4
+   },
+   "permute": {
+    "isolated_1op_us": 265.7,
+    "graph_16ops_us": 945.4,
+    "marginal_us": 45.31,
+    "first_us": 13279.5
+   },
+   "expand": {
+    "isolated_1op_us": 277.7,
+    "graph_16ops_us": 681.6,
+    "marginal_us": 26.93,
+    "first_us": 5013412.6
+   },
+   "contiguous": {
+    "isolated_1op_us": 274.0,
+    "graph_16ops_us": 944.6,
+    "marginal_us": 44.71,
+    "first_us": 417.6
+   },
+   "narrow_nonlead_contiguous": {
+    "isolated_1op_us": 279.7,
+    "graph_16ops_us": 867.3,
+    "marginal_us": 39.17,
+    "first_us": 5012647.6
+   },
+   "permute_contiguous": {
+    "isolated_1op_us": 254.0,
+    "graph_16ops_us": 669.2,
+    "marginal_us": 27.68,
+    "first_us": 10646.8
+   }
+  },
+  "index_select": {
+   "small_index_100": 218.6,
+   "medium_index_10k": 325.7,
+   "large_index_1M": 18486.6
+  },
+  "memcpy": {
+   "tensor_16MB": {
+    "bytes": 16777216,
+    "clone_us": 211.4,
+    "clone_gbps": 79.36,
+    "permute_contiguous_us": 281.7,
+    "sequential_gbps": 59.56,
+    "narrow_col_contiguous_us": 379.1,
+    "strided_gbps_full_tensor_basis": 44.26,
+    "strided_gbps_actual_bytes_basis": 1.38
+   },
+   "tensor_64MB": {
+    "bytes": 67108864,
+    "clone_us": 499.7,
+    "clone_gbps": 134.3,
+    "permute_contiguous_us": 909.8,
+    "sequential_gbps": 73.76,
+    "narrow_col_contiguous_us": 229.6,
+    "strided_gbps_full_tensor_basis": 292.29,
+    "strided_gbps_actual_bytes_basis": 9.13
+   }
+  },
+  "graph_launch": {
+   "K1": {
+    "local_K_mark_steps_us": 263.8,
+    "ar_K_mark_steps_us": 455.7,
+    "ar_K_in_one_graph_us": 345.7
+   },
+   "K4": {
+    "local_K_mark_steps_us": 809.2,
+    "ar_K_mark_steps_us": 1159.0,
+    "ar_K_in_one_graph_us": 1058.0
+   },
+   "K16": {
+    "local_K_mark_steps_us": 3248.3,
+    "ar_K_mark_steps_us": 4593.5,
+    "ar_K_in_one_graph_us": 1582.4
+   },
+   "per_mark_step_us_local": 199.0,
+   "per_mark_step_us_collective": 200.7
+  },
+  "back_to_back": {
+   "depth_1_total_us": 967.7,
+   "ag_depth_1_total_us": 491.4,
+   "depth_2_total_us": 1289.8,
+   "ag_depth_2_total_us": 616.3,
+   "depth_4_total_us": 425.7,
+   "ag_depth_4_total_us": 1493.9,
+   "depth_8_total_us": 1002.0,
+   "ag_depth_8_total_us": 1803.8,
+   "depth_16_total_us": 2122.6,
+   "ag_depth_16_total_us": 2563.1,
+   "depth_32_total_us": 2551.1,
+   "ag_depth_32_total_us": 3339.7,
+   "dispatch_overhead_us_first_issue": 967.7
+  },
+  "collectives": {
+   "all_gather": {
+    "world_32_bytes_4096": 1359.2,
+    "world_32_bytes_32768": 1330.2,
+    "world_32_bytes_65536": 764.6,
+    "world_32_bytes_524288": 1981.5,
+    "world_32_bytes_4194304": 5065.9
+   },
+   "reduce_scatter": {
+    "world_32_bytes_131072_in": 892.1,
+    "world_32_bytes_1048576_in": 672.4,
+    "world_32_bytes_2097152_in": 942.8,
+    "world_32_bytes_16777216_in": 1470.9,
+    "world_32_bytes_134217728_in": 5360.1
+   },
+   "all_reduce": {
+    "world_32_bytes_4096": 405.5,
+    "world_32_bytes_32768": 1108.6,
+    "world_32_bytes_65536": 989.7,
+    "world_32_bytes_524288": 1159.4,
+    "world_32_bytes_4194304": 929.5
+   },
+   "compile_first_exec_us": {
+    "4096": 25002123.3,
+    "32768": 21543605.6,
+    "65536": 36568913.2,
+    "524288": 41583883.7,
+    "4194304": 2301139.3
+   }
+  }
+ },
+ "derived_error": "KeyError: 'permute'",
+ "derived_table": {
+  "xla_op_overhead_us_isolated": {
+   "add": 238.5,
+   "index_select": 1044.4,
+   "slice": 203.5,
+   "cat": 203.9,
+   "stack": 201.9,
+   "zeros": 509.7,
+   "tensor": 63.5,
+   "gather": 743.2,
+   "scatter": 892.6,
+   "split": 224.9,
+   "chunk": 254.0,
+   "view": 217.2,
+   "reshape": 227.4,
+   "unsqueeze": 209.1,
+   "squeeze": 247.6,
+   "flatten": 220.7,
+   "narrow": 216.4,
+   "transpose": 234.0,
+   "permute": 246.0,
+   "expand": 258.0,
+   "contiguous": 254.3,
+   "narrow_nonlead_contiguous": 260.0,
+   "permute_contiguous": 234.3
+  },
+  "xla_op_overhead_us_marginal": {
+   "add": 20.76,
+   "index_select": 603.23,
+   "slice": 106.94,
+   "cat": 12.23,
+   "stack": 11.51,
+   "zeros": 13.58,
+   "tensor": 31.57,
+   "gather": 622.92,
+   "scatter": 582.4,
+   "split": 29.58,
+   "chunk": 26.53,
+   "view": 16.9,
+   "reshape": 11.95,
+   "unsqueeze": 14.52,
+   "squeeze": 26.38,
+   "flatten": 25.47,
+   "narrow": 17.85,
+   "transpose": 44.15,
+   "permute": 45.31,
+   "expand": 26.93,
+   "contiguous": 44.71,
+   "narrow_nonlead_contiguous": 39.17,
+   "permute_contiguous": 27.68
+  },
+  "xla_op_overhead_us": {
+   "add": 238.5,
+   "index_select": 1044.4,
+   "slice": 106.94,
+   "cat": 203.9,
+   "stack": 201.9,
+   "zeros": 509.7,
+   "tensor": 63.5,
+   "gather": 743.2,
+   "scatter": 892.6,
+   "split": 29.58,
+   "chunk": 26.53,
+   "view": 16.9,
+   "reshape": 11.95,
+   "unsqueeze": 14.52,
+   "squeeze": 26.38,
+   "flatten": 25.47,
+   "narrow": 17.85,
+   "transpose": 44.15,
+   "permute": 45.31,
+   "expand": 26.93,
+   "contiguous": 44.71,
+   "narrow_nonlead_contiguous": 260.0,
+   "permute_contiguous": 234.3
+  },
+  "memcpy_throughput": {
+   "sequential_gbps": 73.76,
+   "strided_gbps": 292.29,
+   "clone_gbps": 134.3,
+   "strided_gbps_actual_bytes": 9.13
+  },
+  "graph_launch_overhead_us": {
+   "per_mark_step_us": 200.7,
+   "per_mark_step_us_local_only": 199.0
+  },
+  "back_to_back_amortization_us": {
+   "depth_1_total_us": 967.7,
+   "depth_2_total_us": 1289.8,
+   "depth_4_total_us": 425.7,
+   "depth_8_total_us": 1002.0,
+   "depth_16_total_us": 2122.6,
+   "depth_32_total_us": 2551.1,
+   "dispatch_overhead_us_first_issue": 967.7
+  },
+  "compilation_cost_us": {
+   "samples": [
+    {
+     "tensor_bytes": 65536,
+     "neff_load_us": 36568913
+    },
+    {
+     "tensor_bytes": 524288,
+     "neff_load_us": 41583884
+    },
+    {
+     "tensor_bytes": 4194304,
+     "neff_load_us": 2301139
+    }
+   ],
+   "load_events_per_run": 2,
+   "typical_training_steps": 5000
+  },
+  "index_select_scaling": {
+   "small_index_100": 218.6,
+   "medium_index_10k": 325.7,
+   "large_index_1M": 18486.6
+  },
+  "all_gather_latency_us": {
+   "world_32_bytes_4096": 1359.2,
+   "world_32_bytes_32768": 1330.2,
+   "world_32_bytes_65536": 764.6,
+   "world_32_bytes_524288": 1981.5,
+   "world_32_bytes_4194304": 5065.9
+  },
+  "all_reduce_latency_us": {
+   "world_32_bytes_4096": 405.5,
+   "world_32_bytes_32768": 1108.6,
+   "world_32_bytes_65536": 989.7,
+   "world_32_bytes_524288": 1159.4,
+   "world_32_bytes_4194304": 929.5
+  },
+  "reduce_scatter_latency_us": {
+   "world_32_bytes_131072_in": 892.1,
+   "world_32_bytes_1048576_in": 672.4,
+   "world_32_bytes_2097152_in": 942.8,
+   "world_32_bytes_16777216_in": 1470.9,
+   "world_32_bytes_134217728_in": 5360.1
+  },
+  "collective_permute_latency_us": {
+   "note": "NOT MEASURED: xm.collective_permute deadlocks in CCOM bootstrap at ws=32 on SDK 2.22/2.29 (probe killed after 8 min)"
+  }
+ },
+ "sim_params": {
+  "dispatch_overhead_us": 967.7,
+  "pipeline_amort_alpha1": 0.333,
+  "pipeline_amort_alpha2": 0.0,
+  "pipeline_amort_alpha3": 0.145,
+  "graph_launch_overhead_us": 200.7,
+  "memcpy_bytes_per_us": 292290.0,
+  "memcpy_seq_bytes_per_us": 73760.0,
+  "compilation_cost_samples": [
+   {
+    "tensor_bytes": 65536,
+    "neff_load_us": 36568913
+   },
+   {
+    "tensor_bytes": 524288,
+    "neff_load_us": 41583884
+   },
+   {
+    "tensor_bytes": 4194304,
+    "neff_load_us": 2301139
+   }
+  ]
+ }
+}

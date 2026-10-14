@@ -22,6 +22,9 @@ structural; no constant was tuned against the hardware pool.
 within 3%), while latency-floor terms move ±2× (dispatch 968 vs 1674 µs; 4 KB all-reduce 406 vs 1511 µs; back-to-back
 alphas (0.33, 0.0) vs (0.011, 0.027)). This is the per-deployment variance the Phase-1 probes exist to absorb, and it lands
 on exactly the terms that decide small-payload bundling decisions.
+| 9 | XLA dead-collective elimination: a collective whose output is never read and not returned is removed (HloDCE) | a search-found Ring-KV candidate with a dead all-gather was charged for it (HW 6.8 ms vs sim ranking it below the 8.8 ms baseline) |
+| 10 | Volume-proportional local terms (copies, elementwise, reductions, memsets, gathers) paid in forward and backward, as the collectives already were | the 33 MB full-vocab softmax of 1-AG dxe was charged once; its backward is the same size |
+| 11 | (scoring harness) AllToAllV helper variants are scored by the code the uniform helper executes on the pre-packed buffer (no re-pack loop), not by the seed template they descend from | the helper that measures 24 ms and the template that measures 52 ms were given the same score |
 
 Correlation against the 224-rank hardware pool (within-problem Spearman, step time; 3 repeats per candidate) is in
 rebuttal_draft.md / results_summary.md. Residual limits we state explicitly: (i) compiler-fusion-dependent costs of
