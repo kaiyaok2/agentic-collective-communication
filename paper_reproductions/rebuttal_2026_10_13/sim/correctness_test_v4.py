@@ -480,6 +480,8 @@ class TorchOpCounter:
         self.coll_outputs = []
 
 
+_ABLATE_CONCAT = False
+
 def _slice_meta(t, key):
     """(start, stop) along dim 0 if `key` selects a dim-0 range (slice or int) and leaves every other dim whole;
     else None. Used to recognise XLA's concat-of-consecutive-slices simplification."""
@@ -1065,7 +1067,7 @@ class MockTorch:
         # v4: XLA's algebraic simplifier rewrites concat(slice_0(x), slice_1(x), ...) with consecutive ranges into
         # (a slice of) x itself: no copy, and the feeding slices vanish. Recognise that pattern structurally.
         metas = [getattr(t, "_slice_of", None) for t in tensors]
-        if dim == 0 and len(tensors) > 1 and all(m is not None for m in metas) and all(m[0] is metas[0][0] for m in metas):
+        if (not _ABLATE_CONCAT) and dim == 0 and len(tensors) > 1 and all(m is not None for m in metas) and all(m[0] is metas[0][0] for m in metas):
             consecutive = all(metas[i][2] == metas[i + 1][1] for i in range(len(metas) - 1))
             if consecutive:
                 src = metas[0][0]._t
@@ -2723,6 +2725,7 @@ def benchmark_xla_candidate_generic(problem, candidate_fn, topology,
                                      amort_knee_bytes=262144,
                                      index_select_bytes_per_us=0.0,
                                      local_fwd_bwd_factor=1.0,
+                                     ablate=None,
                                      hbm_budget_bytes_per_core=2 * (1024 ** 3),
                                      hbm_penalty_scale_us=10000.0,
                                      candidate_source=None):
@@ -2793,6 +2796,7 @@ def benchmark_xla_candidate_generic(problem, candidate_fn, topology,
     num_devices = topology.num_devices
     cpd = topology.cores_per_device
 
+    _abl = set((ablate or "").split(",")) - {""}
     test_case = problem.generate_test_case(world_size, "uniform", 64, seed=99)
 
     profiler = CollectiveProfiler(world_size)
@@ -2815,7 +2819,7 @@ def benchmark_xla_candidate_generic(problem, candidate_fn, topology,
         return {"error": str(e)}
     # v4: XLA HloDCE -- a collective whose output is never read and not returned is removed from the graph
     _n_dead = 0
-    for _tt in getattr(counter, "coll_outputs", []):
+    for _tt in ([] if "dce" in _abl else getattr(counter, "coll_outputs", [])):
         if not getattr(_tt, "_consumed", False) and hasattr(_tt, "_coll_ev") and 0 <= _tt._coll_ev < len(counter.events):
             counter.events[_tt._coll_ev] = ("dead_collective", 0); counter.ops[_tt._coll_ev] = "dead_collective"; _n_dead += 1
 
@@ -2887,7 +2891,7 @@ def benchmark_xla_candidate_generic(problem, candidate_fn, topology,
             return max(base, local_fwd_bwd_factor * _scaled_bytes(copy_bytes) / float(hbm_bytes_per_us))
         if op_name in _VOLUME_COMPUTE_OPS:
             base = (max(op_costs.get(op_name, base_view_us), base_view_us) if op_costs else base_view_us)
-            if copy_bytes <= 0 or hbm_bytes_per_us <= 0:
+            if copy_bytes <= 0 or hbm_bytes_per_us <= 0 or "volume_ops" in _abl:
                 return base
             return max(base, local_fwd_bwd_factor * _scaled_bytes(copy_bytes) / float(hbm_bytes_per_us))
         # Reshape / contiguous on a sub-region source: gather-style
@@ -2976,6 +2980,7 @@ def benchmark_xla_candidate_generic(problem, candidate_fn, topology,
     def _coll_bytes_factor(op):
         """bytes moved per rank relative to the collective's INPUT bytes (ring algorithms)"""
         ws = max(2, int(world_size))
+        if "bytes_moved" in _abl: return 1.0
         if op == "all_gather":     return float(ws - 1)
         if op == "reduce_scatter": return float(ws - 1) / ws
         if op == "all_reduce":     return 2.0 * (ws - 1) / ws

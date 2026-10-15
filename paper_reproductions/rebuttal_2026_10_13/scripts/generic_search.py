@@ -336,5 +336,5 @@ if __name__ == "__main__":
         out[pname] = res
         print(f"{pname:15s} start={res['start_sim']} | " + " | ".join(f"{k}={res[k].get('best_sim')} {res[k].get('structure',{}).get('colls')}" for k in ("random", "ga", "beam", "rules")) + f" | {res['secs']}s", flush=True)
     os.makedirs("/home/ubuntu/sweep_results", exist_ok=True)
-    json.dump(out, open(f"/home/ubuntu/sweep_results/generic_search_{SCORER}_s{SEED}.json", "w"), indent=1)
+    _od = os.environ.get("OUTDIR", "/home/ubuntu/sweep_results"); os.makedirs(_od, exist_ok=True); json.dump(out, open(f"{_od}/generic_search_{SCORER}_s{SEED}.json", "w"), indent=1)
     print("wrote generic_search json")

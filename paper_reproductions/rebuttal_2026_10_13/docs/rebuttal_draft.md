@@ -23,7 +23,10 @@ the bytes they actually move (an all-gather receives (ws−1)×input) with measu
 reduction/memset ops by volume at the measured HBM rate, (iv) let a dispatch run survive XLA-fusible local compute and
 amortize only latency-bound (≤256 KB) collectives, (v) apply XLA's concat-of-consecutive-slices simplification and dead-collective elimination, (vi) derive graph
 boundaries from the scope being scored, and (vii) pay volume-proportional local terms in forward and backward, as the
-collectives already were. These changes are listed in the artifact (sim_v4_changes.md).
+collectives already were. These changes are listed in the artifact (sim_v4_changes.md), with a leave-one-out ablation: removing the measured
+collective curves inverts five problems (pooled ρ 0.69 → 0.27); removing bytes-moved, volume-charged local ops or
+fusion-aware dispatch runs drops distributed CE to 0.27/0.27/0.02; removing real shapes drops FSDP to 0.52; the
+remaining terms each carry one problem. No single constant does this work — the structure does.
 
 **Result (74-candidate pool over the 8 problems, each measured 3× at 224-rank training scope; repeat sd ≤2%):**
 within-problem Spearman between simulator score and measured step time — AllToAllV **0.90** (8 cands; sim top-1 = HW

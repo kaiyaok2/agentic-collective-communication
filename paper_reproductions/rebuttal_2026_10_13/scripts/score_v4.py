@@ -10,6 +10,7 @@ import json, os, re, sys, importlib.util
 REPO = os.environ.get("REPO", "/home/ubuntu/OverlayCCL"); sys.path.insert(0, REPO)
 spec = importlib.util.spec_from_file_location("ct_v4", os.environ.get("CT_V4", "/home/ubuntu/ap7/correctness_test_v4.py"))
 ct = importlib.util.module_from_spec(spec); spec.loader.exec_module(ct)
+if "concat" in os.environ.get("ABLATE", ""): ct._ABLATE_CONCAT = True
 from search.problems import get_problem
 import search.problems_modext
 from simulator.topology import MultiNodeTopology
@@ -31,7 +32,7 @@ KW = dict(op_costs=op_costs, dispatch_overhead_us=SP["dispatch_overhead_us"], gr
           pipeline_amort_alpha1=SP["pipeline_amort_alpha1"], pipeline_amort_alpha2=SP["pipeline_amort_alpha2"], pipeline_amort_alpha3=SP["pipeline_amort_alpha3"],
           memcpy_bytes_per_us=SP["memcpy_bytes_per_us"], memcpy_seq_bytes_per_us=SP["memcpy_seq_bytes_per_us"],
           hbm_bytes_per_us=DT["memcpy_throughput"]["clone_gbps"] * 1000.0,
-          coll_curves=None, amort_knee_bytes=int(os.environ.get("KNEE", "262144")), local_fwd_bwd_factor=float(os.environ.get("FWDBWD", "1")),
+          coll_curves=None, amort_knee_bytes=int(os.environ.get("KNEE", "262144")), local_fwd_bwd_factor=float(os.environ.get("FWDBWD", "1")), ablate=os.environ.get("ABLATE", ""),
           index_select_bytes_per_us=(1_000_000 * 4) / float(DT["index_select_scaling"]["large_index_1M"]) if "large_index_1M" in DT.get("index_select_scaling", {}) else 0.0,
           microbatch_loops_induce_graphs=(os.environ.get("SCOPE", "harness") == "e2e"),
           coll_run_reset=os.environ.get("RESET", "graph"))
@@ -93,7 +94,7 @@ REAL = {"dxe": lambda prob: setattr(prob, "generate_test_case", dxe_real),
         "alltoallv": lambda prob: setattr(prob, "generate_test_case", (lambda g: (lambda ws, pattern="uniform", shard_size=64, seed=0: g(ws, pattern, 1024, seed)))(prob.generate_test_case))}
 # real per-problem-harness shapes for the Llama-side problems (the generators take the shape kwargs directly);
 # generators emit float32 while the harnesses run bf16 -> byte multiplier 0.5
-if os.environ.get("REALSHAPES", "1") == "1":
+if os.environ.get("REALSHAPES", "1") == "1" and "realshapes" not in os.environ.get("ABLATE", ""):
     def _wrap(g, **kw):
         return lambda ws, pattern="uniform", *a, **k: g(ws, pattern, **kw)
     REAL.update({
