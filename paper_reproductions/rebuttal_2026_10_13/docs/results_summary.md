@@ -102,6 +102,7 @@ Generic AST edits (swap primitive, mutate constant, delete/move, insert tensor o
 - vs fixed simulator (budget 60, 2 seeds): **no strategy-level improvement on any of the 8 problems**; the only sim gains are compiler-pass-level rewrites of the PP loop (LICM of the zeros buffer: 0.985×; GA unroll + shared buffer: 0.990×); both fail the hardware gate (harness-incompatible CPU tensors inherited from the seed template).
   None of the methods produced pack-and-gather, the dxe recomposition, or stack/cat bundling.
 - vs the FINAL simulator (v16b; budget 60, 2 seeds, 4 workers): random/beam find the Ring-KV parts-per-chunk reduction (sim 0.81–0.82×; hardware 1.29×, measured 6.8 vs 8.8 ms) — a real but minor parameter change of the baseline, not a new strategy; PP: compiler-pass LICM (0.97×, harness-incompatible); all other problems: no improvement. Still no pack-and-gather, dxe recomposition, or stack/cat bundling from any non-LLM method.
+- vs the FINAL simulator with budget 400 (6 workers, 2 seeds): the Ring-KV finds are real on hardware — N_PARTS 4→1 (beam) **5.18 ms** (3 reps; baseline 8.8, deployed per-slot 4.96 → the non-LLM search recovers ~93% of the Ring-KV gain through the baseline's own chunking parameter), N_PARTS 4→2 (random) 5.93 ms; PP: 2% loop rewrites; all other problems: no improvement at budget 400 either (⟨Layer-block seed 1 still running at expiry⟩).
 - Archived non-LLM Phase-3 arms ("none"/"random" over the seed library): reproduce OLMoE (1.41×), deploy the baseline on
   all four Llama problems.
 

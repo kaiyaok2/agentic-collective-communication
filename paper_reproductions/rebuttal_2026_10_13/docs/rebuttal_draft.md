@@ -95,8 +95,9 @@ each developer baseline. Against the *shipped* simulator it reported 3.7–60× 
 unrolled by two (`range(0, M, 2)`), which the old graph-boundary detector did not recognize — a simulator exploit, not a
 strategy. Hardware: TP MLP 11.65–11.90 ms vs baseline 11.75, FSDP 15.25 vs 14.5–15.3, PP variants fail the harness. The
 fixed detector removes it. Against the fixed simulator (budget 60 evaluations per method, 2 seeds, all 8 problems, repeated against the final
-corrected arm) no method improves on any baseline except the Ring-KV parts-per-chunk reduction (a parameter change of the
-baseline: 1.29× on hardware) and two compiler-pass-level rewrites of the PP loop (hoisting the zeros buffer out of the loop, 1.5% in the simulator; both fail the hardware gate — the seed template they descend from allocates CPU tensors the harness cannot run). No method
+corrected arm) no method improves on any baseline except Ring KV, where reducing the baseline's parts-per-chunk parameter (found by
+beam search at budget 400) gives 5.18 ms vs 8.8 baseline and 4.96 deployed — a non-LLM search recovers most of that one
+problem's gain — and two compiler-pass-level rewrites of the PP loop (hoisting the zeros buffer out of the loop, 1.5% in the simulator; both fail the hardware gate — the seed template they descend from allocates CPU tensors the harness cannot run). No method
 produced pack-and-gather, the distributed-CE recomposition, or stack/cat bundling. Separately, the archived non-LLM Phase-3 arms
 ("none"/"random" over the seed library) reproduce the OLMoE headline (pack-and-gather is a seed template; 1.41×) but
 deploy the baseline on all Llama problems — the bundling strategies behind the 3.24× are LLM-authored.
