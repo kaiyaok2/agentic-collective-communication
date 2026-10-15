@@ -64,11 +64,13 @@ Pooled Spearman on speedup ratios 0.69 (n=68); direction agreement 31/33. Simula
 Cross-scope inversion reproduced by the simulator: per-primitive payload → AG+T+RS 19972 < AG+slice 29045/40760 (HW
 30.0 / 24.2 / 38.0 ms); OLMoE payload → AG+slice 131603/143416 < AG+T+RS 271144 (HW 3127 vs 4338 ms).
 
-**Cross-cluster check (cluster 2, one repeat of the same pool, same v16b simulator — no re-fitting):** ρ AllToAllV 0.90,
-dxe 0.59, FSDP 0.85, Layer-block 0.90, PP 0.80, Ring KV 0.56, TP MLP 0.88, Uniform A2A 0.87 (10 candidates);
-pooled 0.73, direction 28/30. Hardware itself reproduces across clusters with rank agreement 0.77–0.96 and median step-time
-difference 0.3–2.1% — except dxe (rank agreement 0.48, 5.3%): its six all-reduce variants are within hardware noise of each
-other, which bounds any simulator's ρ on that problem (the simulator does keep 1-AG last on both clusters).
+**Cross-cluster check (cluster 2, 1–2 repeats of the same pool, same v16b simulator — no re-fitting):** ρ AllToAllV 0.90,
+dxe 0.81, FSDP 0.85, Layer-block 0.90, PP 0.80, Ring KV 0.56, TP MLP 0.87, Uniform A2A 0.87; pooled 0.75, direction 29/30
+(sim top-1 = HW best or within 0.1–5.8%). Hardware itself reproduces across clusters with rank agreement 0.77–0.96 and median
+step-time difference 0.3–2.1% — except dxe (rank agreement 0.48 on the first repeat, 5.3%): its six all-reduce variants are
+within hardware noise of each other, which bounds any simulator's ρ on that problem (the simulator keeps 1-AG last on both
+clusters). The second cluster-2 repeat is partial (26/50) because large-payload collectives began hanging on that cluster's
+fabric (see §1 note).
 
 ## 4. Leak-free non-LLM search (C-Q2)
 Generic AST edits (swap primitive, mutate constant, delete/move, insert tensor op, stack/cat operands, loop unroll/fuse)

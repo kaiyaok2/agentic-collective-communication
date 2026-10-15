@@ -1,0 +1,128 @@
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+W1015 03:28:20.124000 1588467 torch/distributed/run.py:803] 
+W1015 03:28:20.124000 1588467 torch/distributed/run.py:803] *****************************************
+W1015 03:28:20.124000 1588467 torch/distributed/run.py:803] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W1015 03:28:20.124000 1588467 torch/distributed/run.py:803] *****************************************
+2026-Oct-15 03:28:30.772491 1588552:1588552 ERROR  TDRV:exec_check_hbm_uncorrectable            (FATAL-RT-UNDEFINED-STATE) [ND 9] Uncorrectable HBM memory error is detected. Execution results may be invalid. Please terminate this instance to prevent future impact from the hardware error.
+2026-Oct-15 03:28:30.800222 1588552:1588552 ERROR  TDRV:notification_destroy                    Notifications not initialized! 
+2026-Oct-15 03:28:30.807166 1588552:1588552 ERROR  TDRV:notification_destroy                    Notifications not initialized! 
+2026-Oct-15 03:28:30.814090 1588552:1588552 ERROR  TDRV:notification_destroy                    Notifications not initialized! 
+2026-Oct-15 03:28:30.821013 1588552:1588552 ERROR  TDRV:notification_destroy                    Notifications not initialized! 
+2026-Oct-15 03:28:30.828665 1588552:1588552 ERROR  TDRV:tdrv_destroy                            TDRV not initialized
+2026-Oct-15 03:28:30.835237 1588552:1588552 ERROR   NRT:nrt_init                                Failed to initialize devices, error:1201
+2026-Oct-15 03:28:30.842652 1588552:1588552 ERROR   NRT:nrt_infodump                            Neuron runtime information - please include in any support request:
+2026-Oct-15 03:28:30.850695 1588552:1588552 ERROR   NRT:nrt_infodump                            ------------->8------------[ cut here ]------------>8-------------
+2026-Oct-15 03:28:30.919073 1588552:1588552 ERROR   NRT:nrt_infodump                            NRT version: 2.29.40.0 (f954cd7a56b9a57af09c821cf39dc8be45946e12)
+2026-Oct-15 03:28:30.927133 1588552:1588552 ERROR   NRT:nrt_infodump                            Embedded FW version: 1.19.1.0 (70a4460a7a46224a5d8ebc1fcb7acbf7315a5294) loaded from "libnrtucode_extisa.so"
+2026-Oct-15 03:28:30.938241 1588552:1588552 ERROR   NRT:nrt_infodump                            CCOM version: 2.29.41.0- (compat 81)
+2026-Oct-15 03:28:30.945377 1588552:1588552 ERROR   NRT:nrt_infodump                            NCFW version: 2.29.5.0 (861dd829a50e546d2c4316183d6f957958b2b5ff)
+2026-Oct-15 03:28:30.953498 1588552:1588552 ERROR   NRT:nrt_infodump                            Instance ID: i-032f8d19fff86c877
+2026-Oct-15 03:28:30.960433 1588552:1588552 ERROR   NRT:nrt_infodump                            Cluster ID: N/A
+2026-Oct-15 03:28:30.966836 1588552:1588552 ERROR   NRT:nrt_infodump                            Kernel: Linux 6.14.0-1018-aws #18~24.04.1-Ubuntu SMP Mon Nov 24 19:46:27 UTC 2025
+2026-Oct-15 03:28:30.976939 1588552:1588552 ERROR   NRT:nrt_infodump                            Nodename: ip-<PRIV>
+2026-Oct-15 03:28:30.983698 1588552:1588552 ERROR   NRT:nrt_infodump                            Driver version: 2.25.4.0
+
+2026-Oct-15 03:28:30.992489 1588552:1588552 ERROR   NRT:nrt_infodump                            Failure: NRT_EXEC_HW_ERR_HBM_UE in nrt_init()
+2026-Oct-15 03:28:30.999846 1588552:1588552 ERROR   NRT:nrt_infodump                            Visible cores: 19
+2026-Oct-15 03:28:31.006286 1588552:1588552 ERROR   NRT:nrt_infodump                            Environment:
+2026-Oct-15 03:28:31.012598 1588552:1588552 ERROR   NRT:nrt_infodump                                NEURON_RT_NUM_CORES=32
+2026-Oct-15 03:28:31.019436 1588552:1588552 ERROR   NRT:nrt_infodump                                NEURON_COMPILE_CACHE_URL=/tmp/neuron_cache
+2026-Oct-15 03:28:31.026894 1588552:1588552 ERROR   NRT:nrt_infodump                                NEURON_NUM_RECENT_MODELS_TO_KEEP=1
+2026-Oct-15 03:28:31.034020 1588552:1588552 ERROR   NRT:nrt_infodump                                NEURON_RT_STOCHASTIC_ROUNDING_EN=1
+2026-Oct-15 03:28:31.041149 1588552:1588552 ERROR   NRT:nrt_infodump                                NEURON_LIBRARY_PATH=/opt/aws_neuronx_venv_pytorch_2_9/lib/python3.12/site-packages/libneuronxla/libneuronpjrt.so
+2026-Oct-15 03:28:31.052295 1588552:1588552 ERROR   NRT:nrt_infodump                                NEURON_RT_ROOT_COMM_ID=ip-<PRIV>.ap-southeast-2.compute.internal:62182
+2026-Oct-15 03:28:31.062346 1588552:1588552 ERROR   NRT:nrt_infodump                                NEURON_PJRT_PROCESS_INDEX=19
+2026-Oct-15 03:28:31.069317 1588552:1588552 ERROR   NRT:nrt_infodump                                NEURON_PT_MPMD_MODE=1
+2026-Oct-15 03:28:31.076082 1588552:1588552 ERROR   NRT:nrt_infodump                                NEURON_PJRT_WORLD_SIZE=224
+2026-Oct-15 03:28:31.082968 1588552:1588552 ERROR   NRT:nrt_infodump                                NEURON_INTERNAL_PJRT_C_API_VERSION=0.75
+2026-Oct-15 03:28:31.090294 1588552:1588552 ERROR   NRT:nrt_infodump                            -------------8<-----------[ cut to here ]-----------8<------------
+Traceback (most recent call last):
+  File "/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py", line 143, in <module>
+    main()
+  File "/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py", line 96, in main
+    dist.init_process_group("xla")
+  File "/opt/aws_neuronx_venv_pytorch_2_9/lib/python3.12/site-packages/torch_neuronx/xla.py", line 137, in new_init_process_group
+    return old_init_process_group(backend, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/aws_neuronx_venv_pytorch_2_9/lib/python3.12/site-packages/torch/distributed/c10d_logger.py", line 81, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/aws_neuronx_venv_pytorch_2_9/lib/python3.12/site-packages/torch/distributed/c10d_logger.py", line 95, in wrapper
+    func_return = func(*args, **kwargs)
+                  ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/aws_neuronx_venv_pytorch_2_9/lib/python3.12/site-packages/torch/distributed/distributed_c10d.py", line 1762, in init_process_group
+    store, rank, world_size = next(rendezvous_iterator)
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/aws_neuronx_venv_pytorch_2_9/lib/python3.12/site-packages/torch_xla/_internal/rendezvous.py", line 30, in pjrt_rendezvous_handler
+    pjrt.initialize_multiprocess(local_rank, local_world_size)
+  File "/opt/aws_neuronx_venv_pytorch_2_9/lib/python3.12/site-packages/torch_xla/_internal/pjrt.py", line 121, in initialize_multiprocess
+    devices = xm.get_xla_supported_devices()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/aws_neuronx_venv_pytorch_2_9/lib/python3.12/site-packages/torch_xla/core/xla_model.py", line 79, in get_xla_supported_devices
+    devices = torch_xla._XLAC._xla_get_devices()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: Init: error condition (((rt_status) != NRT_SUCCESS)):  [Hardware]: [NRT_EXEC_HW_ERR_HBM_UE] status_code=1201. Execution failed due to the High Bandwidth Memory encountering an unrepairable uncorrectable error that produced incorrect results. For more details check stderr, or system logs for neuron messages. https://awsdocs-neuron.readthedocs-hosted.com/en/latest/neuron-runtime/nrt-troubleshoot.html#nrt-troubleshooting
+W1015 03:28:31.995000 1588467 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1588533 closing signal SIGTERM
+W1015 03:28:31.995000 1588467 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1588534 closing signal SIGTERM
+W1015 03:28:31.999000 1588467 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1588535 closing signal SIGTERM
+W1015 03:28:32.000000 1588467 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1588536 closing signal SIGTERM
+W1015 03:28:32.002000 1588467 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1588537 closing signal SIGTERM
+W1015 03:28:32.007000 1588467 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1588538 closing signal SIGTERM
+W1015 03:28:32.010000 1588467 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1588539 closing signal SIGTERM
+W1015 03:28:32.010000 1588467 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1588540 closing signal SIGTERM
+W1015 03:28:32.016000 1588467 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1588541 closing signal SIGTERM
+W1015 03:28:32.018000 1588467 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1588542 closing signal SIGTERM
+W1015 03:28:32.021000 1588467 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1588543 closing signal SIGTERM
+W1015 03:28:32.023000 1588467 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1588544 closing signal SIGTERM
+W1015 03:28:32.025000 1588467 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1588545 closing signal SIGTERM
+W1015 03:28:32.026000 1588467 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1588546 closing signal SIGTERM
+W1015 03:28:32.030000 1588467 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1588547 closing signal SIGTERM
+W1015 03:28:32.031000 1588467 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1588548 closing signal SIGTERM
+W1015 03:28:32.034000 1588467 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1588549 closing signal SIGTERM
+W1015 03:28:32.037000 1588467 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1588550 closing signal SIGTERM
+W1015 03:28:32.043000 1588467 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1588551 closing signal SIGTERM
+W1015 03:28:32.046000 1588467 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1588553 closing signal SIGTERM
+W1015 03:28:32.047000 1588467 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1588554 closing signal SIGTERM
+W1015 03:28:32.050000 1588467 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1588555 closing signal SIGTERM
+W1015 03:28:32.051000 1588467 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1588556 closing signal SIGTERM
+W1015 03:28:32.054000 1588467 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1588557 closing signal SIGTERM
+W1015 03:28:32.055000 1588467 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1588558 closing signal SIGTERM
+W1015 03:28:32.058000 1588467 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1588559 closing signal SIGTERM
+W1015 03:28:32.059000 1588467 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1588560 closing signal SIGTERM
+W1015 03:28:32.064000 1588467 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1588561 closing signal SIGTERM
+W1015 03:28:32.070000 1588467 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1588562 closing signal SIGTERM
+W1015 03:28:32.071000 1588467 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1588563 closing signal SIGTERM
+W1015 03:28:32.074000 1588467 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 1588564 closing signal SIGTERM
+E1015 03:28:41.797000 1588467 torch/distributed/elastic/multiprocessing/api.py:882] failed (exitcode: 1) local_rank: 19 (pid: 1588552) of binary: /opt/aws_neuronx_venv_pytorch_2_9/bin/python3
+Traceback (most recent call last):
+  File "/opt/aws_neuronx_venv_pytorch_2_9/bin/torchrun", line 8, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/opt/aws_neuronx_venv_pytorch_2_9/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 357, in wrapper
+    return f(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^
+  File "/opt/aws_neuronx_venv_pytorch_2_9/lib/python3.12/site-packages/torch/distributed/run.py", line 936, in main
+    run(args)
+  File "/opt/aws_neuronx_venv_pytorch_2_9/lib/python3.12/site-packages/torch/distributed/run.py", line 927, in run
+    elastic_launch(
+  File "/opt/aws_neuronx_venv_pytorch_2_9/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 156, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/aws_neuronx_venv_pytorch_2_9/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 293, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+/home/ubuntu/OverlayCCL/training/train_ring_kv_7node.py FAILED
+------------------------------------------------------------
+Failures:
+  <NO_OTHER_FAILURES>
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-10-15_03:28:31
+  host      : ip-<PRIV>.ap-southeast-2.compute.internal
+  rank      : 19 (local_rank: 19)
+  exitcode  : 1 (pid: 1588552)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================

@@ -63,7 +63,7 @@ because those problems are decided by dispatch counts, not bandwidth — but it 
 problems: AllToAllV's ranking agreement drops to 0.93 (4× faster network) and **−0.21** (4× slower), distributed CE's to
 0.81; and reverting only the *local* terms to the snapshot values changes distributed CE (0.81) and Ring KV (0.94) while
 leaving the rest intact. On an independent second cluster, the same simulator (no re-fitting) keeps ρ ≥ 0.56 on all 8
-problems against a fresh repeat of the pool (pooled 0.73). So the TPU swap in §5 tested the problems where constants cannot matter and missed the ones where
+problems against fresh repeats of the pool (dxe 0.81, AllToAllV 0.90, Uniform A2A 0.87; pooled 0.75, direction 29/30). So the TPU swap in §5 tested the problems where constants cannot matter and missed the ones where
 they do. We will rewrite the §5 portability claim as: network constants are not what calibration is for on bundling
 problems; on payload-changing problems both network and local terms move the ranking, and they must be measured on the
 deployed SDK.

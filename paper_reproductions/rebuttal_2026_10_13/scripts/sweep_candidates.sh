@@ -35,7 +35,7 @@ while read -r P C K X; do
   eval "$CLEAR"; for ip in $WORKERS; do ssh -i /home/ubuntu/.ssh/Kaiyao.pem -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@$ip "mkdir -p /tmp/tp_search $RESULTS_DIR; $CLEAR" </dev/null; done
   HARNESS=training/train_${P}_7node.py
   if [ "$P" = pp_send_recv ]; then HARNESS=training/train_pp_send_recv_7node_s512.py; [ -f $REPO/$HARNESS ] || sed -E "s/^S *= *1024/S = 512/" $REPO/training/train_pp_send_recv_7node.py > $REPO/$HARNESS; fi
-  timeout 2400 bash $AP/run_ap7.sh $HARNESS $BACKEND $STEPS $TAG >> $OUT/sweep.log 2>&1
+  timeout ${RUN_TIMEOUT:-2400} bash $AP/run_ap7.sh $HARNESS $BACKEND $STEPS $TAG >> $OUT/sweep.log 2>&1
   RC=$?
   # harvest immediately from master or any worker, any of the four naming conventions
   F=""
