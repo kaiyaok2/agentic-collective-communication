@@ -1,0 +1,249 @@
+[_sso_creds] no live SSO at import; AWS calls will fail if attempted (Command '['aws', 'configure', 'export-credentials', '--profile', 'default', '--format', 'process']' returned non-zero exit status 2.)
+[Phase 1] hardware table: LIVE probe (/home/ubuntu/hwprobe/hw_probe_measured.json)
+======================================================================
+Collective Search Pipeline: Ring Attention KV Distribution (5-Phase)
+Pattern: moe | LLM: True | HW eval: True
+======================================================================
+
+======================================================================
+[Phase 1] Agent Hardware Profiling — LLM Builds Simulator
+======================================================================
+  Model: sonnet | max_turns: 15
+  [Turn 1] Agent: I'll systematically profile this hardware and build an accurate cost model. Let me start by discovering the basic topology and testing which primitives are supported.
+  [Turn 1] Tool: get_device_info({})
+  [Turn 1] Tool: discover_device_adjacency({})
+  [Turn 1] Tool: check_primitive_compilation({"primitive": "all_gather"})
+  [Turn 1] Tool: check_primitive_compilation({"primitive": "reduce_scatter"})
+  [Turn 1] Tool: check_primitive_compilation({"primitive": "all_reduce"})
+  [Turn 1] Tool: check_primitive_compilation({"primitive": "collective_permute"})
+  [Turn 1] Tool: check_primitive_compilation({"primitive": "all_to_all"})
+  [Turn 2] Agent: Great! I found that **all_to_all does NOT compile** on this hardware. This is critical information. Now let me profile the collectives that do work:
+  [Turn 2] Tool: measure_collective_latency({"collective_type": "all_gather", "tensor_bytes": 4096, "world_size": 32})
+  [Turn 2] Tool: measure_collective_latency({"collective_type": "all_gather", "tensor_bytes": 65536, "world_size": 32})
+  [Turn 2] Tool: measure_collective_latency({"collective_type": "all_gather", "tensor_bytes": 1048576, "world_size": 32})
+  [Turn 2] Tool: measure_collective_latency({"collective_type": "reduce_scatter", "tensor_bytes": 4096, "world_size": 32})
+  [Turn 2] Tool: measure_collective_latency({"collective_type": "reduce_scatter", "tensor_bytes": 65536, "world_size": 32})
+  [Turn 2] Tool: measure_collective_latency({"collective_type": "reduce_scatter", "tensor_bytes": 1048576, "world_size": 32})
+  [Turn 3] Agent: Interesting! reduce_scatter has a constant latency (~95 μs) independent of size, while all_gather varies. Let me test collective_permute and measure more variations:
+  [Turn 3] Tool: measure_collective_latency({"collective_type": "collective_permute", "tensor_bytes": 4096, "num_steps": 1, "world_size": 32})
+  [Turn 3] Tool: measure_collective_latency({"collective_type": "collective_permute", "tensor_bytes": 65536, "num_steps": 1, "world_size": 32})
+  [Turn 3] Tool: measure_collective_latency({"collective_type": "collective_permute", "tensor_bytes": 4096, "num_steps": 4, "world_size": 32})
+  [Turn 3] Tool: measure_collective_latency({"collective_type": "collective_permute", "tensor_bytes": 4096, "num_steps": 8, "world_size": 32})
+  [Turn 3] Tool: check_cross_node_support({"collective_type": "collective_permute"})
+  [Turn 4] Agent: Perfect! collective_permute has a fixed 90 μs per step and crashes on cross-node patterns. Now let me profile ALL the local XLA operations:
+  [Turn 4] Tool: measure_xla_op_overhead({"op_name": "index_select", "tensor_size": 10000, "num_ops": 100})
+  [Turn 4] Tool: measure_xla_op_overhead({"op_name": "slice", "tensor_size": 10000, "num_ops": 100})
+  [Turn 4] Tool: measure_xla_op_overhead({"op_name": "cat", "tensor_size": 10000, "num_ops": 100})
+  [Turn 4] Tool: measure_xla_op_overhead({"op_name": "view", "tensor_size": 10000, "num_ops": 100})
+  [Turn 4] Tool: measure_xla_op_overhead({"op_name": "reshape", "tensor_size": 10000, "num_ops": 100})
+  [Turn 4] Tool: measure_xla_op_overhead({"op_name": "unsqueeze", "tensor_size": 10000, "num_ops": 100})
+  [Turn 4] Tool: measure_xla_op_overhead({"op_name": "squeeze", "tensor_size": 10000, "num_ops": 100})
+  [Turn 4] Tool: measure_xla_op_overhead({"op_name": "flatten", "tensor_size": 10000, "num_ops": 100})
+  [Turn 4] Tool: measure_xla_op_overhead({"op_name": "narrow", "tensor_size": 10000, "num_ops": 100})
+  [Turn 4] Tool: measure_xla_op_overhead({"op_name": "transpose", "tensor_size": 10000, "num_ops": 100})
+  [Turn 4] Tool: measure_xla_op_overhead({"op_name": "permute", "tensor_size": 10000, "num_ops": 100})
+  [Turn 4] Tool: measure_xla_op_overhead({"op_name": "expand", "tensor_size": 10000, "num_ops": 100})
+  [Turn 5] Tool: measure_xla_op_overhead({"op_name": "contiguous", "tensor_size": 10000, "num_ops": 100})
+  [Turn 5] Tool: measure_xla_op_overhead({"op_name": "zeros", "tensor_size": 10000, "num_ops": 100})
+  [Turn 5] Tool: measure_xla_op_overhead({"op_name": "tensor", "tensor_size": 10000, "num_ops": 100})
+  [Turn 5] Tool: measure_xla_op_overhead({"op_name": "stack", "tensor_size": 10000, "num_ops": 100})
+  [Turn 5] Tool: measure_xla_op_overhead({"op_name": "gather", "tensor_size": 10000, "num_ops": 100})
+  [Turn 5] Tool: measure_xla_op_overhead({"op_name": "scatter", "tensor_size": 10000, "num_ops": 100})
+  [Turn 5] Tool: measure_xla_op_overhead({"op_name": "split", "tensor_size": 10000, "num_ops": 100})
+  [Turn 5] Tool: measure_xla_op_overhead({"op_name": "chunk", "tensor_size": 10000, "num_ops": 100})
+  [Turn 6] Agent: Excellent! Now let me measure index_select scaling, overlap potential, compilation costs, and graph launch overhead:
+  [Turn 6] Tool: measure_index_select_scaling({"index_tensor_size": 100, "source_tensor_size": 10000})
+  [Turn 6] Tool: measure_index_select_scaling({"index_tensor_size": 1000, "source_tensor_size": 10000})
+  [Turn 6] Tool: measure_index_select_scaling({"index_tensor_size": 5000, "source_tensor_size": 50000})
+  [Turn 6] Tool: measure_overlap_potential({"collective_type": "all_reduce", "pattern": "per_tensor"})
+  [Turn 6] Tool: measure_overlap_potential({"collective_type": "all_reduce", "pattern": "batched"})
+  [Turn 6] Tool: measure_graph_launch_overhead({})
+  [Turn 7] Tool: measure_compilation_cost({"tensor_bytes": 4096})
+  [Turn 7] Tool: measure_compilation_cost({"tensor_bytes": 65536})
+  [Turn 7] Tool: measure_compilation_cost({"tensor_bytes": 1048576})
+  [Turn 7] Tool: measure_compilation_cost({"tensor_bytes": 16777216})
+  [Turn 7] Tool: measure_memory_copy_throughput({})
+  [Turn 8] Agent: Now let me measure the back-to-back amortization schedule:
+  [Turn 8] Tool: measure_back_to_back_amortization({"depth": 1})
+  [Turn 8] Tool: measure_back_to_back_amortization({"depth": 2})
+  [Turn 8] Tool: measure_back_to_back_amortization({"depth": 4})
+  [Turn 8] Tool: measure_back_to_back_amortization({"depth": 8})
+  [Turn 8] Tool: measure_back_to_back_amortization({"depth": 16})
+  [Turn 9] Agent: Now let me get the ground truth algorithm latencies:
+  [Turn 9] Tool: measure_algorithm_latency({"algorithm": "algo_1coll_3localops_32ranks"})
+  [Turn 9] Tool: measure_algorithm_latency({"algorithm": "algo_1coll_35localops_32ranks"})
+  [Turn 9] Tool: measure_algorithm_latency({"algorithm": "algo_31coll_62localops_32ranks"})
+  [Turn 9] Tool: measure_algorithm_latency({"algorithm": "algo_2coll_5localops_32ranks"})
+  [Turn 9] Tool: measure_algorithm_latency({"algorithm": "algo_fused_32ranks"})
+  [Turn 9] Tool: measure_algorithm_latency({"algorithm": "algo_15coll_30localops_32ranks"})
+  [Turn 10] Agent: Perfect! Now I have all the data. Let me analyze the back-to-back amortization:
+
+- depth=1: 967.7 μs (baseline dispatch overhead)
+- depth=2: 1289.8 μs → marginal = 322.1 μs → alpha1 = 322.1/967.7 = 0....
+  [Turn 10] Tool: build_simulator({"code": "\nimport math\n\n# Hardware parameters discovered from profiling\nXLA_OP_COSTS_US = {\n   ...)
+    -> build_simulator: ok
+  [Turn 11] Agent: Now let me validate the simulator:
+  [Turn 11] Tool: validate_simulator({})
+    -> validate_simulator: False
+  [Turn 12] Agent: I'm significantly overestimating. The hint suggests I'm charging too much for local ops or mark_step overhead. Let me analyze the ground truth more carefully:
+
+- algo_1coll_3localops: 130 μs actual (I...
+  [Turn 12] Tool: build_simulator({"code": "\nimport math\n\n# Hardware parameters discovered from profiling\n# NOTE: The measured XLA...)
+    -> build_simulator: ok
+  [Turn 13] Tool: validate_simulator({})
+    -> validate_simulator: False
+  [Turn 14] Agent: Much better! I now have 2 algorithms within tolerance. The issue is algo_1coll_3localops (predicted 687.9 vs actual 130) and algo_2coll_5localops (predicted 918.4 vs actual 730). 
+
+The problem is my c...
+  [Turn 14] Tool: build_simulator({"code": "\nimport math\n\n# XLA op costs - reduced for in-graph fusion\nXLA_OP_COSTS_US = {\n    'i...)
+    -> build_simulator: ok
+  [Turn 15] Tool: validate_simulator({})
+    -> validate_simulator: False
+  [Turn 16] Agent: Now I'm underestimating everything! The hint says I need to add mark_step overhead back. Let me think about this differently. Looking at the measurements:
+
+- algo_1coll_3localops: 130 μs = collective ...
+  [Turn 16] Tool: build_simulator({"code": "\nimport math\n\n# XLA op costs - calibrated from ground truth algorithms\n# algo_1coll_35...)
+    -> build_simulator: ok
+  [Turn 17] Tool: validate_simulator({})
+    -> validate_simulator: False
+  [Turn 18] Agent: Good progress! algo_1coll_3localops is now perfect (2.4% error). But I'm still underestimating the others. Let me analyze:
+
+- algo_1coll_35localops: predicted 770.9 vs actual 1050 → missing ~280 μs
+- ...
+  [Turn 18] Tool: build_simulator({"code": "\nimport math\n\n# XLA op costs\nXLA_OP_COSTS_US = {\n    'index_select': 208.9,\n    'sli...)
+    -> build_simulator: ok
+  [Turn 19] Tool: validate_simulator({})
+    -> validate_simulator: False
+  [Turn 20] Agent: Better! Now I have 2 algorithms passing (algo_1coll_35localops and algo_2coll_5localops). The problem is:
+- algo_1coll_3localops: overpredict by 188% (should use cheaper collective)
+- algo_31coll_62lo...
+  [Turn 20] Tool: build_simulator({"code": "\nimport math\n\n# XLA op costs\nXLA_OP_COSTS_US = {\n    'index_select': 208.9,\n    'sli...)
+    -> build_simulator: ok
+  [Turn 21] Tool: validate_simulator({})
+    -> validate_simulator: False
+  [Turn 22] Agent: Great! Now I have 3 out of 4 passing. Only algo_1coll_35localops is failing (26.6% underpredict). 
+
+algo_1coll_35localops: predicted 770.9 vs actual 1050 → missing ~280 μs
+
+This algorithm has 1 collec...
+  [Turn 22] Tool: build_simulator({"code": "\nimport math\n\n# XLA op costs\nXLA_OP_COSTS_US = {\n    'index_select': 208.9,\n    'sli...)
+    -> build_simulator: ok
+  [Turn 23] Tool: validate_simulator({})
+    -> validate_simulator: False
+  [Turn 24] Agent: Almost there! Now 3 out of 4 passing, but algo_1coll_3localops is now overpredicting by 39.4%. 
+
+Let me analyze:
+- algo_1coll_3localops: predicted 181.2 vs actual 130 
+  - Should be: 95 + 3*28.75 = 18...
+  [Turn 24] Tool: build_simulator({"code": "\nimport math\n\n# XLA op costs\nXLA_OP_COSTS_US = {\n    'index_select': 208.9,\n    'sli...)
+    -> build_simulator: ok
+  [Turn 25] Tool: validate_simulator({})
+    -> validate_simulator: True
+    -> ever_validated=True; restored best snapshot simulator.
+
+  Simulator config:
+    collective_dispatch_overhead_us = 0.0
+    local_op_overhead_us = 0.0
+    link_bandwidth_gbps = 0.0
+    link_latency_us = 0.0
+    unsupported_primitives = ['all_to_all']
+    Simulator built: True
+    Simulator validated: True
+    Config complete: False
+  Agent config incomplete, using defaults
+Trainium cluster topology (7 node(s)):
+  Nodes: 7, Devices: 112, Cores: 224
+  NeuronLink BW: 192.0 GB/s, Latency: 0.5 us
+  EFA BW: 12.5 GB/s x 8 adapters/node, Latency: 5.0 us
+  Max hops: 4, Avg hops: 1.14
+  Hardware constraints: unsupported primitives = ['all_to_all']
+  [Phase 1 done] pipeline_amort_alphas = (0.333, 0.000, 0.145)
+
+======================================================================
+[Phase 2] Baseline Evaluation: Ring Attention KV Distribution
+======================================================================
+  per_slot_allgather: 89824.2 us, 6 local ops, 2 ag, 0 ar, 0 cp
+  per_chunk_per_part_allgather: 106125.2 us, 130 local ops, 32 ag, 0 ar, 0 cp
+  joint_cat_allgather: 90737.8 us, 7 local ops, 1 ag, 0 ar, 0 cp
+  per_slot_permute: ERROR: hw_invalid: collective_permute at ws>64
+
+  Best baseline: baseline:per_slot_allgather (89824.2 us)
+
+======================================================================
+[Phase 3 / Strategy-Enumerate] Ring Attention KV Distribution
+======================================================================
+  K=5 strategies, R=2 refinement rounds per top-2 (budget ~10 LLM calls)
+  Enumerated 5 strategies:
+    1. Independent per-slot all-gather: Dispatch one xm.all_gather per KV slot, gathering each slot's tensor independent...
+    2. Single fused all-gather concatenation: Concatenate all slots into one contiguous buffer, dispatch a single xm.all_gathe...
+    3. Hierarchical intra-node then inter-node all-gather: Use xm.all_gather with explicit groups to first gather within each node (intra-n...
+    4. Pipelined chunked all-gather with interleaving: Split each slot into fixed-size chunks (e.g., 8–16 parts), dispatch all-gather o...
+    5. Two-stage bucket-fused all-gather: Partition slots into B buckets (e.g., 4 buckets), concatenate slots within each ...
+  Strategy 1 (Independent per-slot all-gather): sim=89824.2 us
+  Strategy 2 (Single fused all-gather concatenation): sim=90737.8 us
+  Strategy 3 (Hierarchical intra-node then inter-node all-gather) INCORRECT: CRASH in collect pass 0: world=4 pattern=uniform rank=0: ZeroDivisionError: integer division or modu
+  Strategy 4 (Pipelined chunked all-gather with interleaving): sim=861591.6 us
+  Strategy 5 (Two-stage bucket-fused all-gather): sim=90352.5 us
+
+  Top after enumeration:
+    Independent per-slot all-gather: 89824.2 us
+    Two-stage bucket-fused all-gather: 90352.5 us
+
+  Strategy-Enumerate complete. 6 total candidates.
+  Best: Independent per-slot all-gather (sim=89824.2 us)
+
+======================================================================
+RANKING (post-evolution, pre-hardware)
+======================================================================
+  1. baseline:per_slot_allgather: 89824.2 us, 6 ops
+  2. strat:Independent per-slot all-gathe: 89824.2 us, 6 ops
+  3. baseline:joint_cat_allgather: 90737.8 us, 7 ops
+  4. baseline:per_chunk_per_part_allgather: 106125.2 us, 130 ops
+
+Simulator winner: baseline:per_slot_allgather (sim=89824.2 us)
+
+======================================================================
+[Phase 4] Hardware Benchmark: Ring Attention KV Distribution
+======================================================================
+  Running baseline:per_slot_allgather (per_slot_allgather, sim=89824.2 us)...
+    HW: 0.606 ms | Sim: 89824.2 us
+    Running training validation (10 steps, bf16)...
+    Training validation: PASSED (per-step avg = 33.460 ms)
+  Running strat:Independent per-slot all-gathe (strategy_enumerate_final, sim=89824.2 us)...
+    HW: 0.654 ms | Sim: 89824.2 us
+    Running training validation (10 steps, bf16)...
+    Training validation: PASSED (per-step avg = 36.809 ms)
+  Running baseline:joint_cat_allgather (joint_cat_allgather, sim=90737.8 us)...
+    HW: 0.741 ms | Sim: 90737.8 us
+    Running training validation (10 steps, bf16)...
+    Training validation: PASSED (per-step avg = 30.645 ms)
+  Running baseline:per_chunk_per_part_allgather (per_chunk_per_part_allgather, sim=106125.2 us)...
+    HW: 4.657 ms | Sim: 106125.2 us
+    Running training validation (10 steps, bf16)...
+    Training validation: PASSED (per-step avg = 55.604 ms)
+
+  Algorithm                           Rank (ms)   Sim (us)  
+  -------------------------------------------------------
+  baseline:per_slot_allgather         33.460      89824.2   
+  strat:Independent per-slot all-gathe 36.809      89824.2   
+  baseline:joint_cat_allgather        30.645      90737.8   
+  baseline:per_chunk_per_part_allgather 55.604      106125.2  
+
+======================================================================
+[Phase 4b] Training-shape gate (all candidates): Ring Attention KV Distribution
+======================================================================
+  PASS baseline:per_slot_allgather
+  PASS strat:Independent per-slot all-gathe
+  PASS baseline:joint_cat_allgather
+  PASS baseline:per_chunk_per_part_allgather
+  Summary: 4 pass / 0 fail / 0 skip (total 4)
+
+======================================================================
+[Phase 5] Code Generation → runtime/trainium_ring_kv.py
+======================================================================
+  Winner selected by simulator score among HW+TV survivors: baseline:per_slot_allgather (sim=89824.2 us)
+  Winner: baseline:per_slot_allgather
+  Score: 898.242, SimTime: 89824.2 us, Local ops: 6
+  Results: experiments/results_v4live_ring_kv/results_ring_kv.json
+  Generated: runtime/trainium_ring_kv_7node.py
+

@@ -1,0 +1,42 @@
+[
+  {
+    "template": "per_slot_allgather",
+    "cost_score": 898.2415451428568,
+    "sim_time_us": 89824.15451428568,
+    "local_ops": 6,
+    "num_collective_permute": 0,
+    "num_all_gather": 2,
+    "num_all_reduce": 0,
+    "name": "baseline:per_slot_allgather"
+  },
+  {
+    "template": "strategy_enumerate_final",
+    "cost_score": 898.2415451428568,
+    "sim_time_us": 89824.15451428568,
+    "local_ops": 6,
+    "num_collective_permute": 0,
+    "num_all_gather": 2,
+    "num_all_reduce": 0,
+    "name": "strat:Independent per-slot all-gathe"
+  },
+  {
+    "template": "joint_cat_allgather",
+    "cost_score": 907.3778809177188,
+    "sim_time_us": 90737.78809177189,
+    "local_ops": 7,
+    "num_collective_permute": 0,
+    "num_all_gather": 1,
+    "num_all_reduce": 0,
+    "name": "baseline:joint_cat_allgather"
+  },
+  {
+    "template": "per_chunk_per_part_allgather",
+    "cost_score": 1061.2522411540128,
+    "sim_time_us": 106125.22411540129,
+    "local_ops": 130,
+    "num_collective_permute": 0,
+    "num_all_gather": 32,
+    "num_all_reduce": 0,
+    "name": "baseline:per_chunk_per_part_allgather"
+  }
+]

@@ -18,6 +18,12 @@ own baseline; the paper's absolute numbers nevertheless reproduce. Detailed per-
 | Llama-7B at 3 nodes, model fixed (D) | per_mb 65.7 vs bundled 21.0 ms (3.13×) | 67.8 vs 27.2 (2.49×) |
 | OLMoE at 3 nodes (96 experts), 2 baseline runs | 2092.0 / 2090.2 vs 1377.5 ms (1.52×) | 2547 vs 1422 (1.79×) |
 
+**Cluster-2 fabric note (2026-10-14 21:20 UTC onward):** after a stuck-collective hardware error (`NRT_EXEC_HW_ERR_COLLECTIVES`)
+triggered by the DM=4096 attempt, large-payload collectives on cluster 2 fail with CCOM retransmit timeouts even after rebooting
+all seven instances (EFA `retrans_timeout_events` on every adapter), while small-collective workloads (Llama-7B, per-problem
+harnesses, Ring-KV pipeline runs) keep working. The OLMoE headline could therefore not be re-measured on cluster 2 (two attempts
+each arm); its cross-cluster evidence is the Llama-7B reproduction plus the 6+3-seed OLMoE repeats on cluster 1.
+
 ## 2. Phase-1 probes: the shipped simulator used a stale snapshot (A-Q3)
 Both the public artifact and the archived private commit route every Phase-1 `measure_*` tool to a static table. Live
 probes on this cluster (single node, 32 ranks, cold cache) vs the snapshot: collective dispatch (4 KB AR in its own
@@ -72,6 +78,7 @@ Generic AST edits (swap primitive, mutate constant, delete/move, insert tensor o
   find: Ring KV parts-per-chunk 4→1 (GA), HW 6.82 vs 8.81 ms baseline (deployed per-slot 4.96).
 - vs fixed simulator (budget 60, 2 seeds): **no strategy-level improvement on any of the 8 problems**; the only sim gains are compiler-pass-level rewrites of the PP loop (LICM of the zeros buffer: 0.985×; GA unroll + shared buffer: 0.990×); both fail the hardware gate (harness-incompatible CPU tensors inherited from the seed template).
   None of the methods produced pack-and-gather, the dxe recomposition, or stack/cat bundling.
+- vs the FINAL simulator (v16b; budget 60, 2 seeds, 4 workers): random/beam find the Ring-KV parts-per-chunk reduction (sim 0.81–0.82×; hardware 1.29×, measured 6.8 vs 8.8 ms) — a real but minor parameter change of the baseline, not a new strategy; PP: compiler-pass LICM (0.97×, harness-incompatible); all other problems: no improvement. Still no pack-and-gather, dxe recomposition, or stack/cat bundling from any non-LLM method.
 - Archived non-LLM Phase-3 arms ("none"/"random" over the seed library): reproduce OLMoE (1.41×), deploy the baseline on
   all four Llama problems.
 
@@ -112,12 +119,16 @@ the corrected simulator structure. Deployed runtimes then measured 3× with the 
 | dxe | L+v4 | alphas (.33,.15,.14) | 2-AR async 15817 < 3-AR 15875 < fused 2-AR 16002 < **1-AG 21531 (last)** | **2-AR recomposition** | **8.6** (vs 13.0–13.6 for the 1-AG deployments of arms S and L) |
 | alltoallv | S | alphas (.3,.1,.02) | ag_slice_cat 5979 < AG+T+RS 16695 (3 LLM strategies fail the oracle) | **pack-and-gather seed template `ag_slice_cat`** | plain helper 29.6 (= AG+T+RS, defect #10); wrapped: 47.0–47.6 per-primitive, **6199 ms at OLMoE scope** (slower than the 4349 baseline; the paper's archived runtime — a different loop+cat implementation — gives 3125) |
 | alltoallv | L | alphas (.33,0,0) | permute_ring 11632 < ag_slice_cat 12787 | **collective_permute ring** (evo:permute_ring_3) | per-primitive 23.8–24.2 ms (correctness unverified by the harness); OLMoE scope: device OOM (2 GB buffer) |
+| ring_kv | S | snapshot | per_slot 5264 < fused/batched 11075 (2 LLM strategies fail the oracle) | **per-slot AG** (= paper) | 5.08 / 5.08 / 5.28 ms (pool: per-slot 4.96) |
+| ring_kv | L+v4 | live table + corrected structure | per_slot 89824 < bucket-fused 90353 < fused concat 90738 ≪ pipelined-chunked 861592 | **per-slot AG** (same as S) | same runtime class, 5.1 ms |
 | alltoallv | L+v4 | alphas (.33,.15,.15) | LLM "segmented all-gather + strided indexing" (refined) 292448 < ag_slice_cat 315832; 3 LLM strategies fail the oracle | **LLM pack-and-gather variant** | per-primitive 47.2 (wrapped; = template 47.0); OLMoE scope 6198 ms via the generic wrapper (same as the template; the paper's hand-written uniform helper is what yields 3125) |
 
 Reading: with the shipped model structure, live constants do not repair the dxe mis-ranking (1-AG still wins) and can
 promote a hardware-infeasible permute ring on AllToAllV; with the corrected structure plus live constants the pipeline
 deploys the all-reduce recomposition on dxe and ranks 1-AG last — calibration operating end to end, and necessary but not
-sufficient without the structural terms (real shapes, bytes moved, volume-charged local ops).
+sufficient without the structural terms (real shapes, bytes moved, volume-charged local ops). On Ring KV (a bundling
+problem) all arms deploy the same per-slot all-gather — consistent with the sensitivity result that bundling problems do not
+depend on the constants.
 
 ## 7. A-Q5: 10 strategy classes attempted, 4 deployed — see taxonomy_AQ5_attempted.md.
 

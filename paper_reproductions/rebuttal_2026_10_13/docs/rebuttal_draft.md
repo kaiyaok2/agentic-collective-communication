@@ -89,7 +89,9 @@ a rule-based arm (standard compiler passes DCE/CSE/LICM/loop-fusion), same corre
 each developer baseline. Against the *shipped* simulator it reported 3.7–60× "wins" on PP/TP-MLP/FSDP: the baseline loop
 unrolled by two (`range(0, M, 2)`), which the old graph-boundary detector did not recognize — a simulator exploit, not a
 strategy. Hardware: TP MLP 11.65–11.90 ms vs baseline 11.75, FSDP 15.25 vs 14.5–15.3, PP variants fail the harness. The
-fixed detector removes it. Against the fixed simulator (budget 60 evaluations per method, 2 seeds, all 8 problems) no method improves on any baseline except two compiler-pass-level rewrites of the PP loop (hoisting the zeros buffer out of the loop, 1.5% in the simulator; both fail the hardware gate — the seed template they descend from allocates CPU tensors the harness cannot run). No method
+fixed detector removes it. Against the fixed simulator (budget 60 evaluations per method, 2 seeds, all 8 problems, repeated against the final
+corrected arm) no method improves on any baseline except the Ring-KV parts-per-chunk reduction (a parameter change of the
+baseline: 1.29× on hardware) and two compiler-pass-level rewrites of the PP loop (hoisting the zeros buffer out of the loop, 1.5% in the simulator; both fail the hardware gate — the seed template they descend from allocates CPU tensors the harness cannot run). No method
 produced pack-and-gather, the distributed-CE recomposition, or stack/cat bundling; the one real find (Ring KV, GA: fewer
 parts per chunk) measures 6.82 ms vs 8.81 baseline and 4.96 deployed. Separately, the archived non-LLM Phase-3 arms
 ("none"/"random" over the seed library) reproduce the OLMoE headline (pack-and-gather is a seed template; 1.41×) but

@@ -1441,3 +1441,118 @@ Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
 [bench] bundled steady_mean=22.45ms steady_median=22.48ms final_loss=4.970
 ### [23:39:03] QUEUE50 2) two more single-node Phase-1 probes
 ### [23:57:15] QUEUE50 3) 224-rank collective probe attempt (bf16, no device RNG)
+### [00:22:21] QUEUE50 DONE
+Traceback (most recent call last):
+  File "/home/ubuntu/ap7/live_probe_table.py", line 7, in <module>
+    assert anchor in s and "OVERLAY_HW_TABLE" not in s
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError
+### [00:22:31] QUEUE51 run_search --problem ring_kv [snapshot]
+  rc=0 1 generated
+### [00:36:44] QUEUE51 run_search --problem ring_kv [v4live]
+  rc=0 1 generated
+### [00:49:46] QUEUE51 measure ring_kv deployed runtimes, 3 repeats
+=== sweep: 2 runs, 300 steps each ===
+--- [00:49:47] ring_kv__livecal_snapshot
+deployed file /home/ubuntu/livecal/ring_kv_snapshot_runtime.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_ring_kv_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=5.048036575317383  (avg_ms=None steady=5.0296783447265625) rc=0
+--- [00:51:30] ring_kv__livecal_v4live
+deployed file /home/ubuntu/livecal/ring_kv_v4live_runtime.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_ring_kv_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=5.113959312438965  (avg_ms=None steady=5.223870277404785) rc=0
+=== sweep done 00:52:17 ===
+=== sweep: 2 runs, 300 steps each ===
+--- [00:52:17] ring_kv__livecal_snapshot
+deployed file /home/ubuntu/livecal/ring_kv_snapshot_runtime.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_ring_kv_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=5.05673885345459  (avg_ms=None steady=5.074143409729004) rc=0
+--- [00:53:05] ring_kv__livecal_v4live
+deployed file /home/ubuntu/livecal/ring_kv_v4live_runtime.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_ring_kv_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=5.0811767578125  (avg_ms=None steady=5.1697492599487305) rc=0
+=== sweep done 00:53:50 ===
+=== sweep: 2 runs, 300 steps each ===
+--- [00:53:50] ring_kv__livecal_snapshot
+deployed file /home/ubuntu/livecal/ring_kv_snapshot_runtime.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_ring_kv_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=5.07807731628418  (avg_ms=None steady=5.128145217895508) rc=0
+--- [00:54:36] ring_kv__livecal_v4live
+deployed file /home/ubuntu/livecal/ring_kv_v4live_runtime.py -> ['/home/ubuntu/OverlayCCL/runtime/trainium_ring_kv_7node.py']
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+   measured_ms=5.284428596496582  (avg_ms=None steady=5.18488883972168) rc=0
+=== sweep done 00:55:20 ===
+### [00:55:20] QUEUE51 DONE
+### [00:55:31] QUEUE52 leak-free search vs final simulator (v16b) on worker CPUs
+### [01:22:03] QUEUE52 DONE (8 result files)
+### [01:22:16] QUEUE53 OLMoE headline retry on cluster 2 (baseline, agent)
+=== [01:22:16] training/train_olmoe10b_hl_w100.py backend=baseline steps=160 tag=olmoe_c2_headline_baseline_retry nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+  rc=1 wall=627s
+=== [01:32:52] training/train_olmoe10b_hl_w100.py backend=agent steps=160 tag=olmoe_c2_headline_agent_retry nnodes=7 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+  ports free
+### queue53 stopped: OLMoE retry still hits CCOM bootstrap timeouts (fabric degraded for large collectives) -> queue54 Llama-only
+### [01:33:15] QUEUE54 a) Llama-7B 3-node (cluster 2): per_mb, bundled, 300 steps
+=== [01:33:15] llama7b backend=per_mb steps=300 tag=per_mb_3node_300 cold=0 ===
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+  neuron cores free
+### 02:00 queue54 stopped: 3-node Llama stuck in CCOM bootstrap (connection refused to root) on cluster 2; cluster left idle

@@ -1,0 +1,112 @@
+{
+ "ring_kv": {
+  "random": {
+   "best_sim": 25799.132125704826,
+   "code": "def evolved_ring_kv(kv_chunks, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    N_PARTS = 16\n    results = []\n    for chunk in kv_chunks:\n        part_sz = chunk.numel() // N_PARTS\n        parts = []\n        for p in range(N_PARTS):\n            piece = chunk[p * part_sz:(p + 1) * part_sz]\n            gathered = xm.all_gather(piece.unsqueeze(0), dim=0)\n            parts.append(gathered.view(world_size, -1))\n        results.append(torch.cat(parts, dim=1).reshape(-1))\n    return results",
+   "evals": 60,
+   "structure": {
+    "colls": {
+     "all_gather": 1
+    },
+    "loops": 2
+   }
+  },
+  "ga": {
+   "best_sim": 25799.132125704826,
+   "code": "def evolved_ring_kv(kv_chunks, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    N_PARTS = 16\n    results = []\n    for chunk in kv_chunks:\n        part_sz = chunk.numel() // N_PARTS\n        parts = []\n        for p in range(N_PARTS):\n            piece = chunk[p * part_sz:(p + 1) * part_sz]\n            gathered = xm.all_gather(piece.unsqueeze(0), dim=0)\n            parts.append(gathered.view(world_size, -1))\n        results.append(torch.cat(parts, dim=1).reshape(-1))\n    return results",
+   "evals": 60,
+   "structure": {
+    "colls": {
+     "all_gather": 1
+    },
+    "loops": 2
+   }
+  },
+  "beam": {
+   "best_sim": 25799.132125704826,
+   "code": "def evolved_ring_kv(kv_chunks, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    N_PARTS = 16\n    results = []\n    for chunk in kv_chunks:\n        part_sz = chunk.numel() // N_PARTS\n        parts = []\n        for p in range(N_PARTS):\n            piece = chunk[p * part_sz:(p + 1) * part_sz]\n            gathered = xm.all_gather(piece.unsqueeze(0), dim=0)\n            parts.append(gathered.view(world_size, -1))\n        results.append(torch.cat(parts, dim=1).reshape(-1))\n    return results",
+   "evals": 29,
+   "structure": {
+    "colls": {
+     "all_gather": 1
+    },
+    "loops": 2
+   }
+  },
+  "rules": {
+   "best_sim": 25799.132125704826,
+   "code": "def evolved_ring_kv(kv_chunks, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    N_PARTS = 16\n    results = []\n    for chunk in kv_chunks:\n        part_sz = chunk.numel() // N_PARTS\n        parts = []\n        for p in range(N_PARTS):\n            piece = chunk[p * part_sz:(p + 1) * part_sz]\n            gathered = xm.all_gather(piece.unsqueeze(0), dim=0)\n            parts.append(gathered.view(world_size, -1))\n        results.append(torch.cat(parts, dim=1).reshape(-1))\n    return results",
+   "passes": [],
+   "evals": 41,
+   "structure": {
+    "colls": {
+     "all_gather": 1
+    },
+    "loops": 2
+   }
+  },
+  "start_sim": 25799.132125704826,
+  "start_structure": {
+   "colls": {
+    "all_gather": 1
+   },
+   "loops": 2
+  },
+  "secs": 5.0
+ },
+ "dxe": {
+  "random": {
+   "best_sim": 21080.718125172614,
+   "code": "def evolved_dxe(logits_local, targets, V_local, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"Full-vocab all-gather then log-softmax + target-gather + mean.\n    Semantically equivalent to baseline_ce in train_olmoe10b.py\n    (xm.all_gather + F.cross_entropy), but expressed in primitive ops\n    so the Phase-2 TrackedTensor sandbox accepts it (F.cross_entropy\n    rejects TrackedTensor inputs). One xm.all_gather over (T, V_local)\n    producing (T, V_total) on every rank, then a local log-softmax\n    plus a per-token gather of the target logit. Substantially more\n    cross-rank bytes per call than the 2-/3-AR families, but it IS\n    what the OLMoE --ce baseline path runs end-to-end.\"\"\"\n    ll = logits_local.reshape(-1, V_local).contiguous()\n    gathered = xm.all_gather(ll, dim=1)\n    gmax = gathered.max(dim=-1, keepdim=True).values\n    shifted = gathered - gmax\n    log_sum_exp = shifted.exp().sum(dim=-1).log() + gmax.squeeze(-1)\n    tgt_flat = targets.reshape(-1)\n    target_logit = gathered.gather(1, tgt_flat.unsqueeze(1)).squeeze(1)\n    return (log_sum_exp - target_logit).mean()",
+   "evals": 60,
+   "structure": {
+    "colls": {
+     "all_gather": 1
+    },
+    "loops": 0
+   }
+  },
+  "ga": {
+   "best_sim": 21080.718125172614,
+   "code": "def evolved_dxe(logits_local, targets, V_local, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"Full-vocab all-gather then log-softmax + target-gather + mean.\n    Semantically equivalent to baseline_ce in train_olmoe10b.py\n    (xm.all_gather + F.cross_entropy), but expressed in primitive ops\n    so the Phase-2 TrackedTensor sandbox accepts it (F.cross_entropy\n    rejects TrackedTensor inputs). One xm.all_gather over (T, V_local)\n    producing (T, V_total) on every rank, then a local log-softmax\n    plus a per-token gather of the target logit. Substantially more\n    cross-rank bytes per call than the 2-/3-AR families, but it IS\n    what the OLMoE --ce baseline path runs end-to-end.\"\"\"\n    ll = logits_local.reshape(-1, V_local).contiguous()\n    gathered = xm.all_gather(ll, dim=1)\n    gmax = gathered.max(dim=-1, keepdim=True).values\n    shifted = gathered - gmax\n    log_sum_exp = shifted.exp().sum(dim=-1).log() + gmax.squeeze(-1)\n    tgt_flat = targets.reshape(-1)\n    target_logit = gathered.gather(1, tgt_flat.unsqueeze(1)).squeeze(1)\n    return (log_sum_exp - target_logit).mean()",
+   "evals": 60,
+   "structure": {
+    "colls": {
+     "all_gather": 1
+    },
+    "loops": 0
+   }
+  },
+  "beam": {
+   "best_sim": 21080.718125172614,
+   "code": "def evolved_dxe(logits_local, targets, V_local, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"Full-vocab all-gather then log-softmax + target-gather + mean.\n    Semantically equivalent to baseline_ce in train_olmoe10b.py\n    (xm.all_gather + F.cross_entropy), but expressed in primitive ops\n    so the Phase-2 TrackedTensor sandbox accepts it (F.cross_entropy\n    rejects TrackedTensor inputs). One xm.all_gather over (T, V_local)\n    producing (T, V_total) on every rank, then a local log-softmax\n    plus a per-token gather of the target logit. Substantially more\n    cross-rank bytes per call than the 2-/3-AR families, but it IS\n    what the OLMoE --ce baseline path runs end-to-end.\"\"\"\n    ll = logits_local.reshape(-1, V_local).contiguous()\n    gathered = xm.all_gather(ll, dim=1)\n    gmax = gathered.max(dim=-1, keepdim=True).values\n    shifted = gathered - gmax\n    log_sum_exp = shifted.exp().sum(dim=-1).log() + gmax.squeeze(-1)\n    tgt_flat = targets.reshape(-1)\n    target_logit = gathered.gather(1, tgt_flat.unsqueeze(1)).squeeze(1)\n    return (log_sum_exp - target_logit).mean()",
+   "evals": 60,
+   "structure": {
+    "colls": {
+     "all_gather": 1
+    },
+    "loops": 0
+   }
+  },
+  "rules": {
+   "best_sim": 21080.718125172614,
+   "code": "def evolved_dxe(logits_local, targets, V_local, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"Full-vocab all-gather then log-softmax + target-gather + mean.\n    Semantically equivalent to baseline_ce in train_olmoe10b.py\n    (xm.all_gather + F.cross_entropy), but expressed in primitive ops\n    so the Phase-2 TrackedTensor sandbox accepts it (F.cross_entropy\n    rejects TrackedTensor inputs). One xm.all_gather over (T, V_local)\n    producing (T, V_total) on every rank, then a local log-softmax\n    plus a per-token gather of the target logit. Substantially more\n    cross-rank bytes per call than the 2-/3-AR families, but it IS\n    what the OLMoE --ce baseline path runs end-to-end.\"\"\"\n    ll = logits_local.reshape(-1, V_local).contiguous()\n    gathered = xm.all_gather(ll, dim=1)\n    gmax = gathered.max(dim=-1, keepdim=True).values\n    shifted = gathered - gmax\n    log_sum_exp = shifted.exp().sum(dim=-1).log() + gmax.squeeze(-1)\n    tgt_flat = targets.reshape(-1)\n    target_logit = gathered.gather(1, tgt_flat.unsqueeze(1)).squeeze(1)\n    return (log_sum_exp - target_logit).mean()",
+   "passes": [],
+   "evals": 41,
+   "structure": {
+    "colls": {
+     "all_gather": 1
+    },
+    "loops": 0
+   }
+  },
+  "start_sim": 21080.718125172614,
+  "start_structure": {
+   "colls": {
+    "all_gather": 1
+   },
+   "loops": 0
+  },
+  "secs": 144.9
+ }
+}
