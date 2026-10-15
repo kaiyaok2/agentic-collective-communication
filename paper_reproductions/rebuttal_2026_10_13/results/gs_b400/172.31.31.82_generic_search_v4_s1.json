@@ -1,0 +1,62 @@
+{
+ "alltoallv": {
+  "random": {
+   "best_sim": 37655.72257593927,
+   "code": "def evolved_alltoallv(input_tensor, send_counts, recv_counts, max_chunk, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"AllGather + ReduceScatter.\"\"\"\n    pack_size = world_size * max_chunk\n    packed = torch.zeros(pack_size, device=input_tensor.device, dtype=input_tensor.dtype)\n    send_off = 0\n    for i in range(world_size):\n        sc = send_counts[i]\n        if sc > 0:\n            packed[i * max_chunk:i * max_chunk + sc] = input_tensor[send_off:send_off + sc]\n        send_off += sc\n    gathered = xm.all_gather(packed.unsqueeze(0), dim=0)\n    reshaped = gathered.view(world_size, world_size, max_chunk)\n    transposed = reshaped.permute(1, 0, 2).contiguous().view(-1)\n    my_shard = xm.reduce_scatter(xm.REDUCE_SUM, transposed, scale=1.0 / world_size, scatter_dim=0, shard_count=world_size)\n    flat_idx = []\n    for src in range(world_size):\n        count = recv_counts[src]\n        base = src * max_chunk\n        flat_idx.extend(range(base, base + count))\n    idx_tensor = torch.tensor(flat_idx, device=input_tensor.device, dtype=torch.long)\n    return torch.index_select(my_shard, 0, idx_tensor)",
+   "evals": 400,
+   "structure": {
+    "colls": {
+     "all_gather": 1,
+     "reduce_scatter": 1
+    },
+    "loops": 2
+   }
+  },
+  "ga": {
+   "best_sim": 37655.72257593927,
+   "code": "def evolved_alltoallv(input_tensor, send_counts, recv_counts, max_chunk, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"AllGather + ReduceScatter.\"\"\"\n    pack_size = world_size * max_chunk\n    packed = torch.zeros(pack_size, device=input_tensor.device, dtype=input_tensor.dtype)\n    send_off = 0\n    for i in range(world_size):\n        sc = send_counts[i]\n        if sc > 0:\n            packed[i * max_chunk:i * max_chunk + sc] = input_tensor[send_off:send_off + sc]\n        send_off += sc\n    gathered = xm.all_gather(packed.unsqueeze(0), dim=0)\n    reshaped = gathered.view(world_size, world_size, max_chunk)\n    transposed = reshaped.permute(1, 0, 2).contiguous().view(-1)\n    my_shard = xm.reduce_scatter(xm.REDUCE_SUM, transposed, scale=1.0 / world_size, scatter_dim=0, shard_count=world_size)\n    flat_idx = []\n    for src in range(world_size):\n        count = recv_counts[src]\n        base = src * max_chunk\n        flat_idx.extend(range(base, base + count))\n    idx_tensor = torch.tensor(flat_idx, device=input_tensor.device, dtype=torch.long)\n    return torch.index_select(my_shard, 0, idx_tensor)",
+   "evals": 400,
+   "structure": {
+    "colls": {
+     "all_gather": 1,
+     "reduce_scatter": 1
+    },
+    "loops": 2
+   }
+  },
+  "beam": {
+   "best_sim": 37655.72257593927,
+   "code": "def evolved_alltoallv(input_tensor, send_counts, recv_counts, max_chunk, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"AllGather + ReduceScatter.\"\"\"\n    pack_size = world_size * max_chunk\n    packed = torch.zeros(pack_size, device=input_tensor.device, dtype=input_tensor.dtype)\n    send_off = 0\n    for i in range(world_size):\n        sc = send_counts[i]\n        if sc > 0:\n            packed[i * max_chunk:i * max_chunk + sc] = input_tensor[send_off:send_off + sc]\n        send_off += sc\n    gathered = xm.all_gather(packed.unsqueeze(0), dim=0)\n    reshaped = gathered.view(world_size, world_size, max_chunk)\n    transposed = reshaped.permute(1, 0, 2).contiguous().view(-1)\n    my_shard = xm.reduce_scatter(xm.REDUCE_SUM, transposed, scale=1.0 / world_size, scatter_dim=0, shard_count=world_size)\n    flat_idx = []\n    for src in range(world_size):\n        count = recv_counts[src]\n        base = src * max_chunk\n        flat_idx.extend(range(base, base + count))\n    idx_tensor = torch.tensor(flat_idx, device=input_tensor.device, dtype=torch.long)\n    return torch.index_select(my_shard, 0, idx_tensor)",
+   "evals": 88,
+   "structure": {
+    "colls": {
+     "all_gather": 1,
+     "reduce_scatter": 1
+    },
+    "loops": 2
+   }
+  },
+  "rules": {
+   "best_sim": 37655.72257593927,
+   "code": "def evolved_alltoallv(input_tensor, send_counts, recv_counts, max_chunk, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"AllGather + ReduceScatter.\"\"\"\n    pack_size = world_size * max_chunk\n    packed = torch.zeros(pack_size, device=input_tensor.device, dtype=input_tensor.dtype)\n    send_off = 0\n    for i in range(world_size):\n        sc = send_counts[i]\n        if sc > 0:\n            packed[i * max_chunk:i * max_chunk + sc] = input_tensor[send_off:send_off + sc]\n        send_off += sc\n    gathered = xm.all_gather(packed.unsqueeze(0), dim=0)\n    reshaped = gathered.view(world_size, world_size, max_chunk)\n    transposed = reshaped.permute(1, 0, 2).contiguous().view(-1)\n    my_shard = xm.reduce_scatter(xm.REDUCE_SUM, transposed, scale=1.0 / world_size, scatter_dim=0, shard_count=world_size)\n    flat_idx = []\n    for src in range(world_size):\n        count = recv_counts[src]\n        base = src * max_chunk\n        flat_idx.extend(range(base, base + count))\n    idx_tensor = torch.tensor(flat_idx, device=input_tensor.device, dtype=torch.long)\n    return torch.index_select(my_shard, 0, idx_tensor)",
+   "passes": [],
+   "evals": 41,
+   "structure": {
+    "colls": {
+     "all_gather": 1,
+     "reduce_scatter": 1
+    },
+    "loops": 2
+   }
+  },
+  "start_sim": 37655.72257593927,
+  "start_structure": {
+   "colls": {
+    "all_gather": 1,
+    "reduce_scatter": 1
+   },
+   "loops": 2
+  },
+  "secs": 35.6
+ }
+}

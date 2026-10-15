@@ -1,0 +1,57 @@
+{
+ "fsdp_prefetch": {
+  "random": {
+   "best_sim": 25683.5850096769,
+   "code": "def evolved_fsdp_prefetch(shards, M, N_LAYERS, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"per_mb_loop_AG: AG each layer's shard per-microbatch, mark_step between \u03bcbatches.\"\"\"\n    outs = []\n    for m in range(M):\n        per_layer = []\n        for L in range(N_LAYERS):\n            per_layer.append(xm.all_gather(shards[m][L], dim=-1))\n        outs.append(per_layer)\n    return outs",
+   "evals": 400,
+   "structure": {
+    "colls": {
+     "all_gather": 1
+    },
+    "loops": 2
+   }
+  },
+  "ga": {
+   "best_sim": 25683.5850096769,
+   "code": "def evolved_fsdp_prefetch(shards, M, N_LAYERS, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"per_mb_loop_AG: AG each layer's shard per-microbatch, mark_step between \u03bcbatches.\"\"\"\n    outs = []\n    for m in range(M):\n        per_layer = []\n        for L in range(N_LAYERS):\n            per_layer.append(xm.all_gather(shards[m][L], dim=-1))\n        outs.append(per_layer)\n    return outs",
+   "evals": 400,
+   "structure": {
+    "colls": {
+     "all_gather": 1
+    },
+    "loops": 2
+   }
+  },
+  "beam": {
+   "best_sim": 25683.5850096769,
+   "code": "def evolved_fsdp_prefetch(shards, M, N_LAYERS, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"per_mb_loop_AG: AG each layer's shard per-microbatch, mark_step between \u03bcbatches.\"\"\"\n    outs = []\n    for m in range(M):\n        per_layer = []\n        for L in range(N_LAYERS):\n            per_layer.append(xm.all_gather(shards[m][L], dim=-1))\n        outs.append(per_layer)\n    return outs",
+   "evals": 54,
+   "structure": {
+    "colls": {
+     "all_gather": 1
+    },
+    "loops": 2
+   }
+  },
+  "rules": {
+   "best_sim": 25683.5850096769,
+   "code": "def evolved_fsdp_prefetch(shards, M, N_LAYERS, rank, world_size, num_devices, cores_per_device, xm, torch, num_nodes=1):\n    \"\"\"per_mb_loop_AG: AG each layer's shard per-microbatch, mark_step between \u03bcbatches.\"\"\"\n    outs = []\n    for m in range(M):\n        per_layer = []\n        for L in range(N_LAYERS):\n            per_layer.append(xm.all_gather(shards[m][L], dim=-1))\n        outs.append(per_layer)\n    return outs",
+   "passes": [],
+   "evals": 41,
+   "structure": {
+    "colls": {
+     "all_gather": 1
+    },
+    "loops": 2
+   }
+  },
+  "start_sim": 25683.5850096769,
+  "start_structure": {
+   "colls": {
+    "all_gather": 1
+   },
+   "loops": 2
+  },
+  "secs": 53.5
+ }
+}

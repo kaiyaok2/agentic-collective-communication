@@ -5,10 +5,9 @@ We thank the reviewers. We answer the explicit questions first, then the comment
 the revision's repository.
 
 **Correction we owe (A-Q3, B).** Re-running Phase 1 we found that the released pipeline — and the commit behind the paper's
-runs — returned a *snapshot* of an earlier probe campaign from every `measure_*` tool, so the submitted runs were not
-live-calibrated. Reviewer A's "one-time hand-fit" reading was correct for those runs. We re-ran the probes (four runs, two
-clusters): volume terms are stable (copy 67–76 GB/s, 4 MB all-gather 5.1–5.3 ms, ±3–13%), latency floors are not
-(dispatch 968–1674 µs, 4 KB all-reduce 406–1692 µs, up to 4.2×), and the snapshot was off by 2–15× on this SDK.
+runs — answered every `measure_*` tool from a *snapshot* of an earlier probe campaign; the submitted runs were not
+live-calibrated, so Reviewer A's "one-time hand-fit" reading was correct for them. Re-running the probes (four runs, two
+clusters): volume terms are stable (±3–13%), latency floors are not (up to 4.2×), and the snapshot was off by 2–15×.
 
 **A-Q2 / C-Q1 — simulator accuracy.** With live constants alone the two payload-changing problems still mis-ranked (dxe
 ρ −0.72, AllToAllV −0.32) because the sandbox traced toy shapes and charged local ops a flat ~29 µs. We corrected the
@@ -19,9 +18,9 @@ elimination; scope-aware graph boundaries), with no constant fitted to the hardw
 training scope, within-problem Spearman between simulator score and measured step time is AllToAllV 0.90, dxe 0.73,
 FSDP 0.81, Layer-block 0.90, PP 0.89, Ring KV 0.75, TP MLP 0.90, Uniform A2A 0.73 (pooled 0.69; direction agreement
 31/33; top-1 correct on 6/8, within 0.3%/3.7% on the other two). The same simulator, unchanged, gives ρ 0.56–0.90 on an
-independent second cluster (pooled 0.75). Prediction errors: ratio-MAPE 8–27% (120% on Uniform A2A, whose ranking is right
-but whose gap is over-predicted); rescaled step-time error 0.1–2% on bundling problems, 13–15% on payload-changing ones —
-coarse enough that we keep the hardware gate. The cross-scope inversion is *reproduced* by the model: AllToAllV at
+independent second cluster (pooled 0.75). Prediction errors: ratio-MAPE 8–27% (120% on Uniform A2A: ranking right,
+gap over-predicted); rescaled step-time error 0.1–2% on bundling problems, 13–15% on payload-changing ones — coarse enough
+that we keep the hardware gate. The cross-scope inversion is *reproduced* by the model: AllToAllV at
 per-primitive payload ranks AG+T+RS first (hardware 30.0 vs 24.2/38.0 ms); at OLMoE payload pack-and-gather first
 (hardware 3127 vs 4338 ms). A leave-one-out ablation shows the structure is load-bearing: removing the measured collective
 curves inverts five problems (pooled 0.69→0.27); removing bytes-moved, volume-charging or fusion-aware runs drops dxe to
