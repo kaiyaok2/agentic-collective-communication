@@ -15,6 +15,7 @@ is a real compile+load):
 Rank 0 writes $RESULTS_DIR/hw_probe_measured.json.
 """
 import argparse, json, os, statistics, time, traceback
+DT = torch_dtype = None
 import torch
 import torch.distributed as dist
 import torch_xla
@@ -25,6 +26,11 @@ p = argparse.ArgumentParser()
 p.add_argument("--backend", default="probe"); p.add_argument("--steps", type=int, default=1); p.add_argument("--warmup", type=int, default=3)
 p.add_argument("--iters", type=int, default=int(os.environ.get("PROBE_ITERS", "15")))
 args = p.parse_args()
+BF16 = os.environ.get("PROBE_BF16", "0") == "1"
+def rnd(*shape):
+    """probe tensor: device RNG is avoided when PROBE_BF16=1 (ones scaled by rank), dtype bf16 vs fp32"""
+    if BF16: return (torch.ones(*shape, device=dev, dtype=torch.bfloat16) * (1.0 + 0.001 * rank))
+    return torch.randn(*shape, device=dev)
 
 dist.init_process_group("xla")
 dev = xm.xla_device()
@@ -173,7 +179,7 @@ def s_graph_launch():
 
 # ----------------------------------------------------------------------------- 5. back-to-back amortization (N ARs in one graph)
 def s_back_to_back():
-    ts = [torch.randn(1024, device=dev) for _ in range(32)]; materialize(*ts)
+    ts = [rnd(1024) for _ in range(32)]; materialize(*ts)
     res = {}
     for d in (1, 2, 4, 8, 16, 32):
         r = timeit(lambda: [xm.all_reduce(xm.REDUCE_SUM, ts[i]) for i in range(d)]); res[f"depth_{d}_total_us"] = r["median_us"]
@@ -189,7 +195,7 @@ def s_collectives():
     AR_ONLY = [int(x) for x in os.environ.get("AR_ONLY_SIZES", "").split(",") if x]
     for nbytes in AR_ONLY:          # large all_reduce points (AR output == input, so the compile stays cheap)
         try:
-            x, = materialize(torch.randn(nbytes // 4, device=dev))
+            x, = materialize(rnd(nbytes // 4))
             r2 = timeit(lambda: [xm.all_reduce(xm.REDUCE_SUM, x)], iters=7); res["all_reduce"][f"world_{ws}_bytes_{nbytes}"] = r2["median_us"]
             log(f"  AR-only {nbytes}B: steady {r2['median_us']} us, first-exec {r2['first_us']/1e6:.1f} s"); del x
         except Exception as e:
@@ -198,13 +204,13 @@ def s_collectives():
     for nbytes in SIZES:
         n = nbytes // 4
         try:
-            x, = materialize(torch.randn(n, device=dev))
+            x, = materialize(rnd(n))
             r = timeit(lambda: [xm.all_gather(x, dim=0)], iters=7 if nbytes >= 50331648 else ITERS)
             res["all_gather"][f"world_{ws}_bytes_{nbytes}"] = r["median_us"]; res["compile_first_exec_us"][str(nbytes)] = r["first_us"]
             log(f"  AG {nbytes}B: steady {r['median_us']} us, first-exec {r['first_us']/1e6:.1f} s")
             if nbytes <= 8388608:
                 r2 = timeit(lambda: [xm.all_reduce(xm.REDUCE_SUM, x)]); res["all_reduce"][f"world_{ws}_bytes_{nbytes}"] = r2["median_us"]
-                xg, = materialize(torch.randn(n * ws, device=dev))
+                xg, = materialize(rnd(n * ws))
                 r3 = timeit(lambda: [xm.reduce_scatter(xm.REDUCE_SUM, xg, scale=1.0, scatter_dim=0, shard_count=ws)])
                 res["reduce_scatter"][f"world_{ws}_bytes_{nbytes * ws}_in"] = r3["median_us"]
                 log(f"     AR {r2['median_us']} us   RS(in {nbytes*ws}B) {r3['median_us']} us")

@@ -1,0 +1,249 @@
+{
+ "world_size": 32,
+ "sections": {
+  "trivial": {
+   "empty_mark_step": {
+    "first_us": 248.7,
+    "median_us": 19.2,
+    "min_us": 18.7
+   },
+   "add_1op": {
+    "first_us": 12971.7,
+    "median_us": 282.9,
+    "min_us": 242.7
+   }
+  },
+  "xla_ops": {
+   "add": {
+    "isolated_1op_us": 252.1,
+    "graph_16ops_us": 587.7,
+    "marginal_us": 22.37,
+    "first_us": 1695.0
+   },
+   "index_select": {
+    "isolated_1op_us": 751.0,
+    "graph_16ops_us": 10256.6,
+    "marginal_us": 633.71,
+    "first_us": 12673.0
+   },
+   "slice": {
+    "isolated_1op_us": 242.9,
+    "graph_16ops_us": 959.6,
+    "marginal_us": 47.78,
+    "first_us": 13215.7
+   },
+   "cat": {
+    "isolated_1op_us": 254.8,
+    "graph_16ops_us": 535.8,
+    "marginal_us": 18.73,
+    "first_us": 13988.2
+   },
+   "stack": {
+    "isolated_1op_us": 248.6,
+    "graph_16ops_us": 584.1,
+    "marginal_us": 22.37,
+    "first_us": 12567.0
+   },
+   "zeros": {
+    "isolated_1op_us": 363.1,
+    "graph_16ops_us": 881.7,
+    "marginal_us": 34.57,
+    "first_us": 14281.2
+   },
+   "tensor": {
+    "isolated_1op_us": 122.7,
+    "graph_16ops_us": 744.8,
+    "marginal_us": 41.47,
+    "first_us": 280.9
+   },
+   "gather": {
+    "isolated_1op_us": 719.1,
+    "graph_16ops_us": 10104.5,
+    "marginal_us": 625.69,
+    "first_us": 11602.9
+   },
+   "scatter": {
+    "isolated_1op_us": 885.6,
+    "graph_16ops_us": 10698.3,
+    "marginal_us": 654.18,
+    "first_us": 13560.6
+   },
+   "split": {
+    "isolated_1op_us": 265.4,
+    "graph_16ops_us": 619.0,
+    "marginal_us": 23.57,
+    "first_us": 12701.7
+   },
+   "chunk": {
+    "isolated_1op_us": 278.4,
+    "graph_16ops_us": 587.4,
+    "marginal_us": 20.6,
+    "first_us": 394.3
+   },
+   "view": {
+    "isolated_1op_us": 230.2,
+    "graph_16ops_us": 434.0,
+    "marginal_us": 13.59,
+    "first_us": 11043.6
+   },
+   "reshape": {
+    "isolated_1op_us": 231.0,
+    "graph_16ops_us": 580.7,
+    "marginal_us": 23.31,
+    "first_us": 355.6
+   },
+   "unsqueeze": {
+    "isolated_1op_us": 271.2,
+    "graph_16ops_us": 434.9,
+    "marginal_us": 10.91,
+    "first_us": 10735.9
+   },
+   "squeeze": {
+    "isolated_1op_us": 254.3,
+    "graph_16ops_us": 690.9,
+    "marginal_us": 29.11,
+    "first_us": 10994.3
+   },
+   "flatten": {
+    "isolated_1op_us": 249.4,
+    "graph_16ops_us": 758.0,
+    "marginal_us": 33.91,
+    "first_us": 10882.1
+   },
+   "narrow": {
+    "isolated_1op_us": 233.9,
+    "graph_16ops_us": 541.8,
+    "marginal_us": 20.53,
+    "first_us": 13909.4
+   },
+   "transpose": {
+    "isolated_1op_us": 244.2,
+    "graph_16ops_us": 903.9,
+    "marginal_us": 43.98,
+    "first_us": 12358.6
+   },
+   "permute": {
+    "isolated_1op_us": 261.9,
+    "graph_16ops_us": 922.0,
+    "marginal_us": 44.01,
+    "first_us": 13746.3
+   },
+   "expand": {
+    "isolated_1op_us": 299.1,
+    "graph_16ops_us": 679.2,
+    "marginal_us": 25.34,
+    "first_us": 12557.6
+   },
+   "contiguous": {
+    "isolated_1op_us": 284.6,
+    "graph_16ops_us": 973.0,
+    "marginal_us": 45.89,
+    "first_us": 397.4
+   },
+   "narrow_nonlead_contiguous": {
+    "isolated_1op_us": 359.7,
+    "graph_16ops_us": 822.5,
+    "marginal_us": 30.85,
+    "first_us": 11979.2
+   },
+   "permute_contiguous": {
+    "isolated_1op_us": 264.7,
+    "graph_16ops_us": 708.6,
+    "marginal_us": 29.59,
+    "first_us": 11734.7
+   }
+  },
+  "index_select": {
+   "small_index_100": 225.5,
+   "medium_index_10k": 347.2,
+   "large_index_1M": 18342.7
+  },
+  "memcpy": {
+   "tensor_16MB": {
+    "bytes": 16777216,
+    "clone_us": 214.6,
+    "clone_gbps": 78.18,
+    "permute_contiguous_us": 279.0,
+    "sequential_gbps": 60.13,
+    "narrow_col_contiguous_us": 248.8,
+    "strided_gbps_full_tensor_basis": 67.43,
+    "strided_gbps_actual_bytes_basis": 2.11
+   },
+   "tensor_64MB": {
+    "bytes": 67108864,
+    "clone_us": 499.8,
+    "clone_gbps": 134.27,
+    "permute_contiguous_us": 883.7,
+    "sequential_gbps": 75.94,
+    "narrow_col_contiguous_us": 228.1,
+    "strided_gbps_full_tensor_basis": 294.21,
+    "strided_gbps_actual_bytes_basis": 9.19
+   }
+  },
+  "graph_launch": {
+   "K1": {
+    "local_K_mark_steps_us": 265.8,
+    "ar_K_mark_steps_us": 1552.8,
+    "ar_K_in_one_graph_us": 397.9
+   },
+   "K4": {
+    "local_K_mark_steps_us": 838.3,
+    "ar_K_mark_steps_us": 1137.9,
+    "ar_K_in_one_graph_us": 1783.4
+   },
+   "K16": {
+    "local_K_mark_steps_us": 2843.5,
+    "ar_K_mark_steps_us": 4223.8,
+    "ar_K_in_one_graph_us": 2693.0
+   },
+   "per_mark_step_us_local": 171.8,
+   "per_mark_step_us_collective": 102.1
+  },
+  "back_to_back": {
+   "depth_1_total_us": 1134.9,
+   "ag_depth_1_total_us": 1780.8,
+   "depth_2_total_us": 1389.8,
+   "ag_depth_2_total_us": 1719.3,
+   "depth_4_total_us": 713.9,
+   "ag_depth_4_total_us": 1973.1,
+   "depth_8_total_us": 2017.6,
+   "ag_depth_8_total_us": 2128.3,
+   "depth_16_total_us": 2006.2,
+   "ag_depth_16_total_us": 2682.2,
+   "depth_32_total_us": 2878.3,
+   "ag_depth_32_total_us": 3697.9,
+   "dispatch_overhead_us_first_issue": 1134.9
+  },
+  "collectives": {
+   "all_gather": {
+    "world_32_bytes_4096": 1036.1,
+    "world_32_bytes_32768": 1739.0,
+    "world_32_bytes_65536": 1548.0,
+    "world_32_bytes_524288": 2396.0,
+    "world_32_bytes_4194304": 5344.2
+   },
+   "reduce_scatter": {
+    "world_32_bytes_131072_in": 1311.5,
+    "world_32_bytes_1048576_in": 1264.6,
+    "world_32_bytes_2097152_in": 1467.2,
+    "world_32_bytes_16777216_in": 1764.6,
+    "world_32_bytes_134217728_in": 5505.9
+   },
+   "all_reduce": {
+    "world_32_bytes_4096": 1132.8,
+    "world_32_bytes_32768": 1822.2,
+    "world_32_bytes_65536": 1640.7,
+    "world_32_bytes_524288": 1429.5,
+    "world_32_bytes_4194304": 1569.6
+   },
+   "compile_first_exec_us": {
+    "4096": 5154.6,
+    "32768": 161336.2,
+    "65536": 176985.4,
+    "524288": 175979.1,
+    "4194304": 216519.2
+   }
+  }
+ },
+ "derived_error": "KeyError: 'permute'"
+}

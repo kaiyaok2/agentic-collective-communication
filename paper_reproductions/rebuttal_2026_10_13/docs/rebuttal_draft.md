@@ -53,8 +53,9 @@ ws×ws×cap×DM buffer plus its dense permute copy, both of which scale with pay
 Reviewer A's suspicion was, for the submitted runs, literally correct (see the correction above) — and the data say why
 it matters: the ranking is indeed insensitive to the *network* constants (swapping all six for TPU values changes no
 ranking: ρ = 1.00, reproduced), but it is sensitive to the *local* terms — per-op in-graph costs, HBM copy rates,
-collective latency curves and NEFF-load behavior — which moved 2–15× between the snapshot and this SDK and ±2× between
-probe runs. Those are exactly the quantities the probes measure, and the quantities that decide the payload-changing
+collective latency curves and NEFF-load behavior — which moved 2–15× between the snapshot and this SDK; across four probe runs on two clusters the latency-floor terms spread
+1.7–4.2× (dispatch 968–1674 µs, 4 KB all-reduce 406–1692 µs) while volume terms spread only 3–13% (copy 67–76 GB/s,
+index_select 17.9–18.5 ms, 4 MB all-gather 5.07–5.34 ms). Those are exactly the quantities the probes measure, and the quantities that decide the payload-changing
 problems (dxe, AllToAllV). We measured this directly on the corrected model (74-candidate pool, rank agreement of within-problem orderings with
 the live-calibrated model): scaling every collective curve's bandwidth by 4× or by 0.25× leaves the five bundling
 problems' rankings unchanged (Spearman 1.00, 0.90–1.00) — that is the invariance behind the paper's ρ = 1.00, and it holds
@@ -187,7 +188,8 @@ the H100 price sentence and the XLA phrasing will be removed.
 Llama-7B 6000 steps from a cold cache: per_mb 593/596 s vs bundled 525/513 s → **1.145× net including compile**
 (steady 71.9 vs 21.1–22.1 ms/step; paper 71.3/22.0 → 3.3×). Warm cache 595 vs 500 s (1.19×). Bundled fixed overhead ≈370 s,
 cache-independent (trace/NEFF load/warm-up); break-even ≈4,100 steps (paper ≈4,400). We will label 3.24× steady-state.
-OLMoE headline repeats: archived n=7 baseline / n=6 agent (4391.7–4404.3 vs 3123–3140 ms) plus 3 new data seeds
+On a second cluster (different instances, 2026-10-14) Llama-7B steady steps reproduce again: per_mb 73.2 vs bundled 22.5 ms
+(3.26×). OLMoE headline repeats: archived n=7 baseline / n=6 agent (4391.7–4404.3 vs 3123–3140 ms) plus 3 new data seeds
 (4348.8/4347.6/4350.1 vs 3127.4/3130.7/3122.1 → 1.39×) under a different compiler/runtime (2.22/2.29 vs 2.24).
 
 ## C-Q4 — Accounting corrections

@@ -14,6 +14,7 @@ own baseline; the paper's absolute numbers nevertheless reproduce. Detailed per-
 | Llama-7B 6000 steps incl. cold compile, wall | per_mb 593 / 596 s vs bundled 525 / 513 s → **1.145× net** | (not reported) |
 | Llama-7B 6000 steps warm cache, wall | 595 vs 500 s → 1.19× | |
 | Bundled fixed overhead (trace/load/warm-up, cache-independent) | ≈370 s; break-even ≈4,100 steps | ≈3.7 min; ≈4,400 |
+| Llama-7B on a second 7-node cluster (cluster 2, 2026-10-14 23:30 UTC), 300 steps | per_mb 73.19 vs bundled 22.45 ms → **3.26×** | 71.3 / 22.0 → 3.24× |
 | Llama-7B at 3 nodes, model fixed (D) | per_mb 65.7 vs bundled 21.0 ms (3.13×) | 67.8 vs 27.2 (2.49×) |
 | OLMoE at 3 nodes (96 experts), 2 baseline runs | 2092.0 / 2090.2 vs 1377.5 ms (1.52×) | 2547 vs 1422 (1.79×) |
 
@@ -32,6 +33,13 @@ Sensitivity of the corrected model's rankings (agreement with the live-calibrate
 within 3%), while latency-floor terms move ±2× (dispatch 968 vs 1674 µs; 4 KB all-reduce 406 vs 1511 µs; back-to-back
 alphas (0.33, 0.0) vs (0.011, 0.027)). This is the per-deployment variance the Phase-1 probes exist to absorb, and it lands
 on exactly the terms that decide small-payload bundling decisions.
+
+**Probe repeatability, four runs (cluster 1 ×1, cluster 2 ×3, same SDK):** volume terms are stable — dense copy 67–76 GB/s
+(1.13× spread), clone 124–134 GB/s (1.08×), index_select 1M = 17.9–18.5 ms (1.03×), gather marginal 605–642 µs (1.06×),
+4 MB all-gather 5.07–5.34 ms (1.05×) — while latency-floor terms are not: dispatch 968–1674 µs (1.73×), mark_step
+102–201 µs (1.97×), 4 KB all-reduce 406–1692 µs (4.2×), 4 KB all-gather 1036–1817 µs (1.75×), back-to-back α₁ 0.01–0.33.
+The corrected simulator's rankings rest on the stable terms (bytes moved × measured rates); the unstable terms only decide
+small-payload bundling, where we amortize them, and this spread is the per-deployment variance Phase-1 probing exists to absorb.
 
 ## 3. Simulator vs hardware, final (A-Q2, C-Q1) — arm v16b, one configuration for all problems
 74 candidates (seed templates, grammar variants, archived LLM strategies, deployed runtimes, baselines, search finds,

@@ -1,0 +1,415 @@
+{
+ "world_size": 32,
+ "sections": {
+  "trivial": {
+   "empty_mark_step": {
+    "first_us": 200.9,
+    "median_us": 18.7,
+    "min_us": 18.2
+   },
+   "add_1op": {
+    "first_us": 11604.8,
+    "median_us": 241.1,
+    "min_us": 209.1
+   }
+  },
+  "xla_ops": {
+   "add": {
+    "isolated_1op_us": 258.9,
+    "graph_16ops_us": 587.1,
+    "marginal_us": 21.88,
+    "first_us": 1546.8
+   },
+   "index_select": {
+    "isolated_1op_us": 746.3,
+    "graph_16ops_us": 10001.9,
+    "marginal_us": 617.04,
+    "first_us": 8404.3
+   },
+   "slice": {
+    "isolated_1op_us": 225.0,
+    "graph_16ops_us": 853.0,
+    "marginal_us": 41.87,
+    "first_us": 14881.5
+   },
+   "cat": {
+    "isolated_1op_us": 242.3,
+    "graph_16ops_us": 403.8,
+    "marginal_us": 10.77,
+    "first_us": 12798.5
+   },
+   "stack": {
+    "isolated_1op_us": 259.9,
+    "graph_16ops_us": 393.3,
+    "marginal_us": 8.89,
+    "first_us": 12426.5
+   },
+   "zeros": {
+    "isolated_1op_us": 364.4,
+    "graph_16ops_us": 735.9,
+    "marginal_us": 24.77,
+    "first_us": 12109.0
+   },
+   "tensor": {
+    "isolated_1op_us": 76.2,
+    "graph_16ops_us": 447.0,
+    "marginal_us": 24.72,
+    "first_us": 255.2
+   },
+   "gather": {
+    "isolated_1op_us": 698.4,
+    "graph_16ops_us": 9765.5,
+    "marginal_us": 604.47,
+    "first_us": 10858.7
+   },
+   "scatter": {
+    "isolated_1op_us": 1742.4,
+    "graph_16ops_us": 10075.3,
+    "marginal_us": 555.53,
+    "first_us": 47682.1
+   },
+   "split": {
+    "isolated_1op_us": 241.4,
+    "graph_16ops_us": 635.6,
+    "marginal_us": 26.28,
+    "first_us": 12333.8
+   },
+   "chunk": {
+    "isolated_1op_us": 250.1,
+    "graph_16ops_us": 631.3,
+    "marginal_us": 25.41,
+    "first_us": 355.1
+   },
+   "view": {
+    "isolated_1op_us": 269.5,
+    "graph_16ops_us": 447.0,
+    "marginal_us": 11.83,
+    "first_us": 10435.9
+   },
+   "reshape": {
+    "isolated_1op_us": 244.7,
+    "graph_16ops_us": 496.4,
+    "marginal_us": 16.78,
+    "first_us": 389.8
+   },
+   "unsqueeze": {
+    "isolated_1op_us": 238.5,
+    "graph_16ops_us": 439.9,
+    "marginal_us": 13.43,
+    "first_us": 11114.3
+   },
+   "squeeze": {
+    "isolated_1op_us": 273.7,
+    "graph_16ops_us": 918.7,
+    "marginal_us": 43.0,
+    "first_us": 12745.7
+   },
+   "flatten": {
+    "isolated_1op_us": 269.3,
+    "graph_16ops_us": 662.0,
+    "marginal_us": 26.18,
+    "first_us": 12141.2
+   },
+   "narrow": {
+    "isolated_1op_us": 392.5,
+    "graph_16ops_us": 519.2,
+    "marginal_us": 8.45,
+    "first_us": 13095.3
+   },
+   "transpose": {
+    "isolated_1op_us": 279.6,
+    "graph_16ops_us": 923.2,
+    "marginal_us": 42.91,
+    "first_us": 12953.0
+   },
+   "permute": {
+    "isolated_1op_us": 273.8,
+    "graph_16ops_us": 1086.3,
+    "marginal_us": 54.17,
+    "first_us": 19951.6
+   },
+   "expand": {
+    "isolated_1op_us": 266.4,
+    "graph_16ops_us": 771.4,
+    "marginal_us": 33.67,
+    "first_us": 5013675.1
+   },
+   "contiguous": {
+    "isolated_1op_us": 260.8,
+    "graph_16ops_us": 1855.0,
+    "marginal_us": 106.28,
+    "first_us": 420.4
+   },
+   "narrow_nonlead_contiguous": {
+    "isolated_1op_us": 255.4,
+    "graph_16ops_us": 1260.7,
+    "marginal_us": 67.02,
+    "first_us": 12106.0
+   },
+   "permute_contiguous": {
+    "isolated_1op_us": 294.6,
+    "graph_16ops_us": 989.3,
+    "marginal_us": 46.31,
+    "first_us": 12898.9
+   }
+  },
+  "index_select": {
+   "small_index_100": 209.9,
+   "medium_index_10k": 328.5,
+   "large_index_1M": 18199.3
+  },
+  "memcpy": {
+   "tensor_16MB": {
+    "bytes": 16777216,
+    "clone_us": 205.1,
+    "clone_gbps": 81.8,
+    "permute_contiguous_us": 268.7,
+    "sequential_gbps": 62.44,
+    "narrow_col_contiguous_us": 222.6,
+    "strided_gbps_full_tensor_basis": 75.37,
+    "strided_gbps_actual_bytes_basis": 2.36
+   },
+   "tensor_64MB": {
+    "bytes": 67108864,
+    "clone_us": 509.7,
+    "clone_gbps": 131.66,
+    "permute_contiguous_us": 940.3,
+    "sequential_gbps": 71.37,
+    "narrow_col_contiguous_us": 223.4,
+    "strided_gbps_full_tensor_basis": 300.4,
+    "strided_gbps_actual_bytes_basis": 9.39
+   }
+  },
+  "graph_launch": {
+   "K1": {
+    "local_K_mark_steps_us": 336.7,
+    "ar_K_mark_steps_us": 875.5,
+    "ar_K_in_one_graph_us": 1360.8
+   },
+   "K4": {
+    "local_K_mark_steps_us": 784.6,
+    "ar_K_mark_steps_us": 1146.1,
+    "ar_K_in_one_graph_us": 1285.4
+   },
+   "K16": {
+    "local_K_mark_steps_us": 3000.5,
+    "ar_K_mark_steps_us": 4263.2,
+    "ar_K_in_one_graph_us": 2281.4
+   },
+   "per_mark_step_us_local": 177.6,
+   "per_mark_step_us_collective": 132.1
+  },
+  "back_to_back": {
+   "depth_1_total_us": 1633.7,
+   "ag_depth_1_total_us": 1668.3,
+   "depth_2_total_us": 1735.0,
+   "ag_depth_2_total_us": 1974.3,
+   "depth_4_total_us": 1054.5,
+   "ag_depth_4_total_us": 1636.1,
+   "depth_8_total_us": 1775.7,
+   "ag_depth_8_total_us": 1907.2,
+   "depth_16_total_us": 2406.7,
+   "ag_depth_16_total_us": 2372.7,
+   "depth_32_total_us": 2743.8,
+   "ag_depth_32_total_us": 3636.8,
+   "dispatch_overhead_us_first_issue": 1633.7
+  },
+  "collectives": {
+   "all_gather": {
+    "world_32_bytes_4096": 1816.9,
+    "world_32_bytes_32768": 768.8,
+    "world_32_bytes_65536": 1502.4,
+    "world_32_bytes_524288": 2443.1,
+    "world_32_bytes_4194304": 5242.3
+   },
+   "reduce_scatter": {
+    "world_32_bytes_131072_in": 1766.6,
+    "world_32_bytes_1048576_in": 808.6,
+    "world_32_bytes_2097152_in": 1516.6,
+    "world_32_bytes_16777216_in": 1461.2,
+    "world_32_bytes_134217728_in": 5167.9
+   },
+   "all_reduce": {
+    "world_32_bytes_4096": 1692.1,
+    "world_32_bytes_32768": 989.5,
+    "world_32_bytes_65536": 502.4,
+    "world_32_bytes_524288": 1583.6,
+    "world_32_bytes_4194304": 623.9
+   },
+   "compile_first_exec_us": {
+    "4096": 19995546.0,
+    "32768": 41560958.0,
+    "65536": 21560792.3,
+    "524288": 24830191.3,
+    "4194304": 2238922.2
+   }
+  }
+ },
+ "derived_error": "KeyError: 'permute'",
+ "derived_table": {
+  "xla_op_overhead_us_isolated": {
+   "add": 240.2,
+   "index_select": 727.6,
+   "slice": 206.3,
+   "cat": 223.6,
+   "stack": 241.2,
+   "zeros": 345.7,
+   "tensor": 57.5,
+   "gather": 679.7,
+   "scatter": 1723.7,
+   "split": 222.7,
+   "chunk": 231.4,
+   "view": 250.8,
+   "reshape": 226.0,
+   "unsqueeze": 219.8,
+   "squeeze": 255.0,
+   "flatten": 250.6,
+   "narrow": 373.8,
+   "transpose": 260.9,
+   "permute": 255.1,
+   "expand": 247.7,
+   "contiguous": 242.1,
+   "narrow_nonlead_contiguous": 236.7,
+   "permute_contiguous": 275.9
+  },
+  "xla_op_overhead_us_marginal": {
+   "add": 21.88,
+   "index_select": 617.04,
+   "slice": 41.87,
+   "cat": 10.77,
+   "stack": 8.89,
+   "zeros": 24.77,
+   "tensor": 24.72,
+   "gather": 604.47,
+   "scatter": 555.53,
+   "split": 26.28,
+   "chunk": 25.41,
+   "view": 11.83,
+   "reshape": 16.78,
+   "unsqueeze": 13.43,
+   "squeeze": 43.0,
+   "flatten": 26.18,
+   "narrow": 8.45,
+   "transpose": 42.91,
+   "permute": 54.17,
+   "expand": 33.67,
+   "contiguous": 106.28,
+   "narrow_nonlead_contiguous": 67.02,
+   "permute_contiguous": 46.31
+  },
+  "xla_op_overhead_us": {
+   "add": 240.2,
+   "index_select": 727.6,
+   "slice": 41.87,
+   "cat": 223.6,
+   "stack": 241.2,
+   "zeros": 345.7,
+   "tensor": 57.5,
+   "gather": 679.7,
+   "scatter": 1723.7,
+   "split": 26.28,
+   "chunk": 25.41,
+   "view": 11.83,
+   "reshape": 16.78,
+   "unsqueeze": 13.43,
+   "squeeze": 43.0,
+   "flatten": 26.18,
+   "narrow": 8.45,
+   "transpose": 42.91,
+   "permute": 54.17,
+   "expand": 33.67,
+   "contiguous": 106.28,
+   "narrow_nonlead_contiguous": 236.7,
+   "permute_contiguous": 275.9
+  },
+  "memcpy_throughput": {
+   "sequential_gbps": 71.37,
+   "strided_gbps": 300.4,
+   "clone_gbps": 131.66,
+   "strided_gbps_actual_bytes": 9.39
+  },
+  "graph_launch_overhead_us": {
+   "per_mark_step_us": 132.1,
+   "per_mark_step_us_local_only": 177.6
+  },
+  "back_to_back_amortization_us": {
+   "depth_1_total_us": 1633.7,
+   "depth_2_total_us": 1735.0,
+   "depth_4_total_us": 1054.5,
+   "depth_8_total_us": 1775.7,
+   "depth_16_total_us": 2406.7,
+   "depth_32_total_us": 2743.8,
+   "dispatch_overhead_us_first_issue": 1633.7
+  },
+  "compilation_cost_us": {
+   "samples": [
+    {
+     "tensor_bytes": 65536,
+     "neff_load_us": 21560792
+    },
+    {
+     "tensor_bytes": 524288,
+     "neff_load_us": 24830191
+    },
+    {
+     "tensor_bytes": 4194304,
+     "neff_load_us": 2238922
+    }
+   ],
+   "load_events_per_run": 2,
+   "typical_training_steps": 5000
+  },
+  "index_select_scaling": {
+   "small_index_100": 209.9,
+   "medium_index_10k": 328.5,
+   "large_index_1M": 18199.3
+  },
+  "all_gather_latency_us": {
+   "world_32_bytes_4096": 1816.9,
+   "world_32_bytes_32768": 768.8,
+   "world_32_bytes_65536": 1502.4,
+   "world_32_bytes_524288": 2443.1,
+   "world_32_bytes_4194304": 5242.3
+  },
+  "all_reduce_latency_us": {
+   "world_32_bytes_4096": 1692.1,
+   "world_32_bytes_32768": 989.5,
+   "world_32_bytes_65536": 502.4,
+   "world_32_bytes_524288": 1583.6,
+   "world_32_bytes_4194304": 623.9
+  },
+  "reduce_scatter_latency_us": {
+   "world_32_bytes_131072_in": 1766.6,
+   "world_32_bytes_1048576_in": 808.6,
+   "world_32_bytes_2097152_in": 1516.6,
+   "world_32_bytes_16777216_in": 1461.2,
+   "world_32_bytes_134217728_in": 5167.9
+  },
+  "collective_permute_latency_us": {
+   "note": "NOT MEASURED: xm.collective_permute deadlocks in CCOM bootstrap at ws=32 on SDK 2.22/2.29 (probe killed after 8 min)"
+  }
+ },
+ "sim_params": {
+  "dispatch_overhead_us": 1633.7,
+  "pipeline_amort_alpha1": 0.062,
+  "pipeline_amort_alpha2": 0.004,
+  "pipeline_amort_alpha3": 0.048,
+  "graph_launch_overhead_us": 132.1,
+  "memcpy_bytes_per_us": 300400.0,
+  "memcpy_seq_bytes_per_us": 71370.0,
+  "compilation_cost_samples": [
+   {
+    "tensor_bytes": 65536,
+    "neff_load_us": 21560792
+   },
+   {
+    "tensor_bytes": 524288,
+    "neff_load_us": 24830191
+   },
+   {
+    "tensor_bytes": 4194304,
+    "neff_load_us": 2238922
+   }
+  ]
+ }
+}
