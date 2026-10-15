@@ -1,4 +1,4 @@
-# PPoPP'27 #1429 — author response (DRAFT v2, 2026-10-14 09:10 UTC)
+# PPoPP'27 #1429 — author response (DRAFT v3, 2026-10-15 02:30 UTC)
 
 We thank the reviewers. We answer the explicit questions first. All new numbers were measured on a fresh 7-node
 trn1.32xlarge cluster (224 ranks; compiler 2.22 / runtime 2.29 vs 2.24 in the submission) with the submission's code,
@@ -38,7 +38,7 @@ AllToAllV −0.32. We will replace the paper's simulator-accuracy claims with th
 speedup ratios against each problem's baseline (MAPE) and, after a per-problem affine rescaling, median relative error of
 predicted step time: bundling problems (PP, TP MLP, FSDP, Layer-block, Ring KV) ratio-MAPE 8–24%, rescaled error 0.1–14%; payload-changing
 problems where the inversion lives (AllToAllV, dxe) ratio-MAPE 24–27%, rescaled error 13–14%; Uniform A2A's ranking is
-right but the magnitude of the AG+slice-vs-AG+RS gap is over-predicted (ratio-MAPE 120%). The ranking survives (ρ ≥ 0.56 everywhere) while magnitudes on the payload-changing problems
+right but the magnitude of the AG+slice-vs-AG+RS gap is over-predicted (ratio-MAPE 120%). The ranking survives (ρ ≥ 0.73 everywhere) while magnitudes on the payload-changing problems
 remain coarse — which is why the pipeline keeps the hardware gate. None of the pool candidates was used to fit anything:
 the constants come from the Phase-1 probes, the structure is fixed.
 
@@ -62,7 +62,8 @@ problems' rankings unchanged (Spearman 1.00, 0.90–1.00) — that is the invari
 because those problems are decided by dispatch counts, not bandwidth — but it does *not* hold for the payload-changing
 problems: AllToAllV's ranking agreement drops to 0.93 (4× faster network) and **−0.21** (4× slower), distributed CE's to
 0.81; and reverting only the *local* terms to the snapshot values changes distributed CE (0.81) and Ring KV (0.94) while
-leaving the rest intact. So the TPU swap in §5 tested the problems where constants cannot matter and missed the ones where
+leaving the rest intact. On an independent second cluster, the same simulator (no re-fitting) keeps ρ ≥ 0.56 on all 8
+problems against a fresh repeat of the pool (pooled 0.73). So the TPU swap in §5 tested the problems where constants cannot matter and missed the ones where
 they do. We will rewrite the §5 portability claim as: network constants are not what calibration is for on bundling
 problems; on payload-changing problems both network and local terms move the ranking, and they must be measured on the
 deployed SDK.
@@ -78,8 +79,9 @@ per-primitive; 6198 ms at OLMoE scope through the generic helper). One more hone
 not emitted by the shipped codegen (it hard-codes AG+T+RS), and the paper-era runtime's hand-written helper (all-gather
 the pre-packed buffer, 224 fixed-offset slices + cat) is what produced 3125 ms; the same template through a generic
 re-packing wrapper costs 6199 ms. We will ship the helper with the artifact and state that the headline depends on it.
-So calibration is necessary (S → wrong dxe deployment) but constants alone are not sufficient (L → still wrong); the
-structural terms the probes are meant to feed must be in the model.
+On Ring KV (a bundling problem) every arm deploys the same per-slot all-gather (5.1 ms), matching the sensitivity
+result that bundling decisions do not depend on the constants. So calibration is necessary (S → wrong dxe deployment) but
+constants alone are not sufficient (L → still wrong); the structural terms the probes are meant to feed must be in the model.
 
 ## C-Q2 / B — Is the LLM necessary? Non-LLM generators, leak-free
 
@@ -92,8 +94,7 @@ strategy. Hardware: TP MLP 11.65–11.90 ms vs baseline 11.75, FSDP 15.25 vs 14.
 fixed detector removes it. Against the fixed simulator (budget 60 evaluations per method, 2 seeds, all 8 problems, repeated against the final
 corrected arm) no method improves on any baseline except the Ring-KV parts-per-chunk reduction (a parameter change of the
 baseline: 1.29× on hardware) and two compiler-pass-level rewrites of the PP loop (hoisting the zeros buffer out of the loop, 1.5% in the simulator; both fail the hardware gate — the seed template they descend from allocates CPU tensors the harness cannot run). No method
-produced pack-and-gather, the distributed-CE recomposition, or stack/cat bundling; the one real find (Ring KV, GA: fewer
-parts per chunk) measures 6.82 ms vs 8.81 baseline and 4.96 deployed. Separately, the archived non-LLM Phase-3 arms
+produced pack-and-gather, the distributed-CE recomposition, or stack/cat bundling. Separately, the archived non-LLM Phase-3 arms
 ("none"/"random" over the seed library) reproduce the OLMoE headline (pack-and-gather is a seed template; 1.41×) but
 deploy the baseline on all Llama problems — the bundling strategies behind the 3.24× are LLM-authored.
 
