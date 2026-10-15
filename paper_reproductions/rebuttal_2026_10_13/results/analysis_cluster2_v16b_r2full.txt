@@ -1,0 +1,17 @@
+problem         n_cands rho(step)  top1  regret%  sim-pick -> measured-best
+alltoallv             8       0.9     Y      0.0  helper_view_col_public -> helper_view_col_public
+dxe                   8      0.81     n      5.8  g_structure-three_ar -> r36brandom_dd3aa11f
+fsdp_prefetch         6      0.85     Y      0.0  g_bundle-all -> g_bundle-all
+llama_block_ar        7       0.9     n      0.1  g_bundle-one_ar_pack-stack -> r28nosim_train_8f7e002c
+pp_send_recv          6       0.8     n      0.7  g_bundle-all_mb_pack-stack -> paper_7f79b897
+ring_kv               5      0.56     n      3.9  g_bundle-joint -> paper_2f6a05c4
+tp_mlp               13      0.87     n      2.8  g_bundle-per_layer_pack-flat -> g_bundle-per_layer_pack-stac
+uniform_a2a           8      0.87     Y      0.0  r28nosim_train_c0b2d468 -> r28nosim_train_c0b2d468
+
+pooled Spearman on speedup-vs-baseline ratios (sim vs measured), n=61: 0.7459627133047129
+direction agreement where the sim predicts a change vs baseline: 29/30  (ties excluded: 31)
+
+candidate                                                   n   mean ms      sd   sim_def percall ms
+alltoallv__helper_view_col_public                           1     24.26     nan   16815.4        nan
+alltoallv__helper_AGRS                                      1     29.41     nan   21497.2        nan
+alltoallv__tmpl_ag_t_rs_inline_match                        1     29.46     nan   21497.2        nan

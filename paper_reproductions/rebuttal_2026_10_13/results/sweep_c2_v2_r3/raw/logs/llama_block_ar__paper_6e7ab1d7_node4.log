@@ -1,0 +1,611 @@
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+W1015 10:17:40.532000 2799439 torch/distributed/run.py:803] 
+W1015 10:17:40.532000 2799439 torch/distributed/run.py:803] *****************************************
+W1015 10:17:40.532000 2799439 torch/distributed/run.py:803] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W1015 10:17:40.532000 2799439 torch/distributed/run.py:803] *****************************************
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:155: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:155: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:155: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:155: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:155: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:155: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:155: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:155: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:155: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:155: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:155: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:18:03.000225:  2799531  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12299923664823713676+e30acd3a/model.neff
+2026-10-15 10:18:03.000226:  2799525  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12299923664823713676+e30acd3a/model.neff
+2026-10-15 10:18:03.000228:  2799526  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12299923664823713676+e30acd3a/model.neff
+2026-10-15 10:18:03.000228:  2799521  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12299923664823713676+e30acd3a/model.neff
+2026-10-15 10:18:03.000229:  2799507  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12299923664823713676+e30acd3a/model.neff
+2026-10-15 10:18:03.000230:  2799515  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12299923664823713676+e30acd3a/model.neff
+2026-10-15 10:18:03.000232:  2799504  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12299923664823713676+e30acd3a/model.neff
+2026-10-15 10:18:03.000234:  2799522  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12299923664823713676+e30acd3a/model.neff
+2026-10-15 10:18:03.000234:  2799529  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12299923664823713676+e30acd3a/model.neff
+2026-10-15 10:18:03.000235:  2799509  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12299923664823713676+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:155: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+2026-10-15 10:18:03.000236:  2799513  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12299923664823713676+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:155: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:155: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:155: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:155: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:155: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:155: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:155: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:18:03.000261:  2799514  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12299923664823713676+e30acd3a/model.neff
+2026-10-15 10:18:03.000261:  2799505  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12299923664823713676+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:18:03.000264:  2799512  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12299923664823713676+e30acd3a/model.neff
+2026-10-15 10:18:03.000264:  2799533  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12299923664823713676+e30acd3a/model.neff
+2026-10-15 10:18:03.000272:  2799527  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12299923664823713676+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:155: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:155: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:155: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+2026-10-15 10:18:03.000279:  2799517  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12299923664823713676+e30acd3a/model.neff
+2026-10-15 10:18:03.000282:  2799534  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12299923664823713676+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:155: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:155: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:155: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+2026-10-15 10:18:03.000289:  2799510  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12299923664823713676+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:155: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:109: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:109: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:109: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:155: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:109: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:155: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:109: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:155: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:109: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:109: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:18:03.000301:  2799526  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5831800314735044848+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:155: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:155: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:109: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:18:03.000303:  2799531  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5831800314735044848+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:109: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:155: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+2026-10-15 10:18:03.000304:  2799521  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5831800314735044848+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:109: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:18:03.000305:  2799525  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5831800314735044848+e30acd3a/model.neff
+2026-10-15 10:18:03.000306:  2799507  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5831800314735044848+e30acd3a/model.neff
+2026-10-15 10:18:03.000308:  2799511  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12299923664823713676+e30acd3a/model.neff
+2026-10-15 10:18:03.000308:  2799535  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12299923664823713676+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:18:03.000311:  2799522  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5831800314735044848+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:18:03.000314:  2799504  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5831800314735044848+e30acd3a/model.neff
+2026-10-15 10:18:03.000314:  2799528  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12299923664823713676+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:81: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:18:03.000314:  2799524  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12299923664823713676+e30acd3a/model.neff
+2026-10-15 10:18:03.000315:  2799508  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12299923664823713676+e30acd3a/model.neff
+2026-10-15 10:18:03.000316:  2799509  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5831800314735044848+e30acd3a/model.neff
+2026-10-15 10:18:03.000316:  2799529  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5831800314735044848+e30acd3a/model.neff
+2026-10-15 10:18:03.000317:  2799516  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12299923664823713676+e30acd3a/model.neff
+2026-10-15 10:18:03.000317:  2799532  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12299923664823713676+e30acd3a/model.neff
+2026-10-15 10:18:03.000317:  2799513  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5831800314735044848+e30acd3a/model.neff
+2026-10-15 10:18:03.000319:  2799530  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12299923664823713676+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:109: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:18:03.000320:  2799520  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12299923664823713676+e30acd3a/model.neff
+2026-10-15 10:18:03.000324:  2799519  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12299923664823713676+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:109: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:109: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:109: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:18:03.000329:  2799515  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5831800314735044848+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:109: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:18:03.000330:  2799523  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12299923664823713676+e30acd3a/model.neff
+2026-10-15 10:18:03.000336:  2799506  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12299923664823713676+e30acd3a/model.neff
+2026-10-15 10:18:03.000337:  2799512  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5831800314735044848+e30acd3a/model.neff
+2026-10-15 10:18:03.000337:  2799518  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12299923664823713676+e30acd3a/model.neff
+2026-10-15 10:18:03.000338:  2799533  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5831800314735044848+e30acd3a/model.neff
+2026-10-15 10:18:03.000340:  2799505  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5831800314735044848+e30acd3a/model.neff
+2026-10-15 10:18:03.000342:  2799514  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5831800314735044848+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:109: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:109: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:118: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:109: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:18:03.000354:  2799517  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5831800314735044848+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:118: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:118: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:18:03.000358:  2799534  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5831800314735044848+e30acd3a/model.neff
+2026-10-15 10:18:03.000360:  2799507  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5451935912794083887+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:118: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:18:03.000364:  2799527  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5831800314735044848+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:118: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:18:03.000364:  2799526  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5451935912794083887+e30acd3a/model.neff
+2026-10-15 10:18:03.000365:  2799522  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5451935912794083887+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:118: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:18:03.000369:  2799504  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5451935912794083887+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:146: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:118: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:118: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:18:03.000372:  2799525  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5451935912794083887+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:118: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:18:03.000373:  2799513  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5451935912794083887+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:146: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:146: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:109: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:146: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:18:03.000378:  2799509  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5451935912794083887+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:109: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:109: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:118: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:109: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:118: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:109: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:109: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:18:03.000380:  2799531  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5451935912794083887+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:146: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:18:03.000381:  2799521  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5451935912794083887+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:109: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:118: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:146: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:118: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:18:03.000387:  2799510  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5831800314735044848+e30acd3a/model.neff
+2026-10-15 10:18:03.000388:  2799529  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5451935912794083887+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:146: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:18:03.000389:  2799515  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5451935912794083887+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:109: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:18:03.000389:  2799508  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5831800314735044848+e30acd3a/model.neff
+2026-10-15 10:18:03.000390:  2799524  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5831800314735044848+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:109: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:18:03.000390:  2799528  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5831800314735044848+e30acd3a/model.neff
+2026-10-15 10:18:03.000390:  2799532  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5831800314735044848+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:146: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:118: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:18:03.000391:  2799512  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5451935912794083887+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:146: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:18:03.000391:  2799511  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5831800314735044848+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:109: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:109: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:18:03.000394:  2799535  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5831800314735044848+e30acd3a/model.neff
+2026-10-15 10:18:03.000395:  2799505  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5451935912794083887+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:109: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:146: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:118: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:118: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:146: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:146: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:18:03.000399:  2799519  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5831800314735044848+e30acd3a/model.neff
+2026-10-15 10:18:03.000399:  2799514  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5451935912794083887+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:109: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:146: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:18:03.000403:  2799520  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5831800314735044848+e30acd3a/model.neff
+2026-10-15 10:18:03.000404:  2799523  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5831800314735044848+e30acd3a/model.neff
+2026-10-15 10:18:03.000406:  2799530  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5831800314735044848+e30acd3a/model.neff
+2026-10-15 10:18:03.000406:  2799516  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5831800314735044848+e30acd3a/model.neff
+2026-10-15 10:18:03.000406:  2799517  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5451935912794083887+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:146: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:18:03.000408:  2799533  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5451935912794083887+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:109: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:118: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:18:03.000411:  2799518  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5831800314735044848+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:118: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:146: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:146: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:18:03.000418:  2799506  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5831800314735044848+e30acd3a/model.neff
+2026-10-15 10:18:03.000418:  2799534  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5451935912794083887+e30acd3a/model.neff
+2026-10-15 10:18:03.000423:  2799527  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5451935912794083887+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:146: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:146: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:118: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:118: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:118: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:118: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:118: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:118: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:118: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:118: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:18:03.000443:  2799528  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5451935912794083887+e30acd3a/model.neff
+2026-10-15 10:18:03.000443:  2799532  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5451935912794083887+e30acd3a/model.neff
+2026-10-15 10:18:03.000444:  2799524  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5451935912794083887+e30acd3a/model.neff
+2026-10-15 10:18:03.000444:  2799508  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5451935912794083887+e30acd3a/model.neff
+2026-10-15 10:18:03.000446:  2799511  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5451935912794083887+e30acd3a/model.neff
+2026-10-15 10:18:03.000447:  2799535  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5451935912794083887+e30acd3a/model.neff
+2026-10-15 10:18:03.000447:  2799510  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5451935912794083887+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:118: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:118: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:118: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:18:03.000452:  2799519  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5451935912794083887+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:146: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:146: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:146: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:146: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:146: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:118: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:146: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:18:03.000456:  2799523  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5451935912794083887+e30acd3a/model.neff
+2026-10-15 10:18:03.000457:  2799520  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5451935912794083887+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:146: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:18:03.000458:  2799530  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5451935912794083887+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:146: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:118: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:118: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:18:03.000463:  2799518  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5451935912794083887+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:146: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:146: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:146: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:18:03.000470:  2799516  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5451935912794083887+e30acd3a/model.neff
+2026-10-15 10:18:03.000471:  2799506  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5451935912794083887+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:146: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:146: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:146: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:186: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:186: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:186: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:186: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:186: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:186: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:186: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:186: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:186: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:186: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:186: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:186: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:186: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:186: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:186: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:186: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:186: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:186: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:186: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:186: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:186: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:186: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:186: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:186: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:186: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:186: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:186: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:186: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:186: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:186: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:186: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_llama_block_ar_7node.py:186: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:18:05.000211:  2799533  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_941367785759311178+e30acd3a/model.neff
+2026-10-15 10:18:05.000211:  2799511  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_941367785759311178+e30acd3a/model.neff
+2026-10-15 10:18:05.000212:  2799526  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_941367785759311178+e30acd3a/model.neff
+2026-10-15 10:18:05.000214:  2799531  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_941367785759311178+e30acd3a/model.neff
+2026-10-15 10:18:05.000214:  2799535  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_941367785759311178+e30acd3a/model.neff
+2026-10-15 10:18:05.000217:  2799521  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_941367785759311178+e30acd3a/model.neff
+2026-10-15 10:18:05.000219:  2799512  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_941367785759311178+e30acd3a/model.neff
+2026-10-15 10:18:05.000219:  2799527  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_941367785759311178+e30acd3a/model.neff
+2026-10-15 10:18:05.000220:  2799505  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_941367785759311178+e30acd3a/model.neff
+2026-10-15 10:18:05.000220:  2799514  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_941367785759311178+e30acd3a/model.neff
+2026-10-15 10:18:05.000221:  2799529  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_941367785759311178+e30acd3a/model.neff
+2026-10-15 10:18:05.000221:  2799520  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_941367785759311178+e30acd3a/model.neff
+2026-10-15 10:18:05.000223:  2799532  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_941367785759311178+e30acd3a/model.neff
+2026-10-15 10:18:05.000223:  2799507  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_941367785759311178+e30acd3a/model.neff
+2026-10-15 10:18:05.000223:  2799530  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_941367785759311178+e30acd3a/model.neff
+2026-10-15 10:18:05.000225:  2799506  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_941367785759311178+e30acd3a/model.neff
+2026-10-15 10:18:05.000227:  2799509  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_941367785759311178+e30acd3a/model.neff
+2026-10-15 10:18:05.000231:  2799510  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_941367785759311178+e30acd3a/model.neff
+2026-10-15 10:18:05.000232:  2799524  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_941367785759311178+e30acd3a/model.neff
+2026-10-15 10:18:05.000233:  2799518  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_941367785759311178+e30acd3a/model.neff
+2026-10-15 10:18:05.000236:  2799517  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_941367785759311178+e30acd3a/model.neff
+2026-10-15 10:18:05.000237:  2799515  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_941367785759311178+e30acd3a/model.neff
+2026-10-15 10:18:05.000239:  2799516  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_941367785759311178+e30acd3a/model.neff
+2026-10-15 10:18:05.000241:  2799522  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_941367785759311178+e30acd3a/model.neff
+2026-10-15 10:18:05.000243:  2799525  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_941367785759311178+e30acd3a/model.neff
+2026-10-15 10:18:05.000244:  2799523  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_941367785759311178+e30acd3a/model.neff
+2026-10-15 10:18:05.000244:  2799513  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_941367785759311178+e30acd3a/model.neff
+2026-10-15 10:18:05.000246:  2799528  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_941367785759311178+e30acd3a/model.neff
+2026-10-15 10:18:05.000247:  2799519  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_941367785759311178+e30acd3a/model.neff
+2026-10-15 10:18:05.000249:  2799508  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_941367785759311178+e30acd3a/model.neff
+2026-10-15 10:18:05.000249:  2799504  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_941367785759311178+e30acd3a/model.neff
+2026-10-15 10:18:05.000251:  2799534  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_941367785759311178+e30acd3a/model.neff
+2026-10-15 10:18:05.000255:  2799533  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_7266718807103151644+e30acd3a/model.neff
+2026-10-15 10:18:05.000256:  2799511  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_7266718807103151644+e30acd3a/model.neff
+2026-10-15 10:18:05.000257:  2799535  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_7266718807103151644+e30acd3a/model.neff
+2026-10-15 10:18:05.000260:  2799526  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_7266718807103151644+e30acd3a/model.neff
+2026-10-15 10:18:05.000262:  2799527  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_7266718807103151644+e30acd3a/model.neff
+2026-10-15 10:18:05.000263:  2799512  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_7266718807103151644+e30acd3a/model.neff
+2026-10-15 10:18:05.000264:  2799505  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_7266718807103151644+e30acd3a/model.neff
+2026-10-15 10:18:05.000266:  2799514  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_7266718807103151644+e30acd3a/model.neff
+2026-10-15 10:18:05.000267:  2799532  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_7266718807103151644+e30acd3a/model.neff
+2026-10-15 10:18:05.000267:  2799506  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_7266718807103151644+e30acd3a/model.neff
+2026-10-15 10:18:05.000268:  2799530  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_7266718807103151644+e30acd3a/model.neff
+2026-10-15 10:18:05.000270:  2799520  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_7266718807103151644+e30acd3a/model.neff
+2026-10-15 10:18:05.000270:  2799507  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_7266718807103151644+e30acd3a/model.neff
+2026-10-15 10:18:05.000270:  2799529  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_7266718807103151644+e30acd3a/model.neff
+2026-10-15 10:18:05.000270:  2799509  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_7266718807103151644+e30acd3a/model.neff
+2026-10-15 10:18:05.000271:  2799531  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_7266718807103151644+e30acd3a/model.neff
+2026-10-15 10:18:05.000276:  2799515  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_7266718807103151644+e30acd3a/model.neff
+2026-10-15 10:18:05.000277:  2799517  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_7266718807103151644+e30acd3a/model.neff
+2026-10-15 10:18:05.000278:  2799521  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_7266718807103151644+e30acd3a/model.neff
+2026-10-15 10:18:05.000278:  2799524  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_7266718807103151644+e30acd3a/model.neff
+2026-10-15 10:18:05.000281:  2799518  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_7266718807103151644+e30acd3a/model.neff
+2026-10-15 10:18:05.000281:  2799522  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_7266718807103151644+e30acd3a/model.neff
+2026-10-15 10:18:05.000286:  2799510  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_7266718807103151644+e30acd3a/model.neff
+2026-10-15 10:18:05.000286:  2799513  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_7266718807103151644+e30acd3a/model.neff
+2026-10-15 10:18:05.000289:  2799523  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_7266718807103151644+e30acd3a/model.neff
+2026-10-15 10:18:05.000293:  2799516  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_7266718807103151644+e30acd3a/model.neff
+2026-10-15 10:18:05.000293:  2799519  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_7266718807103151644+e30acd3a/model.neff
+2026-10-15 10:18:05.000293:  2799528  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_7266718807103151644+e30acd3a/model.neff
+2026-10-15 10:18:05.000295:  2799525  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_7266718807103151644+e30acd3a/model.neff
+2026-10-15 10:18:05.000297:  2799504  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_7266718807103151644+e30acd3a/model.neff
+2026-10-15 10:18:05.000298:  2799534  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_7266718807103151644+e30acd3a/model.neff
+2026-10-15 10:18:05.000298:  2799508  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_7266718807103151644+e30acd3a/model.neff
+2026-10-15 10:18:11.000267:  2799508  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_3775506396854437151+e30acd3a/model.neff
+2026-10-15 10:18:11.000268:  2799533  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_3775506396854437151+e30acd3a/model.neff
+2026-10-15 10:18:11.000268:  2799513  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_3775506396854437151+e30acd3a/model.neff
+2026-10-15 10:18:11.000269:  2799526  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_3775506396854437151+e30acd3a/model.neff
+2026-10-15 10:18:11.000270:  2799529  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_3775506396854437151+e30acd3a/model.neff
+2026-10-15 10:18:11.000271:  2799520  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_3775506396854437151+e30acd3a/model.neff
+2026-10-15 10:18:11.000271:  2799512  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_3775506396854437151+e30acd3a/model.neff
+2026-10-15 10:18:11.000272:  2799527  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_3775506396854437151+e30acd3a/model.neff
+2026-10-15 10:18:11.000273:  2799511  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_3775506396854437151+e30acd3a/model.neff
+2026-10-15 10:18:11.000274:  2799534  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_3775506396854437151+e30acd3a/model.neff
+2026-10-15 10:18:11.000275:  2799523  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_3775506396854437151+e30acd3a/model.neff
+2026-10-15 10:18:11.000275:  2799521  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_3775506396854437151+e30acd3a/model.neff
+2026-10-15 10:18:11.000275:  2799524  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_3775506396854437151+e30acd3a/model.neff
+2026-10-15 10:18:11.000275:  2799506  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_3775506396854437151+e30acd3a/model.neff
+2026-10-15 10:18:11.000277:  2799532  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_3775506396854437151+e30acd3a/model.neff
+2026-10-15 10:18:11.000277:  2799531  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_3775506396854437151+e30acd3a/model.neff
+2026-10-15 10:18:11.000278:  2799535  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_3775506396854437151+e30acd3a/model.neff
+2026-10-15 10:18:11.000282:  2799517  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_3775506396854437151+e30acd3a/model.neff
+2026-10-15 10:18:11.000283:  2799516  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_3775506396854437151+e30acd3a/model.neff
+2026-10-15 10:18:11.000287:  2799505  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_3775506396854437151+e30acd3a/model.neff
+2026-10-15 10:18:11.000287:  2799530  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_3775506396854437151+e30acd3a/model.neff
+2026-10-15 10:18:11.000288:  2799515  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_3775506396854437151+e30acd3a/model.neff
+2026-10-15 10:18:11.000289:  2799509  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_3775506396854437151+e30acd3a/model.neff
+2026-10-15 10:18:11.000291:  2799528  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_3775506396854437151+e30acd3a/model.neff
+2026-10-15 10:18:11.000291:  2799510  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_3775506396854437151+e30acd3a/model.neff
+2026-10-15 10:18:11.000294:  2799518  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_3775506396854437151+e30acd3a/model.neff
+2026-10-15 10:18:11.000296:  2799525  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_3775506396854437151+e30acd3a/model.neff
+2026-10-15 10:18:11.000296:  2799522  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_3775506396854437151+e30acd3a/model.neff
+2026-10-15 10:18:11.000298:  2799519  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_3775506396854437151+e30acd3a/model.neff
+2026-10-15 10:18:11.000298:  2799504  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_3775506396854437151+e30acd3a/model.neff
+2026-10-15 10:18:11.000298:  2799507  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_3775506396854437151+e30acd3a/model.neff
+2026-10-15 10:18:11.000299:  2799514  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_3775506396854437151+e30acd3a/model.neff
+[W1015 10:18:16.066691769 TCPStore.cpp:115] [c10d] recvVector failed on SocketImpl(fd=3, addr=[ip-<PRIV>.ap-southeast-2.compute.internal]:44852, remote=[ip-<PRIV>.ap-southeast-2.compute.internal]:29600): Failed to recv, got 0 bytes. Connection was likely closed. Did the remote server shutdown or crash?
+Exception raised from recvBytes at /pytorch/torch/csrc/distributed/c10d/Utils.hpp:697 (most recent call first):
+frame #0: c10::Error::Error(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x80 (0x78735d77cb80 in /opt/aws_neuronx_venv_pytorch_2_9/lib/python3.12/site-packages/torch/lib/libc10.so)
+frame #1: <unknown function> + 0x5ffd531 (0x787346dfd531 in /opt/aws_neuronx_venv_pytorch_2_9/lib/python3.12/site-packages/torch/lib/libtorch_cpu.so)
+frame #2: <unknown function> + 0x5ffdacd (0x787346dfdacd in /opt/aws_neuronx_venv_pytorch_2_9/lib/python3.12/site-packages/torch/lib/libtorch_cpu.so)
+frame #3: <unknown function> + 0x5ffe19b (0x787346dfe19b in /opt/aws_neuronx_venv_pytorch_2_9/lib/python3.12/site-packages/torch/lib/libtorch_cpu.so)
+frame #4: <unknown function> + 0x5fff0d7 (0x787346dff0d7 in /opt/aws_neuronx_venv_pytorch_2_9/lib/python3.12/site-packages/torch/lib/libtorch_cpu.so)
+frame #5: c10d::TCPStore::compareSet(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::vector<unsigned char, std::allocator<unsigned char> > const&, std::vector<unsigned char, std::allocator<unsigned char> > const&) + 0x261 (0x787346df9c31 in /opt/aws_neuronx_venv_pytorch_2_9/lib/python3.12/site-packages/torch/lib/libtorch_cpu.so)
+frame #6: <unknown function> + 0xd9d16d (0x78735659d16d in /opt/aws_neuronx_venv_pytorch_2_9/lib/python3.12/site-packages/torch/lib/libtorch_python.so)
+frame #7: <unknown function> + 0x3c072e (0x787355bc072e in /opt/aws_neuronx_venv_pytorch_2_9/lib/python3.12/site-packages/torch/lib/libtorch_python.so)
+frame #8: /opt/aws_neuronx_venv_pytorch_2_9/bin/python3() [0x581ecf]
+frame #9: _PyObject_MakeTpCall + 0x75 (0x549205 in /opt/aws_neuronx_venv_pytorch_2_9/bin/python3)
+frame #10: /opt/aws_neuronx_venv_pytorch_2_9/bin/python3() [0x54cf27]
+frame #11: _PyEval_EvalFrameDefault + 0x4cae (0x5db32e in /opt/aws_neuronx_venv_pytorch_2_9/bin/python3)
+frame #12: _PyObject_Call_Prepend + 0xc2 (0x54aa52 in /opt/aws_neuronx_venv_pytorch_2_9/bin/python3)
+frame #13: /opt/aws_neuronx_venv_pytorch_2_9/bin/python3() [0x5a33c8]
+frame #14: PyObject_Call + 0x6c (0x54b38c in /opt/aws_neuronx_venv_pytorch_2_9/bin/python3)
+frame #15: _PyEval_EvalFrameDefault + 0x4cae (0x5db32e in /opt/aws_neuronx_venv_pytorch_2_9/bin/python3)
+frame #16: PyEval_EvalCode + 0x15b (0x5d564b in /opt/aws_neuronx_venv_pytorch_2_9/bin/python3)
+frame #17: /opt/aws_neuronx_venv_pytorch_2_9/bin/python3() [0x6087b2]
+frame #18: /opt/aws_neuronx_venv_pytorch_2_9/bin/python3() [0x6b4853]
+frame #19: _PyRun_SimpleFileObject + 0x1aa (0x6b45ba in /opt/aws_neuronx_venv_pytorch_2_9/bin/python3)
+frame #20: _PyRun_AnyFileObject + 0x4f (0x6b43ef in /opt/aws_neuronx_venv_pytorch_2_9/bin/python3)
+frame #21: Py_RunMain + 0x3b5 (0x6bc455 in /opt/aws_neuronx_venv_pytorch_2_9/bin/python3)
+frame #22: Py_BytesMain + 0x2d (0x6bbf3d in /opt/aws_neuronx_venv_pytorch_2_9/bin/python3)
+frame #23: <unknown function> + 0x2a1ca (0x78736522a1ca in /lib/x86_64-linux-gnu/libc.so.6)
+frame #24: __libc_start_main + 0x8b (0x78736522a28b in /lib/x86_64-linux-gnu/libc.so.6)
+frame #25: _start + 0x25 (0x6574f5 in /opt/aws_neuronx_venv_pytorch_2_9/bin/python3)
+
+W1015 10:18:16.315000 2799439 torch/distributed/elastic/rendezvous/dynamic_rendezvous.py:1292] The node 'ip-<PRIV>.ap-southeast-2.compute.internal_2799439_0' has failed to shutdown the rendezvous 'none' due to an error of type RendezvousConnectionError.

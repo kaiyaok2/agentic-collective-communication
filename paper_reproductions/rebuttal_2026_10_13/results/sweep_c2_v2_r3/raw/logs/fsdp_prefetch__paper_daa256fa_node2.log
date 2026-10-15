@@ -1,0 +1,894 @@
+Warning: Permanently added '<PRIV-IP>' (ED25519) to the list of known hosts.
+W1015 10:14:45.932000 2341704 torch/distributed/run.py:803] 
+W1015 10:14:45.932000 2341704 torch/distributed/run.py:803] *****************************************
+W1015 10:14:45.932000 2341704 torch/distributed/run.py:803] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W1015 10:14:45.932000 2341704 torch/distributed/run.py:803] *****************************************
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:124: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:124: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:124: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:124: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:124: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:124: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:124: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:124: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:124: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:73: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:73: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:73: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:73: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:73: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:124: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:73: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:73: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:73: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:73: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:73: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:25.000059:  2341800  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_8407482929985334699+e30acd3a/model.neff
+2026-10-15 10:15:25.000060:  2341778  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_8407482929985334699+e30acd3a/model.neff
+2026-10-15 10:15:25.000060:  2341787  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_8407482929985334699+e30acd3a/model.neff
+2026-10-15 10:15:25.000060:  2341794  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_8407482929985334699+e30acd3a/model.neff
+2026-10-15 10:15:25.000060:  2341793  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_8407482929985334699+e30acd3a/model.neff
+2026-10-15 10:15:25.000061:  2341789  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_8407482929985334699+e30acd3a/model.neff
+2026-10-15 10:15:25.000061:  2341797  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_8407482929985334699+e30acd3a/model.neff
+2026-10-15 10:15:25.000063:  2341796  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_8407482929985334699+e30acd3a/model.neff
+2026-10-15 10:15:25.000064:  2341784  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_8407482929985334699+e30acd3a/model.neff
+2026-10-15 10:15:25.000065:  2341792  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_8407482929985334699+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:124: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:124: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:124: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:124: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:73: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:124: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:73: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:124: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:73: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:73: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:93: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:93: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:93: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:93: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:93: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:93: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:124: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:124: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:93: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:93: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:73: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:124: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:73: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:93: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:25.000087:  2341793  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_16555454551514755174+e30acd3a/model.neff
+2026-10-15 10:15:25.000087:  2341778  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_8652556016929367991+e30acd3a/model.neff
+2026-10-15 10:15:25.000088:  2341800  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_5136865592842735772+e30acd3a/model.neff
+2026-10-15 10:15:25.000088:  2341797  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_7328991697852962912+e30acd3a/model.neff
+2026-10-15 10:15:25.000088:  2341794  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_1995096091130383772+e30acd3a/model.neff
+2026-10-15 10:15:25.000088:  2341786  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_8407482929985334699+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:124: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+2026-10-15 10:15:25.000090:  2341787  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_6881247099939198270+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:93: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:73: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:124: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:73: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:25.000091:  2341796  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12793185862116508644+e30acd3a/model.neff
+2026-10-15 10:15:25.000091:  2341789  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_303704403715683679+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:124: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+2026-10-15 10:15:25.000092:  2341792  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_1746355309825365449+e30acd3a/model.neff
+2026-10-15 10:15:25.000092:  2341779  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_8407482929985334699+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:124: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:124: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+2026-10-15 10:15:25.000094:  2341799  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_8407482929985334699+e30acd3a/model.neff
+2026-10-15 10:15:25.000095:  2341783  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_8407482929985334699+e30acd3a/model.neff
+2026-10-15 10:15:25.000096:  2341784  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_612482687257447837+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:73: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:25.000098:  2341782  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_8407482929985334699+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:73: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:25.000102:  2341773  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_8407482929985334699+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:73: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:73: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:73: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:25.000103:  2341774  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_8407482929985334699+e30acd3a/model.neff
+2026-10-15 10:15:25.000103:  2341780  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_8407482929985334699+e30acd3a/model.neff
+2026-10-15 10:15:25.000108:  2341781  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_8407482929985334699+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:73: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:93: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:25.000112:  2341791  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_8407482929985334699+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:93: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:25.000115:  2341775  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_8407482929985334699+e30acd3a/model.neff
+2026-10-15 10:15:25.000116:  2341786  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_1187938033254089440+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:93: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:93: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:124: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+2026-10-15 10:15:25.000120:  2341779  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_2426726203445952858+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:93: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:124: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+2026-10-15 10:15:25.000120:  2341777  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_8407482929985334699+e30acd3a/model.neff
+2026-10-15 10:15:25.000121:  2341785  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_8407482929985334699+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:124: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+2026-10-15 10:15:25.000122:  2341799  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_10020681349074125705+e30acd3a/model.neff
+2026-10-15 10:15:25.000122:  2341783  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_9220346381905565876+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:124: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:93: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:25.000126:  2341782  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_11252651556142415063+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:93: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:25.000126:  2341795  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_8407482929985334699+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:73: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:73: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:73: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:124: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:93: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:124: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:73: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:25.000131:  2341780  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_13142483913662770252+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:124: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+2026-10-15 10:15:25.000132:  2341774  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_8326005590066612072+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:124: DeprecationWarning: Use torch_xla.device instead
+  dev = xm.xla_device()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:93: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:93: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+[init] backend=agent ws=224 steps=300 DM=2048 HID=5376 shard_hid=24 M=4 N_LAYERS=1
+2026-10-15 10:15:25.000135:  2341781  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_4329165887515907787+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:93: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:73: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:25.000138:  2341791  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_16526480624386839508+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:73: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:25.000139:  2341773  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_11967494940742156946+e30acd3a/model.neff
+[warmup] compiling XLA graphs...
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:73: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:25.000139:  2341788  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_8407482929985334699+e30acd3a/model.neff
+2026-10-15 10:15:25.000140:  2341801  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_8407482929985334699+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:73: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:25.000141:  2341790  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_8407482929985334699+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:93: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:93: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:25.000142:  2341775  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_17338050708011853549+e30acd3a/model.neff
+2026-10-15 10:15:25.000144:  2341802  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_8407482929985334699+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:93: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:25.000148:  2341785  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_11171093769566210735+e30acd3a/model.neff
+2026-10-15 10:15:25.000148:  2341777  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_10171076109091494016+e30acd3a/model.neff
+2026-10-15 10:15:25.000150:  2341776  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_8407482929985334699+e30acd3a/model.neff
+2026-10-15 10:15:25.000151:  2341798  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_8407482929985334699+e30acd3a/model.neff
+2026-10-15 10:15:25.000153:  2341795  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_8853217937121343559+e30acd3a/model.neff
+2026-10-15 10:15:25.000154:  2341771  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_8407482929985334699+e30acd3a/model.neff
+2026-10-15 10:15:25.000158:  2341772  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_8407482929985334699+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:93: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:103: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:103: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:103: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:103: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:93: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:103: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:25.000166:  2341801  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_6038817725919348047+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:93: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:103: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:25.000169:  2341800  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_9367899209024381300+e30acd3a/model.neff
+2026-10-15 10:15:25.000169:  2341793  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_9367899209024381300+e30acd3a/model.neff
+2026-10-15 10:15:25.000169:  2341778  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_9367899209024381300+e30acd3a/model.neff
+2026-10-15 10:15:25.000171:  2341794  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_9367899209024381300+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:93: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:93: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:103: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:25.000173:  2341790  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_16434060636512071830+e30acd3a/model.neff
+2026-10-15 10:15:25.000173:  2341802  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_6726415234605596421+e30acd3a/model.neff
+2026-10-15 10:15:25.000174:  2341792  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_9367899209024381300+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:93: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:25.000177:  2341796  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_9367899209024381300+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:103: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:115: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:115: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:115: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:115: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:25.000181:  2341776  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12045449027094746065+e30acd3a/model.neff
+2026-10-15 10:15:25.000181:  2341788  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_11227388769023841063+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:93: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:25.000182:  2341798  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_7972829178365436151+e30acd3a/model.neff
+2026-10-15 10:15:25.000184:  2341784  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_9367899209024381300+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:115: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:115: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:25.000188:  2341789  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_9367899209024381300+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:93: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:25.000192:  2341771  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_11071805382451498295+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:103: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:115: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:103: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:103: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:103: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:115: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:25.000203:  2341772  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_15310565063913125949+e30acd3a/model.neff
+2026-10-15 10:15:25.000205:  2341786  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_9367899209024381300+e30acd3a/model.neff
+2026-10-15 10:15:25.000207:  2341779  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_9367899209024381300+e30acd3a/model.neff
+2026-10-15 10:15:25.000207:  2341799  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_9367899209024381300+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:103: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:25.000209:  2341783  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_9367899209024381300+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:103: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:103: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:103: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:103: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:115: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:103: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:115: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:115: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:25.000220:  2341780  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_9367899209024381300+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:115: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:103: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:25.000222:  2341797  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_9367899209024381300+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:103: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:25.000223:  2341787  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_9367899209024381300+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:103: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:103: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:25.000225:  2341791  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_9367899209024381300+e30acd3a/model.neff
+2026-10-15 10:15:25.000225:  2341774  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_9367899209024381300+e30acd3a/model.neff
+2026-10-15 10:15:25.000228:  2341775  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_9367899209024381300+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:103: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:115: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:25.000232:  2341781  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_9367899209024381300+e30acd3a/model.neff
+2026-10-15 10:15:25.000233:  2341785  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_9367899209024381300+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:115: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:25.000235:  2341782  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_9367899209024381300+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:115: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:115: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:25.000236:  2341777  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_9367899209024381300+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:115: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:115: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:103: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:103: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:25.000241:  2341795  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_9367899209024381300+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:115: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:115: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:115: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:115: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:103: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:25.000252:  2341773  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_9367899209024381300+e30acd3a/model.neff
+2026-10-15 10:15:25.000252:  2341801  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_9367899209024381300+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:115: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:103: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:103: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:25.000261:  2341802  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_9367899209024381300+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:103: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:115: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:115: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:25.000267:  2341790  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_9367899209024381300+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:103: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:25.000269:  2341776  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_9367899209024381300+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:115: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:25.000274:  2341788  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_9367899209024381300+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:115: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:25.000280:  2341771  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_9367899209024381300+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:115: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:103: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:103: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:115: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:115: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:25.000293:  2341772  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_9367899209024381300+e30acd3a/model.neff
+2026-10-15 10:15:25.000296:  2341798  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_9367899209024381300+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:115: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:115: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:27.000184:  2341790  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_11342884603415706671+e30acd3a/model.neff
+2026-10-15 10:15:27.000184:  2341775  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_9028881555896942380+e30acd3a/model.neff
+2026-10-15 10:15:27.000185:  2341772  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_10856455874882731377+e30acd3a/model.neff
+2026-10-15 10:15:27.000186:  2341795  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_9506752237277190752+e30acd3a/model.neff
+2026-10-15 10:15:27.000186:  2341788  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_14790097278087110+e30acd3a/model.neff
+2026-10-15 10:15:27.000186:  2341783  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_7713932077922118644+e30acd3a/model.neff
+2026-10-15 10:15:27.000186:  2341799  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_1240076126593982989+e30acd3a/model.neff
+2026-10-15 10:15:27.000186:  2341779  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12609960762419426523+e30acd3a/model.neff
+2026-10-15 10:15:27.000186:  2341792  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12473263277498679655+e30acd3a/model.neff
+2026-10-15 10:15:27.000187:  2341777  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_15846624739155166844+e30acd3a/model.neff
+2026-10-15 10:15:27.000188:  2341800  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_1463262604288172579+e30acd3a/model.neff
+2026-10-15 10:15:27.000188:  2341794  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_16533824521946525042+e30acd3a/model.neff
+2026-10-15 10:15:27.000189:  2341791  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_6246136975063412366+e30acd3a/model.neff
+2026-10-15 10:15:27.000189:  2341793  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_11985012626218220094+e30acd3a/model.neff
+2026-10-15 10:15:27.000189:  2341802  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_7320536040492365585+e30acd3a/model.neff
+2026-10-15 10:15:27.000189:  2341774  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_17180788149920609278+e30acd3a/model.neff
+2026-10-15 10:15:27.000190:  2341780  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_9413040774152748399+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:154: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:154: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:154: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:27.000190:  2341786  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_995405049642875116+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:154: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:27.000191:  2341773  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_14392525439019698585+e30acd3a/model.neff
+2026-10-15 10:15:27.000191:  2341796  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_15818470946629956050+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:154: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:154: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:154: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:27.000192:  2341798  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_9323736907584092087+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:154: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:154: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:27.000192:  2341789  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_15063262551258099167+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:154: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:154: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:27.000193:  2341785  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_15701588624137683790+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:154: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:154: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:27.000194:  2341784  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_498896890497791447+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:154: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:154: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:154: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:27.000195:  2341771  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_14367678521519176383+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:154: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:27.000196:  2341776  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_6377536325546366179+e30acd3a/model.neff
+2026-10-15 10:15:27.000196:  2341778  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_17134094821666828765+e30acd3a/model.neff
+2026-10-15 10:15:27.000196:  2341797  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_8762174996507320302+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:154: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:27.000197:  2341781  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_10661888238239540494+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:154: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:154: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:154: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:154: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:154: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:27.000198:  2341801  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_13304298066703024591+e30acd3a/model.neff
+2026-10-15 10:15:27.000199:  2341792  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_13715767305243286453+e30acd3a/model.neff
+2026-10-15 10:15:27.000199:  2341787  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_9116888914812450492+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:154: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:27.000199:  2341782  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_7016748272137057544+e30acd3a/model.neff
+2026-10-15 10:15:27.000200:  2341783  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_13715767305243286453+e30acd3a/model.neff
+2026-10-15 10:15:27.000200:  2341788  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_13715767305243286453+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:154: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:27.000201:  2341775  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_13715767305243286453+e30acd3a/model.neff
+2026-10-15 10:15:27.000201:  2341777  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_13715767305243286453+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:154: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:154: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:154: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:154: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:27.000203:  2341794  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_13715767305243286453+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:154: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:27.000204:  2341802  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_13715767305243286453+e30acd3a/model.neff
+2026-10-15 10:15:27.000204:  2341798  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_13715767305243286453+e30acd3a/model.neff
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:154: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py:154: DeprecationWarning: Use torch_xla.sync instead
+  xm.mark_step()
+2026-10-15 10:15:27.000207:  2341772  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_13715767305243286453+e30acd3a/model.neff
+2026-10-15 10:15:27.000208:  2341795  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_13715767305243286453+e30acd3a/model.neff
+2026-10-15 10:15:27.000208:  2341799  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_13715767305243286453+e30acd3a/model.neff
+2026-10-15 10:15:27.000209:  2341779  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_13715767305243286453+e30acd3a/model.neff
+2026-10-15 10:15:27.000209:  2341800  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_13715767305243286453+e30acd3a/model.neff
+2026-10-15 10:15:27.000210:  2341796  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_13715767305243286453+e30acd3a/model.neff
+2026-10-15 10:15:27.000211:  2341774  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_13715767305243286453+e30acd3a/model.neff
+2026-10-15 10:15:27.000211:  2341791  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_13715767305243286453+e30acd3a/model.neff
+2026-10-15 10:15:27.000212:  2341790  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_13715767305243286453+e30acd3a/model.neff
+2026-10-15 10:15:27.000212:  2341780  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_13715767305243286453+e30acd3a/model.neff
+2026-10-15 10:15:27.000212:  2341786  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_13715767305243286453+e30acd3a/model.neff
+2026-10-15 10:15:27.000212:  2341773  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_13715767305243286453+e30acd3a/model.neff
+2026-10-15 10:15:27.000215:  2341785  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_13715767305243286453+e30acd3a/model.neff
+2026-10-15 10:15:27.000216:  2341784  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_13715767305243286453+e30acd3a/model.neff
+2026-10-15 10:15:27.000217:  2341789  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_13715767305243286453+e30acd3a/model.neff
+2026-10-15 10:15:27.000217:  2341771  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_13715767305243286453+e30acd3a/model.neff
+2026-10-15 10:15:27.000219:  2341776  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_13715767305243286453+e30acd3a/model.neff
+2026-10-15 10:15:27.000220:  2341781  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_13715767305243286453+e30acd3a/model.neff
+2026-10-15 10:15:27.000221:  2341778  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_13715767305243286453+e30acd3a/model.neff
+2026-10-15 10:15:27.000221:  2341797  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_13715767305243286453+e30acd3a/model.neff
+2026-10-15 10:15:27.000221:  2341793  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_13715767305243286453+e30acd3a/model.neff
+2026-10-15 10:15:27.000222:  2341772  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12635151426324003994+e30acd3a/model.neff
+2026-10-15 10:15:27.000223:  2341779  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12635151426324003994+e30acd3a/model.neff
+2026-10-15 10:15:27.000224:  2341787  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_13715767305243286453+e30acd3a/model.neff
+2026-10-15 10:15:27.000224:  2341782  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_13715767305243286453+e30acd3a/model.neff
+2026-10-15 10:15:27.000224:  2341783  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12635151426324003994+e30acd3a/model.neff
+2026-10-15 10:15:27.000224:  2341791  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12635151426324003994+e30acd3a/model.neff
+2026-10-15 10:15:27.000226:  2341777  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12635151426324003994+e30acd3a/model.neff
+2026-10-15 10:15:27.000227:  2341788  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12635151426324003994+e30acd3a/model.neff
+2026-10-15 10:15:27.000228:  2341775  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12635151426324003994+e30acd3a/model.neff
+2026-10-15 10:15:27.000229:  2341773  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12635151426324003994+e30acd3a/model.neff
+2026-10-15 10:15:27.000229:  2341785  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12635151426324003994+e30acd3a/model.neff
+2026-10-15 10:15:27.000229:  2341794  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12635151426324003994+e30acd3a/model.neff
+2026-10-15 10:15:27.000230:  2341799  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12635151426324003994+e30acd3a/model.neff
+2026-10-15 10:15:27.000230:  2341802  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12635151426324003994+e30acd3a/model.neff
+2026-10-15 10:15:27.000231:  2341795  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12635151426324003994+e30acd3a/model.neff
+2026-10-15 10:15:27.000231:  2341798  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12635151426324003994+e30acd3a/model.neff
+2026-10-15 10:15:27.000232:  2341801  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_13715767305243286453+e30acd3a/model.neff
+2026-10-15 10:15:27.000232:  2341771  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12635151426324003994+e30acd3a/model.neff
+2026-10-15 10:15:27.000233:  2341792  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12635151426324003994+e30acd3a/model.neff
+2026-10-15 10:15:27.000234:  2341800  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12635151426324003994+e30acd3a/model.neff
+2026-10-15 10:15:27.000235:  2341774  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12635151426324003994+e30acd3a/model.neff
+2026-10-15 10:15:27.000235:  2341780  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12635151426324003994+e30acd3a/model.neff
+2026-10-15 10:15:27.000235:  2341796  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12635151426324003994+e30acd3a/model.neff
+2026-10-15 10:15:27.000235:  2341790  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12635151426324003994+e30acd3a/model.neff
+2026-10-15 10:15:27.000236:  2341789  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12635151426324003994+e30acd3a/model.neff
+2026-10-15 10:15:27.000237:  2341784  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12635151426324003994+e30acd3a/model.neff
+2026-10-15 10:15:27.000238:  2341776  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12635151426324003994+e30acd3a/model.neff
+2026-10-15 10:15:27.000238:  2341778  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12635151426324003994+e30acd3a/model.neff
+2026-10-15 10:15:27.000239:  2341781  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12635151426324003994+e30acd3a/model.neff
+2026-10-15 10:15:27.000239:  2341793  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12635151426324003994+e30acd3a/model.neff
+2026-10-15 10:15:27.000240:  2341782  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12635151426324003994+e30acd3a/model.neff
+2026-10-15 10:15:27.000240:  2341787  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12635151426324003994+e30acd3a/model.neff
+2026-10-15 10:15:27.000241:  2341786  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12635151426324003994+e30acd3a/model.neff
+2026-10-15 10:15:27.000241:  2341797  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12635151426324003994+e30acd3a/model.neff
+2026-10-15 10:15:27.000246:  2341801  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_12635151426324003994+e30acd3a/model.neff
+[warmup] done
+  step    50/300  median_ms=14.7
+2026-Oct-15 10:15:39.0000 2341775:2354395 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev7 mlaDev4] sendProxy: TIMEOUT, 0 do2026-Oct-15 10:15:39.0000 2341771:2354405 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev1 mlaDev0] sendProxy: TIMEOUT, 0 do2026-Oct-15 10:15:39.0000 2341800:2354409 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev6 mlaDev29] sendProxy: TIMEOUT, 0 d2026-Oct-15 10:15:39.0000 2341795:2354397 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev0 mlaDev24] sendProxy: TIMEOUT, 0 d2026-Oct-15 10:15:39.0000 2341785:2354400 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev4 mlaDev14] sendProxy: TIMEOUT, 0 d2026-Oct-15 10:15:39.0000 2341799:2354390 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev6 mlaDev28] sendProxy: TIMEOUT, 0 d2026-Oct-15 10:15:39.0000 2341773:2354401 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev1 mlaDev2] sendProxy: TIMEOUT, 0 done / 0 posted
+one / 0 posted
+one / 0 posted
+2026-Oct-15 10:15:39.0000 2341801:2354388 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev6 mlaDev30] sendProxy: TIMEOUT, 0 d2026-Oct-15 10:15:39.0000 2341789:2354414 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev3 mlaDev18] sendProxy: TIMEOUT, 0 d2026-Oct-15 10:15:39.0000 2341781:2354406 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev2 mlaDev10] sendProxy: TIMEOUT, 0 d2026-Oct-15 10:15:39.0000 2341798:2354412 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev0 mlaDev27] sendProxy: TIMEOUT, 0 d2026-Oct-15 10:15:39.0000 2341777:2354396 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev7 mlaDev6] sendProxy: TIMEOUT, 0 do2026-Oct-15 10:15:39.0000 2341791:2354399 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev5 mlaDev20] sendProxy: TIMEOUT, 0 dne / 0 posted
+2026-Oct-15 10:15:39.0000 2341793:2354389 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev5 mlaDev22] sendProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-15 10:15:39.0000 2341792:2354387 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev5 mlaDev21] sendProxy: TIMEOUT, 0 d2026-Oct-15 10:15:39.0000 2341784:2354386 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev4 mlaDev13] sendProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-15 10:15:39.0000 2341799:2354390 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev6 mlaDev28] recvProxy: TIMEOUT, 0 d2026-Oct-15 10:15:39.0000 2341800:2354409 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev6 mlaDev29] recvProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-15 10:15:39.0000 2341802:2354398 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev6 mlaDev31] sendProxy: TIMEOUT, 0 d2026-Oct-15 10:15:39.0000 2341778:2354393 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev7 mlaDev7] sendProxy: TIMEOUT, 0 do2026-Oct-15 10:15:39.0000 2341772:2354403 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev1 mlaDev1] sendProxy: TIMEOUT, 0 doone / 0 posted
+ne / 0 posted
+ne / 0 posted
+2026-Oct-15 10:15:39.0000 2341776:2354385 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev7 mlaDev5] sendProxy: TIMEOUT, 0 doone / 0 posted
+one / 0 posted
+2026-Oct-15 10:15:39.0000 2341788:2354415 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev3 mlaDev17] sendProxy: TIMEOUT, 0 d2026-Oct-15 10:15:39.0000 2341783:2354408 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev4 mlaDev12] sendProxy: TIMEOUT, 0 dne / 0 posted
+2026-Oct-15 10:15:39.0000 2341780:2354394 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev2 mlaDev9] sendProxy: TIMEOUT, 0 doone / 0 posted
+2026-Oct-15 10:15:39.0000 2341782:2354410 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev2 mlaDev11] sendProxy: TIMEOUT, 0 done / 0 posted
+ne / 0 posted
+one / 0 posted
+2026-Oct-15 10:15:39.0000 2341797:2354413 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev0 mlaDev26] sendProxy: TIMEOUT, 0 d2026-Oct-15 10:15:39.0000 2341796:2354411 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev0 mlaDev25] sendProxy: TIMEOUT, 0 d2026-Oct-15 10:15:39.0000 2341794:2354392 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev5 mlaDev23] sendProxy: TIMEOUT, 0 done / 0 posted
+one / 0 posted
+2026-Oct-15 10:15:39.0000 2341801:2354388 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev6 mlaDev30] recvProxy: TIMEOUT, 0 dne / 0 posted
+2026-Oct-15 10:15:39.0000 2341779:2354416 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev2 mlaDev8] sendProxy: TIMEOUT, 0 do2026-Oct-15 10:15:39.0000 2341777:2354396 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev7 mlaDev6] recvProxy: TIMEOUT, 0 do2026-Oct-15 10:15:39.0000 2341787:2354407 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev3 mlaDev16] sendProxy: TIMEOUT, 0 d2026-Oct-15 10:15:39.0000 2341791:2354399 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev5 mlaDev20] recvProxy: TIMEOUT, 0 dne / 0 posted
+ne / 0 posted
+2026-Oct-15 10:15:39.0000 2341789:2354414 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev3 mlaDev18] recvProxy: TIMEOUT, 0 done / 0 posted
+one / 0 posted
+2026-Oct-15 10:15:39.0000 2341780:2354394 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev2 mlaDev9] recvProxy: TIMEOUT, 0 do2026-Oct-15 10:15:39.0000 2341786:2354391 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev4 mlaDev15] sendProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-15 10:15:39.0000 2341797:2354413 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev0 mlaDev26] recvProxy: TIMEOUT, 0 d2026-Oct-15 10:15:39.0000 2341773:2354401 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev1 mlaDev2] recvProxy: TIMEOUT, 0 do2026-Oct-15 10:15:39.0000 2341795:2354397 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev0 mlaDev24] recvProxy: TIMEOUT, 0 d2026-Oct-15 10:15:39.0000 2341798:2354412 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev0 mlaDev27] recvProxy: TIMEOUT, 0 dne / 0 posted
+one / 0 posted
+one / 0 posted
+2026-Oct-15 10:15:39.0000 2341781:2354406 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev2 mlaDev10] recvProxy: TIMEOUT, 0 d2026-Oct-15 10:15:39.0000 2341779:2354416 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev2 mlaDev8] recvProxy: TIMEOUT, 0 do2026-Oct-15 10:15:39.0000 2341774:2354404 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev1 mlaDev3] sendProxy: TIMEOUT, 0 doone / 0 posted
+2026-Oct-15 10:15:39.0000 2341778:2354393 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev7 mlaDev7] recvProxy: TIMEOUT, 0 doone / 0 posted
+2026-Oct-15 10:15:39.0000 2341784:2354386 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev4 mlaDev13] recvProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-15 10:15:39.0000 2341772:2354403 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev1 mlaDev1] recvProxy: TIMEOUT, 0 doone / 0 posted
+2026-Oct-15 10:15:39.0000 2341793:2354389 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev5 mlaDev22] recvProxy: TIMEOUT, 0 done / 0 posted
+ne / 0 posted
+2026-Oct-15 10:15:39.0000 2341776:2354385 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev7 mlaDev5] recvProxy: TIMEOUT, 0 doone / 0 posted
+one / 0 posted
+2026-Oct-15 10:15:39.0000 2341792:2354387 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev5 mlaDev21] recvProxy: TIMEOUT, 0 dne / 0 posted
+one / 0 posted
+one / 0 posted
+2026-Oct-15 10:15:39.0000 2341771:2354405 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev1 mlaDev0] recvProxy: TIMEOUT, 0 doone / 0 posted
+one / 0 posted
+ne / 0 posted
+one / 0 posted
+2026-Oct-15 10:15:39.0000 2341802:2354398 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev6 mlaDev31] recvProxy: TIMEOUT, 0 dne / 0 posted
+ne / 0 posted
+ne / 0 posted
+one / 0 posted
+one / 0 posted
+ne / 0 posted
+one / 0 posted
+ne / 0 posted
+2026-Oct-15 10:15:39.0000 2341788:2354415 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev3 mlaDev17] recvProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-15 10:15:39.0000 2341783:2354408 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev4 mlaDev12] recvProxy: TIMEOUT, 0 d2026-Oct-15 10:15:39.0000 2341782:2354410 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev2 mlaDev11] recvProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-15 10:15:39.0000 2341796:2354411 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev0 mlaDev25] recvProxy: TIMEOUT, 0 done / 0 posted
+one / 0 posted
+one / 0 posted
+2026-Oct-15 10:15:39.0000 2341794:2354392 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev5 mlaDev23] recvProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-15 10:15:39.0000 2341786:2354391 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev4 mlaDev15] recvProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-15 10:15:39.0000 2341787:2354407 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev3 mlaDev16] recvProxy: TIMEOUT, 0 d2026-Oct-15 10:15:39.0000 2341774:2354404 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev1 mlaDev3] recvProxy: TIMEOUT, 0 doone / 0 posted
+ne / 0 posted
+2026-Oct-15 10:15:39.0001 2341775:2354395 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev7 mlaDev4] recvProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-15 10:15:39.0003 2341785:2354400 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev4 mlaDev14] recvProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-15 10:15:50.0000 2341782:2354410 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev2 mlaDev11] sendProxy: TIMEOUT, 0 d2026-Oct-15 10:15:50.0000 2341779:2354416 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev2 mlaDev8] sendProxy: TIMEOUT, 0 do2026-Oct-15 10:15:50.0000 2341797:2354413 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev0 mlaDev26] sendProxy: TIMEOUT, 0 d2026-Oct-15 10:15:50.0000 2341793:2354389 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev5 mlaDev22] sendProxy: TIMEOUT, 0 d2026-Oct-15 10:15:50.0000 2341799:2354390 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev6 mlaDev28] sendProxy: TIMEOUT, 0 d2026-Oct-15 10:15:50.0000 2341777:2354396 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev7 mlaDev6] sendProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-15 10:15:50.0000 2341787:2354407 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev3 mlaDev16] sendProxy: TIMEOUT, 0 d2026-Oct-15 10:15:50.0000 2341780:2354394 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev2 mlaDev9] sendProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-15 10:15:50.0000 2341775:2354395 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev7 mlaDev4] sendProxy: TIMEOUT, 0 do2026-Oct-15 10:15:50.0000 2341781:2354406 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev2 mlaDev10] sendProxy: TIMEOUT, 0 d2026-Oct-15 10:15:50.0000 2341796:2354411 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev0 mlaDev25] recvProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-15 10:15:50.0000 2341788:2354415 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev3 mlaDev17] sendProxy: TIMEOUT, 0 d2026-Oct-15 10:15:50.0000 2341801:2354388 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev6 mlaDev30] sendProxy: TIMEOUT, 0 done / 0 posted
+one / 0 posted
+2026-Oct-15 10:15:50.0000 2341771:2354405 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev1 mlaDev0] sendProxy: TIMEOUT, 0 doone / 0 posted
+2026-Oct-15 10:15:50.0000 2341789:2354414 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev3 mlaDev18] sendProxy: TIMEOUT, 0 d2026-Oct-15 10:15:50.0000 2341795:2354397 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev0 mlaDev24] sendProxy: TIMEOUT, 0 d2026-Oct-15 10:15:50.0000 2341773:2354401 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev1 mlaDev2] sendProxy: TIMEOUT, 0 doone / 0 posted
+one / 0 posted
+2026-Oct-15 10:15:50.0000 2341785:2354400 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev4 mlaDev14] sendProxy: TIMEOUT, 0 d2026-Oct-15 10:15:50.0000 2341778:2354393 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev7 mlaDev7] sendProxy: TIMEOUT, 0 doone / 0 posted
+2026-Oct-15 10:15:50.0000 2341784:2354386 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev4 mlaDev13] sendProxy: TIMEOUT, 0 d2026-Oct-15 10:15:50.0000 2341787:2354407 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev3 mlaDev16] recvProxy: TIMEOUT, 0 d2026-Oct-15 10:15:50.0000 2341776:2354385 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev7 mlaDev5] sendProxy: TIMEOUT, 0 do2026-Oct-15 10:15:50.0000 2341800:2354409 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev6 mlaDev29] sendProxy: TIMEOUT, 0 d2026-Oct-15 10:15:50.0000 2341792:2354387 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev5 mlaDev21] sendProxy: TIMEOUT, 0 d2026-Oct-15 10:15:50.0000 2341794:2354392 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev5 mlaDev23] sendProxy: TIMEOUT, 0 d2026-Oct-15 10:15:50.0000 2341802:2354398 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev6 mlaDev31] sendProxy: TIMEOUT, 0 dne / 0 posted
+one / 0 posted
+one / 0 posted
+one / 0 posted
+2026-Oct-15 10:15:50.0000 2341774:2354404 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev1 mlaDev3] sendProxy: TIMEOUT, 0 doone / 0 posted
+ne / 0 posted
+one / 0 posted
+ne / 0 posted
+ne / 0 posted
+one / 0 posted
+2026-Oct-15 10:15:50.0000 2341786:2354391 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev4 mlaDev15] recvProxy: TIMEOUT, 0 done / 0 posted
+ne / 0 posted
+one / 0 posted
+one / 0 posted
+2026-Oct-15 10:15:50.0000 2341791:2354399 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev5 mlaDev20] sendProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-15 10:15:50.0000 2341779:2354416 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev2 mlaDev8] recvProxy: TIMEOUT, 0 do2026-Oct-15 10:15:50.0000 2341781:2354406 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev2 mlaDev10] recvProxy: TIMEOUT, 0 d2026-Oct-15 10:15:50.0000 2341788:2354415 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev3 mlaDev17] recvProxy: TIMEOUT, 0 dne / 0 posted
+one / 0 posted
+one / 0 posted
+one / 0 posted
+2026-Oct-15 10:15:50.0000 2341793:2354389 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev5 mlaDev22] recvProxy: TIMEOUT, 0 d2026-Oct-15 10:15:50.0000 2341799:2354390 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev6 mlaDev28] recvProxy: TIMEOUT, 0 d2026-Oct-15 10:15:50.0000 2341772:2354403 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev1 mlaDev1] sendProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-15 10:15:50.0000 2341798:2354412 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev0 mlaDev27] sendProxy: TIMEOUT, 0 dne / 0 posted
+2026-Oct-15 10:15:50.0000 2341789:2354414 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev3 mlaDev18] recvProxy: TIMEOUT, 0 d2026-Oct-15 10:15:50.0000 2341775:2354395 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev7 mlaDev4] recvProxy: TIMEOUT, 0 do2026-Oct-15 10:15:50.0000 2341783:2354408 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev4 mlaDev12] sendProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-15 10:15:50.0000 2341802:2354398 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev6 mlaDev31] recvProxy: TIMEOUT, 0 done / 0 posted
+one / 0 posted
+ne / 0 posted
+one / 0 posted
+2026-Oct-15 10:15:50.0000 2341794:2354392 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev5 mlaDev23] recvProxy: TIMEOUT, 0 d2026-Oct-15 10:15:50.0000 2341780:2354394 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev2 mlaDev9] recvProxy: TIMEOUT, 0 doone / 0 posted
+one / 0 posted
+2026-Oct-15 10:15:50.0000 2341773:2354401 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev1 mlaDev2] recvProxy: TIMEOUT, 0 do2026-Oct-15 10:15:50.0000 2341795:2354397 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev0 mlaDev24] recvProxy: TIMEOUT, 0 done / 0 posted
+one / 0 posted
+ne / 0 posted
+ne / 0 posted
+2026-Oct-15 10:15:50.0000 2341785:2354400 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev4 mlaDev14] recvProxy: TIMEOUT, 0 d2026-Oct-15 10:15:50.0000 2341786:2354391 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev4 mlaDev15] sendProxy: TIMEOUT, 0 d2026-Oct-15 10:15:50.0000 2341801:2354388 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev6 mlaDev30] recvProxy: TIMEOUT, 0 d2026-Oct-15 10:15:50.0000 2341784:2354386 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev4 mlaDev13] recvProxy: TIMEOUT, 0 done / 0 posted
+one / 0 posted
+one / 0 posted
+2026-Oct-15 10:15:50.0000 2341800:2354409 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev6 mlaDev29] recvProxy: TIMEOUT, 0 done / 0 posted
+one / 0 posted
+ne / 0 posted
+2026-Oct-15 10:15:50.0000 2341776:2354385 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev7 mlaDev5] recvProxy: TIMEOUT, 0 doone / 0 posted
+2026-Oct-15 10:15:50.0000 2341772:2354403 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev1 mlaDev1] recvProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-15 10:15:50.0000 2341771:2354405 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev1 mlaDev0] recvProxy: TIMEOUT, 0 doone / 0 posted
+2026-Oct-15 10:15:50.0000 2341774:2354404 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev1 mlaDev3] recvProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-15 10:15:50.0000 2341778:2354393 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev7 mlaDev7] recvProxy: TIMEOUT, 0 done / 0 posted
+ne / 0 posted
+ne / 0 posted
+2026-Oct-15 10:15:50.0000 2341792:2354387 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev5 mlaDev21] recvProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-15 10:15:50.0000 2341797:2354413 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev0 mlaDev26] recvProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-15 10:15:50.0000 2341791:2354399 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev5 mlaDev20] recvProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-15 10:15:50.0000 2341783:2354408 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev4 mlaDev12] recvProxy: TIMEOUT, 0 d2026-Oct-15 10:15:50.0000 2341798:2354412 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev0 mlaDev27] recvProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-15 10:15:50.0000 2341796:2354411 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev0 mlaDev25] sendProxy: TIMEOUT, 0 done / 0 posted
+one / 0 posted
+2026-Oct-15 10:15:50.0001 2341777:2354396 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev7 mlaDev6] recvProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-15 10:15:50.0003 2341782:2354410 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev2 mlaDev11] recvProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-15 10:15:58.602929 2341790:2351191 ERROR  TDRV:exec_request_process_errors             (FATAL-RT-UNDEFINED-STATE) [ND 9][NC 1] execution timeout (30000 ms) on model /tmp/ubuntu/neuroncc_compile_workdir/6f829a52-b918-4c7b-aea1-c628840a677d/model.MODULE_9367899209024381300+e30acd3a.neff, waiting for execution completion notification
+2026-Oct-15 10:15:58.633836 2341790:2351191 ERROR  TDRV:exec_print_instruction_pointers         [ND 9][NC 1] Instruction pointers [physical (neff)]: Tensor 0x13c06c0d80 () Vector 0x13c069ddc0 (328) Scalar 0x13c0684c00 (257) GPSIMD 0x13c06cbdc0 (185) Sync 0x13c06e0cc0 (3) 
+2026-Oct-15 10:15:58.648560 2341790:2351191 ERROR  TDRV:print_dma_abort_matrix                  Runtime DMA Abort Detected for Engines:
+----------------------------------------------------------------------------------------------------------
+|ND   |NC   |Engine  |Queue Idx |Queue               |TX Cause                 |RX Cause                 |
+----------------------------------------------------------------------------------------------------------
+|9    |1    |25      |0         |qPoolDynamic_9      |TX_DATA_AXI_PARITY_ERROR |RDR_NO_DESC_TIMEOUT_HINT |
+----------------------------------------------------------------------------------------------------------
+|9    |1    |25      |1         |qPoolIO0_9          |TX_DATA_AXI_PARITY_ERROR |RDR_NO_DESC_TIMEOUT_HINT |
+----------------------------------------------------------------------------------------------------------
+|9    |1    |25      |2         |qSPIO0_9            |TX_DATA_AXI_PARITY_ERROR |RDR_NO_DESC_TIMEOUT_HINT |
+----------------------------------------------------------------------------------------------------------
+
+2026-Oct-15 10:15:58.648571 2341790:2351191 ERROR  NMGR:dlr_exec_wait                           Execution completed with err: 1203. mode->h_nn=1003, lnc=0
+2026-Oct-15 10:15:58.656376 2341790:2351191 ERROR   NRT:nrt_infodump                            Neuron runtime information - please include in any support request:
+2026-Oct-15 10:15:58.664440 2341790:2351191 ERROR   NRT:nrt_infodump                            ------------->8------------[ cut here ]------------>8-------------
+2026-Oct-15 10:15:58.672483 2341790:2351191 ERROR   NRT:nrt_infodump                            NRT version: 2.29.40.0 (f954cd7a56b9a57af09c821cf39dc8be45946e12)
+2026-Oct-15 10:15:58.680551 2341790:2351191 ERROR   NRT:nrt_infodump                            Embedded FW version: 1.19.1.0 (70a4460a7a46224a5d8ebc1fcb7acbf7315a5294) loaded from "libnrtucode_extisa.so"
+2026-Oct-15 10:15:58.691580 2341790:2351191 ERROR   NRT:nrt_infodump                            CCOM version: 2.29.41.0- (compat 81)
+2026-Oct-15 10:15:58.698752 2341790:2351191 ERROR   NRT:nrt_infodump                            NCFW version: 2.29.5.0 (861dd829a50e546d2c4316183d6f957958b2b5ff)
+2026-Oct-15 10:15:58.706849 2341790:2351191 ERROR   NRT:nrt_infodump                            Instance ID: i-032f8d19fff86c877
+2026-Oct-15 10:15:58.713940 2341790:2351191 ERROR   NRT:nrt_infodump                            Cluster ID: 6846042511509721823
+2026-Oct-15 10:15:58.720933 2341790:2351191 ERROR   NRT:nrt_infodump                            Kernel: Linux 6.14.0-1018-aws #18~24.04.1-Ubuntu SMP Mon Nov 24 19:46:27 UTC 2025
+2026-Oct-15 10:15:58.731068 2341790:2351191 ERROR   NRT:nrt_infodump                            Nodename: ip-<PRIV>
+2026-Oct-15 10:15:58.737846 2341790:2351191 ERROR   NRT:nrt_infodump                            Driver version: 2.25.4.0
+
+2026-Oct-15 10:15:58.746653 2341790:2351191 ERROR   NRT:nrt_infodump                            Failure: NRT_EXEC_HW_ERR_DMA_ABORT in nrt_execute()
+2026-Oct-15 10:15:58.754240 2341790:2351191 ERROR   NRT:nrt_infodump                            LNC: 0
+2026-Oct-15 10:15:58.760371 2341790:2351191 ERROR   NRT:nrt_infodump                            Visible cores: 19
+2026-Oct-15 10:15:58.766888 2341790:2351191 ERROR   NRT:nrt_infodump                            Environment:
+2026-Oct-15 10:15:58.773209 2341790:2351191 ERROR   NRT:nrt_infodump                                NEURON_RT_NUM_CORES=32
+2026-Oct-15 10:15:58.779967 2341790:2351191 ERROR   NRT:nrt_infodump                                NEURON_COMPILE_CACHE_URL=/tmp/neuron_cache
+2026-Oct-15 10:15:58.787355 2341790:2351191 ERROR   NRT:nrt_infodump                                NEURON_NUM_RECENT_MODELS_TO_KEEP=1
+2026-Oct-15 10:15:58.794502 2341790:2351191 ERROR   NRT:nrt_infodump                                NEURON_RT_STOCHASTIC_ROUNDING_EN=1
+2026-Oct-15 10:15:58.801602 2341790:2351191 ERROR   NRT:nrt_infodump                                NEURON_LIBRARY_PATH=/opt/aws_neuronx_venv_pytorch_2_9/lib/python3.12/site-packages/libneuronxla/libneuronpjrt.so
+2026-Oct-15 10:15:58.812803 2341790:2351191 ERROR   NRT:nrt_infodump                                NEURON_RT_ROOT_COMM_ID=ip-<PRIV>.ap-southeast-2.compute.internal:62182
+2026-Oct-15 10:15:58.822963 2341790:2351191 ERROR   NRT:nrt_infodump                                NEURON_PJRT_PROCESS_INDEX=19
+2026-Oct-15 10:15:58.829988 2341790:2351191 ERROR   NRT:nrt_infodump                                NEURON_PT_MPMD_MODE=1
+2026-Oct-15 10:15:58.836726 2341790:2351191 ERROR   NRT:nrt_infodump                                NEURON_PJRT_WORLD_SIZE=224
+2026-Oct-15 10:15:58.843612 2341790:2351191 ERROR   NRT:nrt_infodump                                NEURON_INTERNAL_PJRT_C_API_VERSION=0.75
+2026-Oct-15 10:15:58.853047 2341790:2351191 ERROR   NRT:nrt_infodump                            -------------8<-----------[ cut to here ]-----------8<------------
+2026-Oct-15 10:15:59.893790 2341790:2351191 ERROR   NRT:nrt_execute_repeat                      Failed to execute model /tmp/ubuntu/neuroncc_compile_workdir/6f829a52-b918-4c7b-aea1-c628840a677d/model.MODULE_9367899209024381300+e30acd3a.neff with status 1203
+2026-10-15 10:16:00.000171:  2341790  [INFO]: Using a cached neff at /tmp/neuron_cache/neuronxcc-2.22.12471.0+b4a00d10/MODULE_16578378514651626168+e30acd3a/model.neff
+[rank19]: Traceback (most recent call last):
+[rank19]:   File "/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py", line 210, in <module>
+[rank19]:     run(p.parse_args())
+[rank19]:   File "/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py", line 169, in run
+[rank19]:     loss = step(s)
+[rank19]:            ^^^^^^^
+[rank19]:   File "/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py", line 148, in step
+[rank19]:     flat_out = _FSDPPrefetch.apply(
+[rank19]:                ^^^^^^^^^^^^^^^^^^^^
+[rank19]:   File "/opt/aws_neuronx_venv_pytorch_2_9/lib/python3.12/site-packages/torch/autograd/function.py", line 581, in apply
+[rank19]:     return super().apply(*args, **kwargs)  # type: ignore[misc]
+[rank19]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank19]:   File "/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py", line 83, in forward
+[rank19]:     _ = flat_out.float().sum().item()
+[rank19]:         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank19]: RuntimeError: Execute: error condition (((rt_status) != NRT_SUCCESS)):  [Hardware]: [NRT_EXEC_HW_ERR_DMA_ABORT] status_code=1203. Execution failed due to the DMA engine encountering an unrecoverable error during data transfer operations. For more details check stderr, or system logs for neuron messages. https://awsdocs-neuron.readthedocs-hosted.com/en/latest/neuron-runtime/nrt-troubleshoot.html#nrt-troubleshooting model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.68 model_index=19 model_name= SyncTensorsGraph.40 model_index=19 model_name= SyncTensorsGraph.4 model_index=19 model_name= SyncTensorsGraph.28 model_index=19 model_name= SyncTensorsGraph.19 model_index=19 model_name= SyncTensorsGraph.76 model_index=19
+2026-Oct-15 10:16:01.0000 2341776:2354385 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev7 mlaDev5] sendProxy: TIMEOUT, 0 do2026-Oct-15 10:16:01.0000 2341786:2354391 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev4 mlaDev15] sendProxy: TIMEOUT, 0 d2026-Oct-15 10:16:01.0000 2341783:2354408 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev4 mlaDev12] sendProxy: TIMEOUT, 0 d2026-Oct-15 10:16:01.0000 2341800:2354409 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev6 mlaDev29] sendProxy: TIMEOUT, 0 d2026-Oct-15 10:16:01.0000 2341802:2354398 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev6 mlaDev31] sendProxy: TIMEOUT, 0 d2026-Oct-15 10:16:01.0000 2341791:2354399 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev5 mlaDev20] sendProxy: TIMEOUT, 0 d2026-Oct-15 10:16:01.0000 2341799:2354390 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev6 mlaDev28] sendProxy: TIMEOUT, 0 d2026-Oct-15 10:16:01.0000 2341794:2354392 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev5 mlaDev23] sendProxy: TIMEOUT, 0 d2026-Oct-15 10:16:01.0000 2341784:2354386 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev4 mlaDev13] sendProxy: TIMEOUT, 0 d2026-Oct-15 10:16:01.0000 2341777:2354396 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev7 mlaDev6] sendProxy: TIMEOUT, 0 doone / 0 posted
+ne / 0 posted
+one / 0 posted
+one / 0 posted
+2026-Oct-15 10:16:01.0000 2341771:2354405 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev1 mlaDev0] sendProxy: TIMEOUT, 0 do2026-Oct-15 10:16:01.0000 2341785:2354400 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev4 mlaDev14] sendProxy: TIMEOUT, 0 d2026-Oct-15 10:16:01.0000 2341778:2354393 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev7 mlaDev7] sendProxy: TIMEOUT, 0 do2026-Oct-15 10:16:01.0000 2341782:2354410 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev2 mlaDev11] sendProxy: TIMEOUT, 0 d2026-Oct-15 10:16:01.0000 2341801:2354388 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev6 mlaDev30] sendProxy: TIMEOUT, 0 d2026-Oct-15 10:16:01.0000 2341795:2354397 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev0 mlaDev24] sendProxy: TIMEOUT, 0 d2026-Oct-15 10:16:01.0000 2341792:2354387 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev5 mlaDev21] sendProxy: TIMEOUT, 0 done / 0 posted
+one / 0 posted
+one / 0 posted
+2026-Oct-15 10:16:01.0000 2341783:2354408 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev4 mlaDev12] recvProxy: TIMEOUT, 0 d2026-Oct-15 10:16:01.0000 2341793:2354389 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev5 mlaDev22] recvProxy: TIMEOUT, 0 done / 0 posted
+one / 0 posted
+one / 0 posted
+2026-Oct-15 10:16:01.0000 2341774:2354404 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev1 mlaDev3] recvProxy: TIMEOUT, 0 doone / 0 posted
+2026-Oct-15 10:16:01.0000 2341772:2354403 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev1 mlaDev1] sendProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-15 10:16:01.0000 2341788:2354415 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev3 mlaDev17] sendProxy: TIMEOUT, 0 dne / 0 posted
+2026-Oct-15 10:16:01.0000 2341798:2354412 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev0 mlaDev27] sendProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-15 10:16:01.0000 2341779:2354416 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev2 mlaDev8] sendProxy: TIMEOUT, 0 do2026-Oct-15 10:16:01.0000 2341787:2354407 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev3 mlaDev16] sendProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-15 10:16:01.0000 2341797:2354413 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev0 mlaDev26] sendProxy: TIMEOUT, 0 d2026-Oct-15 10:16:01.0000 2341775:2354395 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev7 mlaDev4] sendProxy: TIMEOUT, 0 doone / 0 posted
+ne / 0 posted
+2026-Oct-15 10:16:01.0000 2341773:2354401 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev1 mlaDev2] sendProxy: TIMEOUT, 0 do2026-Oct-15 10:16:01.0000 2341796:2354411 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev0 mlaDev25] sendProxy: TIMEOUT, 0 d2026-Oct-15 10:16:01.0000 2341799:2354390 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev6 mlaDev28] recvProxy: TIMEOUT, 0 d2026-Oct-15 10:16:01.0000 2341780:2354394 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev2 mlaDev9] sendProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-15 10:16:01.0000 2341789:2354414 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev3 mlaDev18] sendProxy: TIMEOUT, 0 d2026-Oct-15 10:16:01.0000 2341795:2354397 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev0 mlaDev24] recvProxy: TIMEOUT, 0 d2026-Oct-15 10:16:01.0000 2341802:2354398 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev6 mlaDev31] recvProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-15 10:16:01.0000 2341776:2354385 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev7 mlaDev5] recvProxy: TIMEOUT, 0 do2026-Oct-15 10:16:01.0000 2341781:2354406 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev2 mlaDev10] sendProxy: TIMEOUT, 0 done / 0 posted
+one / 0 posted
+one / 0 posted
+ne / 0 posted
+2026-Oct-15 10:16:01.0000 2341777:2354396 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev7 mlaDev6] recvProxy: TIMEOUT, 0 doone / 0 posted
+ne / 0 posted
+2026-Oct-15 10:16:01.0000 2341782:2354410 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev2 mlaDev11] recvProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-15 10:16:01.0000 2341800:2354409 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev6 mlaDev29] recvProxy: TIMEOUT, 0 dne / 0 posted
+ne / 0 posted
+2026-Oct-15 10:16:01.0000 2341784:2354386 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev4 mlaDev13] recvProxy: TIMEOUT, 0 done / 0 posted
+one / 0 posted
+2026-Oct-15 10:16:01.0000 2341801:2354388 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev6 mlaDev30] recvProxy: TIMEOUT, 0 d2026-Oct-15 10:16:01.0000 2341774:2354404 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev1 mlaDev3] sendProxy: TIMEOUT, 0 do2026-Oct-15 10:16:01.0000 2341792:2354387 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev5 mlaDev21] recvProxy: TIMEOUT, 0 dne / 0 posted
+one / 0 posted
+2026-Oct-15 10:16:01.0000 2341798:2354412 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev0 mlaDev27] recvProxy: TIMEOUT, 0 d2026-Oct-15 10:16:01.0000 2341787:2354407 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev3 mlaDev16] recvProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-15 10:16:01.0000 2341785:2354400 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev4 mlaDev14] recvProxy: TIMEOUT, 0 d2026-Oct-15 10:16:01.0000 2341775:2354395 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev7 mlaDev4] recvProxy: TIMEOUT, 0 doone / 0 posted
+2026-Oct-15 10:16:01.0000 2341786:2354391 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev4 mlaDev15] recvProxy: TIMEOUT, 0 dne / 0 posted
+ne / 0 posted
+2026-Oct-15 10:16:01.0000 2341797:2354413 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev0 mlaDev26] recvProxy: TIMEOUT, 0 d2026-Oct-15 10:16:01.0000 2341778:2354393 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev7 mlaDev7] recvProxy: TIMEOUT, 0 doone / 0 posted
+one / 0 posted
+2026-Oct-15 10:16:01.0000 2341788:2354415 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev3 mlaDev17] recvProxy: TIMEOUT, 0 dne / 0 posted
+one / 0 posted
+2026-Oct-15 10:16:01.0000 2341771:2354405 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev1 mlaDev0] recvProxy: TIMEOUT, 0 doone / 0 posted
+ne / 0 posted
+one / 0 posted
+2026-Oct-15 10:16:01.0000 2341793:2354389 [-1] transport/net_neuron.cc:1088 CCOM WARN [netDev5 mlaDev22] sendProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-15 10:16:01.0000 2341772:2354403 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev1 mlaDev1] recvProxy: TIMEOUT, 0 do2026-Oct-15 10:16:01.0000 2341779:2354416 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev2 mlaDev8] recvProxy: TIMEOUT, 0 done / 0 posted
+ne / 0 posted
+ne / 0 posted
+one / 0 posted
+one / 0 posted
+one / 0 posted
+one / 0 posted
+one / 0 posted
+2026-Oct-15 10:16:01.0000 2341796:2354411 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev0 mlaDev25] recvProxy: TIMEOUT, 0 d2026-Oct-15 10:16:01.0000 2341773:2354401 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev1 mlaDev2] recvProxy: TIMEOUT, 0 done / 0 posted
+one / 0 posted
+2026-Oct-15 10:16:01.0000 2341780:2354394 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev2 mlaDev9] recvProxy: TIMEOUT, 0 doone / 0 posted
+2026-Oct-15 10:16:01.0000 2341789:2354414 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev3 mlaDev18] recvProxy: TIMEOUT, 0 done / 0 posted
+ne / 0 posted
+ne / 0 posted
+one / 0 posted
+2026-Oct-15 10:16:01.0000 2341781:2354406 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev2 mlaDev10] recvProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-15 10:16:01.0001 2341791:2354399 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev5 mlaDev20] recvProxy: TIMEOUT, 0 done / 0 posted
+2026-Oct-15 10:16:01.0003 2341794:2354392 [-1] transport/net_neuron.cc:1480 CCOM WARN [netDev5 mlaDev23] recvProxy: TIMEOUT, 0 done / 0 posted
+W1015 10:16:01.937000 2341704 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 2341771 closing signal SIGTERM
+W1015 10:16:01.938000 2341704 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 2341772 closing signal SIGTERM
+W1015 10:16:01.941000 2341704 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 2341773 closing signal SIGTERM
+W1015 10:16:01.942000 2341704 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 2341774 closing signal SIGTERM
+W1015 10:16:01.943000 2341704 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 2341775 closing signal SIGTERM
+W1015 10:16:01.946000 2341704 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 2341776 closing signal SIGTERM
+W1015 10:16:01.948000 2341704 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 2341777 closing signal SIGTERM
+W1015 10:16:01.949000 2341704 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 2341778 closing signal SIGTERM
+W1015 10:16:01.951000 2341704 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 2341779 closing signal SIGTERM
+W1015 10:16:01.951000 2341704 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 2341780 closing signal SIGTERM
+W1015 10:16:01.958000 2341704 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 2341781 closing signal SIGTERM
+W1015 10:16:01.960000 2341704 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 2341782 closing signal SIGTERM
+W1015 10:16:01.960000 2341704 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 2341783 closing signal SIGTERM
+W1015 10:16:01.961000 2341704 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 2341784 closing signal SIGTERM
+W1015 10:16:01.963000 2341704 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 2341785 closing signal SIGTERM
+W1015 10:16:01.964000 2341704 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 2341786 closing signal SIGTERM
+W1015 10:16:01.972000 2341704 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 2341787 closing signal SIGTERM
+W1015 10:16:01.973000 2341704 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 2341788 closing signal SIGTERM
+W1015 10:16:01.974000 2341704 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 2341789 closing signal SIGTERM
+W1015 10:16:01.975000 2341704 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 2341791 closing signal SIGTERM
+W1015 10:16:01.976000 2341704 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 2341792 closing signal SIGTERM
+W1015 10:16:01.977000 2341704 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 2341793 closing signal SIGTERM
+W1015 10:16:01.977000 2341704 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 2341794 closing signal SIGTERM
+W1015 10:16:01.978000 2341704 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 2341795 closing signal SIGTERM
+W1015 10:16:01.980000 2341704 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 2341796 closing signal SIGTERM
+W1015 10:16:01.982000 2341704 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 2341797 closing signal SIGTERM
+W1015 10:16:01.983000 2341704 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 2341798 closing signal SIGTERM
+W1015 10:16:01.985000 2341704 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 2341799 closing signal SIGTERM
+W1015 10:16:01.991000 2341704 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 2341800 closing signal SIGTERM
+W1015 10:16:01.992000 2341704 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 2341801 closing signal SIGTERM
+W1015 10:16:01.993000 2341704 torch/distributed/elastic/multiprocessing/api.py:908] Sending process 2341802 closing signal SIGTERM
+E1015 10:16:04.124000 2341704 torch/distributed/elastic/multiprocessing/api.py:882] failed (exitcode: 1) local_rank: 19 (pid: 2341790) of binary: /opt/aws_neuronx_venv_pytorch_2_9/bin/python3
+Traceback (most recent call last):
+  File "/opt/aws_neuronx_venv_pytorch_2_9/bin/torchrun", line 8, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/opt/aws_neuronx_venv_pytorch_2_9/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 357, in wrapper
+    return f(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^
+  File "/opt/aws_neuronx_venv_pytorch_2_9/lib/python3.12/site-packages/torch/distributed/run.py", line 936, in main
+    run(args)
+  File "/opt/aws_neuronx_venv_pytorch_2_9/lib/python3.12/site-packages/torch/distributed/run.py", line 927, in run
+    elastic_launch(
+  File "/opt/aws_neuronx_venv_pytorch_2_9/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 156, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/aws_neuronx_venv_pytorch_2_9/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 293, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+/home/ubuntu/OverlayCCL/training/train_fsdp_prefetch_7node.py FAILED
+------------------------------------------------------------
+Failures:
+  <NO_OTHER_FAILURES>
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-10-15_10:16:01
+  host      : ip-<PRIV>.ap-southeast-2.compute.internal
+  rank      : 19 (local_rank: 19)
+  exitcode  : 1 (pid: 2341790)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================

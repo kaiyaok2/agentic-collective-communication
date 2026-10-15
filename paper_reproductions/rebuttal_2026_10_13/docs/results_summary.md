@@ -85,13 +85,13 @@ dead-collective elimination carries the Ring-KV search find; helper-code scoring
 rule is redundant once helpers are scored by their own code. Removing bytes-moved raises FSDP/Ring KV (0.91/0.93) but
 collapses dxe (0.27): the full model is the compromise that keeps every problem above 0.7.
 
-**Cross-cluster check (cluster 2, 1–2 repeats of the same pool, same v16b simulator — no re-fitting):** ρ AllToAllV 0.90,
-dxe 0.81, FSDP 0.85, Layer-block 0.90, PP 0.80, Ring KV 0.56, TP MLP 0.87, Uniform A2A 0.87; pooled 0.75, direction 29/30
-(sim top-1 = HW best or within 0.1–5.8%). Hardware itself reproduces across clusters with rank agreement 0.77–0.96 and median
+**Cross-cluster check (cluster 2, 2–3 repeats of the same pool, same v16b simulator — no re-fitting):** ρ AllToAllV 0.90,
+dxe 0.68, FSDP 0.85, Layer-block 0.90, PP 0.80, Ring KV 0.56, TP MLP 0.89, Uniform A2A 0.87; pooled 0.74, direction 29/30
+(sim top-1 = HW best or within 0.7–3.3%; with repeats 1–2 only: dxe 0.81, TP MLP 0.87, pooled 0.75 — results/analysis_cluster2_v16b*.txt). Hardware itself reproduces across clusters with rank agreement 0.77–0.96 and median
 step-time difference 0.3–2.1% — except dxe (rank agreement 0.48 on the first repeat, 5.3%): its six all-reduce variants are
 within hardware noise of each other, which bounds any simulator's ρ on that problem (the simulator keeps 1-AG last on both
-clusters). The second cluster-2 repeat is partial (26/50) because large-payload collectives began hanging on that cluster's
-fabric (see §1 note).
+clusters). The second cluster-2 repeat covers 42/50 candidates (PP and the large-payload AllToAllV/dxe/Ring-KV variants hit the 20-min
+cap because collectives began hanging on that cluster's fabric, see §1 note); a third repeat (09:12–10:25 UTC 10-15, 68/50 files incl. percall records) is in results/sweep_c2_v2_r3.
 
 ## 4. Leak-free non-LLM search (C-Q2)
 Generic AST edits (swap primitive, mutate constant, delete/move, insert tensor op, stack/cat operands, loop unroll/fuse)
