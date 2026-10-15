@@ -18,7 +18,7 @@ elimination; scope-aware graph boundaries), with no constant fitted to the hardw
 training scope, within-problem Spearman between simulator score and measured step time is AllToAllV 0.90, dxe 0.73,
 FSDP 0.81, Layer-block 0.90, PP 0.89, Ring KV 0.75, TP MLP 0.90, Uniform A2A 0.73 (pooled 0.69; direction agreement
 31/33; top-1 correct on 6/8, within 0.3%/3.7% on the other two). The same simulator, unchanged, gives ρ 0.56–0.90 on an
-independent second cluster (pooled 0.74, 2–3 repeats). Prediction errors: ratio-MAPE 8–27% (120% on Uniform A2A: ranking right,
+independent second cluster (pooled 0.75, 2–3 repeats). Prediction errors: ratio-MAPE 8–27% (120% on Uniform A2A: ranking right,
 gap over-predicted); rescaled step-time error 0.1–2% on bundling problems, 13–15% on payload-changing ones — coarse enough
 that we keep the hardware gate. The cross-scope inversion is *reproduced* by the model: AllToAllV at
 per-primitive payload ranks AG+T+RS first (hardware 30.0 vs 24.2/38.0 ms); at OLMoE payload pack-and-gather first
