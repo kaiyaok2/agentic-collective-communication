@@ -125,6 +125,12 @@ ws·T·k·D and the expert compute is T·k·D·EXDIM: both are linear in the tok
 the per-token compute (expert width, top-k, model width) moves it — which the table sweeps. B>1 attempts on cluster 2 with two harness rewrites (one-hot matmul gather/scatter; per-sample top-k keeping every sort at S=256): the T>256 routing graph either faults at runtime (`NRT_EXEC_OOB` in the indirect-DMA gather/scatter) or fails to compile (`NCC_ITEN404 MaskPropagation` internal compiler error), so larger-token steps are blocked by the Neuron stack, not by the harness logic. Every larger-token configuration (B=2/4, S=512, L=16) fails at NEFF load / device memory for both backends: the AG-based
 AllToAllV buffer is ws×cap×DM·ws bytes (2 GB per rank at the paper shape, 8 GB at B=4). The regime is collective-bound by
 construction of 224-way expert parallelism; the transferable number is the collective-component speedup 4016→2795 ms (1.44×).
+**Direction of the token-count effect (from the stub series above):** the no-collective stub moves only 333→440 ms when expert FLOPs per
+token rise 8× (ex 1024→8192), so the token-proportional part of the compute is ~15–20 ms of 333 ms; the rest (optimizer step, shared-parameter
+gradient sync, launches, LM head) is fixed per step. The collective is ~97% byte-proportional (32 AllToAllV dispatches ≈ 50 ms of 1800 ms).
+A larger step therefore raises the collective share (at 64× tokens, ≈97–98%; quadratic attention at S=4096 adds only ~20% to per-token FLOPs).
+The share is set by the all-gather emulation of all-to-all (each rank receives every rank's ws×cap×DM buffer, ≈224× the bytes of a true
+all-to-all), not by the small step; the top-k 2 / ex 8192 run is the lowest share reachable within trn1 memory, not a floor in principle.
 
 ## 6. Attribution / cross-scope (A-Q2, C-Q1, C-Q3)
 AG+T+RS routed through the agent path at OLMoE scope = 4338 ms (inline baseline 4349) → the 1.39× is the algorithm, not the

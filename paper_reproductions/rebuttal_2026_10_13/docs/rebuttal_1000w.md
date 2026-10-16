@@ -38,9 +38,10 @@ in the model. We will rewrite §5 accordingly and claim nothing for TPU (D).
 **A-Q1 — realistic configuration.** We measured the step with AllToAllV replaced by a local stub: at the paper shape the
 collective is 92% of the step. Raising per-token compute lowers it — expert dim 8192: 86%; top-k 4: 89/84%; top-k 2:
 85/82%; top-k 2 + expert dim 8192: 83% (baseline) / 79% (agent), where OverlayCCL still gives 2161→1727 ms (1.25×, 3 runs,
-2 seeds; top-k 4 + 8192: 1.43×). Token count cannot change the share: payload and expert compute are both linear in
-tokens, and B>1 / longer sequences fail at load or in the runtime (`NRT_EXEC_OOB`, compiler error `NCC_ITEN404`) for both
-backends; model width 4096 OOMs or hits a stuck-collective hardware error. We will state the regime explicitly and report
+2 seeds; top-k 4 + 8192: 1.43×). A larger step would not lower the share: the stub series shows compute at our step is dominated by fixed costs (8× expert FLOPs
+moves it 333→440 ms) while the collective is byte-proportional, so more tokens raise the share; B>1 / longer sequences also fail at
+load or in the runtime (`NRT_EXEC_OOB`, `NCC_ITEN404`) for both backends, and model width 4096 OOMs or hits a stuck-collective error.
+The share is set by emulating all-to-all with an all-gather at 224-way expert parallelism (≈224× the bytes of a native all-to-all). We will state the regime explicitly and report
 the collective-component speedup (4016→2795 ms, 1.44×) as the transferable number.
 
 **A-Q4 / C-Q3 — baselines.** None is shape-tuned; all are the generic recipes with fixed loop structure (listed
