@@ -79,7 +79,7 @@ Pathological cases found without looking for them:
 | `--optlevel 1` | 0.998 | 0.32 | 1.02 | GPT-2 12-layer train 224 → 32 s (**0.14×**); conv bf16 train 143 → 669 s (**4.7× slower**) |
 | `--optlevel 3` | 0.995 | 0.96 | 1.01 | none |
 | neuronx-cc 2.24 | **0.64** (36% faster) | 0.29 | 0.87 | all-gather 4 KB graph 2.0 → 58 s (**29×**); conv bf16 train 143 → **1071 s at 23.5 GB RSS** (7.5×) |
-| neuronx-cc 2.19 (partial, 8 of 24) | 0.92 | 0.80 | — | same all-gather graph 2.0 → 22 s (11×) |
+| neuronx-cc 2.19 | 0.96 | 0.82 | 1.16 | same all-gather graph 2.0 → 22 s (11×); NEFFs 12% smaller |
 
 No arm changed PASS/FAIL status on the subset. The per-pass log shows where the time goes in each outlier
 (`PGLayoutTilingPipeline`, `PGTiling`, `InlineNativeKernels`, `AGOrderingAnalysisPass`, `InsertIOTransposes`).
@@ -120,7 +120,7 @@ an active, hypothesis-driven search over graph variants is needed.
 
 ## 5. State of the campaign and gaps
 
-- Running at report time (chain continues unattended, resumable): compiler 2.19 arm, then the mutation-pair arm with 2 warm
+- Running at report time (chain continues unattended, resumable): the mutation-pair arm with 2 warm
   repeats, the two known-failure protos (to record NCC codes), T5/ViT re-capture, NEFF re-profiling of the subset (the first
   pass lost the profile JSON to a parser bug fixed since), versions 2.22 / 2.20, then default-flag compiles of all 306
   step graphs with profiling and a second repeat.
