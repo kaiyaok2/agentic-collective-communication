@@ -138,6 +138,8 @@ def profile_neff(neff, workdir, num_exec=10):
         res["profile_err"] = ("view rc=%s: " % v.returncode + v.stdout[-400:]); return res
     try:
         d = json.loads(txt); s = d.get("summary", d)
+        if isinstance(s, dict) and "total_time" not in s and len(s) >= 1 and all(isinstance(v, dict) for v in s.values()):
+            s = next(iter(s.values()))   # summary-json: {"n_<neff hash>": {...metrics...}}
         if isinstance(s, list): s = s[0] if s else {}
         keep = {k: s[k] for k in s if isinstance(s[k], (int, float, str)) and len(str(s[k])) < 80}
         res["profile"] = keep

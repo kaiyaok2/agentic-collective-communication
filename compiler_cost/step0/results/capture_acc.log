@@ -1,0 +1,17 @@
+[write_meta] acc__tp_mlp__baseline ok=True modules=5 rc=0 wall=46.0
+[write_meta] acc__tp_mlp__agent ok=True modules=5 rc=0 wall=47.0
+[write_meta] acc__fsdp_prefetch__baseline ok=True modules=8 rc=0 wall=47.0
+[write_meta] acc__fsdp_prefetch__agent ok=True modules=8 rc=0 wall=51.0
+[write_meta] acc__llama_block_ar__baseline ok=True modules=5 rc=0 wall=45.0
+[write_meta] acc__llama_block_ar__agent ok=True modules=5 rc=0 wall=47.0
+[write_meta] acc__pp_send_recv__baseline ok=False modules=5 rc=1 wall=29.0
+[write_meta] acc__pp_send_recv__agent ok=False modules=5 rc=1 wall=37.0
+[write_meta] acc__dxe__baseline ok=True modules=5 rc=0 wall=48.0
+[write_meta] acc__dxe__agent ok=True modules=5 rc=0 wall=48.0
+[write_meta] acc__ring_kv__baseline ok=False modules=0 rc=1 wall=8.0
+[write_meta] acc__ring_kv__agent ok=False modules=0 rc=1 wall=8.0
+[write_meta] acc__alltoallv__baseline ok=True modules=5 rc=0 wall=33.0
+[write_meta] acc__alltoallv__agent ok=True modules=5 rc=0 wall=32.0
+[write_meta] acc__uniform_a2a__baseline ok=True modules=14 rc=0 wall=202.0
+[write_meta] acc__uniform_a2a__agent ok=True modules=14 rc=0 wall=209.0
+### ACC_CAPTURE_DONE 15:01:12

@@ -1,0 +1,99 @@
+[capture] 247 specs
+[capture] 3/247 mut__synth_conv__ch128_layers8_img64_batch8_train1__layers_plus1       ok=True mods=2 wall=176.6s 
+[capture] 4/247 mut__synth_conv__ch128_layers8_img64_batch8_train1__batch_half         ok=True mods=2 wall=173.7s 
+[capture] 5/247 mut__synth_conv__ch128_layers8_img64_batch8_train1__batch_x2           ok=True mods=2 wall=324.5s 
+[capture] 6/247 mut__synth_conv__ch128_layers8_img64_batch8_train1__batch_minus1       ok=True mods=2 wall=154.3s 
+[capture] 7/247 mut__synth_conv__ch128_layers8_img64_batch8_train1__batch_plus1        ok=False mods=0 wall=26.3s ValueError: RunNeuronCCImpl: error condition error != 0: <class 'subprocess.Call
+[capture] 8/247 mut__hf__archllama_layers4_hidden512_heads8_batch1_seq512_train1__trai ok=True mods=2 wall=46.6s 
+[capture] 9/247 mut__hf__archllama_layers4_hidden512_heads8_batch1_seq512_train1__dtyp ok=True mods=2 wall=57.1s 
+[capture] 10/247 mut__hf__archllama_layers4_hidden512_heads8_batch1_seq512_train1__laye ok=True mods=2 wall=67.1s 
+[capture] 11/247 mut__hf__archllama_layers4_hidden512_heads8_batch1_seq512_train1__batc ok=True mods=2 wall=180.8s 
+[capture] 12/247 mut__hf__archllama_layers4_hidden512_heads8_batch1_seq512_train1__batc ok=True mods=2 wall=75.2s 
+[capture] 13/247 mut__hf__archllama_layers4_hidden512_heads8_batch1_seq512_train1__batc ok=False mods=0 wall=14.0s RuntimeError: torch_xla/csrc/data_ops.cpp:79 : Check failed: incomplete_element_
+[capture] 14/247 mut__hf__archllama_layers4_hidden512_heads8_batch1_seq512_train1__batc ok=True mods=2 wall=75.6s 
+[capture] 15/247 mut__hf__archllama_layers4_hidden512_heads8_batch1_seq512_train1__seq_ ok=True mods=2 wall=53.5s 
+[capture] 16/247 mut__hf__archllama_layers4_hidden512_heads8_batch1_seq512_train1__seq_ ok=True mods=2 wall=77.4s 
+[capture] 17/247 mut__hf__archllama_layers4_hidden512_heads8_batch1_seq512_train1__seq_ ok=True mods=2 wall=67.3s 
+[capture] 18/247 mut__hf__archllama_layers4_hidden512_heads8_batch1_seq512_train1__seq_ ok=True mods=2 wall=81.6s 
+[capture] 19/247 mut__hf__archllama_layers4_hidden512_heads8_batch1_seq512_train1__hidd ok=True mods=2 wall=54.5s 
+[capture] 20/247 mut__hf__archllama_layers4_hidden512_heads8_batch1_seq512_train1__hidd ok=True mods=2 wall=74.5s 
+[capture] 21/247 mut__hf__archgpt2_layers2_hidden768_heads12_batch2_seq512_train1__trai ok=True mods=2 wall=37.5s 
+[capture] 22/247 mut__hf__archgpt2_layers2_hidden768_heads12_batch2_seq512_train1__dtyp ok=True mods=2 wall=67.4s 
+[capture] 23/247 mut__hf__archgpt2_layers2_hidden768_heads12_batch2_seq512_train1__laye ok=True mods=2 wall=88.8s 
+[capture] 24/247 mut__hf__archgpt2_layers2_hidden768_heads12_batch2_seq512_train1__batc ok=True mods=2 wall=207.2s 
+[capture] 25/247 mut__hf__archgpt2_layers2_hidden768_heads12_batch2_seq512_train1__batc ok=True mods=2 wall=100.0s 
+[capture] 26/247 mut__hf__archgpt2_layers2_hidden768_heads12_batch2_seq512_train1__batc ok=True mods=2 wall=55.3s 
+[capture] 27/247 mut__hf__archgpt2_layers2_hidden768_heads12_batch2_seq512_train1__batc ok=True mods=2 wall=87.1s 
+[capture] 28/247 mut__hf__archgpt2_layers2_hidden768_heads12_batch2_seq512_train1__seq_ ok=True mods=2 wall=53.9s 
+[capture] 29/247 mut__hf__archgpt2_layers2_hidden768_heads12_batch2_seq512_train1__seq_ ok=True mods=3 wall=217.1s 
+[capture] 30/247 mut__hf__archgpt2_layers2_hidden768_heads12_batch2_seq512_train1__seq_ ok=True mods=2 wall=80.1s 
+[capture] 31/247 mut__hf__archgpt2_layers2_hidden768_heads12_batch2_seq512_train1__seq_ ok=True mods=2 wall=106.7s 
+[capture] 32/247 mut__hf__archgpt2_layers2_hidden768_heads12_batch2_seq512_train1__hidd ok=True mods=2 wall=53.9s 
+[capture] 33/247 mut__hf__archgpt2_layers2_hidden768_heads12_batch2_seq512_train1__hidd ok=True mods=2 wall=122.0s 
+[capture] 34/247 mut__synth_attn__dim1024_heads8_layers4_seq1024_batch4_train1__causal_ ok=True mods=2 wall=163.7s 
+[capture] 35/247 mut__synth_attn__dim1024_heads8_layers4_seq1024_batch4_train1__norm_of ok=True mods=2 wall=121.9s 
+[capture] 36/247 mut__synth_attn__dim1024_heads8_layers4_seq1024_batch4_train1__train_o ok=True mods=2 wall=77.5s 
+[capture] 37/247 mut__synth_attn__dim1024_heads8_layers4_seq1024_batch4_train1__dtype_b ok=True mods=2 wall=133.5s 
+[capture] 38/247 mut__synth_attn__dim1024_heads8_layers4_seq1024_batch4_train1__layers_ ok=True mods=3 wall=344.3s 
+[capture] 39/247 mut__synth_attn__dim1024_heads8_layers4_seq1024_batch4_train1__batch_h ok=True mods=2 wall=247.4s 
+[capture] 40/247 mut__synth_attn__dim1024_heads8_layers4_seq1024_batch4_train1__batch_x ok=True mods=2 wall=246.5s 
+[capture] 41/247 mut__synth_attn__dim1024_heads8_layers4_seq1024_batch4_train1__batch_m ok=True mods=2 wall=110.9s 
+[capture] 42/247 mut__synth_attn__dim1024_heads8_layers4_seq1024_batch4_train1__batch_p ok=True mods=2 wall=163.7s 
+[capture] 43/247 mut__synth_attn__dim1024_heads8_layers4_seq1024_batch4_train1__seq_hal ok=True mods=2 wall=83.3s 
+[capture] 44/247 mut__synth_attn__dim1024_heads8_layers4_seq1024_batch4_train1__seq_x2  ok=True mods=2 wall=303.7s 
+[capture] 45/247 mut__synth_attn__dim1024_heads8_layers4_seq1024_batch4_train1__seq_min ok=True mods=2 wall=162.4s 
+[capture] 46/247 mut__synth_attn__dim1024_heads8_layers4_seq1024_batch4_train1__seq_plu ok=True mods=2 wall=227.9s 
+[capture] 47/247 mut__synth_attn__dim1024_heads8_layers4_seq1024_batch4_train1__dim_hal ok=True mods=2 wall=87.5s 
+[capture] 48/247 mut__synth_attn__dim1024_heads8_layers4_seq1024_batch4_train1__dim_x2  ok=True mods=2 wall=306.3s 
+[capture] 49/247 mut__synth_mlp__d512_hidden2048_depth4_batch1024_actgelu_train1__train ok=True mods=2 wall=18.8s 
+[capture] 50/247 mut__synth_mlp__d512_hidden2048_depth4_batch1024_actgelu_train1__dtype ok=True mods=2 wall=19.6s 
+[capture] 51/247 mut__synth_mlp__d512_hidden2048_depth4_batch1024_actgelu_train1__act_n ok=True mods=2 wall=19.6s 
+[capture] 52/247 mut__synth_mlp__d512_hidden2048_depth4_batch1024_actgelu_train1__act_r ok=True mods=2 wall=40.1s 
+[capture] 53/247 mut__synth_mlp__d512_hidden2048_depth4_batch1024_actgelu_train1__depth ok=True mods=2 wall=21.8s 
+[capture] 54/247 mut__synth_mlp__d512_hidden2048_depth4_batch1024_actgelu_train1__d_hal ok=True mods=2 wall=19.5s 
+[capture] 55/247 mut__synth_mlp__d512_hidden2048_depth4_batch1024_actgelu_train1__d_x2  ok=True mods=2 wall=19.9s 
+[capture] 56/247 mut__synth_mlp__d512_hidden2048_depth4_batch1024_actgelu_train1__d_min ok=True mods=2 wall=21.2s 
+[capture] 57/247 mut__synth_mlp__d512_hidden2048_depth4_batch1024_actgelu_train1__d_plu ok=True mods=2 wall=23.9s 
+[capture] 58/247 mut__synth_mlp__d512_hidden2048_depth4_batch1024_actgelu_train1__batch ok=True mods=2 wall=18.0s 
+[capture] 59/247 mut__synth_mlp__d512_hidden2048_depth4_batch1024_actgelu_train1__batch ok=True mods=2 wall=21.8s 
+[capture] 60/247 mut__synth_mlp__d512_hidden2048_depth4_batch1024_actgelu_train1__batch ok=True mods=2 wall=21.7s 
+[capture] 61/247 mut__synth_mlp__d512_hidden2048_depth4_batch1024_actgelu_train1__batch ok=True mods=2 wall=23.3s 
+[capture] 62/247 mut__synth_mlp__d512_hidden2048_depth4_batch1024_actgelu_train1__hidde ok=True mods=2 wall=17.9s 
+[capture] 63/247 mut__synth_mlp__d512_hidden2048_depth4_batch1024_actgelu_train1__hidde ok=True mods=2 wall=30.3s 
+[capture] 64/247 mut__synth_mlp__d512_hidden2048_depth4_batch1024_actgelu_train1__hidde ok=True mods=2 wall=24.4s 
+[capture] 65/247 mut__synth_mlp__d512_hidden2048_depth4_batch1024_actgelu_train1__hidde ok=True mods=2 wall=26.0s 
+[capture] 66/247 hf__archmixtral_layers2_hidden512_heads8_kv_heads2_inter1024_experts16 ok=False mods=0 wall=15.5s RuntimeError: one_hot is only applicable to index tensor of type LongTensor.
+[capture] 67/247 hf__archmixtral_layers2_hidden512_heads8_kv_heads2_inter1024_experts16 ok=False mods=0 wall=14.8s RuntimeError: one_hot is only applicable to index tensor of type LongTensor.
+[capture] 68/247 hf__archmixtral_layers2_hidden512_heads8_kv_heads2_inter1024_experts4_ ok=False mods=0 wall=14.1s RuntimeError: one_hot is only applicable to index tensor of type LongTensor.
+[capture] 69/247 hf__archmixtral_layers2_hidden512_heads8_kv_heads2_inter1024_experts4_ ok=False mods=0 wall=15.3s RuntimeError: one_hot is only applicable to index tensor of type LongTensor.
+[capture] 70/247 hf__archmixtral_layers1_hidden512_heads8_kv_heads2_inter1024_experts16 ok=False mods=0 wall=13.3s RuntimeError: one_hot is only applicable to index tensor of type LongTensor.
+[capture] 71/247 hf__archmixtral_layers1_hidden512_heads8_kv_heads2_inter1024_experts16 ok=False mods=0 wall=21.1s RuntimeError: one_hot is only applicable to index tensor of type LongTensor.
+[capture] 72/247 hf__archmixtral_layers1_hidden512_heads8_kv_heads2_inter1024_experts4_ ok=False mods=0 wall=13.1s RuntimeError: one_hot is only applicable to index tensor of type LongTensor.
+[capture] 73/247 hf__archmixtral_layers1_hidden512_heads8_kv_heads2_inter1024_experts4_ ok=False mods=0 wall=12.8s RuntimeError: one_hot is only applicable to index tensor of type LongTensor.
+[capture] 74/247 hf__archvit_layers12_hidden768_heads12_batch4_img224_train1            ok=False mods=0 wall=11.2s KeyError: 'seq'
+[capture] 75/247 hf__archvit_layers12_hidden768_heads12_batch4_img224_train0            ok=False mods=0 wall=10.6s KeyError: 'seq'
+[capture] 76/247 hf__archvit_layers2_hidden768_heads12_batch4_img224_train1             ok=False mods=0 wall=10.2s KeyError: 'seq'
+[capture] 77/247 hf__archvit_layers2_hidden768_heads12_batch4_img224_train0             ok=False mods=0 wall=10.5s KeyError: 'seq'
+[capture] 78/247 hf__archt5_layers6_hidden512_heads8_batch2_seq128_train1               ok=False mods=0 wall=16.2s ValueError: self.model.config.decoder_start_token_id has to be defined. In T5 it
+[capture] 79/247 hf__archt5_layers6_hidden512_heads8_batch2_seq128_train0               ok=True mods=2 wall=110.1s 
+[capture] 80/247 hf__archt5_layers2_hidden512_heads8_batch2_seq128_train1               ok=False mods=0 wall=14.2s ValueError: self.model.config.decoder_start_token_id has to be defined. In T5 it
+[capture] 81/247 hf__archt5_layers2_hidden512_heads8_batch2_seq128_train0               ok=True mods=2 wall=47.2s 
+[capture] 82/247 hf__archbert_layers12_hidden768_heads12_batch4_seq128_train1           ok=True mods=3 wall=148.4s 
+[capture] 83/247 hf__archbert_layers12_hidden768_heads12_batch4_seq128_train0           ok=True mods=3 wall=115.9s 
+[capture] 84/247 hf__archbert_layers2_hidden768_heads12_batch4_seq128_train1            ok=True mods=3 wall=51.8s 
+[capture] 85/247 hf__archbert_layers2_hidden768_heads12_batch4_seq128_train0            ok=True mods=3 wall=38.0s 
+[capture] 86/247 hf__archllama_layers4_hidden2048_heads32_batch1_seq512_train1          ok=True mods=2 wall=118.8s 
+[capture] 87/247 hf__archllama_layers4_hidden2048_heads32_batch1_seq512_train0          ok=True mods=2 wall=113.6s 
+[capture] 88/247 hf__archllama_layers4_hidden512_heads8_batch1_seq512_train1            ok=True mods=2 wall=57.4s 
+[capture] 89/247 hf__archllama_layers4_hidden512_heads8_batch1_seq512_train0            ok=True mods=2 wall=43.1s 
+[capture] 90/247 hf__archllama_layers1_hidden2048_heads32_batch1_seq512_train1          ok=True mods=2 wall=55.8s 
+[capture] 91/247 hf__archllama_layers1_hidden2048_heads32_batch1_seq512_train0          ok=True mods=2 wall=35.6s 
+[capture] 92/247 hf__archllama_layers1_hidden512_heads8_batch1_seq512_train1            ok=True mods=2 wall=32.9s 
+[capture] 93/247 hf__archllama_layers1_hidden512_heads8_batch1_seq512_train0            ok=True mods=2 wall=24.0s 
+[capture] 94/247 hf__archgpt2_layers12_hidden768_heads12_batch2_seq512_train1           ok=True mods=2 wall=245.6s 
+[capture] 95/247 hf__archgpt2_layers12_hidden768_heads12_batch2_seq512_train0           ok=True mods=2 wall=128.3s 
+[capture] 96/247 hf__archgpt2_layers6_hidden768_heads12_batch2_seq512_train1            ok=True mods=2 wall=135.8s 
+[capture] 97/247 hf__archgpt2_layers6_hidden768_heads12_batch2_seq512_train0            ok=True mods=2 wall=72.1s 
+[capture] 98/247 hf__archgpt2_layers2_hidden768_heads12_batch2_seq512_train1            ok=True mods=2 wall=72.8s 
+[capture] 99/247 hf__archgpt2_layers2_hidden768_heads12_batch2_seq512_train0            ok=True mods=2 wall=40.4s 
+[capture] 100/247 hf__archgpt2_layers1_hidden768_heads12_batch2_seq512_train1            ok=True mods=2 wall=59.0s 

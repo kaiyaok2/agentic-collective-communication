@@ -1,0 +1,26 @@
+[bench] cc=/opt/aws_neuronx_venv_pytorch_2_8/bin/neuronx-cc ver=2.21.33363.0+82129205 tag=2.21.33363.0 rows=24 flagsets=default repeats=1 cold=True done=0
+[bench] collective__kindall_gather_numel4096_count1__M7429 default      2.21.33363.0 r0 PASS    wall=    4.68s rss=  0.22GB neff=   0.01MB 
+[bench] collective__kindreduce_scatter_numel4096_count1__M default      2.21.33363.0 r0 PASS    wall=    5.87s rss=  0.24GB neff=   0.03MB 
+[bench] collective__kindstacked_ar_numel1048576_count8__M4 default      2.21.33363.0 r0 PASS    wall=    6.49s rss=  0.24GB neff=   0.02MB 
+[bench] hf__archllama_layers1_hidden512_heads8_batch1_seq5 default      2.21.33363.0 r0 PASS    wall=   13.92s rss=  0.28GB neff=   0.40MB 
+[bench] hf__archgpt2_layers2_hidden768_heads12_batch2_seq5 default      2.21.33363.0 r0 PASS    wall=   58.16s rss=  1.19GB neff=   3.98MB 
+[bench] hf__archgpt2_layers12_hidden768_heads12_batch2_seq default      2.21.33363.0 r0 PASS    wall=  230.29s rss=  5.61GB neff=  10.79MB 
+[bench] synth_attn__dim512_heads8_layers1_seq128_batch4_tr default      2.21.33363.0 r0 PASS    wall=   10.50s rss=  0.27GB neff=   0.16MB 
+[bench] mut__synth_attn__dim1024_heads8_layers4_seq1024_ba default      2.21.33363.0 r0 PASS    wall=   66.35s rss=  1.45GB neff=   4.79MB 
+[bench] mut__synth_attn__dim1024_heads8_layers4_seq1024_ba default      2.21.33363.0 r0 PASS    wall=  226.76s rss=  7.93GB neff=  22.13MB 
+[bench] synth_conv__ch128_layers2_img64_batch8_train0__M25 default      2.21.33363.0 r0 PASS    wall=    8.24s rss=  0.27GB neff=   0.18MB 
+[bench] synth_conv__ch32_layers8_img64_batch8_train1__M697 default      2.21.33363.0 r0 PASS    wall=   80.85s rss=  2.20GB neff=   6.24MB 
+[bench] mut__synth_conv__ch128_layers8_img64_batch8_train1 default      2.21.33363.0 r0 PASS    wall=  148.91s rss=  3.11GB neff=   2.52MB 
+[bench] synth_elementwise__n_ops8_numel100000_seed0__M2539 default      2.21.33363.0 r0 PASS    wall=    6.46s rss=  0.25GB neff=   0.13MB 
+[bench] synth_elementwise__n_ops8_numel10000000_seed1__M71 default      2.21.33363.0 r0 PASS    wall=    6.61s rss=  0.25GB neff=   0.15MB 
+[bench] synth_elementwise__n_ops512_numel100000_seed1__M50 default      2.21.33363.0 r0 PASS    wall=   92.59s rss=  2.78GB neff=   8.72MB 
+[bench] synth_gather__kindindex_add_vocab1024_dim256_n_idx default      2.21.33363.0 r0 PASS    wall=    5.90s rss=  0.24GB neff=   0.01MB 
+[bench] synth_gather__kindindex_add_vocab1024_dim256_n_idx default      2.21.33363.0 r0 PASS    wall=    5.92s rss=  0.24GB neff=   0.02MB 
+[bench] synth_gather__kindgather_vocab1024_dim256_n_idx819 default      2.21.33363.0 r0 PASS    wall=  186.60s rss= 10.64GB neff=   9.99MB 
+[bench] synth_many_small__n_mats16_mat64_modedistinct_shap default      2.21.33363.0 r0 PASS    wall=    6.54s rss=  0.24GB neff=   0.04MB 
+[bench] synth_many_small__n_mats128_mat64_modebatched__M04 default      2.21.33363.0 r0 PASS    wall=   11.84s rss=  0.28GB neff=   0.06MB 
+[bench] synth_many_small__n_mats1024_mat64_modeunrolled__M default      2.21.33363.0 r0 PASS    wall=  170.96s rss=  0.57GB neff=   0.41MB 
+[bench] synth_mlp__d512_hidden256_depth1_batch64_actgelu_t default      2.21.33363.0 r0 PASS    wall=    6.24s rss=  0.25GB neff=   0.04MB 
+[bench] mut__synth_mlp__d512_hidden2048_depth4_batch1024_a default      2.21.33363.0 r0 PASS    wall=   10.29s rss=  0.27GB neff=   0.42MB 
+[bench] synth_mlp__d512_hidden2048_depth16_batch1024_actge default      2.21.33363.0 r0 PASS    wall=   26.10s rss=  0.51GB neff=   1.70MB 
+[bench] wrote 24 rows to /home/ubuntu/results/bench_cold.jsonl

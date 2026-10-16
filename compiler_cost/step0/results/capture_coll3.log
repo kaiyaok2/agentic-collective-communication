@@ -1,0 +1,18 @@
+[capture] 27 specs
+[capture] 1/27 collective__kindall_reduce_numel4096_count1                            ok=False mods=0 wall=0.9s subprocess rc=-9
+[capture] 2/27 collective__kindall_reduce_numel4096_count8                            ok=True mods=2 wall=30.2s 
+[capture] 3/27 collective__kindall_reduce_numel1048576_count1                         ok=True mods=2 wall=24.3s 
+[capture] 4/27 collective__kindall_reduce_numel1048576_count8                         ok=True mods=2 wall=31.6s 
+[capture] 5/27 collective__kindall_reduce_numel16777216_count1                        ok=True mods=2 wall=70.4s 
+[capture] 6/27 collective__kindall_reduce_numel16777216_count8                        ok=True mods=2 wall=470.3s 
+[capture] 7/27 collective__kindall_gather_numel4096_count1                            ok=True mods=2 wall=25.9s 
+[capture] 8/27 collective__kindall_gather_numel4096_count8                            ok=True mods=3 wall=27.5s 
+[capture] 9/27 collective__kindall_gather_numel1048576_count1                         ok=True mods=3 wall=26.6s 
+[capture] 10/27 collective__kindall_gather_numel1048576_count8                         ok=True mods=3 wall=27.1s 
+[capture] 11/27 collective__kindall_gather_numel16777216_count1                        ok=True mods=3 wall=60.6s 
+[capture] 13/27 collective__kindreduce_scatter_numel4096_count1                        ok=True mods=2 wall=16.8s 
+[capture] 15/27 collective__kindreduce_scatter_numel1048576_count1                     ok=True mods=2 wall=24.1s 
+[capture] 19/27 collective__kindag_rs_numel4096_count1                                 ok=True mods=3 wall=27.0s 
+[capture] 21/27 collective__kindag_rs_numel1048576_count1                              ok=True mods=3 wall=18.2s 
+[capture] 25/27 collective__kindstacked_ar_numel4096_count8                            ok=True mods=2 wall=28.8s 
+[capture] 26/27 collective__kindstacked_ar_numel1048576_count8                         ok=True mods=2 wall=22.4s 

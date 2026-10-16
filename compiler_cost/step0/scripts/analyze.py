@@ -104,6 +104,18 @@ def main():
     base = {r["hlo_id"]: r for r in r0}
     if bf: arm_table(bf, lambda r: r["flagset"], "3a. Compiler flags (subset; ratio to default flags, same module)", base)
     if bv: arm_table(bv, lambda r: r["cc_tag"], "3b. Compiler versions (subset; ratio to installed 2.21, default flags)", base)
+    outl = []
+    for r in bf + bv:
+        b = base.get(r["hlo_id"])
+        if b and r["status"] == "PASS" and b["status"] == "PASS":
+            rat = r["wall_s"] / b["wall_s"]
+            if abs(math.log(rat)) > math.log(1.5): outl.append((rat, r.get("flagset") if r in bf else r["cc_tag"], r["hlo_id"], b["wall_s"], r["wall_s"], r.get("max_rss_kb", 0) / 1e6, r.get("pass_times_s") or {}))
+    if outl:
+        print("\n### 3c. Per-module arms that change compile time by more than 1.5× (either direction)\n")
+        print("| arm | module | default s | arm s | ratio | arm RSS GB | top passes in arm (s) |\n|---|---|---|---|---|---|---|")
+        for rat, arm, hid, bw, aw, rss, pt in sorted(outl, key=lambda t: -abs(math.log(t[0]))):
+            top = ", ".join(f"{k} {v:.0f}" for k, v in list(pt.items())[:3])
+            print(f"| {arm} | {hid[:58]} | {bw:.1f} | {aw:.1f} | {rat:.2f} | {rss:.2f} | {top} |")
     # ---------------------------------------------------------------- 4. mutation pairs
     print("\n## 4. Near-identical pairs (one parameter changed)\n")
     prog_wall = collections.defaultdict(list)
@@ -165,6 +177,27 @@ def main():
         # single-feature baselines
         for k in ("n_instructions", "proto_bytes", "total_tensor_bytes", "dot_flops"):
             i = FEATS.index(k); c = spearmanr(Xw[:, i], ywv).correlation; print(f"- Spearman(log wall, {k}) = {c:.3f}")
+        # 5b. same baselines on the capture-time compile of every step graph (framework wrapper ≈ CLI wall within ~4%)
+        Xc = []; yc = []; fc = []
+        for m in man.values():
+            c = (m.get("capture") or {}).get("wrapper_compile_time_s") or []; fe = m.get("features") or {}
+            if m.get("module_is_new") and c and "n_instructions" in fe: Xc.append(featvec(fe)); yc.append(math.log(max(c))); fc.append(m["family"])
+        Xc = np.array(Xc); yc = np.array(yc); fc = np.array(fc)
+        if len(yc) > 20:
+            print(f"\n### 5b. Same baselines on capture-time compile times of all step graphs (n={len(yc)}, one compile each)\n")
+            print("| model | CV | n | R² | MAPE | median APE | Spearman | within 2× |\n|---|---|---|---|---|---|---|---|")
+            for mname, mf in (("ridge", lambda: Ridge(alpha=1.0)), ("gbdt", lambda: GradientBoostingRegressor(n_estimators=300, max_depth=3, learning_rate=0.05, subsample=0.8, random_state=0))):
+                for cvn, g in (("random 5-fold", None), ("leave-one-family-out", fc)):
+                    e = cv_eval(mf, Xc, yc, g); print(f"| {mname} | {cvn} | {e['n']} | {e['r2']:.3f} | {e['mape']:.2f} | {e['medape']:.2f} | {e['spearman']:.3f} | {e['within2x']:.2f} |")
+            gbc = GradientBoostingRegressor(n_estimators=300, max_depth=3, learning_rate=0.05, subsample=0.8, random_state=0).fit(Xc, yc)
+            imp = sorted(zip(gbc.feature_importances_, FEATS), reverse=True)[:10]; print("\nGBDT top features (capture-time set): " + ", ".join(f"{n} {v:.2f}" for v, n in imp))
+            for k in ("n_instructions", "proto_bytes", "total_tensor_bytes", "dot_flops", "largest_tensor_bytes"):
+                i = FEATS.index(k); print(f"- Spearman(log wall, {k}) = {spearmanr(Xc[:, i], yc).correlation:.3f}")
+            # residual spread at (nearly) equal instruction count: group by n_instructions bucket
+            ni = np.array([round(math.exp(x[FEATS.index("n_instructions")]) - 1) for x in Xc]); buckets = collections.defaultdict(list)
+            for n_, y_ in zip(ni, yc): buckets[n_].append(y_)
+            sp = [max(v) - min(v) for v in buckets.values() if len(v) >= 3]
+            if sp: print(f"- modules sharing the exact same instruction count (groups of ≥3: {len(sp)}): compile-time max/min within a group median {math.exp(st.median(sp)):.2f}×, max {math.exp(max(sp)):.1f}×")
         if yp.min() != yp.max():
             from sklearn.model_selection import cross_val_predict
             pr = cross_val_predict(GradientBoostingClassifier(n_estimators=200, max_depth=3, random_state=0), X, yp, cv=5, method="predict_proba")[:, 1]
@@ -173,6 +206,27 @@ def main():
         print(f"(sklearn analysis skipped: {e})")
     # ---------------------------------------------------------------- 6. latency
     print("\n## 6. Execution latency: neuron-profile vs framework ExecuteTime\n")
+    prof_rows = [r for r in bd + bf + load(f"{D}/bench_profile.jsonl") if r.get("profile")]
+    print(f"profiled NEFFs: {len(prof_rows)} rows (by arm: {dict(collections.Counter((r.get('flagset'), r.get('cc_tag')) for r in prof_rows))})")
+    byarm = collections.defaultdict(dict)
+    for r in prof_rows:
+        tt = r["profile"].get("total_time")
+        if tt: byarm[r["flagset"] + "@" + r["cc_tag"]][r["hlo_id"]] = float(tt) * 1e6
+    arms = sorted(byarm)
+    for i, a1 in enumerate(arms):
+        for a2 in arms[i + 1:]:
+            common = set(byarm[a1]) & set(byarm[a2])
+            if len(common) >= 3:
+                rat = [byarm[a2][k] / byarm[a1][k] for k in common]
+                print(f"- device latency {a2} vs {a1}: n={len(common)}, ratio median {st.median(rat):.3f}, min {min(rat):.3f}, max {max(rat):.3f}")
+    for a1 in arms:
+        pairs_ = []
+        for k, tt in byarm[a1].items():
+            m = man.get(k, {}); et = (m.get("capture") or {}).get("execute_time_us") or []
+            if et and m.get("module_is_new") and m.get("n_modules_in_prog", 0) <= 2: pairs_.append((tt, st.median(et)))
+        if len(pairs_) >= 4:
+            from scipy.stats import spearmanr
+            print(f"- {a1}: Spearman(neuron-profile total_time, framework ExecuteTime) = {spearmanr([a for a,_ in pairs_],[b for _,b in pairs_]).correlation:.3f} (n={len(pairs_)}); profile/ExecuteTime ratio median {st.median([a/b for a,b in pairs_]):.2f}")
     lat = []
     for r in r0:
         p = r.get("profile") or {}; m = man.get(r["hlo_id"], {}); et = (m.get("capture") or {}).get("execute_time_us") or []
