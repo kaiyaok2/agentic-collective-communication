@@ -70,10 +70,39 @@ def classify(exit_status, timed_out, log_txt, neff_ok):
     info["status"] = st
     return info
 
+PASS_RE = re.compile(r"^(\S+) INFO \d+ \[([^\]]+)\]: (\S+) finished after ([0-9.]+) seconds", re.M)
+JOB_RE = re.compile(r"^(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ) INFO \d+ \[pipeline\.[^\]]+\]: (Starting|Finished) job job\.([A-Za-z0-9_]+)\.(\d+)", re.M)
+FRONT_RE = [("hlo_mac_count", r"HloMacCount has found (\d+)"), ("hlo_traffic", r"Traffic has found (\d+)"), ("hlo_aif", r"AIF (\d+)"), ("memory_bound_graph", r"(Found memory bound graph)"),
+            ("pipeline", r"Pipeline: ([A-Za-z ]+)"), ("single_module", r"(Switching to single-module compile)"), ("n_subgraphs", r"Partitioned into (\d+) subgraph")]
+
+def parse_cc_log(path, top=40):
+    """per-pass seconds (summed over subgraphs/repeats), per-job seconds, frontend counters"""
+    out = {}
+    try: txt = open(path, errors="ignore").read()
+    except Exception: return out
+    passes = {}
+    for _, scope, name, secs in PASS_RE.findall(txt):
+        passes[name] = passes.get(name, 0.0) + float(secs)
+    if passes:
+        tot = sum(passes.values()); items = sorted(passes.items(), key=lambda t: -t[1])[:top]
+        out["pass_times_s"] = {k: round(v, 3) for k, v in items}; out["pass_time_total_s"] = round(tot, 3); out["n_pass_records"] = len(PASS_RE.findall(txt))
+    import datetime as _dt
+    starts = {}; jobs = {}
+    for ts, kind, job, idx in JOB_RE.findall(txt):
+        t = _dt.datetime.strptime(ts, "%Y-%m-%dT%H:%M:%SZ").timestamp()
+        if kind == "Starting": starts[(job, idx)] = t
+        elif (job, idx) in starts: jobs[job] = jobs.get(job, 0.0) + (t - starts[(job, idx)])
+    if jobs: out["job_times_s"] = {k: round(v, 1) for k, v in jobs.items()}
+    for key, pat in FRONT_RE:
+        m = re.search(pat, txt)
+        if m: out[key] = int(m.group(1)) if m.group(1).isdigit() else m.group(1)
+    out["cc_log_lines"] = txt.count("\n")
+    return out
+
 def drop_caches():
     subprocess.run("sync; sudo -n sh -c 'echo 3 > /proc/sys/vm/drop_caches'", shell=True, check=False)
 
-def run_one(cc_bin, hlo_pb, flags, workdir, timeout_s, target="trn1", verbose="warning"):
+def run_one(cc_bin, hlo_pb, flags, workdir, timeout_s, target="trn1", verbose="info"):
     os.makedirs(workdir, exist_ok=True)
     neff = os.path.join(workdir, "model.neff"); logf = os.path.join(workdir, "log-neuron-cc.txt"); tf = os.path.join(workdir, "time.txt")
     cmd = [TIME, "-v", "-o", tf, "timeout", "-k", "15", str(timeout_s), cc_bin, "compile", "--framework", "XLA", "--target", target,
@@ -88,6 +117,7 @@ def run_one(cc_bin, hlo_pb, flags, workdir, timeout_s, target="trn1", verbose="w
     row = dict(tv); row.update(classify(exit_status, timed_out, log_txt, neff_ok))
     row.update(dict(outer_wall_s=round(t1 - t0, 3), neff_bytes=os.path.getsize(neff) if neff_ok else 0, load1_before=round(load1, 2),
                     log_tail=log_txt[-800:].replace("\n", " | ")))
+    if os.path.exists(logf): row.update(parse_cc_log(logf))
     return row, neff if neff_ok else None
 
 def profile_neff(neff, workdir, num_exec=10):
@@ -100,10 +130,14 @@ def profile_neff(neff, workdir, num_exec=10):
     if r.returncode != 0 or not os.path.exists(ntff):
         res["profile_err"] = r.stdout[-400:]; return res
     v = sh(["timeout", "-k", "10", "900", "neuron-profile", "view", "-n", neff, "-s", ntff, "--output-format", "summary-json", "--output-file", out], cwd=workdir)
-    if v.returncode != 0 or not os.path.exists(out):
-        res["profile_err"] = ("view: " + v.stdout[-400:]); return res
+    txt = None
+    if os.path.exists(out): txt = open(out).read()
+    else:   # some versions print the summary JSON to stdout and exit non-zero
+        i = v.stdout.find("{"); txt = v.stdout[i:] if i >= 0 else None
+    if not txt:
+        res["profile_err"] = ("view rc=%s: " % v.returncode + v.stdout[-400:]); return res
     try:
-        d = json.load(open(out)); s = d.get("summary", d)
+        d = json.loads(txt); s = d.get("summary", d)
         if isinstance(s, list): s = s[0] if s else {}
         keep = {k: s[k] for k in s if isinstance(s[k], (int, float, str)) and len(str(s[k])) < 80}
         res["profile"] = keep

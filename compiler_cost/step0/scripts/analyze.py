@@ -50,6 +50,17 @@ def main():
         print(f"\nAll PASS modules: n={len(allw)}, wall min {min(allw):.1f} s, median {st.median(allw):.1f}, p90 {q(allw,.9):.1f}, p99 {q(allw,.99):.1f}, max {max(allw):.1f}; "
               f"total compile time {sum(allw)/60:.1f} min; share > 60 s: {sum(w>60 for w in allw)/len(allw):.1%}; > 300 s: {sum(w>300 for w in allw)/len(allw):.1%}; "
               f"max/min ratio {max(allw)/min(allw):.0f}×")
+    # 1b. framework-side compile time recorded at capture, all step graphs (one compile each, under capture-time load)
+    cap = collections.defaultdict(list)
+    for m in man.values():
+        c = (m.get("capture") or {}).get("wrapper_compile_time_s") or []
+        if m.get("module_is_new") and c: cap[(m.get("source", "?"), m.get("family", "?"))].append(max(c))
+    if cap:
+        print("\n### 1b. Framework-side compile time at capture (every step graph compiled once by the torch-xla wrapper)\n")
+        print("| source | family | n | min s | median | p90 | max |\n|---|---|---|---|---|---|---|")
+        for (src, fam), v in sorted(cap.items()): print(f"| {src} | {fam} | {len(v)} | {min(v):.1f} | {st.median(v):.1f} | {q(v,.9):.1f} | {max(v):.1f} |")
+        allc = [x for v in cap.values() for x in v]
+        print(f"\nAll step graphs n={len(allc)}: median {st.median(allc):.1f} s, p90 {q(allc,.9):.1f}, max {max(allc):.1f}; > 60 s: {sum(x>60 for x in allc)/len(allc):.0%}; > 120 s: {sum(x>120 for x in allc)/len(allc):.0%}; max/min {max(allc)/min(allc):.0f}×")
     fails = [r for r in r0 if r["status"] != "PASS"]
     if fails:
         print(f"\n### Failures ({len(fails)})\n\n| hlo_id | status | code | wall s | RSS GB | log tail |\n|---|---|---|---|---|---|")
@@ -100,6 +111,11 @@ def main():
         m = man.get(r["hlo_id"], {})
         if r["status"] == "PASS" and m.get("module_is_new"): prog_wall[m["prog_id"]].append(r["wall_s"])
     pw = {k: max(v) for k, v in prog_wall.items()}   # step graph = the largest new module of the program
+    n_bench = len(pw)
+    for m in man.values():   # programs without bench rows yet: use the capture-time compile of the step graph
+        c = (m.get("capture") or {}).get("wrapper_compile_time_s") or []
+        if m.get("module_is_new") and c and m["prog_id"] not in pw: pw[m["prog_id"]] = max(c)
+    print(f"(compile times: {n_bench} programs from the bench, {len(pw)-n_bench} from capture-time framework compiles)\n")
     pairs = []
     for hid, m in man.items():
         if m.get("source") == "mutation" and m.get("parent") in pw and m["prog_id"] in pw:

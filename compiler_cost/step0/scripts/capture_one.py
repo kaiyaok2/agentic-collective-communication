@@ -5,6 +5,7 @@ first-step wall, steady-step wall, XLA ExecuteTime samples and the HLO text of t
 Usage: capture_one.py <spec.json> <outdir>   (env NEURON_CC_FLAGS must already point --cache_dir at <outdir>/cache)
 """
 import json, os, sys, time, glob, traceback
+os.environ.setdefault("NEURON_RT_VISIBLE_CORES", "0")   # one core per capture driver; the second driver sets 1
 
 def main():
     spec = json.load(open(sys.argv[1])); outdir = sys.argv[2]; os.makedirs(outdir, exist_ok=True)
@@ -38,6 +39,8 @@ def main():
     except Exception as e:
         meta["error"] = f"{type(e).__name__}: {str(e)[:600]}"; meta["traceback"] = traceback.format_exc()[-2000:]
     meta["wall_s"] = round(time.time() - meta["t0"], 2)
+    if os.environ.get("RANK", "0") != "0":   # torchrun: only rank 0 writes the meta (concurrent writers corrupted the file)
+        print(f"[capture_one] rank {os.environ.get('RANK')} done ok={meta['ok']}", flush=True); return
     json.dump(meta, open(os.path.join(outdir, "meta.json"), "w"), indent=1)
     print(f"[capture_one] {spec['id']} ok={meta['ok']} modules={len(meta.get('modules', []))} first={meta.get('first_step_wall_s')} err={meta.get('error', '')[:120]}", flush=True)
 

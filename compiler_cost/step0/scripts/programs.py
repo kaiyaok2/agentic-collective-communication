@@ -191,7 +191,7 @@ def b_synth_random_dag(p, dev):
 
 def b_hf(p, dev):
     import transformers
-    arch = p["arch"]; dt = _dtype(p.get("dtype", "fp32")); B, T = p["batch"], p["seq"]
+    arch = p["arch"]; dt = _dtype(p.get("dtype", "fp32")); B, T = p["batch"], p.get("seq", 64)
     if arch == "gpt2":
         cfg = transformers.GPT2Config(n_layer=p["layers"], n_embd=p["hidden"], n_head=p["heads"], n_positions=max(T, 64), vocab_size=p.get("vocab", 50257), use_cache=False)
         m = transformers.GPT2LMHeadModel(cfg); lm = True
@@ -204,7 +204,7 @@ def b_hf(p, dev):
         m = transformers.BertForMaskedLM(cfg); lm = True
     elif arch == "t5":
         cfg = transformers.T5Config(num_layers=p["layers"], num_decoder_layers=p["layers"], d_model=p["hidden"], num_heads=p["heads"], d_ff=4 * p["hidden"], d_kv=p["hidden"] // p["heads"], vocab_size=p.get("vocab", 32128), use_cache=False)
-        m = transformers.T5ForConditionalGeneration(cfg); lm = "t5"
+        cfg.decoder_start_token_id = 0; m = transformers.T5ForConditionalGeneration(cfg); lm = "t5"
     elif arch == "vit":
         cfg = transformers.ViTConfig(num_hidden_layers=p["layers"], hidden_size=p["hidden"], num_attention_heads=p["heads"], intermediate_size=4 * p["hidden"], image_size=p.get("img", 224), patch_size=16, num_labels=1000)
         m = transformers.ViTForImageClassification(cfg); lm = False
@@ -236,8 +236,8 @@ def b_hf(p, dev):
 
 def b_collective(p, dev):
     """ws>1 programs (run under torchrun): all_reduce / all_gather / reduce_scatter chains"""
-    import torch_xla.core.xla_model as xm
-    ws = xm.xla_world_size(); n = p["numel"]; k = p["kind"]; cnt = p.get("count", 1)
+    import torch_xla.core.xla_model as xm, torch_xla.runtime as xr
+    ws = xr.world_size(); n = p["numel"]; k = p["kind"]; cnt = p.get("count", 1)
     xs = [torch.randn(n, device=dev) for _ in range(cnt)]
     def step():
         outs = []

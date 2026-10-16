@@ -11,10 +11,17 @@ def main():
     ap.add_argument("--max-total", type=int, default=0)
     a = ap.parse_args(); rng = random.Random(a.seed)
     wall = {}
-    for l in open(a.bench):
-        r = json.loads(l)
-        if r.get("status") == "PASS" and r.get("repeat") == 0: wall[r["hlo_id"]] = r["wall_s"]
+    import os
+    if os.path.exists(a.bench):
+        for l in open(a.bench):
+            r = json.loads(l)
+            if r.get("status") == "PASS" and r.get("repeat") == 0: wall[r["hlo_id"]] = r["wall_s"]
     rows = [json.loads(l) for l in open(a.manifest) if l.strip()]
+    if not wall:   # no bench yet: use the framework-wrapper compile time recorded at capture (step graphs only)
+        for r in rows:
+            c = (r.get("capture") or {}).get("wrapper_compile_time_s") or []
+            if r.get("module_is_new") and c: wall[r["hlo_id"]] = max(c)
+        print(f"[subset] using capture-time compile times for {len(wall)} modules")
     byfam = collections.defaultdict(list)
     for r in rows:
         w = wall.get(r["hlo_id"])
