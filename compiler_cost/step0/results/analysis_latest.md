@@ -1,6 +1,6 @@
 # Step 0 — compile-cost premise check
 
-manifest modules: 529; bench rows: default 90, cold 24, flags 49, versions 38
+manifest modules: 529; bench rows: default 90, cold 24, flags 49, versions 48
 
 ## 1. Compile cost by family (default flags, installed compiler, repeat 0)
 
@@ -62,7 +62,7 @@ All step graphs n=214: median 11.9 s, p90 140.2, max 308.1; > 60 s: 28%; > 120 s
 
 | arm | n | PASS | FAIL/TIMEOUT/OOM | wall ratio to default: median | p10 | p90 | max | RSS ratio median | NEFF ratio median | status changes |
 |---|---|---|---|---|---|---|---|---|---|---|
-| cc2.19.8089.0 | 14 | 14 | 0/0/0 | 0.945 | 0.805 | 1.061 | 10.90 | 0.953 | 0.862 | 0 |
+| cc2.19.8089.0 | 24 | 24 | 0/0/0 | 0.958 | 0.815 | 1.157 | 10.90 | 0.954 | 0.879 | 0 |
 | cc2.24.8799.0 | 24 | 24 | 0/0/0 | 0.643 | 0.292 | 0.872 | 29.48 | 1.028 | 1.000 | 0 |
 
 ### 3c. Per-module arms that change compile time by more than 1.5× (either direction)

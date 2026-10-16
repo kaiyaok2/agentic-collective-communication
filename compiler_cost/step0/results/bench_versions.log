@@ -39,3 +39,15 @@
 [bench] mut__synth_conv__ch128_layers8_img64_batch8_train1 default      cc2.19.8089.0 r0 PASS    wall=  147.15s rss=  3.63GB neff=   2.24MB 
 [bench] synth_elementwise__n_ops8_numel100000_seed0__M2539 default      cc2.19.8089.0 r0 PASS    wall=    2.47s rss=  0.24GB neff=   0.11MB 
 [bench] synth_elementwise__n_ops8_numel10000000_seed1__M71 default      cc2.19.8089.0 r0 PASS    wall=    2.63s rss=  0.24GB neff=   0.12MB 
+[bench] synth_elementwise__n_ops512_numel100000_seed1__M50 default      cc2.19.8089.0 r0 PASS    wall=  100.95s rss=  2.83GB neff=   6.48MB 
+[bench] synth_gather__kindindex_add_vocab1024_dim256_n_idx default      cc2.19.8089.0 r0 PASS    wall=    1.98s rss=  0.23GB neff=   0.01MB 
+[bench] synth_gather__kindindex_add_vocab1024_dim256_n_idx default      cc2.19.8089.0 r0 PASS    wall=    2.00s rss=  0.23GB neff=   0.02MB 
+[bench] synth_gather__kindgather_vocab1024_dim256_n_idx819 default      cc2.19.8089.0 r0 PASS    wall=  144.38s rss= 10.60GB neff=   8.53MB 
+[bench] synth_many_small__n_mats16_mat64_modedistinct_shap default      cc2.19.8089.0 r0 PASS    wall=    2.61s rss=  0.23GB neff=   0.04MB 
+[bench] synth_many_small__n_mats128_mat64_modebatched__M04 default      cc2.19.8089.0 r0 PASS    wall=    7.49s rss=  0.26GB neff=   0.06MB 
+[bench] synth_many_small__n_mats1024_mat64_modeunrolled__M default      cc2.19.8089.0 r0 PASS    wall=  205.14s rss=  0.60GB neff=   0.40MB 
+[bench] synth_mlp__d512_hidden256_depth1_batch64_actgelu_t default      cc2.19.8089.0 r0 PASS    wall=    2.34s rss=  0.23GB neff=   0.04MB 
+[bench] mut__synth_mlp__d512_hidden2048_depth4_batch1024_a default      cc2.19.8089.0 r0 PASS    wall=    5.91s rss=  0.26GB neff=   0.34MB 
+[bench] synth_mlp__d512_hidden2048_depth16_batch1024_actge default      cc2.19.8089.0 r0 PASS    wall=   18.69s rss=  0.48GB neff=   1.30MB 
+[bench] wrote 24 rows to /home/ubuntu/results/bench_versions.jsonl
+[bench] cc=/home/ubuntu/venv_cc_2.22.12471.0/bin/neuronx-cc ver=2.22.12471.0+b4a00d10 tag=cc2.22.12471.0 rows=24 flagsets=default repeats=1 cold=False done=48
