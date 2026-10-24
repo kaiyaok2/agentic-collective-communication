@@ -1,0 +1,329 @@
+/Users/kekaiyao/work/ncc_repo/compiler_cost/step2/baselines.py:86: ConstantInputWarning: An input array is constant; the correlation coefficient is not defined.
+  if len(sa) >= 4: series.append(dict(series=f"{str(par)[:38]}|{key}|{'step' if _st else 'init'}", n=len(pos), swing=round(10 ** (y[pos].max() - y[pos].min()), 1), spearman_steps=round(float(spearmanr(sa, sp).correlation), 2), dir_acc=round(float(np.mean(np.sign(sa) == np.sign(sp))), 2)))
+/Users/kekaiyao/work/ncc_repo/compiler_cost/step2/baselines.py:86: ConstantInputWarning: An input array is constant; the correlation coefficient is not defined.
+  if len(sa) >= 4: series.append(dict(series=f"{str(par)[:38]}|{key}|{'step' if _st else 'init'}", n=len(pos), swing=round(10 ** (y[pos].max() - y[pos].min()), 1), spearman_steps=round(float(spearmanr(sa, sp).correlation), 2), dir_acc=round(float(np.mean(np.sign(sa) == np.sign(sp))), 2)))
+/Users/kekaiyao/work/ncc_repo/compiler_cost/step2/baselines.py:86: ConstantInputWarning: An input array is constant; the correlation coefficient is not defined.
+  if len(sa) >= 4: series.append(dict(series=f"{str(par)[:38]}|{key}|{'step' if _st else 'init'}", n=len(pos), swing=round(10 ** (y[pos].max() - y[pos].min()), 1), spearman_steps=round(float(spearmanr(sa, sp).correlation), 2), dir_acc=round(float(np.mean(np.sign(sa) == np.sign(sp))), 2)))
+/Users/kekaiyao/work/ncc_repo/compiler_cost/step2/baselines.py:86: ConstantInputWarning: An input array is constant; the correlation coefficient is not defined.
+  if len(sa) >= 4: series.append(dict(series=f"{str(par)[:38]}|{key}|{'step' if _st else 'init'}", n=len(pos), swing=round(10 ** (y[pos].max() - y[pos].min()), 1), spearman_steps=round(float(spearmanr(sa, sp).correlation), 2), dir_acc=round(float(np.mean(np.sign(sa) == np.sign(sp))), 2)))
+/Users/kekaiyao/work/ncc_repo/compiler_cost/step2/baselines.py:86: ConstantInputWarning: An input array is constant; the correlation coefficient is not defined.
+  if len(sa) >= 4: series.append(dict(series=f"{str(par)[:38]}|{key}|{'step' if _st else 'init'}", n=len(pos), swing=round(10 ** (y[pos].max() - y[pos].min()), 1), spearman_steps=round(float(spearmanr(sa, sp).correlation), 2), dir_acc=round(float(np.mean(np.sign(sa) == np.sign(sp))), 2)))
+/Users/kekaiyao/work/ncc_repo/compiler_cost/step2/baselines.py:86: ConstantInputWarning: An input array is constant; the correlation coefficient is not defined.
+  if len(sa) >= 4: series.append(dict(series=f"{str(par)[:38]}|{key}|{'step' if _st else 'init'}", n=len(pos), swing=round(10 ** (y[pos].max() - y[pos].min()), 1), spearman_steps=round(float(spearmanr(sa, sp).correlation), 2), dir_acc=round(float(np.mean(np.sign(sa) == np.sign(sp))), 2)))
+/Users/kekaiyao/work/ncc_repo/compiler_cost/step2/baselines.py:86: ConstantInputWarning: An input array is constant; the correlation coefficient is not defined.
+  if len(sa) >= 4: series.append(dict(series=f"{str(par)[:38]}|{key}|{'step' if _st else 'init'}", n=len(pos), swing=round(10 ** (y[pos].max() - y[pos].min()), 1), spearman_steps=round(float(spearmanr(sa, sp).correlation), 2), dir_acc=round(float(np.mean(np.sign(sa) == np.sign(sp))), 2)))
+
+## Target: log10 compile wall — bench (731 modules; sources {'collective_workload': 94, 'collective': 223, 'real': 58, 'mutation': 126, 'synth': 230}; y from {'bench': 731})
+
+wall seconds: median 2.5, p90 52.8, max 983; families 18
+
+| features | model | split | n | R² | median APE | p90 APE | within 2× | Spearman |
+|---|---|---|---|---|---|---|---|---|
+| instructions-only | powerlaw | random | 731 | 0.637 | 0.531 | 1.09 | 0.718 | 0.866 |
+| instructions-only | powerlaw | family | 731 | 0.512 | 0.665 | 1.18 | 0.553 | 0.863 |
+| instructions-only | powerlaw | source | 731 | 0.473 | 0.69 | 1.25 | 0.509 | 0.864 |
+| instructions-only | powerlaw | sweep | 0 | nan | nan | nan | nan | nan |
+| cheap4 | ridge | random | 731 | 0.735 | 0.311 | 1.0 | 0.817 | 0.88 |
+| cheap4 | ridge | family | 731 | 0.646 | 0.481 | 1.16 | 0.65 | 0.878 |
+| cheap4 | ridge | source | 731 | 0.62 | 0.472 | 1.23 | 0.625 | 0.882 |
+| cheap4 | ridge | sweep | 0 | nan | nan | nan | nan | nan |
+| cheap4 | gbdt | random | 731 | 0.907 | 0.035 | 0.34 | 0.959 | 0.931 |
+| cheap4 | gbdt | family | 731 | 0.728 | 0.114 | 0.88 | 0.87 | 0.851 |
+| cheap4 | gbdt | source | 731 | 0.78 | 0.081 | 0.73 | 0.891 | 0.888 |
+| cheap4 | gbdt | sweep | 0 | nan | nan | nan | nan | nan |
+| step0-35 | ridge | random | 731 | 0.804 | 0.204 | 0.72 | 0.895 | 0.842 |
+| step0-35 | ridge | family | 731 | 0.203 | 0.397 | 1.0 | 0.726 | 0.714 |
+| step0-35 | ridge | source | 731 | 0.494 | 0.32 | 0.97 | 0.815 | 0.705 |
+| step0-35 | ridge | sweep | 0 | nan | nan | nan | nan | nan |
+| step0-35 | gbdt | random | 731 | 0.948 | 0.023 | 0.3 | 0.97 | 0.943 |
+| step0-35 | gbdt | family | 731 | 0.776 | 0.107 | 0.74 | 0.899 | 0.876 |
+| step0-35 | gbdt | source | 731 | 0.754 | 0.085 | 0.9 | 0.877 | 0.894 |
+| step0-35 | gbdt | sweep | 0 | nan | nan | nan | nan | nan |
+| full | ridge | random | 731 | 0.848 | 0.175 | 0.67 | 0.914 | 0.843 |
+| full | ridge | family | 731 | 0.339 | 0.381 | 0.99 | 0.695 | 0.732 |
+| full | ridge | source | 731 | 0.516 | 0.301 | 0.98 | 0.767 | 0.741 |
+| full | ridge | sweep | 0 | nan | nan | nan | nan | nan |
+| full | gbdt | random | 731 | 0.947 | 0.019 | 0.26 | 0.959 | 0.944 |
+| full | gbdt | family | 731 | 0.8 | 0.164 | 0.61 | 0.911 | 0.848 |
+| full | gbdt | source | 731 | 0.785 | 0.122 | 0.86 | 0.882 | 0.838 |
+| full | gbdt | sweep | 0 | nan | nan | nan | nan | nan |
+
+### Sweep-series direction accuracy (train on non-sweep programs, predict along each one-dimensional sweep)
+
+| features | model | pairs (>20% change) | direction acc | Spearman of log-ratios |
+|---|---|---|---|---|
+| instructions-only | powerlaw | 0 | nan | nan |
+| cheap4 | ridge | 0 | nan | nan |
+| cheap4 | gbdt | 0 | nan | nan |
+| step0-35 | ridge | 0 | nan | nan |
+| step0-35 | gbdt | 0 | nan | nan |
+| full | ridge | 0 | nan | nan |
+| full | gbdt | 0 | nan | nan |
+
+### Leave-one-family-out, full features + GBDT: per held-out family (worst first)
+
+|   n |     R2 |   medAPE |   p90APE |   within2x |   spearman | group              |
+|----:|-------:|---------:|---------:|-----------:|-----------:|:-------------------|
+|  10 |  0.327 |    0.99  |     1.54 |      0.5   |      0.88  | acc_dxe            |
+|  12 | -5.696 |    0.961 |     2.11 |      0.5   |      0.655 | synth_reduce       |
+|  16 | -8.661 |    0.449 |     5.7  |      0.75  |      0.671 | acc_fsdp_prefetch  |
+|  16 |  0.602 |    0.352 |     0.76 |      0.75  |      0.731 | synth_elementwise  |
+|  38 |  0.524 |    0.337 |     0.93 |      0.816 |      0.913 | synth_many_small   |
+|  26 |  0.405 |    0.309 |     0.9  |      0.577 |      0.864 | synth_conv         |
+|  63 |  0.938 |    0.293 |     0.79 |      0.905 |      0.98  | synth_attn         |
+| 109 |  0.964 |    0.194 |     0.54 |      0.963 |      0.872 | hf                 |
+|  10 |  0.514 |    0.18  |     0.3  |      1     |      0.362 | acc_pp_send_recv   |
+|  44 |  0.195 |    0.175 |     0.51 |      0.932 |      0.573 | synth_gather       |
+|  10 |  0.048 |    0.159 |     0.61 |      0.7   |      0.425 | acc_tp_mlp         |
+|  10 |  0.388 |    0.141 |     0.61 |      1     |      0.951 | acc_llama_block_ar |
+|  28 |  0.903 |    0.135 |     0.68 |      0.929 |      0.926 | acc_uniform_a2a    |
+|  35 |  0.561 |    0.113 |     0.57 |      0.914 |      0.444 | collective         |
+
+## Target: log10 peak RSS (GB) — bench (731 modules)
+
+| features | model | split | n | R² | median APE | p90 APE | within 2× | Spearman |
+|---|---|---|---|---|---|---|---|---|
+| cheap4 | ridge | random | 731 | 0.421 | 0.203 | 0.84 | 0.893 | 0.917 |
+| cheap4 | ridge | family | 731 | 0.29 | 0.32 | 0.93 | 0.843 | 0.921 |
+| cheap4 | gbdt | random | 731 | 0.812 | 0.007 | 0.27 | 0.959 | 0.914 |
+| cheap4 | gbdt | family | 731 | 0.464 | 0.047 | 0.76 | 0.882 | 0.689 |
+| full | ridge | random | 731 | 0.644 | 0.125 | 0.62 | 0.937 | 0.735 |
+| full | ridge | family | 731 | -1.547 | 0.318 | 0.98 | 0.789 | 0.576 |
+| full | gbdt | random | 731 | 0.929 | 0.004 | 0.17 | 0.985 | 0.95 |
+| full | gbdt | family | 731 | 0.595 | 0.031 | 0.7 | 0.903 | 0.775 |
+
+## Target: log10 compile wall — combined (2014 modules; sources {'collective_workload': 94, 'collective': 320, 'real': 152, 'mutation': 126, 'sweep': 682, 'synth': 640}; y from {'bench': 731, 'capture': 1283})
+
+wall seconds: median 7.0, p90 137.8, max 2198; families 34
+
+| features | model | split | n | R² | median APE | p90 APE | within 2× | Spearman |
+|---|---|---|---|---|---|---|---|---|
+| instructions-only | powerlaw | random | 2014 | 0.324 | 0.861 | 2.91 | 0.376 | 0.627 |
+| instructions-only | powerlaw | family | 2014 | 0.278 | 0.898 | 3.2 | 0.352 | 0.592 |
+| instructions-only | powerlaw | source | 2014 | 0.21 | 0.896 | 3.41 | 0.355 | 0.516 |
+| instructions-only | powerlaw | sweep | 682 | -0.612 | 0.815 | 1.06 | 0.375 | 0.176 |
+| cheap4 | ridge | random | 2014 | 0.336 | 0.862 | 3.18 | 0.384 | 0.634 |
+| cheap4 | ridge | family | 2014 | 0.249 | 0.884 | 3.68 | 0.386 | 0.583 |
+| cheap4 | ridge | source | 2014 | 0.159 | 0.912 | 4.2 | 0.359 | 0.512 |
+| cheap4 | ridge | sweep | 682 | -0.727 | 0.842 | 1.49 | 0.345 | 0.227 |
+| cheap4 | gbdt | random | 2014 | 0.66 | 0.233 | 1.7 | 0.714 | 0.837 |
+| cheap4 | gbdt | family | 2014 | 0.209 | 0.522 | 3.05 | 0.562 | 0.609 |
+| cheap4 | gbdt | source | 2014 | 0.011 | 0.578 | 4.9 | 0.518 | 0.487 |
+| cheap4 | gbdt | sweep | 682 | -0.868 | 0.645 | 0.99 | 0.427 | 0.329 |
+| step0-35 | ridge | random | 2014 | 0.51 | 0.579 | 3.4 | 0.542 | 0.751 |
+| step0-35 | ridge | family | 2014 | 0.357 | 0.624 | 3.82 | 0.474 | 0.656 |
+| step0-35 | ridge | source | 2014 | 0.167 | 0.761 | 7.13 | 0.437 | 0.545 |
+| step0-35 | ridge | sweep | 682 | -0.33 | 0.675 | 0.99 | 0.471 | 0.427 |
+| step0-35 | gbdt | random | 2014 | 0.701 | 0.174 | 1.21 | 0.768 | 0.861 |
+| step0-35 | gbdt | family | 2014 | 0.416 | 0.505 | 2.32 | 0.593 | 0.692 |
+| step0-35 | gbdt | source | 2014 | -0.013 | 0.585 | 6.05 | 0.525 | 0.475 |
+| step0-35 | gbdt | sweep | 682 | -0.824 | 0.601 | 0.99 | 0.472 | 0.37 |
+| full | ridge | random | 2014 | 0.594 | 0.494 | 2.74 | 0.589 | 0.796 |
+| full | ridge | family | 2014 | 0.169 | 0.741 | 4.85 | 0.432 | 0.664 |
+| full | ridge | source | 2014 | 0.032 | 0.807 | 6.11 | 0.383 | 0.506 |
+| full | ridge | sweep | 682 | -0.28 | 0.686 | 0.98 | 0.425 | 0.509 |
+| full | gbdt | random | 2014 | 0.704 | 0.162 | 1.04 | 0.786 | 0.862 |
+| full | gbdt | family | 2014 | 0.416 | 0.474 | 2.32 | 0.61 | 0.706 |
+| full | gbdt | source | 2014 | 0.05 | 0.482 | 5.53 | 0.552 | 0.52 |
+| full | gbdt | sweep | 682 | -0.797 | 0.549 | 0.99 | 0.497 | 0.345 |
+
+### Sweep-series direction accuracy (train on non-sweep programs, predict along each one-dimensional sweep)
+
+| features | model | pairs (>20% change) | direction acc | Spearman of log-ratios |
+|---|---|---|---|---|
+| instructions-only | powerlaw | 306 | 0.141 | 0.19 |
+| cheap4 | ridge | 306 | 0.703 | 0.227 |
+| cheap4 | gbdt | 306 | 0.448 | 0.135 |
+| step0-35 | ridge | 306 | 0.65 | 0.14 |
+| step0-35 | gbdt | 306 | 0.539 | 0.225 |
+| full | ridge | 306 | 0.673 | 0.395 |
+| full | gbdt | 306 | 0.605 | 0.353 |
+
+Per sweep series (full + GBDT): max/min compile-time swing along the series, Spearman of consecutive log-ratios, direction accuracy
+
+| series                                             |   n |   swing |   spearman_steps |   dir_acc |
+|:---------------------------------------------------|----:|--------:|-----------------:|----------:|
+| synth_elementwise__n_ops8_numel1000000|n_ops|init  |  10 |   276   |           nan    |      0    |
+| synth_elementwise__n_ops8_numel1000000|n_ops|step  |  10 |   276   |             0.35 |      0.78 |
+| synth_many_small__n_mats128_mat64_mode|n_mats|step |  11 |    98.7 |             0.52 |      0.7  |
+| synth_many_small__n_mats128_mat64_mode|n_mats|init |  11 |    98.7 |             0.71 |      0.7  |
+| synth_gather__kindgather_vocab1024_dim|n_idx|step  |   9 |    77.4 |             0.67 |      0.62 |
+| synth_gather__kindgather_vocab1024_dim|n_idx|init  |   9 |    77.4 |            -0.29 |      0.25 |
+| synth_gather__kindgather_vocab1024_dim|dim|step    |   8 |    55.6 |             0.11 |      0.71 |
+| synth_gather__kindgather_vocab1024_dim|dim|init    |   8 |    55.6 |             0.61 |      0.57 |
+| synth_elementwise__n_ops8_numel1000000|numel|init  |  14 |    32.9 |             0.34 |      0.62 |
+| synth_elementwise__n_ops8_numel1000000|numel|step  |  14 |    32.9 |             0.85 |      0.92 |
+| synth_attn__dim1024_heads8_layers2_seq|batch|step  |  14 |    25   |             0.2  |      0.69 |
+| synth_attn__dim1024_heads8_layers2_seq|batch|init  |  14 |    25   |            -0.67 |      0.54 |
+| synth_conv__ch128_layers8_img64_batch8|batch|init  |  14 |    22.6 |             0.42 |      0.38 |
+| synth_conv__ch128_layers8_img64_batch8|batch|step  |  14 |    22.6 |            -0.03 |      0.69 |
+| synth_conv__ch128_layers8_img64_batch8|img|step    |  12 |    21.5 |             0.37 |      0.73 |
+| synth_conv__ch128_layers8_img64_batch8|img|init    |  12 |    21.5 |             0.05 |      0.45 |
+| synth_attn__dim1024_heads8_layers2_seq|seq|step    |  25 |    16.9 |             0.65 |      0.75 |
+| synth_attn__dim1024_heads8_layers2_seq|seq|init    |  25 |    16.9 |             0.83 |      0.88 |
+| synth_attn__dim1024_heads8_layers2_seq|layers|step |   7 |    16.4 |             0.89 |      1    |
+| synth_attn__dim1024_heads8_layers2_seq|layers|init |   7 |    16.4 |           nan    |      0    |
+| synth_mlp__d512_hidden2048_depth4_batc|depth|init  |  10 |    13.9 |           nan    |      0    |
+| synth_mlp__d512_hidden2048_depth4_batc|depth|step  |  10 |    13.9 |             0.6  |      0.89 |
+| hf__archgpt2_layers2_hidden768_heads12|batch|step  |   9 |    13.8 |            -0.4  |      1    |
+| hf__archgpt2_layers2_hidden768_heads12|batch|init  |   9 |    13.8 |             0.43 |      0.5  |
+| hf__archllama_layers2_hidden1024_heads|seq|step    |   8 |     9.7 |             0.86 |      1    |
+| hf__archllama_layers2_hidden1024_heads|seq|init    |   8 |     9.7 |             0    |      0.57 |
+| synth_attn__dim1024_heads8_layers2_seq|heads|step  |   8 |     9.5 |             0    |      0.86 |
+| synth_attn__dim1024_heads8_layers2_seq|heads|init  |   8 |     9.5 |           nan    |      0    |
+| synth_attn__dim1024_heads8_layers2_seq|dim|step    |  10 |     9   |            -0.15 |      0.67 |
+| synth_attn__dim1024_heads8_layers2_seq|dim|init    |  10 |     9   |            -0.07 |      0.78 |
+| synth_conv__ch128_layers8_img64_batch8|ch|init     |  19 |     8.9 |           nan    |      0    |
+| synth_conv__ch128_layers8_img64_batch8|ch|step     |  19 |     8.9 |             0.08 |      0.61 |
+| hf__archgpt2_layers2_hidden768_heads12|layers|init |   8 |     6.5 |           nan    |      0    |
+| hf__archgpt2_layers2_hidden768_heads12|layers|step |   8 |     6.5 |             0.61 |      0.86 |
+| hf__archllama_layers2_hidden1024_heads|batch|step  |   6 |     4.7 |             0.7  |      0.8  |
+| hf__archllama_layers2_hidden1024_heads|batch|init  |   6 |     4.7 |             0    |      0.4  |
+| synth_mlp__d512_hidden2048_depth4_batc|hidden|init |  21 |     4.2 |           nan    |      0    |
+| synth_mlp__d512_hidden2048_depth4_batc|hidden|step |  21 |     4.2 |             0.46 |      0.65 |
+| hf__archgpt2_layers2_hidden768_heads12|vocab|init  |   9 |     3.9 |           nan    |      0    |
+| hf__archgpt2_layers2_hidden768_heads12|vocab|step  |   9 |     3.9 |             0.48 |      1    |
+| synth_many_small__n_mats128_mat64_mode|mat|init    |  16 |     3.3 |             0.29 |      0.67 |
+| synth_many_small__n_mats128_mat64_mode|mat|step    |  16 |     3.3 |             0.77 |      0.87 |
+| hf__archgpt2_layers2_hidden768_heads12|seq|step    |  14 |     2.9 |             0.86 |      0.92 |
+| hf__archgpt2_layers2_hidden768_heads12|seq|init    |  14 |     2.9 |            -0.29 |      0.54 |
+| synth_mlp__d512_hidden2048_depth4_batc|batch|init  |  28 |     1.9 |             0.2  |      0.59 |
+| synth_mlp__d512_hidden2048_depth4_batc|batch|step  |  28 |     1.9 |             0.07 |      0.52 |
+| synth_gather__kindindex_select_vocab10|vocab|init  |   6 |     1.7 |            -0.1  |      0.6  |
+| synth_gather__kindindex_select_vocab10|vocab|step  |   6 |     1.7 |             0.3  |      0.4  |
+| synth_mlp__d512_hidden2048_depth4_batc|d|init      |  20 |     1.7 |             0.47 |      0.63 |
+| synth_mlp__d512_hidden2048_depth4_batc|d|step      |  20 |     1.7 |             0.71 |      0.74 |
+| hf__archgpt2_layers2_hidden768_heads12|hidden|step |   9 |     1.5 |             0.86 |      1    |
+| hf__archgpt2_layers2_hidden768_heads12|hidden|init |   9 |     1.5 |           nan    |      0    |
+| hf__archllama_layers2_hidden1024_heads|inter|init  |   8 |     1.3 |           nan    |      0    |
+| hf__archllama_layers2_hidden1024_heads|inter|step  |   8 |     1.3 |             0.71 |      0.86 |/Users/kekaiyao/work/ncc_repo/compiler_cost/step2/baselines.py:86: ConstantInputWarning: An input array is constant; the correlation coefficient is not defined.
+  if len(sa) >= 4: series.append(dict(series=f"{str(par)[:38]}|{key}|{'step' if _st else 'init'}", n=len(pos), swing=round(10 ** (y[pos].max() - y[pos].min()), 1), spearman_steps=round(float(spearmanr(sa, sp).correlation), 2), dir_acc=round(float(np.mean(np.sign(sa) == np.sign(sp))), 2)))
+
+
+### Leave-one-family-out, full features + GBDT: per held-out family (worst first)
+
+|   n |       R2 |   medAPE |   p90APE |   within2x |   spearman | group             |
+|----:|---------:|---------:|---------:|-----------:|-----------:|:------------------|
+|  48 |  -88.049 |    2.502 |    16.5  |      0.438 |      0.076 | synth_einsum      |
+|  36 | -114.117 |    1.895 |    53.65 |      0.417 |     -0.132 | synth_slice       |
+|  24 |   -0.459 |    1.031 |     3.6  |      0.167 |      0.557 | synth_sort        |
+|  40 |   -0.163 |    0.929 |     1.98 |      0.275 |      0.221 | synth_conv2       |
+|  98 |    0.067 |    0.9   |     1.82 |      0.357 |      0.468 | synth_gather      |
+|  20 |   -0.382 |    0.89  |     1.54 |      0.45  |      0.166 | synth_layout      |
+|  64 |    0.371 |    0.867 |     1.41 |      0.359 |      0.565 | synth_elementwise |
+|   6 |   -0.737 |    0.841 |     1.22 |      0.167 |      0.478 | gnn               |
+|  14 |   -1.341 |    0.783 |     1.11 |      0.357 |      0.305 | tv                |
+|  48 |   -0.084 |    0.751 |     1.76 |      0.542 |      0.487 | synth_logits      |
+| 116 |   -0.103 |    0.743 |     7.43 |      0.276 |      0.341 | synth_conv        |
+|  92 |    0.05  |    0.675 |     5.44 |      0.37  |      0.608 | synth_many_small  |
+|  60 |   -0.788 |    0.659 |     5.47 |      0.517 |      0.466 | synth_norm        |
+| 191 |   -0.338 |    0.655 |     0.98 |      0.602 |      0.459 | synth_attn        |
+
+## Target: log10 compile wall — combined-step (1192 modules; sources {'collective_workload': 94, 'collective': 295, 'real': 78, 'mutation': 64, 'sweep': 341, 'synth': 320}; y from {'bench': 502, 'capture': 690})
+
+wall seconds: median 6.2, p90 125.7, max 2198; families 34
+
+| features | model | split | n | R² | median APE | p90 APE | within 2× | Spearman |
+|---|---|---|---|---|---|---|---|---|
+| instructions-only | powerlaw | random | 1192 | 0.655 | 0.578 | 1.83 | 0.57 | 0.862 |
+| instructions-only | powerlaw | family | 1192 | 0.636 | 0.588 | 1.88 | 0.56 | 0.861 |
+| instructions-only | powerlaw | source | 1192 | 0.631 | 0.563 | 1.75 | 0.575 | 0.856 |
+| instructions-only | powerlaw | sweep | 341 | 0.328 | 0.621 | 1.14 | 0.513 | 0.673 |
+| cheap4 | ridge | random | 1192 | 0.696 | 0.547 | 1.72 | 0.607 | 0.892 |
+| cheap4 | ridge | family | 1192 | 0.624 | 0.62 | 2.13 | 0.528 | 0.878 |
+| cheap4 | ridge | source | 1192 | 0.64 | 0.584 | 1.72 | 0.536 | 0.882 |
+| cheap4 | ridge | sweep | 341 | 0.385 | 0.622 | 1.42 | 0.493 | 0.69 |
+| cheap4 | gbdt | random | 1192 | 0.856 | 0.105 | 0.72 | 0.891 | 0.93 |
+| cheap4 | gbdt | family | 1192 | 0.7 | 0.262 | 1.33 | 0.739 | 0.856 |
+| cheap4 | gbdt | source | 1192 | 0.699 | 0.206 | 1.36 | 0.787 | 0.872 |
+| cheap4 | gbdt | sweep | 341 | 0.777 | 0.226 | 0.8 | 0.806 | 0.9 |
+| step0-35 | ridge | random | 1192 | 0.8 | 0.316 | 1.17 | 0.77 | 0.912 |
+| step0-35 | ridge | family | 1192 | 0.615 | 0.576 | 1.76 | 0.508 | 0.866 |
+| step0-35 | ridge | source | 1192 | 0.664 | 0.501 | 1.5 | 0.617 | 0.889 |
+| step0-35 | ridge | sweep | 341 | 0.66 | 0.324 | 0.88 | 0.739 | 0.833 |
+| step0-35 | gbdt | random | 1192 | 0.904 | 0.08 | 0.52 | 0.923 | 0.957 |
+| step0-35 | gbdt | family | 1192 | 0.764 | 0.274 | 1.0 | 0.784 | 0.885 |
+| step0-35 | gbdt | source | 1192 | 0.775 | 0.209 | 0.93 | 0.81 | 0.877 |
+| step0-35 | gbdt | sweep | 341 | 0.806 | 0.205 | 0.73 | 0.821 | 0.904 |
+| full | ridge | random | 1192 | 0.84 | 0.258 | 0.94 | 0.815 | 0.916 |
+| full | ridge | family | 1192 | 0.508 | 0.531 | 1.97 | 0.576 | 0.8 |
+| full | ridge | source | 1192 | 0.351 | 0.388 | 1.28 | 0.667 | 0.823 |
+| full | ridge | sweep | 341 | 0.732 | 0.271 | 0.84 | 0.78 | 0.888 |
+| full | gbdt | random | 1192 | 0.941 | 0.066 | 0.41 | 0.947 | 0.97 |
+| full | gbdt | family | 1192 | 0.795 | 0.178 | 0.87 | 0.825 | 0.919 |
+| full | gbdt | source | 1192 | 0.837 | 0.149 | 0.79 | 0.862 | 0.921 |
+| full | gbdt | sweep | 341 | 0.887 | 0.18 | 0.64 | 0.883 | 0.954 |
+
+### Sweep-series direction accuracy (train on non-sweep programs, predict along each one-dimensional sweep)
+
+| features | model | pairs (>20% change) | direction acc | Spearman of log-ratios |
+|---|---|---|---|---|
+| instructions-only | powerlaw | 153 | 0.229 | 0.26 |
+| cheap4 | ridge | 153 | 0.869 | 0.435 |
+| cheap4 | gbdt | 153 | 0.641 | 0.282 |
+| step0-35 | ridge | 153 | 0.791 | 0.293 |
+| step0-35 | gbdt | 153 | 0.732 | 0.368 |
+| full | ridge | 153 | 0.895 | 0.609 |
+| full | gbdt | 153 | 0.843 | 0.581 |
+
+Per sweep series (full + GBDT): max/min compile-time swing along the series, Spearman of consecutive log-ratios, direction accuracy
+
+| series                                             |   n |   swing |   spearman_steps |   dir_acc |
+|:---------------------------------------------------|----:|--------:|-----------------:|----------:|
+| synth_elementwise__n_ops8_numel1000000|n_ops|step  |  10 |   276   |             0.37 |      0.78 |
+| synth_many_small__n_mats128_mat64_mode|n_mats|step |  11 |    98.7 |             0.61 |      0.8  |
+| synth_gather__kindgather_vocab1024_dim|n_idx|step  |   9 |    77.4 |             0.67 |      0.75 |
+| synth_gather__kindgather_vocab1024_dim|dim|step    |   8 |    55.6 |             0.5  |      0.86 |
+| synth_elementwise__n_ops8_numel1000000|numel|step  |  14 |    32.9 |             0.84 |      0.92 |
+| synth_attn__dim1024_heads8_layers2_seq|batch|step  |  14 |    25   |             0.67 |      0.85 |
+| synth_conv__ch128_layers8_img64_batch8|batch|step  |  14 |    22.6 |            -0.04 |      0.77 |
+| synth_conv__ch128_layers8_img64_batch8|img|step    |  12 |    21.5 |            -0.05 |      0.82 |
+| synth_attn__dim1024_heads8_layers2_seq|seq|step    |  25 |    16.9 |             0.63 |      0.71 |
+| synth_attn__dim1024_heads8_layers2_seq|layers|step |   7 |    16.4 |             0.54 |      0.83 |
+| synth_mlp__d512_hidden2048_depth4_batc|depth|step  |  10 |    13.9 |             0.4  |      1    |
+| hf__archgpt2_layers2_hidden768_heads12|batch|step  |   9 |    13.8 |            -0.24 |      1    |
+| hf__archllama_layers2_hidden1024_heads|seq|step    |   8 |     9.7 |             0.89 |      1    |
+| synth_attn__dim1024_heads8_layers2_seq|heads|step  |   8 |     9.5 |             0    |      0.57 |
+| synth_attn__dim1024_heads8_layers2_seq|dim|step    |  10 |     9   |             0.17 |      0.78 |
+| synth_conv__ch128_layers8_img64_batch8|ch|step     |  19 |     8.9 |            -0    |      0.44 |
+| hf__archgpt2_layers2_hidden768_heads12|layers|step |   8 |     6.5 |             0.79 |      1    |
+| hf__archllama_layers2_hidden1024_heads|batch|step  |   6 |     4.7 |             0.6  |      1    |
+| synth_mlp__d512_hidden2048_depth4_batc|hidden|step |  21 |     4.2 |             0.64 |      0.65 |
+| hf__archgpt2_layers2_hidden768_heads12|vocab|step  |   9 |     3.9 |             0.02 |      0.75 |
+| synth_many_small__n_mats128_mat64_mode|mat|step    |  16 |     3.3 |             0.16 |      0.33 |
+| hf__archgpt2_layers2_hidden768_heads12|seq|step    |  14 |     2.9 |             0.71 |      0.77 |
+| synth_mlp__d512_hidden2048_depth4_batc|batch|step  |  28 |     1.9 |             0.01 |      0.52 |
+| synth_gather__kindindex_select_vocab10|vocab|step  |   6 |     1.7 |             0.3  |      0.6  |
+| synth_mlp__d512_hidden2048_depth4_batc|d|step      |  20 |     1.7 |             0.68 |      0.74 |
+| hf__archgpt2_layers2_hidden768_heads12|hidden|step |   9 |     1.5 |             0.69 |      1    |
+| hf__archllama_layers2_hidden1024_heads|inter|step  |   8 |     1.3 |             0.25 |      0.86 |
+
+### Leave-one-family-out, full features + GBDT: per held-out family (worst first)
+
+|   n |     R2 |   medAPE |   p90APE |   within2x |   spearman | group             |
+|----:|-------:|---------:|---------:|-----------:|-----------:|:------------------|
+|  58 | -1.01  |    0.681 |     0.89 |      0.19  |      0.408 | synth_conv        |
+|  12 |  0.132 |    0.627 |     1.63 |      0.583 |      0.643 | synth_sort        |
+|  20 | -0.309 |    0.562 |     0.99 |      0.5   |      0.334 | synth_conv2       |
+|   7 |  0.392 |    0.554 |     2.54 |      0.429 |      0.75  | tv                |
+|  32 |  0.772 |    0.508 |     1.53 |      0.5   |      0.84  | synth_elementwise |
+|  30 | -0.344 |    0.485 |     3.82 |      0.633 |      0.831 | synth_norm        |
+|  19 |  0.672 |    0.416 |     0.96 |      0.632 |      0.86  | synth_mask        |
+|  49 | -0.053 |    0.389 |     0.98 |      0.612 |      0.676 | synth_gather      |
+|  24 |  0.769 |    0.343 |     1.51 |      0.833 |      0.947 | synth_logits      |
+|  96 |  0.761 |    0.294 |     0.99 |      0.823 |      0.887 | synth_attn        |
+|  46 |  0.443 |    0.282 |     0.71 |      0.826 |      0.866 | synth_many_small  |
+|  18 | -2.222 |    0.281 |     0.52 |      1     |     -0.61  | synth_slice       |
+|  28 |  0.661 |    0.264 |     1.95 |      0.679 |      0.9   | acc_uniform_a2a   |
+|  32 | -0.027 |    0.248 |     1.1  |      0.688 |      0.69  | hf2               |
+
+## Compile-failure classifier (2301 modules, 73 failures; label = framework compile failed or bench FAIL/OOM/TIMEOUT)
+
+| features | split | AUC | PR-AUC | failures caught at 10% flag rate |
+|---|---|---|---|---|
+| cheap4 | random | 0.922 | 0.597 | 0.77 |
+| cheap4 | family | 0.717 | 0.116 | 0.36 |
+| full | random | 0.972 | 0.761 | 0.90 |
+| full | family | 0.840 | 0.233 | 0.41 |
+
+report -> results/baselines_latest.md

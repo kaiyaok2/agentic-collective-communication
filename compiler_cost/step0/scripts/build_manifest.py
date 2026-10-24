@@ -16,12 +16,12 @@ def main():
             if not os.path.exists(mp): continue
             m = json.load(open(mp)); spec = m.get("spec", {}); n_prog += 1
             if not m.get("ok"): n_fail += 1
-            mods = [x for x in m.get("modules", []) if x.get("done") and x.get("hlo_pb_bytes", 0) > 0]
+            mods = [x for x in m.get("modules", []) if x.get("hlo_pb_bytes", 0) > 0]   # includes modules whose framework compile failed
             txt = os.path.join(d, "step.hlo.txt")
             for x in mods:
                 mdir = x["dir"]; pb = os.path.join(mdir, "model.hlo_module.pb"); mh = os.path.basename(mdir).split("+")[0].replace("MODULE_", "")
                 row = dict(hlo_id=f"{spec.get('id', os.path.basename(d))}__M{mh[-10:]}", hlo_pb=pb, module_dir=mdir, module_hash=mh, prog_id=spec.get("id"), family=spec.get("family"), source=spec.get("source"),
-                           params=spec.get("params"), parent=spec.get("parent"), mutation=spec.get("mutation"), n_modules_in_prog=len(mods), module_is_new=x.get("new"),
+                           params=spec.get("params"), parent=spec.get("parent"), mutation=spec.get("mutation"), n_modules_in_prog=len(mods), module_is_new=x.get("new"), framework_done=bool(x.get("done")), capture_ok=bool(m.get("ok")), sweep_key=spec.get("sweep_key"), sweep_value=spec.get("sweep_value"),
                            framework_compile_flags=x.get("compile_flags"), framework_neff_bytes=x.get("neff_bytes"), capture=dict(
                                wrapper_compile_time_s=m.get("wrapper_compile_time_s"), first_step_wall_s=m.get("first_step_wall_s"), steady_step_wall_s=m.get("steady_step_wall_s"),
                                execute_time_us=m.get("execute_time_us"), n_params=m.get("n_params"), capture_wall_s=m.get("wall_s")))

@@ -38,6 +38,13 @@ def main():
         meta["n_params"] = int(sum(k.numel() for k in keep if hasattr(k, "numel"))); meta["ok"] = True
     except Exception as e:
         meta["error"] = f"{type(e).__name__}: {str(e)[:600]}"; meta["traceback"] = traceback.format_exc()[-2000:]
+        try:   # a failed compile still leaves its HloModuleProto in the cache: keep it, it is a labelled compiler failure
+            mods = sorted(set(glob.glob(os.path.join(outdir, "cache", "neuronxcc-*", "MODULE_*"))))
+            meta["modules"] = [dict(dir=m, new=True, done=os.path.exists(os.path.join(m, "model.done")),
+                                    hlo_pb_bytes=os.path.getsize(os.path.join(m, "model.hlo_module.pb")) if os.path.exists(os.path.join(m, "model.hlo_module.pb")) else 0,
+                                    neff_bytes=os.path.getsize(os.path.join(m, "model.neff")) if os.path.exists(os.path.join(m, "model.neff")) else 0,
+                                    compile_flags=(open(os.path.join(m, "compile_flags.json")).read() if os.path.exists(os.path.join(m, "compile_flags.json")) else None)) for m in mods]
+        except Exception: pass
     meta["wall_s"] = round(time.time() - meta["t0"], 2)
     if os.environ.get("RANK", "0") != "0":   # torchrun: only rank 0 writes the meta (concurrent writers corrupted the file)
         print(f"[capture_one] rank {os.environ.get('RANK')} done ok={meta['ok']}", flush=True); return

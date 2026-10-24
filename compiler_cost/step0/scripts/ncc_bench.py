@@ -16,6 +16,14 @@ Output: JSONL rows appended to --out (one row per compile), resumable via (hlo_i
 import argparse, json, os, re, shutil, subprocess, sys, time, hashlib, socket, platform
 
 TIME = "/usr/bin/time"
+MIN_FREE_GB = float(os.environ.get("NCC_MIN_FREE_GB", "10")); OOM_KILL_GB = float(os.environ.get("NCC_OOM_KILL_GB", "1.5"))
+
+def mem_avail_gb():
+    try:
+        for line in open("/proc/meminfo"):
+            if line.startswith("MemAvailable"): return int(line.split()[1]) / 1e6
+    except Exception: return 99.0
+    return 99.0
 FLAGSETS = {
     "default":      [],
     "O1":           ["--optlevel", "1"],
@@ -25,6 +33,8 @@ FLAGSETS = {
     "autocast_bf16": ["--auto-cast", "all", "--auto-cast-type", "bf16"],
     "saturate":     ["--enable-saturate-infinity"],
     "mixed_acc":    ["--enable-mixed-precision-accumulation"],
+    # the flag set NeuronX Distributed Inference used for the deepseek-coder-33b TP32 graphs (framework flags minus logfile/target)
+    "nxd":          ["--auto-cast=none", "--model-type=transformer", "--tensorizer-options=--enable-ccop-compute-overlap --cc-pipeline-tiling-factor=2 --vectorize-strided-dma ", "--lnc=1", "-O1", "--internal-hlo2tensorizer-options= --modular-flow-mac-threshold=10  --verify-hlo=true"],
     "fast_load":    ["--enable-fast-loading-neuron-binaries"],
 }
 
@@ -108,13 +118,26 @@ def run_one(cc_bin, hlo_pb, flags, workdir, timeout_s, target="trn1", verbose="i
     cmd = [TIME, "-v", "-o", tf, "timeout", "-k", "15", str(timeout_s), cc_bin, "compile", "--framework", "XLA", "--target", target,
            hlo_pb, "--output", neff, f"--verbose={verbose}", "--logfile", logf] + list(flags)
     load1 = os.getloadavg()[0]
-    t0 = time.time(); r = sh(cmd, cwd=workdir); t1 = time.time()
+    waited = 0
+    while mem_avail_gb() < MIN_FREE_GB and waited < 3600: time.sleep(5); waited += 5   # another worker may hold the RAM
+    t0 = time.time(); oom_killed = False
+    outf = os.path.join(workdir, "stdout.txt")   # file, not a pipe: an unread pipe would block a chatty compiler
+    with open(outf, "w") as fo:
+        proc = subprocess.Popen(cmd, cwd=workdir, stdout=fo, stderr=subprocess.STDOUT, start_new_session=True)
+        while proc.poll() is None:
+            if mem_avail_gb() < OOM_KILL_GB:
+                import signal; os.killpg(proc.pid, signal.SIGKILL); oom_killed = True
+            time.sleep(0.5)
+    out = open(outf, errors="ignore").read(); t1 = time.time()
+    class _R: pass
+    r = _R(); r.stdout = out; r.returncode = proc.returncode
     tv = parse_time_v(open(tf).read()) if os.path.exists(tf) else {}
     log_txt = r.stdout + ("\n" + open(logf, errors="ignore").read()[-6000:] if os.path.exists(logf) else "")
     exit_status = tv.get("exit_status", r.returncode)
     timed_out = exit_status in (124, 137) and (t1 - t0) >= timeout_s - 1
     neff_ok = os.path.exists(neff) and os.path.getsize(neff) > 0
     row = dict(tv); row.update(classify(exit_status, timed_out, log_txt, neff_ok))
+    if oom_killed: row["status"] = "OOM"; row["oom_killed_by_watchdog"] = True
     row.update(dict(outer_wall_s=round(t1 - t0, 3), neff_bytes=os.path.getsize(neff) if neff_ok else 0, load1_before=round(load1, 2),
                     log_tail=log_txt[-800:].replace("\n", " | ")))
     if os.path.exists(logf): row.update(parse_cc_log(logf))
@@ -176,7 +199,7 @@ def main():
     if a.filter: rows = [r for r in rows if re.search(a.filter, r["hlo_id"])]
     if a.max_hlo_bytes: rows = [r for r in rows if os.path.getsize(r["hlo_pb"]) <= a.max_hlo_bytes]
     if a.limit: rows = rows[:a.limit]
-    done = done_keys(a.out); host = dict(hostname=socket.gethostname(), cpu=platform.processor() or platform.machine(), nproc=os.cpu_count())
+    done = done_keys(a.out); host = dict(hostname=socket.gethostname(), cpu=platform.processor() or platform.machine(), nproc=os.cpu_count(), note=os.environ.get("NCC_BENCH_NOTE", ""))
     try: host["instance_type"] = sh(["bash", "-c", "TOKEN=$(curl -s -X PUT -H 'X-aws-ec2-metadata-token-ttl-seconds: 60' http://169.254.169.254/latest/api/token); curl -s -H \"X-aws-ec2-metadata-token: $TOKEN\" http://169.254.169.254/latest/meta-data/instance-type"]).stdout.strip()[:40]
     except Exception: pass
     print(f"[bench] cc={cc_bin} ver={ver} tag={tag} rows={len(rows)} flagsets={a.flagsets} repeats={a.repeats} cold={a.cold} done={len(done)}", flush=True)

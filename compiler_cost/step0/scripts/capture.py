@@ -10,7 +10,7 @@ def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--grids", default="synth"); ap.add_argument("--corpus", default="/home/ubuntu/corpus")
     ap.add_argument("--filter", default=None); ap.add_argument("--timeout", type=int, default=2400); ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--python", default=sys.executable); ap.add_argument("--nproc", type=int, default=1, help=">1 runs under torchrun (collective grid)")
-    ap.add_argument("--extra-cc-flags", default="", help="appended to NEURON_CC_FLAGS at capture time"); ap.add_argument("--reverse", action="store_true", help="process specs in reverse order (second driver on the other core)"); ap.add_argument("--min-free-gb", type=float, default=9.0)
+    ap.add_argument("--extra-cc-flags", default="", help="appended to NEURON_CC_FLAGS at capture time"); ap.add_argument("--reverse", action="store_true", help="process specs in reverse order (second driver on the other core)"); ap.add_argument("--min-free-gb", type=float, default=9.0); ap.add_argument("--oom-kill-gb", type=float, default=1.5, help="kill the running capture when MemAvailable drops below this")
     a = ap.parse_args()
     specs = []
     for g in a.grids.split(","): specs += programs.GRIDS[g]()
@@ -38,11 +38,20 @@ def main():
         t0 = time.time()
         with open(os.path.join(d, "capture.log"), "w") as lf:
             proc = subprocess.Popen(cmd, stdout=lf, stderr=subprocess.STDOUT, env=env, start_new_session=True)
-            try: rc = proc.wait(timeout=a.timeout)
-            except subprocess.TimeoutExpired:
-                import signal; os.killpg(proc.pid, signal.SIGKILL); rc = "TIMEOUT"
-        if not os.path.exists(os.path.join(d, "meta.json")):
-            json.dump(dict(spec=s, ok=False, error=f"subprocess rc={rc}", wall_s=round(time.time() - t0, 1)), open(os.path.join(d, "meta.json"), "w"))
+            import signal; rc = None
+            while True:   # poll with a host-memory watchdog: a compile that exhausts RAM is killed (OOM) before the node thrashes
+                rc = proc.poll()
+                if rc is not None: break
+                if time.time() - t0 > a.timeout: os.killpg(proc.pid, signal.SIGKILL); proc.wait(); rc = "TIMEOUT"; break
+                if mem_avail_gb() < a.oom_kill_gb: os.killpg(proc.pid, signal.SIGKILL); proc.wait(); rc = "OOM"; break
+                time.sleep(1)
+        if not os.path.exists(os.path.join(d, "meta.json")):   # timeout / crash: keep the protos already written to the cache (labelled timeouts)
+            import glob as _g
+            mods = sorted(set(_g.glob(os.path.join(d, "cache", "neuronxcc-*", "MODULE_*"))))
+            json.dump(dict(spec=s, ok=False, error=f"subprocess rc={rc}", wall_s=round(time.time() - t0, 1), timeout_s=a.timeout if rc == "TIMEOUT" else None, oom_killed=(rc == "OOM"),
+                           modules=[dict(dir=m, new=True, done=os.path.exists(os.path.join(m, "model.done")),
+                                         hlo_pb_bytes=os.path.getsize(os.path.join(m, "model.hlo_module.pb")) if os.path.exists(os.path.join(m, "model.hlo_module.pb")) else 0,
+                                         neff_bytes=0, compile_flags=None) for m in mods]), open(os.path.join(d, "meta.json"), "w"))
         m = json.load(open(os.path.join(d, "meta.json")))
         print(f"[capture] {i+1}/{len(specs)} {s['id'][:70]:70s} ok={m.get('ok')} mods={len(m.get('modules', []))} wall={round(time.time()-t0,1)}s {str(m.get('error',''))[:80]}", flush=True)
 
